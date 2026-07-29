@@ -1,0 +1,30 @@
+{
+  "id": "studio-reporter",
+  "version": "0.1.0",
+  "name": "Gauge Studio Reporter",
+  "description": "Forwards Gauge execution lifecycle events to Gauge Studio over WebSocket.",
+  "capabilities": [
+    "grpc_support"
+  ],
+  "command": {
+    "windows": [
+      "bin/studio-reporter.exe",
+      "--start"
+    ],
+    "linux": [
+      "bin/studio-reporter",
+      "--start"
+    ],
+    "darwin": [
+      "bin/studio-reporter",
+      "--start"
+    ]
+  },
+  "scope": [
+    "execution"
+  ],
+  "gaugeVersionSupport": {
+    "minimum": "1.0.7",
+    "maximum": ""
+  }
+}
