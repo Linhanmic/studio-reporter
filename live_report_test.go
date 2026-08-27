@@ -87,7 +87,7 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := string(html)
-	for _, want := range []string{"pinia", "dense-table", "row-pass", "row-fail"} {
+	for _, want := range []string{"pinia", "dense-table", "row-pass", "row-fail", "accordion"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("live html missing %q", want)
 		}

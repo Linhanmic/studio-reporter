@@ -149,6 +149,7 @@
               ref="scriptTree"
               :data="treeData"
               node-key="id"
+              accordion
               highlight-current
               :expand-on-click-node="false"
               :default-expanded-keys="store.treeExpanded"
@@ -398,41 +399,148 @@
       roll(root);
       return [root];
     }
-    function collectExpandableIds(report) {
-      const ids = [];
-      (report.specs || []).forEach((spec) => {
-        ids.push(spec.id);
-        (spec.scenarios || []).forEach((scn) => {
-          ids.push(scn.id);
-          walkItems(scenarioAllItems(scn), (item) => {
-            if (itemHasDetail(item) || (item.kind === 'concept' && item.concept && item.concept.items && item.concept.items.length)) ids.push(item.id);
-          });
+    function indexHierarchy(report) {
+      const parentOf = {};
+      const childrenOf = {};
+      const addItems = (pid, items) => {
+        const list = items || [];
+        childrenOf[pid] = list.map((it) => it.id);
+        list.forEach((item) => {
+          parentOf[item.id] = pid;
+          if (item.kind === 'concept' && item.concept) addItems(item.id, item.concept.items || []);
+        });
+      };
+      const specs = (report && report.specs) || [];
+      childrenOf.__specs__ = specs.map((s) => s.id);
+      specs.forEach((spec) => {
+        parentOf[spec.id] = '__specs__';
+        const scns = spec.scenarios || [];
+        childrenOf[spec.id] = scns.map((s) => s.id);
+        scns.forEach((scn) => {
+          parentOf[scn.id] = spec.id;
+          addItems(scn.id, scenarioAllItems(scn));
         });
       });
-      return ids;
+      return { parentOf, childrenOf };
+    }
+    function siblingIds(index, id) {
+      const parent = index.parentOf[id];
+      if (!parent) return [];
+      return index.childrenOf[parent] || [];
+    }
+    function descendantIds(index, id) {
+      const out = [];
+      const walk = (pid) => {
+        (index.childrenOf[pid] || []).forEach((cid) => {
+          out.push(cid);
+          walk(cid);
+        });
+      };
+      walk(id);
+      return out;
+    }
+    function openAccordionIds(report, expanded, id) {
+      if (!id) return expanded || [];
+      const index = indexHierarchy(report);
+      const drop = new Set();
+      siblingIds(index, id).forEach((sid) => {
+        if (sid === id) return;
+        drop.add(sid);
+        descendantIds(index, sid).forEach((d) => drop.add(d));
+      });
+      const next = (expanded || []).filter((x) => !drop.has(x));
+      if (next.indexOf(id) < 0) next.push(id);
+      return next;
+    }
+    function closeAccordionIds(report, expanded, id) {
+      if (!id) return expanded || [];
+      const index = indexHierarchy(report);
+      const drop = new Set([id].concat(descendantIds(index, id)));
+      return (expanded || []).filter((x) => !drop.has(x));
+    }
+    function accordionNormalize(report, ids) {
+      let next = [];
+      (ids || []).forEach((id) => { next = openAccordionIds(report, next, id); });
+      return next;
+    }
+    function accordionPath(report) {
+      const ids = [];
+      const specs = (report && report.specs) || [];
+      const spec = specs.find((s) => s.verdict === 'fail') || specs[0];
+      if (!spec) return ids;
+      ids.push(spec.id);
+      const scns = spec.scenarios || [];
+      const scn = scns.find((s) => s.verdict === 'fail') || scns[0];
+      if (!scn) return ids;
+      ids.push(scn.id);
+      const pickFail = (items, trail) => {
+        for (const item of items || []) {
+          if (itemVerdict(item) === 'fail') return trail.concat([item.id]);
+          if (item.kind === 'concept' && item.concept) {
+            const nested = pickFail(item.concept.items, trail.concat([item.id]));
+            if (nested) return nested;
+          }
+        }
+        return null;
+      };
+      const failPath = pickFail(scenarioAllItems(scn), []);
+      if (failPath) ids.push.apply(ids, failPath);
+      return accordionNormalize(report, ids);
+    }
+    function findTreeNode(nodes, id, parentNodes) {
+      for (const n of nodes || []) {
+        if (n.id === id) return { node: n, siblings: parentNodes || nodes };
+        const inner = findTreeNode(n.children, id, n.children);
+        if (inner) return inner;
+      }
+      return null;
+    }
+    function treeDescendantIds(node) {
+      const out = [];
+      const walk = (n) => {
+        (n.children || []).forEach((c) => {
+          out.push(c.id);
+          walk(c);
+        });
+      };
+      if (node) walk(node);
+      return out;
+    }
+    function accordionTreeKeys(nodes, ids) {
+      let next = ['suite'];
+      (ids || []).forEach((id) => {
+        if (id === 'suite') return;
+        const found = findTreeNode(nodes, id);
+        if (!found) {
+          if (next.indexOf(id) < 0) next.push(id);
+          return;
+        }
+        const drop = new Set();
+        (found.siblings || []).forEach((s) => {
+          if (s.id === id) return;
+          drop.add(s.id);
+          treeDescendantIds(s).forEach((d) => drop.add(d));
+        });
+        next = next.filter((x) => x === 'suite' || x === id || !drop.has(x));
+        if (next.indexOf(id) < 0) next.push(id);
+      });
+      return next;
+    }
+    function collectExpandableIds(report) {
+      return accordionPath(report);
     }
     function defaultExpanded(report) {
-      const ids = [];
-      (report.specs || []).forEach((spec) => {
-        if (spec.verdict !== 'fail') return;
-        ids.push(spec.id);
-        (spec.scenarios || []).forEach((scn) => {
-          if (scn.verdict !== 'fail') return;
-          ids.push(scn.id);
-          walkItems(scenarioAllItems(scn), (item) => {
-            if (itemVerdict(item) === 'fail') ids.push(item.id);
-          });
-        });
-      });
-      return ids;
+      return accordionPath(report);
     }
     function treeExpandedKeys(nodes) {
       const ids = ['suite'];
-      const walk = (list) => (list || []).forEach((n) => {
-        if (n.kind === 'folder' || n.kind === 'spec' || n.verdict === 'fail') ids.push(n.id);
-        walk(n.children);
-      });
-      walk(nodes);
+      const pick = (list) => {
+        if (!list || !list.length) return;
+        const node = list.find((n) => n.verdict === 'fail') || list[0];
+        if (node && node.id && node.id !== 'suite') ids.push(node.id);
+        if (node) pick(node.children);
+      };
+      if (nodes && nodes[0]) pick(nodes[0].children);
       return ids;
     }
 
@@ -457,8 +565,8 @@
             if (saved.filter) this.filter = saved.filter;
             if (typeof saved.query === 'string') this.query = saved.query;
             if (saved.selected) this.selected = saved.selected;
-            if (Array.isArray(saved.expanded) && saved.expanded.length) this.expanded = saved.expanded;
-            if (Array.isArray(saved.treeExpanded) && saved.treeExpanded.length) this.treeExpanded = saved.treeExpanded;
+            if (Array.isArray(saved.expanded) && saved.expanded.length) this.expanded = accordionNormalize(this.report, saved.expanded);
+            if (Array.isArray(saved.treeExpanded) && saved.treeExpanded.length) this.treeExpanded = accordionTreeKeys(buildTree(this.report), saved.treeExpanded);
           } catch (e) {}
         },
         persistView() {
@@ -484,18 +592,22 @@
         },
         toggleExpand(id) {
           if (!id) return;
-          const idx = this.expanded.indexOf(id);
-          this.expanded = idx >= 0 ? this.expanded.filter((x) => x !== id) : this.expanded.concat([id]);
+          if (this.expanded.indexOf(id) >= 0) this.expanded = closeAccordionIds(this.report, this.expanded, id);
+          else this.expanded = openAccordionIds(this.report, this.expanded, id);
           this.persistView();
         },
         ensureExpanded() {
           const ids = Array.prototype.slice.call(arguments);
           ids.forEach((id) => {
-            if (id && this.expanded.indexOf(id) < 0) this.expanded = this.expanded.concat([id]);
+            if (id) this.expanded = openAccordionIds(this.report, this.expanded, id);
           });
           this.persistView();
         },
-        expandAll() { this.expanded = collectExpandableIds(this.report); this.persistView(); },
+        expandAll() {
+          this.expanded = accordionPath(this.report);
+          this.treeExpanded = treeExpandedKeys(buildTree(this.report));
+          this.persistView();
+        },
         collapseAll() { this.expanded = []; this.persistView(); }
       }
     });
@@ -679,7 +791,7 @@
           return v === 'fail' ? 'row-fail' : (v === 'pass' ? 'row-pass' : (v === 'skip' ? 'row-skip' : ''));
         },
         onExpandChange(row) { this.store.toggleExpand(row && row.id); },
-        expandAll() { this.store.expandAll(); },
+        expandAll() { this.store.expandAll(); Vue.nextTick(() => this.restoreTreeExpand()); },
         collapseAll() { this.store.collapseAll(); },
         printReport() { window.print(); },
         onTreeClick(data) {
@@ -693,29 +805,38 @@
           this.store.persistView();
         },
         onTreeExpand(data) {
-          if (data && data.id && this.store.treeExpanded.indexOf(data.id) < 0) {
-            this.store.treeExpanded = this.store.treeExpanded.concat([data.id]);
-            this.store.persistView();
-          }
+          if (!data || !data.id) return;
+          this.store.treeExpanded = accordionTreeKeys(this.treeData, this.store.treeExpanded.concat([data.id]));
+          this.store.persistView();
         },
         onTreeCollapse(data) {
-          if (data && data.id) {
-            this.store.treeExpanded = this.store.treeExpanded.filter((id) => id !== data.id);
-            this.store.persistView();
-          }
+          if (!data || !data.id) return;
+          const found = findTreeNode(this.treeData, data.id);
+          const drop = new Set([data.id].concat(found ? treeDescendantIds(found.node) : []));
+          this.store.treeExpanded = this.store.treeExpanded.filter((id) => !drop.has(id));
+          this.store.persistView();
         },
-        onSpecClick(row) { this.store.selected = row.id; this.store.persistView(); },
-        onScenarioClick(row) { this.store.selected = row.id; this.store.persistView(); },
         findItemPath(id) {
           for (const spec of this.store.report.specs || []) {
             for (const scn of spec.scenarios || []) {
-              let found = false;
-              walkItems(scenarioAllItems(scn), (item) => { if (item.id === id) found = true; });
-              if (found) return [spec.id, scn.id, id];
+              const itemPath = [];
+              const walk = (items, trail) => {
+                for (const item of items || []) {
+                  if (item.id === id) {
+                    itemPath.push.apply(itemPath, trail.concat([item.id]));
+                    return true;
+                  }
+                  if (item.kind === 'concept' && item.concept && walk(item.concept.items, trail.concat([item.id]))) return true;
+                }
+                return false;
+              };
+              if (walk(scenarioAllItems(scn), [])) return [spec.id, scn.id].concat(itemPath);
             }
           }
           return [];
         },
+        onSpecClick(row) { this.store.selected = row.id; this.store.persistView(); },
+        onScenarioClick(row) { this.store.selected = row.id; this.store.persistView(); },
         filterTreeNode(value, data) {
           if (this.store.filter !== 'all' && data.verdict && data.kind !== 'folder' && data.kind !== 'phase' && data.kind !== 'suite') {
             if (data.verdict !== this.store.filter && data.verdict !== 'none') return false;
@@ -727,10 +848,17 @@
         restoreTreeExpand() {
           const tree = this.$refs.scriptTree;
           if (!tree) return;
-          (this.store.treeExpanded || []).forEach((id) => {
-            const n = tree.getNode(id);
-            if (n) n.expanded = true;
-          });
+          this.store.treeExpanded = accordionTreeKeys(this.treeData, this.store.treeExpanded);
+          const keep = {};
+          (this.store.treeExpanded || []).forEach((id) => { keep[id] = true; });
+          const apply = (nodes) => {
+            (nodes || []).forEach((n) => {
+              const node = tree.getNode(n.id);
+              if (node) node.expanded = !!keep[n.id];
+              apply(n.children);
+            });
+          };
+          apply(this.treeData);
           if (this.store.selected) tree.setCurrentKey(this.store.selected);
         },
         async pollLive() {

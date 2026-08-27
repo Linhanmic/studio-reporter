@@ -390,6 +390,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"dense-table",
 		"row-pass",
 		"row-fail",
+		"accordion",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",

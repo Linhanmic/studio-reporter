@@ -330,7 +330,7 @@ On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Element P
 
 - Top title bar, summary cards, and verdict filter toolbar
 - Left **script tree** (`el-tree`): suite → folders → specs → scenarios → context / steps / concepts
-- Main **compact expandable tables** (`el-table` expand rows): spec → scenario → steps / concepts
+- Main **compact expandable tables** in accordion mode (`el-table` expand rows): only one node at the same level is expanded
 - Passed rows green, failed rows red
 - Runtime on every spec, scenario, concept, and step
 - Live `report.json` updates while the suite runs; the open page applies them through Pinia without reload or scroll jump
