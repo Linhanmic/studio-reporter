@@ -12,6 +12,7 @@
       --chrome: #d9e2ec;
       --panel: #ffffff;
       --line: #c5d0dc;
+      --guide: #b7c4d1;
       --text: #1a202c;
       --muted: #5a6a7a;
       --pass: #2f855a;
@@ -23,8 +24,10 @@
       --skip-bg: #edf2f7;
       --sel: #d6eaf8;
       --row-alt: #f7fafc;
+      --folder: #d69e2e;
       --font: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
       --mono: "Cascadia Mono", "Consolas", "Microsoft YaHei Mono", monospace;
+      --tree-w: 340px;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; background: var(--chrome); color: var(--text); font: 13px/1.45 var(--font); }
@@ -32,12 +35,8 @@
     button, input, select { font: inherit; }
     .titlebar {
       background: linear-gradient(180deg, var(--header-2), var(--header));
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 14px;
-      min-height: 42px;
+      color: #fff; display: flex; align-items: center; gap: 12px;
+      padding: 8px 14px; min-height: 42px;
     }
     .logo {
       width: 22px; height: 22px; border-radius: 3px;
@@ -47,49 +46,66 @@
     .titlebar h1 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: .02em; }
     .titlebar .file { color: #cfe8f7; font-weight: 400; margin-left: 4px; }
     .toolbar {
-      background: #eef3f8;
-      border-bottom: 1px solid var(--line);
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      padding: 6px 10px;
+      background: #eef3f8; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px;
     }
     .toolbar .group { display: flex; align-items: center; gap: 6px; }
     .seg { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: #fff; }
-    .seg button {
-      border: 0; background: transparent; padding: 4px 10px; cursor: pointer; color: var(--muted);
-    }
+    .seg button { border: 0; background: transparent; padding: 4px 10px; cursor: pointer; color: var(--muted); }
     .seg button + button { border-left: 1px solid var(--line); }
     .seg button.active { background: var(--header); color: #fff; }
-    .search {
-      border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; min-width: 220px;
-    }
-    .ghost {
-      border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 4px 10px; cursor: pointer;
-    }
+    .search { border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; min-width: 220px; }
+    .ghost { border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
     .ghost:hover { background: #f7fafc; }
-    .workspace { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+    .workspace { flex: 1; display: grid; grid-template-columns: var(--tree-w) 6px 1fr; min-height: 0; }
     .tree-pane, .content-pane { background: var(--panel); min-height: 0; overflow: auto; }
-    .tree-pane { border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+    .tree-pane { display: flex; flex-direction: column; }
+    .splitter { background: var(--chrome); cursor: col-resize; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+    .splitter:hover, .splitter.drag { background: var(--accent); }
     .pane-title {
       background: #f4f7fa; border-bottom: 1px solid var(--line);
       padding: 6px 10px; font-weight: 600; color: var(--header); letter-spacing: .04em;
-      text-transform: uppercase; font-size: 11px;
+      text-transform: uppercase; font-size: 11px; display: flex; justify-content: space-between;
     }
-    .tree { padding: 6px 0 16px; }
-    .node { user-select: none; }
+    .tree { padding: 4px 8px 16px 4px; }
+    .tree ul { list-style: none; margin: 0; padding: 0 0 0 14px; position: relative; }
+    .tree > ul { padding-left: 6px; }
+    .tree li { position: relative; }
+    .tree ul::before {
+      content: ""; position: absolute; left: 6px; top: 0; bottom: 10px;
+      border-left: 1px solid var(--guide);
+    }
+    .tree > ul::before { display: none; }
+    .tree li::before {
+      content: ""; position: absolute; left: -8px; top: 13px; width: 12px;
+      border-top: 1px solid var(--guide);
+    }
+    .tree li:last-child::after {
+      content: ""; position: absolute; left: -8px; top: 14px; bottom: 0; width: 2px; background: var(--panel);
+    }
     .node-row {
-      display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 6px; cursor: pointer;
-      white-space: nowrap;
+      display: flex; align-items: center; gap: 5px; padding: 2px 6px 2px 2px;
+      cursor: pointer; border-radius: 3px; min-height: 22px;
     }
     .node-row:hover { background: #f0f7fb; }
     .node-row.selected { background: var(--sel); }
-    .twisty { width: 14px; text-align: center; color: var(--muted); font-size: 10px; flex: 0 0 14px; }
+    .twisty {
+      width: 14px; flex: 0 0 14px; text-align: center; color: var(--muted);
+      font-size: 10px; line-height: 1;
+    }
+    .twisty.empty { visibility: hidden; }
     .ico { width: 14px; height: 14px; flex: 0 0 14px; }
-    .label { overflow: hidden; text-overflow: ellipsis; }
-    .children { display: none; }
-    .node.open > .children { display: block; }
+    .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .kind { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; flex: 0 0 auto; }
+    .count { color: var(--muted); font-size: 11px; margin-left: auto; padding-left: 8px; flex: 0 0 auto; }
     .hidden { display: none !important; }
     .content { padding: 14px 18px 28px; }
-    .crumb { color: var(--muted); margin-bottom: 8px; }
+    .crumb { color: var(--muted); margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .crumb button {
+      border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0;
+    }
+    .crumb button:hover { text-decoration: underline; }
+    .crumb .sep { color: var(--guide); }
     .head {
       display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
       border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px;
@@ -121,19 +137,21 @@
     table.grid tbody tr:nth-child(even) { background: var(--row-alt); }
     table.grid tbody tr.clickable { cursor: pointer; }
     table.grid tbody tr.clickable:hover { background: #eef6fb; }
+    table.grid tbody tr.flash { outline: 2px solid var(--accent); }
     .kv { width: 100%; border-collapse: collapse; }
     .kv th { width: 180px; text-align: left; color: var(--muted); font-weight: 600; padding: 4px 8px 4px 0; }
     .kv td { padding: 4px 0; }
-    .section { margin: 18px 0 8px; font-size: 13px; font-weight: 700; color: var(--header); }
+    .section { margin: 18px 0 8px; font-size: 13px; font-weight: 700; color: var(--header); display: flex; align-items: center; gap: 8px; }
+    .section .hint { font-weight: 500; color: var(--muted); font-size: 12px; }
     .step-text .static { color: #2b6cb0; font-weight: 650; }
     .step-text .dynamic { color: #805ad5; font-weight: 650; }
     .step-text .special { color: #c05621; }
     .err { color: var(--fail); white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
     .msg { color: var(--muted); white-space: pre-wrap; }
     .stack { white-space: pre-wrap; font-family: var(--mono); font-size: 11px; background: #f7fafc; border: 1px solid var(--line); padding: 8px; overflow: auto; }
-    .indent-1 td:first-child { padding-left: 24px; }
-    .indent-2 td:first-child { padding-left: 40px; }
-    .indent-3 td:first-child { padding-left: 56px; }
+    .tree-cell { display: flex; align-items: flex-start; gap: 6px; min-width: 220px; }
+    .guides { display: inline-flex; align-items: center; font-family: var(--mono); color: var(--guide); letter-spacing: -1px; user-select: none; }
+    .guides .twisty { cursor: pointer; color: var(--muted); }
     .shots { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
     .shots img { max-width: 240px; max-height: 160px; border: 1px solid var(--line); background: #fff; }
     .tags { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -146,10 +164,11 @@
     .data-table { margin: 6px 0; }
     @media (max-width: 900px) {
       .workspace { grid-template-columns: 1fr; }
-      .tree-pane { max-height: 36vh; border-right: 0; border-bottom: 1px solid var(--line); }
+      .splitter { display: none; }
+      .tree-pane { max-height: 36vh; border-bottom: 1px solid var(--line); }
     }
     @media print {
-      .titlebar, .toolbar, .tree-pane, .status { display: none !important; }
+      .titlebar, .toolbar, .tree-pane, .splitter, .status { display: none !important; }
       .workspace { display: block; }
       body { background: #fff; }
     }
@@ -177,9 +196,10 @@
   </div>
   <div class="workspace">
     <aside class="tree-pane">
-      <div class="pane-title">Execution Tree</div>
+      <div class="pane-title"><span>Execution Tree</span><span id="tree-hint">suite / folder / spec / case</span></div>
       <div class="tree" id="tree"></div>
     </aside>
+    <div class="splitter" id="splitter" title="Resize"></div>
     <main class="content-pane">
       <div class="content" id="content"></div>
     </main>
@@ -191,16 +211,41 @@
   <script type="application/json" id="report-data">{{REPORT_JSON}}</script>
   <script>
     const report = JSON.parse(document.getElementById('report-data').textContent);
-    const state = { filter: 'all', query: '', selected: 'suite', open: new Set(['suite']) };
+    const state = { filter: 'all', query: '', selected: 'suite', open: new Set(['suite']), collapsed: new Set() };
+    const index = { nodes: {}, crumbs: {} };
     const $ = (id) => document.getElementById(id);
 
     function verdictLabel(v) {
       return ({ pass: 'Pass', fail: 'Fail', skip: 'Skip', none: 'None' })[v] || 'None';
     }
-    function svgIcon(v) {
-      const color = { pass: '#2f855a', fail: '#c53030', skip: '#718096', none: '#a0aec0' }[v] || '#a0aec0';
-      const mark = { pass: 'M4 8.5l2.2 2.2L12 5', fail: 'M5 5l6 6M11 5l-6 6', skip: 'M4 8h8', none: '' }[v] || '';
-      return `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="${color}" stroke-width="1.6"/><path d="${mark}" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+    function worse(a, b) {
+      const rank = { fail: 3, skip: 2, none: 1, pass: 0 };
+      return (rank[a] || 0) >= (rank[b] || 0) ? a : b;
+    }
+    function addCounts(a, b) {
+      return { total: a.total + b.total, passed: a.passed + b.passed, failed: a.failed + b.failed, skipped: a.skipped + b.skipped };
+    }
+    function emptyCounts() { return { total: 0, passed: 0, failed: 0, skipped: 0 }; }
+    function specFolders(spec) {
+      if (spec.folders && spec.folders.length) return spec.folders;
+      const f = String(spec.fileName || '').replace(/\\/g, '/');
+      const parts = f.split('/');
+      parts.pop();
+      return parts.filter(p => p && p !== '.');
+    }
+    function typeIcon(kind, verdict) {
+      const color = { pass: '#2f855a', fail: '#c53030', skip: '#718096', none: '#a0aec0' }[verdict] || '#5a6a7a';
+      const icons = {
+        suite: `<rect x="3" y="3" width="10" height="10" rx="1.5" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M3 7h10M8 3v10" stroke="${color}" stroke-width="1.2"/>`,
+        folder: `<path d="M2.5 5.5h4l1.2 1.5H13.5v6.5H2.5z" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M2.5 7.2h11" stroke="${color}" stroke-width="1.2"/>`,
+        spec: `<path d="M4.5 2.5h5l3 3V13.5h-8z" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M9.5 2.5V6h3" stroke="${color}" stroke-width="1.2"/>`,
+        scenario: `<circle cx="8" cy="8" r="5.4" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M6.6 5.6l4.2 2.4-4.2 2.4z" fill="${color}"/>`,
+        concept: `<rect x="2.5" y="4" width="8" height="8" rx="1" fill="none" stroke="${color}" stroke-width="1.4"/><rect x="5.5" y="2.5" width="8" height="8" rx="1" fill="none" stroke="${color}" stroke-width="1.4"/>`,
+        step: `<circle cx="8" cy="8" r="5.2" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M5.5 8h5" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>`,
+        comment: `<path d="M3 4h10v7H7l-3 2.5z" fill="none" stroke="${color}" stroke-width="1.4"/>`,
+        phase: `<path d="M3 8h10M8 3v10" stroke="${color}" stroke-width="1.4" stroke-linecap="round"/>`
+      };
+      return `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${icons[kind] || icons.step}</svg>`;
     }
     function esc(s) {
       return String(s == null ? '' : s)
@@ -210,9 +255,7 @@
       if (!list || !list.length) return '';
       return `<div class="tags">${list.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>`;
     }
-    function badge(v) {
-      return `<span class="badge v-${esc(v)}">${esc(verdictLabel(v))}</span>`;
-    }
+    function badge(v) { return `<span class="badge v-${esc(v)}">${esc(verdictLabel(v))}</span>`; }
     function countBar(c) {
       const t = Math.max(c.total, 1);
       return `<div class="bar"><i class="p" style="width:${100*c.passed/t}%"></i><i class="f" style="width:${100*c.failed/t}%"></i><i class="s" style="width:${100*c.skipped/t}%"></i></div>`;
@@ -222,62 +265,190 @@
       if (!q) return true;
       return String(text || '').toLowerCase().includes(q);
     }
+    function itemText(item) {
+      if (!item) return '';
+      if (item.kind === 'comment') return item.comment || '';
+      if (item.kind === 'step' && item.step) return item.step.actualText || item.step.parsedText || '';
+      if (item.kind === 'concept' && item.concept && item.concept.step) return item.concept.step.actualText || item.concept.step.parsedText || '';
+      return '';
+    }
+    function itemVerdict(item) {
+      if (item.kind === 'step' && item.step) return item.step.verdict;
+      if (item.kind === 'concept' && item.concept && item.concept.step) return item.concept.step.verdict;
+      return 'none';
+    }
+    function walkItems(items, fn) {
+      (items || []).forEach(item => {
+        fn(item);
+        if (item.kind === 'concept' && item.concept) walkItems(item.concept.items, fn);
+      });
+    }
+    function scenarioAllItems(scn) {
+      return [].concat(scn.contexts || [], scn.items || [], scn.teardowns || []);
+    }
+    function scenarioTexts(scn) {
+      const texts = [scn.heading, ...(scn.tags || [])];
+      walkItems(scenarioAllItems(scn), item => texts.push(itemText(item)));
+      return texts;
+    }
     function nodeVisible(verdict, texts) {
       if (state.filter !== 'all' && verdict !== state.filter) return false;
       if (!state.query.trim()) return true;
       return texts.some(matchQuery);
     }
-    function collectTexts(scn) {
-      const texts = [scn.heading, ...(scn.tags || [])];
-      const walk = (items) => {
-        (items || []).forEach(item => {
-          if (item.kind === 'step' && item.step) texts.push(item.step.actualText || item.step.parsedText);
-          if (item.kind === 'concept' && item.concept) {
-            if (item.concept.step) texts.push(item.concept.step.actualText || item.concept.step.parsedText);
-            walk(item.concept.items);
-          }
-          if (item.kind === 'comment') texts.push(item.comment);
-        });
+    function subtreeVisible(node) {
+      if (node.kind === 'item') {
+        return nodeVisible(itemVerdict(node.item), [itemText(node.item), node.label].concat(node.extraTexts || []));
+      }
+      const selfHit = nodeVisible(node.verdict, node.texts || [node.label]);
+      const kids = (node.children || []).filter(subtreeVisible);
+      node.visibleChildren = kids;
+      if (state.filter === 'all' && !state.query.trim()) return true;
+      return selfHit || kids.length > 0;
+    }
+
+    function buildItemNodes(items, crumbs) {
+      return (items || []).map(item => {
+        const label = itemText(item) || (item.kind === 'comment' ? 'Comment' : 'Step');
+        const children = item.kind === 'concept' && item.concept ? buildItemNodes(item.concept.items, crumbs.concat({ id: item.id, label })) : [];
+        const node = {
+          id: item.id, kind: 'item', itemKind: item.kind, item, label, verdict: itemVerdict(item),
+          children, crumbs: crumbs.concat({ id: item.id, label }), texts: [label]
+        };
+        index.nodes[node.id] = node;
+        return node;
+      });
+    }
+    function buildScenarioNode(spec, scn) {
+      const children = [];
+      if ((scn.contexts || []).length) {
+        const id = scn.id + '-phase-ctx';
+        const n = { id, kind: 'phase', label: 'Context', verdict: 'none', children: buildItemNodes(scn.contexts, [{ id: spec.id, label: spec.heading }, { id: scn.id, label: scn.heading }, { id, label: 'Context' }]), texts: ['Context'] };
+        index.nodes[id] = n;
+        children.push(n);
+      }
+      children.push.apply(children, buildItemNodes(scn.items, [{ id: spec.id, label: spec.heading }, { id: scn.id, label: scn.heading }]));
+      if ((scn.teardowns || []).length) {
+        const id = scn.id + '-phase-td';
+        const n = { id, kind: 'phase', label: 'Teardown', verdict: 'none', children: buildItemNodes(scn.teardowns, [{ id: spec.id, label: spec.heading }, { id: scn.id, label: scn.heading }, { id, label: 'Teardown' }]), texts: ['Teardown'] };
+        index.nodes[id] = n;
+        children.push(n);
+      }
+      const node = {
+        id: scn.id, kind: 'scenario', spec, scn, label: scn.heading, verdict: scn.verdict,
+        children, count: null, crumbs: [{ id: 'suite', label: report.projectName }, { id: spec.id, label: spec.heading }, { id: scn.id, label: scn.heading }],
+        texts: scenarioTexts(scn)
       };
-      walk(scn.items);
-      return texts;
+      index.nodes[scn.id] = node;
+      return node;
+    }
+    function buildSpecNode(spec) {
+      const children = (spec.scenarios || []).map(scn => buildScenarioNode(spec, scn));
+      const node = {
+        id: spec.id, kind: 'spec', spec, label: spec.heading, verdict: spec.verdict,
+        children, count: spec.summary, crumbs: [{ id: 'suite', label: report.projectName }, { id: spec.id, label: spec.heading }],
+        texts: [spec.heading, spec.fileName].concat(spec.tags || [])
+      };
+      index.nodes[spec.id] = node;
+      return node;
+    }
+    function buildFolderForest() {
+      index.nodes = { suite: null };
+      const root = { id: 'suite', kind: 'suite', label: report.projectName, verdict: report.verdict, children: [], folders: {}, count: report.summary.scenarios, crumbs: [{ id: 'suite', label: report.projectName }], texts: [report.projectName] };
+      index.nodes.suite = root;
+      (report.specs || []).forEach(spec => {
+        let parent = root;
+        const folders = specFolders(spec);
+        const trail = [];
+        folders.forEach(name => {
+          trail.push(name);
+          const id = 'folder:' + trail.join('/');
+          if (!parent.folders) parent.folders = {};
+          if (!parent.folders[name]) {
+            const node = { id, kind: 'folder', label: name, path: trail.join('/'), parent, verdict: 'pass', children: [], folders: {}, count: emptyCounts(), crumbs: [{ id: 'suite', label: report.projectName }].concat(trail.map((_, i) => ({ id: 'folder:' + trail.slice(0, i + 1).join('/'), label: trail[i] }))), texts: [name, trail.join('/')] };
+            parent.folders[name] = node;
+            parent.children.push(node);
+            index.nodes[id] = node;
+          }
+          parent = parent.folders[name];
+        });
+        const specNode = buildSpecNode(spec);
+        specNode.crumbs = parent.crumbs.concat([{ id: spec.id, label: spec.heading }]);
+        specNode.parent = parent;
+        parent.children.push(specNode);
+        let roll = parent;
+        while (roll && roll.kind === 'folder') {
+          roll.verdict = worse(roll.verdict, spec.verdict);
+          roll.count = addCounts(roll.count, spec.summary || emptyCounts());
+          roll = roll.parent;
+        }
+      });
+      return root;
+    }
+    const forest = buildFolderForest();
+    Object.keys(index.nodes).forEach(id => {
+      const n = index.nodes[id];
+      if (n && n.kind === 'folder') state.open.add(id);
+    });
+
+    function hasKids(node) { return (node.visibleChildren || node.children || []).length > 0; }
+    function kids(node) { return node.visibleChildren || node.children || []; }
+    function countLabel(node) {
+      const c = node.count;
+      if (!c || !c.total) return '';
+      return `${c.passed}/${c.total}`;
+    }
+    function kindLabel(node) {
+      return ({ suite: 'suite', folder: 'folder', spec: 'spec', scenario: 'case', phase: 'group', item: node.itemKind || 'step' })[node.kind] || '';
+    }
+    function renderNode(node) {
+      if (!subtreeVisible(node) && node.id !== 'suite') return '';
+      const open = state.open.has(node.id);
+      const children = kids(node);
+      const twisty = children.length ? (open ? '▾' : '▸') : '';
+      const iconKind = node.kind === 'item' ? (node.itemKind || 'step') : node.kind;
+      let html = `<li><div class="node-row ${state.selected===node.id?'selected':''}" data-id="${esc(node.id)}">
+        <span class="twisty ${children.length ? '' : 'empty'}">${twisty}</span>
+        ${typeIcon(iconKind, node.verdict)}
+        <span class="label">${esc(node.label)}</span>
+        <span class="kind">${esc(kindLabel(node))}</span>
+        ${countLabel(node) ? `<span class="count">${esc(countLabel(node))}</span>` : ''}
+      </div>`;
+      if (open && children.length) {
+        html += `<ul>${children.map(renderNode).join('')}</ul>`;
+      }
+      return html + '</li>';
     }
     function renderTree() {
-      const specs = (report.specs || []).map(spec => {
-        const scenarios = (spec.scenarios || []).filter(scn => nodeVisible(scn.verdict, collectTexts(scn).concat(spec.heading)));
-        const specVisible = nodeVisible(spec.verdict, [spec.heading, spec.fileName, ...(spec.tags || [])]) || scenarios.length > 0;
-        return { spec, scenarios, specVisible };
-      }).filter(x => x.specVisible);
-      const html = [`<div class="node ${state.open.has('suite') ? 'open' : ''}" data-id="suite">
-        <div class="node-row ${state.selected==='suite'?'selected':''}" data-id="suite" style="padding-left:8px">
-          <span class="twisty">${state.open.has('suite') ? '▾' : '▸'}</span>${svgIcon(report.verdict)}<span class="label">${esc(report.projectName)}</span>
-        </div>
-        <div class="children">`];
-      specs.forEach(({ spec, scenarios }) => {
-        const open = state.open.has(spec.id) ? 'open' : '';
-        html.push(`<div class="node ${open}" data-id="${esc(spec.id)}">
-          <div class="node-row ${state.selected===spec.id?'selected':''}" data-id="${esc(spec.id)}" style="padding-left:18px">
-            <span class="twisty">${scenarios.length ? (open ? '▾' : '▸') : '·'}</span>${svgIcon(spec.verdict)}<span class="label">${esc(spec.heading)}</span>
-          </div><div class="children">`);
-        scenarios.forEach(scn => {
-          html.push(`<div class="node-row ${state.selected===scn.id?'selected':''}" data-id="${esc(scn.id)}" style="padding-left:36px">
-            <span class="twisty"></span>${svgIcon(scn.verdict)}<span class="label">${esc(scn.heading)}</span>
-          </div>`);
-        });
-        html.push('</div></div>');
-      });
-      html.push('</div></div>');
-      $('tree').innerHTML = html.join('');
+      subtreeVisible(forest);
+      forest.visibleChildren = (forest.children || []).filter(subtreeVisible);
+      $('tree').innerHTML = `<ul>${renderNode(forest)}</ul>`;
     }
-    function findNode(id) {
-      if (id === 'suite') return { kind: 'suite', report };
-      for (const spec of report.specs || []) {
-        if (spec.id === id) return { kind: 'spec', spec };
-        for (const scn of spec.scenarios || []) {
-          if (scn.id === id) return { kind: 'scenario', spec, scn };
+    function ancestorsOf(id) {
+      const ids = ['suite'];
+      const node = index.nodes[id];
+      if (!node || !node.crumbs) return ids;
+      node.crumbs.forEach(c => ids.push(c.id));
+      return ids;
+    }
+    function select(id, opts) {
+      if (!index.nodes[id]) id = 'suite';
+      state.selected = id;
+      ancestorsOf(id).forEach(a => state.open.add(a));
+      renderTree();
+      renderContent();
+      if (opts && opts.scrollStep) {
+        const row = document.querySelector(`tr[data-step-id="${CSS.escape(id)}"]`);
+        if (row) {
+          row.classList.add('flash');
+          row.scrollIntoView({ block: 'center' });
+          setTimeout(() => row.classList.remove('flash'), 1200);
         }
       }
-      return { kind: 'suite', report };
+    }
+    function crumbHtml(node) {
+      const crumbs = (node && node.crumbs) || [{ id: 'suite', label: report.projectName }];
+      return `<div class="crumb">${crumbs.map((c, i) => `${i ? '<span class="sep">/</span>' : ''}<button type="button" data-id="${esc(c.id)}">${esc(c.label)}</button>`).join('')}</div>`;
     }
     function hookBlock(h) {
       if (!h) return '';
@@ -311,74 +482,97 @@
       }
       return esc(step.actualText || step.parsedText || '');
     }
-    function flattenSteps(items, depth, rows) {
-      (items || []).forEach(item => {
+    function flattenSteps(items, depth, rows, lastFlags) {
+      const list = items || [];
+      list.forEach((item, i) => {
+        const last = i === list.length - 1;
+        const flags = lastFlags.concat([last]);
         if (item.kind === 'comment') {
-          rows.push({ type: 'Comment', depth, text: esc(item.comment), verdict: 'none', duration: '', extra: '' });
+          rows.push({ id: item.id, type: 'Comment', depth, lastFlags: flags, text: esc(item.comment), verdict: 'none', duration: '', extra: '', expandable: false });
           return;
         }
         if (item.kind === 'step' && item.step) {
-          rows.push(stepRow('Step', item.step, depth));
+          rows.push(Object.assign(stepRow('Step', item.step, depth, item.id), { lastFlags: flags, expandable: false }));
           return;
         }
         if (item.kind === 'concept' && item.concept) {
-          if (item.concept.step) rows.push(stepRow('Concept', item.concept.step, depth));
-          flattenSteps(item.concept.items, depth + 1, rows);
+          const collapsed = state.collapsed.has(item.id);
+          rows.push(Object.assign(stepRow('Concept', item.concept.step, depth, item.id), { lastFlags: flags, expandable: true, collapsed, childCount: (item.concept.items || []).length }));
+          if (!collapsed) flattenSteps(item.concept.items, depth + 1, rows, flags);
         }
       });
     }
-    function stepRow(type, step, depth) {
+    function stepRow(type, step, depth, id) {
       const extra = [
-        step.errorMessage ? `<div class="err">${esc(step.errorMessage)}</div>` : '',
-        step.skippedReason ? `<div class="msg">Skipped: ${esc(step.skippedReason)}</div>` : '',
-        (step.messages || []).map(m => `<div class="msg">${esc(m)}</div>`).join(''),
-        step.stackTrace ? `<pre class="stack">${esc(step.stackTrace)}</pre>` : '',
-        hookBlock(step.preHookFailure),
-        hookBlock(step.postHookFailure),
-        shotList([step.failureScreenshot].concat(step.screenshots || []).concat(step.preHookScreenshots || []).concat(step.postHookScreenshots || []))
+        step && step.errorMessage ? `<div class="err">${esc(step.errorMessage)}</div>` : '',
+        step && step.skippedReason ? `<div class="msg">Skipped: ${esc(step.skippedReason)}</div>` : '',
+        ((step && step.messages) || []).map(m => `<div class="msg">${esc(m)}</div>`).join(''),
+        step && step.stackTrace ? `<pre class="stack">${esc(step.stackTrace)}</pre>` : '',
+        step ? hookBlock(step.preHookFailure) : '',
+        step ? hookBlock(step.postHookFailure) : '',
+        step ? shotList([step.failureScreenshot].concat(step.screenshots || []).concat(step.preHookScreenshots || []).concat(step.postHookScreenshots || [])) : ''
       ].join('');
-      return { type, depth, text: `<span class="step-text">${stepText(step)}</span>`, verdict: step.verdict, duration: step.duration, extra };
+      return { id, type, depth, text: `<span class="step-text">${stepText(step)}</span>`, verdict: (step && step.verdict) || 'none', duration: (step && step.duration) || '', extra };
     }
-    function stepsTable(scn) {
+    function guideHtml(row) {
+      const parts = [];
+      (row.lastFlags || []).forEach((last, i) => {
+        const isLeaf = i === row.lastFlags.length - 1;
+        if (!isLeaf) parts.push(last ? '&nbsp;&nbsp;' : '│ ');
+        else parts.push(last ? '└─' : '├─');
+      });
+      let twisty = '';
+      if (row.expandable) twisty = `<span class="twisty" data-toggle="${esc(row.id)}">${row.collapsed ? '▸' : '▾'}</span>`;
+      else if (row.depth) twisty = `<span class="twisty empty">·</span>`;
+      return `<span class="guides">${parts.join('')}</span>${twisty}`;
+    }
+    function stepsTable(items, title, hint) {
       const rows = [];
-      flattenSteps(scn.items, 0, rows);
-      if (!rows.length) return `<div class="empty">No test steps</div>`;
-      return `<table class="grid"><thead><tr><th>#</th><th>Type</th><th>Description</th><th>Verdict</th><th>Duration</th></tr></thead><tbody>${
-        rows.map((r, i) => `<tr class="indent-${Math.min(r.depth,3)}"><td>${i+1}</td><td>${esc(r.type)}</td><td>${r.text}${r.extra}</td><td>${badge(r.verdict)}</td><td>${esc(r.duration)}</td></tr>`).join('')
-      }</tbody></table>`;
+      flattenSteps(items, 0, rows, []);
+      if (!rows.length) return '';
+      return `<div class="section">${esc(title)}${hint ? `<span class="hint">${esc(hint)}</span>` : ''}</div>
+        <table class="grid"><thead><tr><th>#</th><th>Hierarchy</th><th>Type</th><th>Description</th><th>Verdict</th><th>Duration</th></tr></thead><tbody>${
+          rows.map((r, i) => `<tr data-step-id="${esc(r.id || '')}"><td>${i+1}</td><td class="tree-cell">${guideHtml(r)}</td><td>${esc(r.type)}</td><td>${r.text}${r.extra}</td><td>${badge(r.verdict)}</td><td>${esc(r.duration)}</td></tr>`).join('')
+        }</tbody></table>`;
     }
-    function renderSuite() {
-      const s = report.summary;
+    function collectFolderSpecs(node, out) {
+      (node.children || []).forEach(ch => {
+        if (ch.kind === 'spec') out.push(ch.spec);
+        if (ch.kind === 'folder') collectFolderSpecs(ch, out);
+      });
+      return out;
+    }
+    function renderSuiteLike(node, specs) {
+      const s = node.count || report.summary.scenarios;
       return `
-        <div class="crumb">Test Configuration</div>
-        <div class="head"><div><h2>${esc(report.projectName)}</h2><div class="meta">${esc(report.timestamp)} · ${esc(report.duration)}</div></div>${badge(report.verdict)}</div>
-        <table class="kv">
+        ${crumbHtml(node)}
+        <div class="head"><div><h2>${esc(node.label)}</h2><div class="meta">${node.kind === 'suite' ? `${esc(report.timestamp)} · ${esc(report.duration)}` : esc(node.path || node.label)}</div></div>${badge(node.verdict)}</div>
+        ${node.kind === 'suite' ? `<table class="kv">
           <tr><th>Environment</th><td>${esc(report.environment || '-')}</td></tr>
           <tr><th>Tags</th><td>${esc(report.tags || '-')}</td></tr>
           <tr><th>Success rate</th><td>${Number(report.successRate || 0).toFixed(2)}%</td></tr>
           <tr><th>Started</th><td>${esc(report.timestampISO || report.timestamp)}</td></tr>
-        </table>
+        </table>` : ''}
         <div class="stats">
-          ${statCard('Specifications', s.specs)}
-          ${statCard('Test Cases', s.scenarios)}
-          ${statCard('Test Steps', s.steps)}
+          ${node.kind === 'suite' ? statCard('Specifications', report.summary.specs) : ''}
+          ${statCard('Test Cases', s)}
+          ${node.kind === 'suite' ? statCard('Test Steps', report.summary.steps) : ''}
         </div>
-        ${hookBlock(report.preHookFailure)}${hookBlock(report.postHookFailure)}
-        ${(report.preHookMessages||[]).concat(report.postHookMessages||[]).map(m => `<div class="msg">${esc(m)}</div>`).join('')}
-        ${shotList((report.preHookScreenshots||[]).concat(report.postHookScreenshots||[]))}
+        ${node.kind === 'suite' ? hookBlock(report.preHookFailure) + hookBlock(report.postHookFailure) : ''}
         <div class="section">Specifications</div>
-        <table class="grid"><thead><tr><th>Name</th><th>File</th><th>Cases</th><th>Verdict</th><th>Duration</th></tr></thead>
-        <tbody>${(report.specs||[]).map(spec => `<tr class="clickable" data-id="${esc(spec.id)}"><td>${esc(spec.heading)}</td><td>${esc(spec.fileName)}</td><td>${spec.summary.passed}/${spec.summary.total}</td><td>${badge(spec.verdict)}</td><td>${esc(spec.duration)}</td></tr>`).join('')}</tbody></table>`;
+        <table class="grid"><thead><tr><th>Name</th><th>Path</th><th>Cases</th><th>Verdict</th><th>Duration</th></tr></thead>
+        <tbody>${specs.map(spec => `<tr class="clickable" data-id="${esc(spec.id)}"><td>${esc(spec.heading)}</td><td>${esc((spec.folders||[]).concat([spec.heading]).join(' / '))}</td><td>${spec.summary.passed}/${spec.summary.total}</td><td>${badge(spec.verdict)}</td><td>${esc(spec.duration)}</td></tr>`).join('')}</tbody></table>`;
     }
     function statCard(title, c) {
-      c = c || { total: 0, passed: 0, failed: 0, skipped: 0 };
+      c = c || emptyCounts();
       return `<div class="card"><h3>${esc(title)}</h3>
         <div class="nums"><span>${c.total} total</span><span style="color:var(--pass)">${c.passed} pass</span><span style="color:var(--fail)">${c.failed} fail</span><span style="color:var(--skip)">${c.skipped} skip</span></div>
         ${countBar(c)}</div>`;
     }
     function renderSpec(spec) {
+      const node = index.nodes[spec.id];
       return `
-        <div class="crumb">${esc(report.projectName)} / ${esc(spec.heading)}</div>
+        ${crumbHtml(node)}
         <div class="head"><div><h2>${esc(spec.heading)}</h2><div class="meta">${esc(spec.fileName)} · ${esc(spec.duration)}</div>${tags(spec.tags)}</div>${badge(spec.verdict)}</div>
         ${statCard('Test Cases', spec.summary)}
         ${(spec.errors||[]).map(e => `<div class="err">${esc(e.type)}: ${esc(e.fileName)}:${e.lineNumber} ${esc(e.message)}</div>`).join('')}
@@ -389,33 +583,60 @@
         <tbody>${(spec.scenarios||[]).map(scn => `<tr class="clickable" data-id="${esc(scn.id)}"><td>${esc(scn.heading)}</td><td>${tags(scn.tags)}</td><td>${badge(scn.verdict)}</td><td>${esc(scn.duration)}</td></tr>`).join('')}</tbody></table>`;
     }
     function renderScenario(spec, scn) {
+      const node = index.nodes[scn.id];
       return `
-        <div class="crumb">${esc(report.projectName)} / ${esc(spec.heading)} / ${esc(scn.heading)}</div>
+        ${crumbHtml(node)}
         <div class="head"><div><h2>${esc(scn.heading)}</h2><div class="meta">${esc(scn.duration)}${scn.retriesCount ? ' · retries ' + scn.retriesCount : ''}</div>${tags(scn.tags)}</div>${badge(scn.verdict)}</div>
         ${hookBlock(scn.preHookFailure)}${hookBlock(scn.postHookFailure)}
         ${(scn.skipErrors||[]).map(e => `<div class="msg">${esc(e)}</div>`).join('')}
         ${scn.scenarioDataTable ? `<div class="section">Scenario Data Table</div>${dataTable(scn.scenarioDataTable)}` : ''}
-        <div class="section">Test Steps</div>
-        ${stepsTable(scn)}`;
+        ${stepsTable(scn.contexts, 'Context', 'before scenario')}
+        ${stepsTable(scn.items, 'Test Steps', 'scenario body')}
+        ${stepsTable(scn.teardowns, 'Teardown', 'after scenario')}
+        ${!(scn.contexts||[]).length && !(scn.items||[]).length && !(scn.teardowns||[]).length ? '<div class="empty">No test steps</div>' : ''}`;
+    }
+    function renderPhase(node) {
+      const spec = findSpecFor(node);
+      const scn = findScenarioFor(node);
+      if (scn) return renderScenario(spec, scn);
+      return renderSuiteLike(forest, report.specs || []);
+    }
+    function findSpecFor(node) {
+      if (node.spec) return node.spec;
+      const specCrumb = (node.crumbs || []).map(c => index.nodes[c.id]).find(n => n && n.kind === 'spec');
+      return specCrumb && specCrumb.spec;
+    }
+    function findScenarioFor(node) {
+      if (node.scn) return node.scn;
+      const scnCrumb = (node.crumbs || []).map(c => index.nodes[c.id]).find(n => n && n.kind === 'scenario');
+      return scnCrumb && scnCrumb.scn;
     }
     function renderContent() {
-      const node = findNode(state.selected);
+      const node = index.nodes[state.selected] || forest;
       let html = '';
       if (node.kind === 'spec') html = renderSpec(node.spec);
       else if (node.kind === 'scenario') html = renderScenario(node.spec, node.scn);
-      else html = renderSuite();
+      else if (node.kind === 'phase' || node.kind === 'item') {
+        const spec = findSpecFor(node);
+        const scn = findScenarioFor(node);
+        html = scn ? renderScenario(spec, scn) : renderSuiteLike(forest, report.specs || []);
+      } else if (node.kind === 'folder') html = renderSuiteLike(node, collectFolderSpecs(node, []));
+      else html = renderSuiteLike(forest, report.specs || []);
       $('content').innerHTML = html;
-      $('status-left').textContent = node.kind === 'scenario' ? node.scn.heading : node.kind === 'spec' ? node.spec.heading : report.projectName;
+      $('status-left').textContent = node.label;
       const s = report.summary;
       $('status-right').textContent = `Specs ${s.specs.passed}/${s.specs.total} · Cases ${s.scenarios.passed}/${s.scenarios.total} · Steps ${s.steps.passed}/${s.steps.total} · ${report.duration}`;
+      if (node.kind === 'item' || node.kind === 'phase') {
+        const row = document.querySelector(`tr[data-step-id="${CSS.escape(node.id)}"]`);
+        if (row) { row.classList.add('flash'); row.scrollIntoView({ block: 'center' }); }
+      }
     }
-    function select(id) {
-      state.selected = id;
-      const parts = id.split('-scn-')[0];
-      if (parts && parts !== 'suite') state.open.add(parts);
-      state.open.add('suite');
-      renderTree();
-      renderContent();
+    function collectExpandIds(node, into, untilKind) {
+      into.add(node.id);
+      (node.children || []).forEach(ch => {
+        if (untilKind && ch.kind === untilKind) { into.add(ch.id); return; }
+        collectExpandIds(ch, into, untilKind);
+      });
     }
     $('tree').addEventListener('click', (e) => {
       const row = e.target.closest('.node-row');
@@ -426,9 +647,19 @@
         renderTree();
         return;
       }
-      select(id);
+      const node = index.nodes[id];
+      select(id, { scrollStep: node && (node.kind === 'item' || node.kind === 'phase') });
     });
     $('content').addEventListener('click', (e) => {
+      const toggle = e.target.closest('[data-toggle]');
+      if (toggle) {
+        const id = toggle.getAttribute('data-toggle');
+        if (state.collapsed.has(id)) state.collapsed.delete(id); else state.collapsed.add(id);
+        renderContent();
+        return;
+      }
+      const crumb = e.target.closest('.crumb button[data-id]');
+      if (crumb) { select(crumb.getAttribute('data-id')); return; }
       const row = e.target.closest('tr.clickable');
       if (row && row.dataset.id) select(row.dataset.id);
     });
@@ -441,14 +672,28 @@
     });
     $('search').addEventListener('input', (e) => { state.query = e.target.value; renderTree(); });
     $('expand-all').addEventListener('click', () => {
-      state.open = new Set(['suite', ...(report.specs || []).map(s => s.id)]);
+      const ids = new Set();
+      collectExpandIds(forest, ids, 'scenario');
+      state.open = ids;
       renderTree();
     });
-    $('collapse-all').addEventListener('click', () => {
-      state.open = new Set();
-      renderTree();
-    });
+    $('collapse-all').addEventListener('click', () => { state.open = new Set(); renderTree(); });
     $('print').addEventListener('click', () => window.print());
+    (function splitter() {
+      const el = $('splitter');
+      let start = 0, width = 0, dragging = false;
+      el.addEventListener('mousedown', (e) => {
+        dragging = true; start = e.clientX; width = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tree-w'), 10) || 340;
+        el.classList.add('drag');
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const next = Math.max(220, Math.min(560, width + e.clientX - start));
+        document.documentElement.style.setProperty('--tree-w', next + 'px');
+      });
+      window.addEventListener('mouseup', () => { dragging = false; el.classList.remove('drag'); });
+    })();
     document.title = 'Test Report Viewer - ' + (report.projectName || 'report');
     $('title-file').textContent = '— ' + (report.projectName || '');
     renderTree();

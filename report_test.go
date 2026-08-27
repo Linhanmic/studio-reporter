@@ -31,7 +31,7 @@ func sampleSuite() *gauge_messages.ProtoSuiteResult {
 				ScenarioSkippedCount: 0,
 				ProtoSpec: &gauge_messages.ProtoSpec{
 					SpecHeading: "Login",
-					FileName:    "specs/login.spec",
+					FileName:    "specs/auth/login.spec",
 					Tags:        []string{"auth"},
 					Items: []*gauge_messages.ProtoItem{
 						{
@@ -41,6 +41,30 @@ func sampleSuite() *gauge_messages.ProtoSuiteResult {
 								Tags:            []string{"happy-path"},
 								ExecutionTime:   250,
 								ExecutionStatus: gauge_messages.ExecutionStatus_PASSED,
+								Contexts: []*gauge_messages.ProtoItem{
+									{
+										ItemType: gauge_messages.ProtoItem_Step,
+										Step: &gauge_messages.ProtoStep{
+											ActualText: "Open browser",
+											ParsedText: "Open browser",
+											StepExecutionResult: &gauge_messages.ProtoStepExecutionResult{
+												ExecutionResult: &gauge_messages.ProtoExecutionResult{Failed: false, ExecutionTime: 20},
+											},
+										},
+									},
+								},
+								TearDownSteps: []*gauge_messages.ProtoItem{
+									{
+										ItemType: gauge_messages.ProtoItem_Step,
+										Step: &gauge_messages.ProtoStep{
+											ActualText: "Close browser",
+											ParsedText: "Close browser",
+											StepExecutionResult: &gauge_messages.ProtoStepExecutionResult{
+												ExecutionResult: &gauge_messages.ProtoExecutionResult{Failed: false, ExecutionTime: 15},
+											},
+										},
+									},
+								},
 								ScenarioItems: []*gauge_messages.ProtoItem{
 									{
 										ItemType: gauge_messages.ProtoItem_Step,
@@ -220,15 +244,28 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	}
 
 	login := r.Specs[0]
-	if login.Heading != "Login" || login.Verdict != verdictPass || login.FileName != "specs/login.spec" {
+	if login.Heading != "Login" || login.Verdict != verdictPass || login.FileName != "specs/auth/login.spec" {
 		t.Fatalf("login spec = %+v", login)
+	}
+	if got := strings.Join(login.Folders, "/"); got != "specs/auth" {
+		t.Fatalf("folders = %v", login.Folders)
 	}
 	if len(login.Scenarios) != 1 || login.Scenarios[0].Heading != "Successful login" {
 		t.Fatalf("login scenarios = %+v", login.Scenarios)
 	}
-	items := login.Scenarios[0].Items
+	scn := login.Scenarios[0]
+	if len(scn.Contexts) != 1 || scn.Contexts[0].Step.ActualText != "Open browser" {
+		t.Fatalf("contexts = %+v", scn.Contexts)
+	}
+	if len(scn.Teardowns) != 1 || scn.Teardowns[0].Step.ActualText != "Close browser" {
+		t.Fatalf("teardowns = %+v", scn.Teardowns)
+	}
+	items := scn.Items
 	if len(items) != 2 || items[0].Kind != "step" || items[1].Kind != "concept" {
 		t.Fatalf("login items = %+v", items)
+	}
+	if items[0].ID == "" || items[1].ID == "" || items[1].Concept.Items[0].ID == "" {
+		t.Fatalf("item ids missing: %+v", items)
 	}
 	if items[0].Step.Fragments[1].Kind != "static" || items[0].Step.Fragments[1].Text != "admin" {
 		t.Fatalf("fragments = %+v", items[0].Step.Fragments)
@@ -253,6 +290,18 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	}
 	if r.Specs[2].Verdict != verdictSkip || r.Specs[2].Errors[0].Message != "missing step" {
 		t.Fatalf("skipped spec = %+v", r.Specs[2])
+	}
+}
+
+func TestSpecFolders(t *testing.T) {
+	if got := specFolders("specs/auth/login.spec"); strings.Join(got, "/") != "specs/auth" {
+		t.Fatalf("nested = %v", got)
+	}
+	if got := specFolders("login.spec"); len(got) != 0 {
+		t.Fatalf("root file = %v", got)
+	}
+	if got := specFolders(`specs\win.spec`); strings.Join(got, "/") != "specs" {
+		t.Fatalf("backslash = %v", got)
 	}
 }
 
@@ -295,6 +344,11 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"Successful login",
 		"insufficient funds",
 		"Checkout",
+		"specs/auth",
+		"Context",
+		"Teardown",
+		"Hierarchy",
+		`"folders":["specs","auth"]`,
 		`"verdict":"fail"`,
 	} {
 		if !strings.Contains(html, want) {

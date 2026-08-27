@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -70,6 +71,7 @@ type SpecReport struct {
 	ID                  string           `json:"id"`
 	Heading             string           `json:"heading"`
 	FileName            string           `json:"fileName"`
+	Folders             []string         `json:"folders,omitempty"`
 	Tags                []string         `json:"tags,omitempty"`
 	ExecutionTime       int64            `json:"executionTime"`
 	Duration            string           `json:"duration"`
@@ -96,7 +98,9 @@ type ScenarioReport struct {
 	Verdict               string       `json:"verdict"`
 	TableRowIndex         int          `json:"tableRowIndex"`
 	RetriesCount          int64        `json:"retriesCount,omitempty"`
+	Contexts              []ItemReport `json:"contexts,omitempty"`
 	Items                 []ItemReport `json:"items"`
+	Teardowns             []ItemReport `json:"teardowns,omitempty"`
 	SkipErrors            []string     `json:"skipErrors,omitempty"`
 	PreHookFailure        *HookFailure `json:"preHookFailure,omitempty"`
 	PostHookFailure       *HookFailure `json:"postHookFailure,omitempty"`
@@ -110,6 +114,7 @@ type ScenarioReport struct {
 }
 
 type ItemReport struct {
+	ID      string         `json:"id"`
 	Kind    string         `json:"kind"`
 	Step    *StepReport    `json:"step,omitempty"`
 	Concept *ConceptReport `json:"concept,omitempty"`
@@ -309,7 +314,7 @@ func toReport(psr *gauge_messages.ProtoSuiteResult) *Report {
 		report.Summary.Scenarios.Skipped += spec.Summary.Skipped
 		report.Summary.Scenarios.Total += spec.Summary.Total
 		for _, scn := range spec.Scenarios {
-			stepCounts := countItems(scn.Items)
+			stepCounts := countItems(scenarioAllItems(&scn))
 			report.Summary.Steps.Passed += stepCounts.Passed
 			report.Summary.Steps.Failed += stepCounts.Failed
 			report.Summary.Steps.Skipped += stepCounts.Skipped
@@ -329,6 +334,7 @@ func toSpecReport(id string, res *gauge_messages.ProtoSpecResult) SpecReport {
 		ID:                  id,
 		Heading:             heading,
 		FileName:            spec.GetFileName(),
+		Folders:             specFolders(spec.GetFileName()),
 		Tags:                spec.GetTags(),
 		ExecutionTime:       res.GetExecutionTime(),
 		Duration:            formatDuration(res.GetExecutionTime()),
@@ -380,10 +386,6 @@ func toSpecReport(id string, res *gauge_messages.ProtoSpecResult) SpecReport {
 }
 
 func toScenarioReport(id string, scn *gauge_messages.ProtoScenario, tableRowIndex int, td *gauge_messages.ProtoTableDrivenScenario) ScenarioReport {
-	items := make([]ItemReport, 0)
-	items = append(items, toItemReports(scn.GetContexts())...)
-	items = append(items, toItemReports(scn.GetScenarioItems())...)
-	items = append(items, toItemReports(scn.GetTearDownSteps())...)
 	out := ScenarioReport{
 		ID:                  id,
 		Heading:             scn.GetScenarioHeading(),
@@ -393,7 +395,9 @@ func toScenarioReport(id string, scn *gauge_messages.ProtoScenario, tableRowInde
 		Verdict:             scenarioVerdict(scn),
 		TableRowIndex:       tableRowIndex,
 		RetriesCount:        scn.GetRetriesCount(),
-		Items:               items,
+		Contexts:            toItemReports(id+"-ctx", scn.GetContexts()),
+		Items:               toItemReports(id+"-i", scn.GetScenarioItems()),
+		Teardowns:           toItemReports(id+"-td", scn.GetTearDownSteps()),
 		SkipErrors:          scn.GetSkipErrors(),
 		PreHookFailure:      toHookFailure(scn.GetPreHookFailure(), "Before Scenario"),
 		PostHookFailure:     toHookFailure(scn.GetPostHookFailure(), "After Scenario"),
@@ -410,32 +414,34 @@ func toScenarioReport(id string, scn *gauge_messages.ProtoScenario, tableRowInde
 	return out
 }
 
-func toItemReports(items []*gauge_messages.ProtoItem) []ItemReport {
+func toItemReports(prefix string, items []*gauge_messages.ProtoItem) []ItemReport {
 	out := make([]ItemReport, 0, len(items))
-	for _, item := range items {
+	for i, item := range items {
+		id := fmt.Sprintf("%s-%d", prefix, i)
 		switch item.GetItemType() {
 		case gauge_messages.ProtoItem_Step:
-			out = append(out, ItemReport{Kind: "step", Step: toStepReport(item.GetStep())})
+			out = append(out, ItemReport{ID: id, Kind: "step", Step: toStepReport(item.GetStep())})
 		case gauge_messages.ProtoItem_Concept:
-			out = append(out, ItemReport{Kind: "concept", Concept: toConceptReport(item.GetConcept())})
+			c := toConceptReport(id, item.GetConcept())
+			out = append(out, ItemReport{ID: id, Kind: "concept", Concept: c})
 		case gauge_messages.ProtoItem_Comment:
 			text := strings.TrimSpace(item.GetComment().GetText())
 			if text != "" {
-				out = append(out, ItemReport{Kind: "comment", Comment: text})
+				out = append(out, ItemReport{ID: id, Kind: "comment", Comment: text})
 			}
 		}
 	}
 	return out
 }
 
-func toConceptReport(c *gauge_messages.ProtoConcept) *ConceptReport {
+func toConceptReport(id string, c *gauge_messages.ProtoConcept) *ConceptReport {
 	step := c.GetConceptStep()
 	if step != nil && c.GetConceptExecutionResult() != nil {
 		step.StepExecutionResult = c.GetConceptExecutionResult()
 	}
 	return &ConceptReport{
 		Step:  toStepReport(step),
-		Items: toItemReports(c.GetSteps()),
+		Items: toItemReports(id, c.GetSteps()),
 	}
 }
 
@@ -588,6 +594,38 @@ func stepVerdict(res *gauge_messages.ProtoStepExecutionResult) string {
 	return verdictPass
 }
 
+func specFolders(fileName string) []string {
+	cleaned := strings.ReplaceAll(filepath.ToSlash(strings.TrimSpace(fileName)), "\\", "/")
+	if cleaned == "" {
+		return nil
+	}
+	dir := path.Dir(cleaned)
+	if dir == "." || dir == "/" || dir == "" {
+		return nil
+	}
+	dir = strings.Trim(dir, "/")
+	if dir == "" {
+		return nil
+	}
+	parts := strings.Split(dir, "/")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p == "" || p == "." {
+			continue
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+func scenarioAllItems(scn *ScenarioReport) []ItemReport {
+	out := make([]ItemReport, 0, len(scn.Contexts)+len(scn.Items)+len(scn.Teardowns))
+	out = append(out, scn.Contexts...)
+	out = append(out, scn.Items...)
+	out = append(out, scn.Teardowns...)
+	return out
+}
+
 func addCounts(c *Counts, verdict string) {
 	c.Total++
 	switch verdict {
@@ -721,7 +759,9 @@ func collectScenarioScreenshots(scn *ScenarioReport, add func(...string)) {
 			}
 		}
 	}
+	walk(scn.Contexts)
 	walk(scn.Items)
+	walk(scn.Teardowns)
 }
 
 func collectStepScreenshots(step *StepReport, add func(...string)) {
@@ -840,7 +880,9 @@ func rewriteScenarioScreenshots(scn *ScenarioReport, mapList func([]string) []st
 			}
 		}
 	}
+	walk(scn.Contexts)
 	walk(scn.Items)
+	walk(scn.Teardowns)
 }
 
 func rewriteStepScreenshots(step *StepReport, mapList func([]string) []string, mapHook func(*HookFailure)) {
