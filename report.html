@@ -85,7 +85,7 @@
     }
     .node-row {
       display: flex; align-items: center; gap: 5px; padding: 2px 6px 2px 2px;
-      cursor: pointer; border-radius: 3px; min-height: 22px;
+      cursor: pointer; border-radius: 3px; min-height: 22px; white-space: nowrap;
     }
     .node-row:hover { background: #f0f7fb; }
     .node-row.selected { background: var(--sel); }
@@ -149,9 +149,15 @@
     .err { color: var(--fail); white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
     .msg { color: var(--muted); white-space: pre-wrap; }
     .stack { white-space: pre-wrap; font-family: var(--mono); font-size: 11px; background: #f7fafc; border: 1px solid var(--line); padding: 8px; overflow: auto; }
-    .tree-cell { display: flex; align-items: flex-start; gap: 6px; min-width: 220px; }
-    .guides { display: inline-flex; align-items: center; font-family: var(--mono); color: var(--guide); letter-spacing: -1px; user-select: none; }
-    .guides .twisty { cursor: pointer; color: var(--muted); }
+    .tree-cell { display: flex; align-items: stretch; gap: 4px; min-width: 72px; }
+    .guides { display: inline-flex; align-items: stretch; height: 22px; }
+    .guides i { position: relative; width: 14px; flex: 0 0 14px; }
+    .g-bar::before, .g-mid::before { content: ""; position: absolute; left: 6px; top: 0; bottom: 0; border-left: 1px solid var(--guide); }
+    .g-mid::after, .g-end::after { content: ""; position: absolute; left: 6px; top: 11px; width: 8px; border-top: 1px solid var(--guide); }
+    .g-end::before { content: ""; position: absolute; left: 6px; top: 0; height: 12px; border-left: 1px solid var(--guide); }
+    .guides .twisty { cursor: pointer; color: var(--muted); width: 14px; }
+    tr.row-concept { background: #f3f7fb; }
+    tr.depth-1 td.desc, tr.depth-2 td.desc, tr.depth-3 td.desc { box-shadow: inset 2px 0 0 var(--guide); }
     .shots { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
     .shots img { max-width: 240px; max-height: 160px; border: 1px solid var(--line); background: #fff; }
     .tags { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -515,16 +521,19 @@
       return { id, type, depth, text: `<span class="step-text">${stepText(step)}</span>`, verdict: (step && step.verdict) || 'none', duration: (step && step.duration) || '', extra };
     }
     function guideHtml(row) {
-      const parts = [];
-      (row.lastFlags || []).forEach((last, i) => {
-        const isLeaf = i === row.lastFlags.length - 1;
-        if (!isLeaf) parts.push(last ? '&nbsp;&nbsp;' : '│ ');
-        else parts.push(last ? '└─' : '├─');
+      const flags = row.lastFlags || [];
+      let html = '<span class="guides">';
+      flags.forEach((last, i) => {
+        const isLeaf = i === flags.length - 1;
+        let cls = 'g-pad';
+        if (!isLeaf) cls = last ? 'g-pad' : 'g-bar';
+        else cls = last ? 'g-end' : 'g-mid';
+        html += `<i class="${cls}"></i>`;
       });
-      let twisty = '';
-      if (row.expandable) twisty = `<span class="twisty" data-toggle="${esc(row.id)}">${row.collapsed ? '▸' : '▾'}</span>`;
-      else if (row.depth) twisty = `<span class="twisty empty">·</span>`;
-      return `<span class="guides">${parts.join('')}</span>${twisty}`;
+      html += '</span>';
+      if (row.expandable) html += `<span class="twisty" data-toggle="${esc(row.id)}">${row.collapsed ? '▸' : '▾'}</span>`;
+      else if (row.depth) html += `<span class="twisty empty">·</span>`;
+      return html;
     }
     function stepsTable(items, title, hint) {
       const rows = [];
@@ -532,7 +541,7 @@
       if (!rows.length) return '';
       return `<div class="section">${esc(title)}${hint ? `<span class="hint">${esc(hint)}</span>` : ''}</div>
         <table class="grid"><thead><tr><th>#</th><th>Hierarchy</th><th>Type</th><th>Description</th><th>Verdict</th><th>Duration</th></tr></thead><tbody>${
-          rows.map((r, i) => `<tr data-step-id="${esc(r.id || '')}"><td>${i+1}</td><td class="tree-cell">${guideHtml(r)}</td><td>${esc(r.type)}</td><td>${r.text}${r.extra}</td><td>${badge(r.verdict)}</td><td>${esc(r.duration)}</td></tr>`).join('')
+          rows.map((r, i) => `<tr class="depth-${r.depth} row-${esc(r.type.toLowerCase())}" data-step-id="${esc(r.id || '')}"><td>${i+1}</td><td class="tree-cell">${guideHtml(r)}</td><td>${esc(r.type)}</td><td class="desc">${r.text}${r.extra}</td><td>${badge(r.verdict)}</td><td>${esc(r.duration)}</td></tr>`).join('')
         }</tbody></table>`;
     }
     function collectFolderSpecs(node, out) {
