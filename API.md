@@ -326,19 +326,22 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
 
 ## HTML Report
 
-On `SuiteResult`, the plugin generates a local HTML report with Vue 3 and Element Plus:
+On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Element Plus, and Pinia:
 
 - Top title bar, summary cards, and verdict filter toolbar
 - Left **script tree** (`el-tree`): suite → folders → specs → scenarios → context / steps / concepts
-- Main **expandable tables** (`el-table` expand rows): spec → scenario → steps / concepts
+- Main **compact expandable tables** (`el-table` expand rows): spec → scenario → steps / concepts
+- Passed rows green, failed rows red
 - Runtime on every spec, scenario, concept, and step
-- Color-coded verdicts: pass (green), fail (red), skip (grey)
+- Live `report.json` updates while the suite runs; the open page applies them through Pinia without reload or scroll jump
 - Hook failures, screenshots, stack traces, and data tables
 
 Default output:
 
 ```
 reports/studio-report/index.html
+reports/studio-report/report.json
+reports/studio-report/report-live.js
 reports/studio-report/last_run_result.json
 reports/studio-report/images/
 reports/studio-report/assets/

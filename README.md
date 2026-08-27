@@ -89,10 +89,12 @@ When a suite finishes, the plugin writes a Vue 3 + Element Plus Test Report View
 The report includes:
 
 - Overall verdict, duration, environment, and success rate
-- Vue 3 + Element Plus UI
-- A script tree (`el-tree`) grouped by spec folders, with duration on every node
-- Expandable result tables (`el-table` expand rows): spec → scenario → context/steps/teardown → concept children
-- Runtime for every spec, scenario, concept, and step (concept time falls back to the sum of child steps when missing)
+- Vue 3 + Element Plus + Pinia UI
+- A compact script tree (`el-tree`) grouped by spec folders, with duration on every node
+- Slim expandable result tables (`el-table` expand rows): spec → scenario → context/steps/teardown → concept children
+- Passed rows in green and failed rows in red
+- Runtime for every spec, scenario, concept, and step
+- Live updates while the suite runs (`report.json`); the open page polls Pinia state in place (no reload, no scroll jump)
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 - Filter by verdict and search across specs, scenarios, and steps
 

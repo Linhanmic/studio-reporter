@@ -29,6 +29,8 @@ const (
 	reportFolderName    = "studio-report"
 	reportIndexFile     = "index.html"
 	reportJSONFile      = "last_run_result.json"
+	liveReportJSONFile  = "report.json"
+	liveReportJSFile    = "report-live.js"
 	reportTimeLayout    = "2006-01-02_15.04.05"
 )
 
@@ -276,6 +278,9 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 	if err := os.WriteFile(jsonPath, payload, 0o644); err != nil {
 		return nil, fmt.Errorf("write last_run_result.json: %w", err)
 	}
+	if err := writeLiveSnapshot(dir, &LiveSnapshot{Rev: time.Now().UnixNano(), Running: false, Report: report}); err != nil {
+		return nil, err
+	}
 
 	log.Printf("studio-reporter: HTML report written to %s", indexPath)
 	return &GeneratedReport{Dir: dir, IndexPath: indexPath, JSONPath: jsonPath}, nil
@@ -317,6 +322,60 @@ func shouldOverwriteReports() bool {
 	return v == "true" || v == "1" || v == "yes"
 }
 
+func specStableID(fileName string, fallbackIndex int) string {
+	f := filepath.ToSlash(strings.TrimSpace(fileName))
+	if f == "" || f == "." {
+		return fmt.Sprintf("spec-%d", fallbackIndex)
+	}
+	return "spec:" + f
+}
+
+func recountReport(r *Report) {
+	if r == nil {
+		return
+	}
+	r.Summary = ReportSummary{}
+	var totalTime int64
+	for i := range r.Specs {
+		spec := &r.Specs[i]
+		spec.Summary = Counts{}
+		totalTime += spec.ExecutionTime
+		for j := range spec.Scenarios {
+			addCounts(&spec.Summary, spec.Scenarios[j].Verdict)
+			stepCounts := countItems(scenarioAllItems(&spec.Scenarios[j]))
+			r.Summary.Steps.Passed += stepCounts.Passed
+			r.Summary.Steps.Failed += stepCounts.Failed
+			r.Summary.Steps.Skipped += stepCounts.Skipped
+			r.Summary.Steps.Total += stepCounts.Total
+		}
+		addCounts(&r.Summary.Specs, spec.Verdict)
+		r.Summary.Scenarios.Passed += spec.Summary.Passed
+		r.Summary.Scenarios.Failed += spec.Summary.Failed
+		r.Summary.Scenarios.Skipped += spec.Summary.Skipped
+		r.Summary.Scenarios.Total += spec.Summary.Total
+	}
+	r.Failed = r.Summary.Specs.Failed > 0
+	switch {
+	case r.Summary.Specs.Total == 0:
+		if r.Verdict == "" {
+			r.Verdict = verdictNone
+		}
+	case r.Summary.Specs.Failed > 0:
+		r.Verdict = verdictFail
+	case r.Summary.Specs.Skipped == r.Summary.Specs.Total:
+		r.Verdict = verdictSkip
+	default:
+		r.Verdict = verdictPass
+	}
+	if r.ExecutionTime == 0 && totalTime > 0 {
+		r.ExecutionTime = totalTime
+		r.Duration = formatDuration(totalTime)
+	}
+	if r.Summary.Specs.Total > 0 && r.SuccessRate == 0 {
+		r.SuccessRate = 100 * float32(r.Summary.Specs.Passed) / float32(r.Summary.Specs.Total)
+	}
+}
+
 func toReport(psr *gauge_messages.ProtoSuiteResult) *Report {
 	report := &Report{
 		ProjectName:         fallback(psr.GetProjectName(), "Gauge Suite"),
@@ -338,20 +397,20 @@ func toReport(psr *gauge_messages.ProtoSuiteResult) *Report {
 	}
 
 	for i, protoSpec := range psr.GetSpecResults() {
-		spec := toSpecReport(fmt.Sprintf("spec-%d", i), protoSpec)
-		report.Specs = append(report.Specs, spec)
-		addCounts(&report.Summary.Specs, spec.Verdict)
-		report.Summary.Scenarios.Passed += spec.Summary.Passed
-		report.Summary.Scenarios.Failed += spec.Summary.Failed
-		report.Summary.Scenarios.Skipped += spec.Summary.Skipped
-		report.Summary.Scenarios.Total += spec.Summary.Total
-		for _, scn := range spec.Scenarios {
-			stepCounts := countItems(scenarioAllItems(&scn))
-			report.Summary.Steps.Passed += stepCounts.Passed
-			report.Summary.Steps.Failed += stepCounts.Failed
-			report.Summary.Steps.Skipped += stepCounts.Skipped
-			report.Summary.Steps.Total += stepCounts.Total
+		fileName := ""
+		if protoSpec.GetProtoSpec() != nil {
+			fileName = protoSpec.GetProtoSpec().GetFileName()
 		}
+		spec := toSpecReport(specStableID(fileName, i), protoSpec)
+		report.Specs = append(report.Specs, spec)
+	}
+	recountReport(report)
+	if psr.GetExecutionTime() > 0 {
+		report.ExecutionTime = psr.GetExecutionTime()
+		report.Duration = formatDuration(psr.GetExecutionTime())
+	}
+	if psr.GetSuccessRate() > 0 {
+		report.SuccessRate = psr.GetSuccessRate()
 	}
 	return report
 }

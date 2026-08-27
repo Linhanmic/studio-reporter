@@ -386,6 +386,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"el-tree",
 		"运行时间",
 		"脚本",
+		"pinia",
+		"dense-table",
+		"row-pass",
+		"row-fail",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
@@ -397,6 +401,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		`"verdict":"fail"`,
 		"assets/vue.global.prod.js",
 		"assets/element-plus.full.min.js",
+		"assets/pinia.iife.prod.js",
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("generated HTML missing %q", want)
@@ -405,10 +410,13 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	if _, err := os.Stat(generated.JSONPath); err != nil {
 		t.Fatalf("json not written: %v", err)
 	}
-	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css"} {
+	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css", "pinia.iife.prod.js"} {
 		if _, err := os.Stat(filepath.Join(generated.Dir, "assets", asset)); err != nil {
 			t.Fatalf("asset %s missing: %v", asset, err)
 		}
+	}
+	if _, err := os.Stat(filepath.Join(generated.Dir, liveReportJSONFile)); err != nil {
+		t.Fatalf("live report.json missing: %v", err)
 	}
 
 	out := filepath.Join(dir, "regenerated")

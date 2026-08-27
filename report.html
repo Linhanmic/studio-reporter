@@ -11,63 +11,82 @@
       --header-2: #1f4668;
       --accent: #2b9ad4;
       --el-color-primary: #1f4668;
-      --pass: #2f855a;
+      --pass: #276749;
       --fail: #c53030;
       --skip: #718096;
+      --pass-row: #e6ffed;
+      --pass-row-hover: #c6f6d5;
+      --fail-row: #ffe8e8;
+      --fail-row-hover: #fed7d7;
+      --skip-row: #edf2f7;
     }
     html, body { margin: 0; height: 100%; background: #d9e2ec; }
     #app { height: 100%; }
     .app-shell { height: 100%; display: flex; flex-direction: column; }
     .app-header {
       background: linear-gradient(180deg, var(--header-2), var(--header));
-      color: #fff; padding: 10px 16px 12px; flex: 0 0 auto;
+      color: #fff; padding: 6px 12px 8px; flex: 0 0 auto;
     }
-    .app-header h1 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
-    .app-header .meta { color: #cfe8f7; font-size: 12px; margin-bottom: 10px; }
-    .stat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-    .stat-card { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 6px; padding: 8px 10px; }
-    .stat-card .label { font-size: 11px; color: #cfe8f7; text-transform: uppercase; letter-spacing: .04em; }
-    .stat-card .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
-    .stat-card .sub { font-size: 12px; color: #d6eaf8; margin-top: 2px; }
+    .app-header h1 { margin: 0 0 2px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .app-header .meta { color: #cfe8f7; font-size: 11px; margin-bottom: 6px; }
+    .stat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .stat-card { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 4px; padding: 4px 8px; }
+    .stat-card .label { font-size: 10px; color: #cfe8f7; text-transform: uppercase; letter-spacing: .04em; }
+    .stat-card .value { font-size: 15px; font-weight: 700; margin-top: 0; line-height: 1.2; }
+    .stat-card .sub { font-size: 11px; color: #d6eaf8; }
     .toolbar {
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-      padding: 8px 12px; background: #eef3f8; border-bottom: 1px solid #c5d0dc;
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      padding: 4px 8px; background: #eef3f8; border-bottom: 1px solid #c5d0dc;
     }
     .workspace { flex: 1; min-height: 0; display: flex; }
     .script-pane {
-      width: 340px; min-width: 240px; max-width: 48%;
+      width: 280px; min-width: 200px; max-width: 40%;
       border-right: 1px solid #c5d0dc; background: #fff; display: flex; flex-direction: column;
     }
     .pane-title {
-      padding: 8px 12px; font-size: 12px; font-weight: 700; color: #5a6a7a;
+      padding: 4px 8px; font-size: 11px; font-weight: 700; color: #5a6a7a;
       text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid #e2e8f0;
     }
-    .script-tree { flex: 1; overflow: auto; padding: 8px; }
-    .result-pane { flex: 1; min-width: 0; overflow: auto; background: #f7fafc; padding: 10px 12px 20px; }
-    .tree-node { display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%; padding-right: 4px; }
+    .script-tree { flex: 1; overflow: auto; padding: 4px 6px; }
+    .result-pane { flex: 1; min-width: 0; overflow: auto; background: #f7fafc; padding: 6px 8px 16px; }
+    .tree-node { display: flex; align-items: center; gap: 4px; min-width: 0; width: 100%; padding-right: 2px; font-size: 12px; line-height: 1.25; }
     .tree-node .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .tree-node .time { color: #5a6a7a; font-variant-numeric: tabular-nums; font-size: 11px; flex: 0 0 auto; }
-    .nested-block { padding: 8px 8px 12px 12px; background: #f8fafc; }
+    .tree-node .time { color: #5a6a7a; font-variant-numeric: tabular-nums; font-size: 10px; flex: 0 0 auto; }
+    .tree-pass .name { color: var(--pass); }
+    .tree-fail .name { color: var(--fail); font-weight: 650; }
+    .nested-block { padding: 2px 2px 4px 6px; background: #f8fafc; }
     .nested-block + .nested-block { padding-top: 0; }
-    .nested-title { font-size: 12px; color: #5a6a7a; margin: 0 0 6px; font-weight: 600; }
-    .name-cell { word-break: break-word; overflow-wrap: anywhere; }
+    .nested-title { font-size: 11px; color: #5a6a7a; margin: 0 0 3px; font-weight: 600; }
+    .name-cell { word-break: break-word; overflow-wrap: anywhere; line-height: 1.25; }
     .frag.static { color: #2b6cb0; font-weight: 650; }
     .frag.dynamic { color: #805ad5; font-weight: 650; }
     .frag.special { color: #c05621; }
-    .err { color: var(--fail); white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
-    .msg { color: #5a6a7a; white-space: pre-wrap; }
-    .stack { white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 11px; background: #fff; border: 1px solid #e2e8f0; padding: 8px; }
-    .shots { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-    .shots img { max-width: 240px; max-height: 160px; border: 1px solid #e2e8f0; }
+    .err { color: var(--fail); white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 11px; }
+    .msg { color: #5a6a7a; white-space: pre-wrap; font-size: 11px; }
+    .stack { white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 11px; background: #fff; border: 1px solid #e2e8f0; padding: 6px; }
+    .shots { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .shots img { max-width: 200px; max-height: 120px; border: 1px solid #e2e8f0; }
+    .dense-table.el-table { font-size: 12px; }
+    .dense-table.el-table th.el-table__cell { padding: 2px 4px; font-size: 11px; line-height: 1.2; }
+    .dense-table.el-table td.el-table__cell { padding: 1px 4px; }
+    .dense-table .el-table__expand-icon { height: 16px; }
+    .dense-table .el-tag { height: 18px; line-height: 16px; padding: 0 5px; }
     .el-table .no-expand .el-table__expand-icon { visibility: hidden; pointer-events: none; }
-    .row-fail { box-shadow: inset 3px 0 0 var(--fail); }
+    .el-table .row-pass > td.el-table__cell { background: var(--pass-row) !important; }
+    .el-table .row-fail > td.el-table__cell { background: var(--fail-row) !important; }
+    .el-table .row-skip > td.el-table__cell { background: var(--skip-row) !important; }
+    .el-table .row-pass:hover > td.el-table__cell { background: var(--pass-row-hover) !important; }
+    .el-table .row-fail:hover > td.el-table__cell { background: var(--fail-row-hover) !important; }
+    .el-table .row-fail { box-shadow: inset 3px 0 0 var(--fail); }
+    .el-table .row-pass { box-shadow: inset 3px 0 0 var(--pass); }
     .status {
       flex: 0 0 auto; background: #eef3f8; border-top: 1px solid #c5d0dc;
-      padding: 4px 12px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 12px;
+      padding: 2px 10px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 11px;
     }
+    .el-tree-node__content { height: 22px; }
     @media (max-width: 900px) {
       .workspace { flex-direction: column; }
-      .script-pane { width: 100%; max-width: none; height: 280px; border-right: 0; border-bottom: 1px solid #c5d0dc; }
+      .script-pane { width: 100%; max-width: none; height: 220px; border-right: 0; border-bottom: 1px solid #c5d0dc; }
       .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media print {
@@ -81,39 +100,43 @@
   <div id="app">
     <div class="app-shell">
       <header class="app-header">
-        <h1>Test Report Viewer — {{ report.projectName }}</h1>
-        <div class="meta">{{ report.environment || '-' }} · {{ report.timestamp || '' }} · 总耗时 {{ report.duration }}</div>
+        <h1>
+          Test Report Viewer — {{ store.report.projectName }}
+          <el-tag v-if="store.running" type="warning" size="small" effect="dark">实时</el-tag>
+          <el-tag v-else type="success" size="small" effect="dark">已完成</el-tag>
+        </h1>
+        <div class="meta">{{ store.report.environment || '-' }} · {{ store.report.timestamp || '' }} · 总耗时 {{ store.report.duration }}</div>
         <div class="stat-row">
           <div class="stat-card">
             <div class="label">规格书</div>
-            <div class="value">{{ report.summary.specs.passed }}/{{ report.summary.specs.total }}</div>
-            <div class="sub">通过 / 共 {{ report.summary.specs.total }} · 失败 {{ report.summary.specs.failed }}</div>
+            <div class="value">{{ store.report.summary.specs.passed }}/{{ store.report.summary.specs.total }}</div>
+            <div class="sub">通过 / 共 {{ store.report.summary.specs.total }} · 失败 {{ store.report.summary.specs.failed }}</div>
           </div>
           <div class="stat-card">
             <div class="label">场景</div>
-            <div class="value">{{ report.summary.scenarios.passed }}/{{ report.summary.scenarios.total }}</div>
-            <div class="sub">通过 / 共 {{ report.summary.scenarios.total }} · 失败 {{ report.summary.scenarios.failed }}</div>
+            <div class="value">{{ store.report.summary.scenarios.passed }}/{{ store.report.summary.scenarios.total }}</div>
+            <div class="sub">通过 / 共 {{ store.report.summary.scenarios.total }} · 失败 {{ store.report.summary.scenarios.failed }}</div>
           </div>
           <div class="stat-card">
             <div class="label">步骤</div>
-            <div class="value">{{ report.summary.steps.passed }}/{{ report.summary.steps.total }}</div>
-            <div class="sub">通过 / 共 {{ report.summary.steps.total }} · 失败 {{ report.summary.steps.failed }}</div>
+            <div class="value">{{ store.report.summary.steps.passed }}/{{ store.report.summary.steps.total }}</div>
+            <div class="sub">通过 / 共 {{ store.report.summary.steps.total }} · 失败 {{ store.report.summary.steps.failed }}</div>
           </div>
           <div class="stat-card">
             <div class="label">运行时间</div>
-            <div class="value">{{ report.duration }}</div>
+            <div class="value">{{ store.report.duration }}</div>
             <div class="sub">成功率 {{ successRate }}%</div>
           </div>
         </div>
       </header>
       <div class="toolbar">
-        <el-radio-group v-model="filter" size="small">
+        <el-radio-group v-model="store.filter" size="small">
           <el-radio-button value="all">全部</el-radio-button>
           <el-radio-button value="fail">失败</el-radio-button>
           <el-radio-button value="pass">通过</el-radio-button>
           <el-radio-button value="skip">跳过</el-radio-button>
         </el-radio-group>
-        <el-input v-model="query" size="small" clearable placeholder="搜索规格书 / 场景 / 步骤" style="width: 260px"></el-input>
+        <el-input v-model="store.query" size="small" clearable placeholder="搜索规格书 / 场景 / 步骤" style="width: 220px"></el-input>
         <el-button size="small" @click="expandAll">全部展开</el-button>
         <el-button size="small" @click="collapseAll">全部折叠</el-button>
         <el-button size="small" @click="printReport">打印</el-button>
@@ -121,19 +144,21 @@
       <div class="workspace">
         <aside class="script-pane">
           <div class="pane-title">脚本</div>
-          <div class="script-tree">
+          <div class="script-tree" ref="treePane">
             <el-tree
               ref="scriptTree"
               :data="treeData"
               node-key="id"
               highlight-current
               :expand-on-click-node="false"
-              :default-expanded-keys="treeExpanded"
+              :default-expanded-keys="store.treeExpanded"
               :filter-node-method="filterTreeNode"
               @node-click="onTreeClick"
+              @node-expand="onTreeExpand"
+              @node-collapse="onTreeCollapse"
             >
               <template #default="{ data }">
-                <div class="tree-node">
+                <div class="tree-node" :class="treeClass(data.verdict)">
                   <span class="name">{{ data.label }}</span>
                   <el-tag v-if="data.verdict && data.kind !== 'folder' && data.kind !== 'phase'" :type="tagType(data.verdict)" size="small" effect="plain">{{ verdictLabel(data.verdict) }}</el-tag>
                   <span class="time">{{ data.duration }}</span>
@@ -142,53 +167,54 @@
             </el-tree>
           </div>
         </aside>
-        <main class="result-pane">
-          <el-alert v-if="report.preHookFailure" type="error" :title="(report.preHookFailure.hookName || 'Hook') + ' 失败'" :description="report.preHookFailure.errorMessage" show-icon style="margin-bottom: 8px"></el-alert>
-          <el-alert v-if="report.postHookFailure" type="error" :title="(report.postHookFailure.hookName || 'Hook') + ' 失败'" :description="report.postHookFailure.errorMessage" show-icon style="margin-bottom: 8px"></el-alert>
+        <main class="result-pane" ref="resultPane">
+          <el-alert v-if="store.report.preHookFailure" type="error" :title="(store.report.preHookFailure.hookName || 'Hook') + ' 失败'" :description="store.report.preHookFailure.errorMessage" show-icon style="margin-bottom: 6px"></el-alert>
+          <el-alert v-if="store.report.postHookFailure" type="error" :title="(store.report.postHookFailure.hookName || 'Hook') + ' 失败'" :description="store.report.postHookFailure.errorMessage" show-icon style="margin-bottom: 6px"></el-alert>
           <el-table
+            class="dense-table"
             :data="visibleSpecs"
             row-key="id"
             border
-            stripe
             size="small"
-            :expand-row-keys="expanded"
+            :expand-row-keys="store.expanded"
             :row-class-name="rowClass"
             @expand-change="onExpandChange"
             @row-click="onSpecClick"
           >
-            <el-table-column type="expand">
+            <el-table-column type="expand" width="28">
               <template #default="{ row }">
                 <div class="nested-block">
                   <div class="nested-title">场景 · {{ row.heading }} · {{ row.duration }}</div>
                   <el-table
+                    class="dense-table"
                     :data="visibleScenarios(row)"
                     row-key="id"
                     border
                     size="small"
-                    :expand-row-keys="expanded"
+                    :expand-row-keys="store.expanded"
                     :row-class-name="rowClass"
                     @expand-change="onExpandChange"
                     @row-click="onScenarioClick"
                   >
-                    <el-table-column type="expand">
+                    <el-table-column type="expand" width="28">
                       <template #default="{ row: scn }">
                         <div class="nested-block">
                           <hook-block :hook="scn.preHookFailure"></hook-block>
                           <hook-block :hook="scn.postHookFailure"></hook-block>
                           <div class="nested-title">步骤 · {{ scn.heading }} · {{ scn.duration }}</div>
-                          <item-table :items="scenarioRows(scn)" :expanded="expanded" @expand-change="onExpandChange"></item-table>
+                          <item-table :items="scenarioRows(scn)" :expanded="store.expanded" @expand-change="onExpandChange"></item-table>
                         </div>
                       </template>
                     </el-table-column>
-                    <el-table-column label="名称" min-width="220">
+                    <el-table-column label="名称" min-width="180">
                       <template #default="{ row: scn }"><div class="name-cell">{{ scn.heading }}</div></template>
                     </el-table-column>
-                    <el-table-column label="类型" width="80">场景</el-table-column>
-                    <el-table-column label="结果" width="90">
+                    <el-table-column label="类型" width="58">场景</el-table-column>
+                    <el-table-column label="结果" width="70">
                       <template #default="{ row: scn }"><el-tag :type="tagType(scn.verdict)" size="small">{{ verdictLabel(scn.verdict) }}</el-tag></template>
                     </el-table-column>
-                    <el-table-column label="运行时间" width="120" prop="duration"></el-table-column>
-                    <el-table-column label="详情" min-width="160">
+                    <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
+                    <el-table-column label="详情" min-width="120">
                       <template #default="{ row: scn }">
                         <el-tag v-for="tag in (scn.tags || [])" :key="tag" size="small" style="margin-right: 4px">{{ tag }}</el-tag>
                         <span v-if="scn.skipErrors && scn.skipErrors.length" class="msg">{{ scn.skipErrors.join('; ') }}</span>
@@ -198,17 +224,17 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="名称" min-width="240">
+            <el-table-column label="名称" min-width="200">
               <template #default="{ row }">
                 <div class="name-cell"><strong>{{ row.heading }}</strong><div class="msg">{{ row.fileName }}</div></div>
               </template>
             </el-table-column>
-            <el-table-column label="类型" width="80">规格书</el-table-column>
-            <el-table-column label="结果" width="90">
+            <el-table-column label="类型" width="58">规格书</el-table-column>
+            <el-table-column label="结果" width="70">
               <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
             </el-table-column>
-            <el-table-column label="运行时间" width="120" prop="duration"></el-table-column>
-            <el-table-column label="详情" min-width="180">
+            <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
+            <el-table-column label="详情" min-width="140">
               <template #default="{ row }">
                 场景 {{ row.summary.passed }}/{{ row.summary.total }}
                 <el-tag v-for="tag in (row.tags || [])" :key="tag" size="small" style="margin-left: 4px">{{ tag }}</el-tag>
@@ -219,18 +245,33 @@
       </div>
       <footer class="status">
         <span>{{ selectedLabel }}</span>
-        <span>规格书 {{ report.summary.specs.passed }}/{{ report.summary.specs.total }} · 场景 {{ report.summary.scenarios.passed }}/{{ report.summary.scenarios.total }} · 步骤 {{ report.summary.steps.passed }}/{{ report.summary.steps.total }} · {{ report.duration }}</span>
+        <span>规格书 {{ store.report.summary.specs.passed }}/{{ store.report.summary.specs.total }} · 场景 {{ store.report.summary.scenarios.passed }}/{{ store.report.summary.scenarios.total }} · 步骤 {{ store.report.summary.steps.passed }}/{{ store.report.summary.steps.total }} · {{ store.report.duration }}</span>
       </footer>
     </div>
   </div>
   <script type="application/json" id="report-data">{{REPORT_JSON}}</script>
   <script src="assets/vue.global.prod.js"></script>
+  <script>var VueDemi = Vue;</script>
+  <script src="assets/pinia.iife.prod.js"></script>
   <script src="assets/element-plus.full.min.js"></script>
   <script>
-    const report = JSON.parse(document.getElementById('report-data').textContent);
+    const seeded = JSON.parse(document.getElementById('report-data').textContent);
+    const emptyCounts = () => ({ total: 0, passed: 0, failed: 0, skipped: 0 });
+    const ensureReport = (r) => {
+      r = r || {};
+      r.summary = r.summary || {};
+      r.summary.specs = r.summary.specs || emptyCounts();
+      r.summary.scenarios = r.summary.scenarios || emptyCounts();
+      r.summary.steps = r.summary.steps || emptyCounts();
+      r.specs = r.specs || [];
+      r.duration = r.duration || '00:00:00.000';
+      r.projectName = r.projectName || 'Gauge Suite';
+      return r;
+    };
 
     const verdictLabel = (v) => ({ pass: '通过', fail: '失败', skip: '跳过', none: '—' })[v] || '—';
     const tagType = (v) => ({ pass: 'success', fail: 'danger', skip: 'info', none: 'info' })[v] || 'info';
+    const treeClass = (v) => ({ pass: 'tree-pass', fail: 'tree-fail', skip: 'tree-skip' })[v] || '';
     const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const worse = (a, b) => {
       const rank = { fail: 3, skip: 2, none: 1, pass: 0 };
@@ -295,19 +336,13 @@
       if (!step) return !!item.comment;
       return !!(step.errorMessage || step.stackTrace || step.skippedReason || (step.messages && step.messages.length) || step.failureScreenshot || (step.screenshots && step.screenshots.length) || step.preHookFailure || step.postHookFailure);
     };
-
     function buildItemNodes(items, phase) {
       return (items || []).map((item) => {
         const children = item.kind === 'concept' && item.concept ? buildItemNodes(item.concept.items, 'Step') : [];
         return {
-          id: item.id,
-          label: itemText(item) || (item.kind === 'comment' ? '注释' : '步骤'),
-          kind: item.kind,
-          phase,
-          verdict: itemVerdict(item),
-          duration: itemDuration(item),
-          executionTime: itemTime(item),
-          children
+          id: item.id, label: itemText(item) || (item.kind === 'comment' ? '注释' : '步骤'),
+          kind: item.kind, phase, verdict: itemVerdict(item), duration: itemDuration(item),
+          executionTime: itemTime(item), children
         };
       });
     }
@@ -315,6 +350,7 @@
       return (nodes || []).reduce((n, c) => n + (c.executionTime || 0), 0);
     }
     function buildTree(report) {
+      report = ensureReport(report);
       const root = {
         id: 'suite', label: report.projectName, kind: 'suite', verdict: report.verdict,
         duration: report.duration, executionTime: report.executionTime, children: []
@@ -333,7 +369,7 @@
           }
           parent = folders[id];
         });
-        const specNode = {
+        parent.children.push({
           id: spec.id, label: spec.heading, kind: 'spec', spec, verdict: spec.verdict,
           duration: spec.duration, executionTime: spec.executionTime,
           children: (spec.scenarios || []).map((scn) => {
@@ -347,13 +383,9 @@
               const td = buildItemNodes(scn.teardowns, 'Teardown');
               children.push({ id: scn.id + '-phase-td', label: 'Teardown', kind: 'phase', verdict: 'none', executionTime: sumTime(td), duration: formatDuration(sumTime(td)), children: td });
             }
-            return {
-              id: scn.id, label: scn.heading, kind: 'scenario', specId: spec.id, scn, verdict: scn.verdict,
-              duration: scn.duration, executionTime: scn.executionTime, children
-            };
+            return { id: scn.id, label: scn.heading, kind: 'scenario', specId: spec.id, scn, verdict: scn.verdict, duration: scn.duration, executionTime: scn.executionTime, children };
           })
-        };
-        parent.children.push(specNode);
+        });
       });
       const roll = (node) => {
         (node.children || []).forEach(roll);
@@ -404,11 +436,74 @@
       return ids;
     }
 
+    const VIEW_KEY = 'studio-report-view';
+    const { createPinia, defineStore } = Pinia;
+    const useReportStore = defineStore('report', {
+      state: () => ({
+        report: ensureReport(seeded),
+        running: false,
+        rev: 0,
+        filter: 'all',
+        query: '',
+        selected: 'suite',
+        expanded: defaultExpanded(ensureReport(seeded)),
+        treeExpanded: treeExpandedKeys(buildTree(ensureReport(seeded)))
+      }),
+      actions: {
+        restoreView() {
+          try {
+            const saved = JSON.parse(sessionStorage.getItem(VIEW_KEY) || 'null');
+            if (!saved) return;
+            if (saved.filter) this.filter = saved.filter;
+            if (typeof saved.query === 'string') this.query = saved.query;
+            if (saved.selected) this.selected = saved.selected;
+            if (Array.isArray(saved.expanded) && saved.expanded.length) this.expanded = saved.expanded;
+            if (Array.isArray(saved.treeExpanded) && saved.treeExpanded.length) this.treeExpanded = saved.treeExpanded;
+          } catch (e) {}
+        },
+        persistView() {
+          try {
+            sessionStorage.setItem(VIEW_KEY, JSON.stringify({
+              filter: this.filter, query: this.query, selected: this.selected,
+              expanded: this.expanded, treeExpanded: this.treeExpanded
+            }));
+          } catch (e) {}
+        },
+        applyLive(payload, scroll) {
+          if (!payload || !payload.report) return;
+          if (payload.rev && payload.rev <= this.rev) return;
+          this.report = ensureReport(payload.report);
+          this.running = !!payload.running;
+          this.rev = payload.rev || this.rev;
+          Vue.nextTick(() => {
+            if (!scroll) return;
+            if (scroll.tree) scroll.tree.el.scrollTop = scroll.tree.top;
+            if (scroll.result) scroll.result.el.scrollTop = scroll.result.top;
+          });
+        },
+        toggleExpand(id) {
+          if (!id) return;
+          const idx = this.expanded.indexOf(id);
+          this.expanded = idx >= 0 ? this.expanded.filter((x) => x !== id) : this.expanded.concat([id]);
+          this.persistView();
+        },
+        ensureExpanded() {
+          const ids = Array.prototype.slice.call(arguments);
+          ids.forEach((id) => {
+            if (id && this.expanded.indexOf(id) < 0) this.expanded = this.expanded.concat([id]);
+          });
+          this.persistView();
+        },
+        expandAll() { this.expanded = collectExpandableIds(this.report); this.persistView(); },
+        collapseAll() { this.expanded = []; this.persistView(); }
+      }
+    });
+
     const HookBlock = {
       name: 'HookBlock',
       props: ['hook'],
       template: `
-        <el-alert v-if="hook" type="error" :title="(hook.hookName || 'Hook') + ' 失败'" show-icon style="margin-bottom: 8px">
+        <el-alert v-if="hook" type="error" :title="(hook.hookName || 'Hook') + ' 失败'" show-icon style="margin-bottom: 6px">
           <pre class="err">{{ hook.errorMessage }}</pre>
           <pre v-if="hook.stackTrace" class="stack">{{ hook.stackTrace }}</pre>
         </el-alert>`
@@ -433,9 +528,10 @@
         },
         esc,
         rowClass({ row }) {
-          const fail = this.itemVerdict(row) === 'fail' ? 'row-fail' : '';
+          const v = this.itemVerdict(row);
+          const tone = v === 'fail' ? 'row-fail' : (v === 'pass' ? 'row-pass' : (v === 'skip' ? 'row-skip' : ''));
           const no = this.itemHasDetail(row) ? '' : 'no-expand';
-          return [fail, no].filter(Boolean).join(' ');
+          return [tone, no].filter(Boolean).join(' ');
         },
         shots(row) {
           const step = row.step || (row.concept && row.concept.step);
@@ -444,8 +540,8 @@
         }
       },
       template: `
-        <el-table :data="items" row-key="id" border size="small" :expand-row-keys="expanded" :row-class-name="rowClass" @expand-change="$emit('expand-change', $event)">
-          <el-table-column type="expand">
+        <el-table class="dense-table" :data="items" row-key="id" border size="small" :expand-row-keys="expanded" :row-class-name="rowClass" @expand-change="$emit('expand-change', $event)">
+          <el-table-column type="expand" width="28">
             <template #default="{ row }">
               <div class="nested-block">
                 <div v-if="row.kind === 'concept' && row.concept && row.concept.items && row.concept.items.length">
@@ -464,72 +560,96 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="名称" min-width="240">
+          <el-table-column label="名称" min-width="200">
             <template #default="{ row }"><div class="name-cell" v-html="nameHTML(row)"></div></template>
           </el-table-column>
-          <el-table-column label="类型" width="90">
+          <el-table-column label="类型" width="64">
             <template #default="{ row }">{{ typeLabel(row) }}</template>
           </el-table-column>
-          <el-table-column label="结果" width="90">
+          <el-table-column label="结果" width="70">
             <template #default="{ row }"><el-tag :type="tagType(itemVerdict(row))" size="small">{{ verdictLabel(itemVerdict(row)) }}</el-tag></template>
           </el-table-column>
-          <el-table-column label="运行时间" width="120">
+          <el-table-column label="运行时间" width="96">
             <template #default="{ row }">{{ itemDuration(row) }}</template>
           </el-table-column>
         </el-table>`
     };
 
-    const treeData = buildTree(report);
+    function captureScroll(vm) {
+      const tree = vm.$refs.treePane;
+      const result = vm.$refs.resultPane;
+      return {
+        tree: tree ? { el: tree, top: tree.scrollTop } : null,
+        result: result ? { el: result, top: result.scrollTop } : null
+      };
+    }
+
+    async function fetchLive() {
+      try {
+        const res = await fetch('report.json?ts=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) return await res.json();
+      } catch (e) {}
+      return new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = 'report-live.js?ts=' + Date.now();
+        s.onload = () => { resolve(window.__GAUGE_LIVE__ || null); s.remove(); };
+        s.onerror = () => { resolve(null); s.remove(); };
+        document.head.appendChild(s);
+      });
+    }
+
     const app = Vue.createApp({
       components: { ItemTable, HookBlock },
-      data() {
-        return {
-          report,
-          filter: 'all',
-          query: '',
-          selected: 'suite',
-          expanded: defaultExpanded(report),
-          treeData,
-          treeExpanded: treeExpandedKeys(treeData)
-        };
+      setup() {
+        const store = useReportStore();
+        store.restoreView();
+        return { store };
       },
       computed: {
         successRate() {
-          const n = this.report.successRate;
+          const n = this.store.report.successRate;
           return n == null ? 0 : Math.round(n);
         },
-        q() { return this.query.trim().toLowerCase(); },
+        q() { return this.store.query.trim().toLowerCase(); },
+        treeData() { return buildTree(this.store.report); },
         visibleSpecs() {
-          return (this.report.specs || []).filter((spec) => this.specVisible(spec));
+          return (this.store.report.specs || []).filter((spec) => this.specVisible(spec));
         },
         selectedLabel() {
-          if (this.selected === 'suite') return this.report.projectName;
-          const spec = (this.report.specs || []).find((s) => s.id === this.selected);
+          if (this.store.selected === 'suite') return this.store.report.projectName;
+          const spec = (this.store.report.specs || []).find((s) => s.id === this.store.selected);
           if (spec) return spec.heading;
-          for (const s of this.report.specs || []) {
-            const scn = (s.scenarios || []).find((x) => x.id === this.selected);
+          for (const s of this.store.report.specs || []) {
+            const scn = (s.scenarios || []).find((x) => x.id === this.store.selected);
             if (scn) return s.heading + ' / ' + scn.heading;
           }
-          return this.report.projectName;
+          return this.store.report.projectName;
         }
       },
       watch: {
-        query() { this.$refs.scriptTree && this.$refs.scriptTree.filter(this.query); },
-        filter() { this.$refs.scriptTree && this.$refs.scriptTree.filter(this.query); }
+        'store.query'() { this.$refs.scriptTree && this.$refs.scriptTree.filter(this.store.query); this.store.persistView(); },
+        'store.filter'() { this.$refs.scriptTree && this.$refs.scriptTree.filter(this.store.query); this.store.persistView(); }
+      },
+      mounted() {
+        this.pollLive();
+        this._liveTimer = setInterval(() => this.pollLive(), this.store.running ? 600 : 1500);
+      },
+      beforeUnmount() {
+        if (this._liveTimer) clearInterval(this._liveTimer);
       },
       methods: {
-        verdictLabel, tagType,
+        verdictLabel, tagType, treeClass,
         nodeVisible(verdict, texts) {
-          if (this.filter !== 'all' && verdict !== this.filter) return false;
+          if (this.store.filter !== 'all' && verdict !== this.store.filter) return false;
           return matchQuery(this.q, texts);
         },
         specVisible(spec) {
-          if (this.filter === 'all' && !this.q) return true;
+          if (this.store.filter === 'all' && !this.q) return true;
           if (this.nodeVisible(spec.verdict, specTexts(spec))) return true;
           return (spec.scenarios || []).some((scn) => this.scenarioVisible(scn));
         },
         scenarioVisible(scn) {
-          if (this.filter === 'all' && !this.q) return true;
+          if (this.store.filter === 'all' && !this.q) return true;
           if (this.nodeVisible(scn.verdict, scenarioTexts(scn))) return true;
           let hit = false;
           walkItems(scenarioAllItems(scn), (item) => {
@@ -545,7 +665,7 @@
           (scn.contexts || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Context' })));
           (scn.items || []).forEach((it) => rows.push(Object.assign({}, it, { phase: it.kind === 'concept' ? 'Concept' : 'Step' })));
           (scn.teardowns || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Teardown' })));
-          if (this.filter === 'all' && !this.q) return rows;
+          if (this.store.filter === 'all' && !this.q) return rows;
           const matchItem = (item) => {
             if (this.nodeVisible(itemVerdict(item), [itemText(item), item.phase])) return true;
             if (item.kind === 'concept' && item.concept) return (item.concept.items || []).some(matchItem);
@@ -554,37 +674,39 @@
           return rows.filter(matchItem);
         },
         rowClass({ row }) {
-          return row.verdict === 'fail' ? 'row-fail' : '';
+          const v = row.verdict;
+          return v === 'fail' ? 'row-fail' : (v === 'pass' ? 'row-pass' : (v === 'skip' ? 'row-skip' : ''));
         },
-        onExpandChange(row) {
-          const id = row && row.id;
-          if (!id) return;
-          const idx = this.expanded.indexOf(id);
-          if (idx >= 0) this.expanded = this.expanded.filter((x) => x !== id);
-          else this.expanded = this.expanded.concat([id]);
-        },
-        expandAll() { this.expanded = collectExpandableIds(this.report); },
-        collapseAll() { this.expanded = []; },
+        onExpandChange(row) { this.store.toggleExpand(row && row.id); },
+        expandAll() { this.store.expandAll(); },
+        collapseAll() { this.store.collapseAll(); },
         printReport() { window.print(); },
         onTreeClick(data) {
-          this.selected = data.id;
-          if (data.kind === 'spec') this.ensureExpanded(data.id);
-          if (data.kind === 'scenario') this.ensureExpanded(data.specId, data.id);
+          this.store.selected = data.id;
+          if (data.kind === 'spec') this.store.ensureExpanded(data.id);
+          if (data.kind === 'scenario') this.store.ensureExpanded(data.specId, data.id);
           if (data.kind === 'concept' || data.kind === 'step') {
             const path = this.findItemPath(data.id);
-            if (path.length) this.ensureExpanded.apply(this, path);
+            if (path.length) this.store.ensureExpanded.apply(this.store, path);
+          }
+          this.store.persistView();
+        },
+        onTreeExpand(data) {
+          if (data && data.id && this.store.treeExpanded.indexOf(data.id) < 0) {
+            this.store.treeExpanded = this.store.treeExpanded.concat([data.id]);
+            this.store.persistView();
           }
         },
-        onSpecClick(row) { this.selected = row.id; },
-        onScenarioClick(row) { this.selected = row.id; },
-        ensureExpanded() {
-          const ids = Array.prototype.slice.call(arguments);
-          ids.forEach((id) => {
-            if (id && this.expanded.indexOf(id) < 0) this.expanded = this.expanded.concat([id]);
-          });
+        onTreeCollapse(data) {
+          if (data && data.id) {
+            this.store.treeExpanded = this.store.treeExpanded.filter((id) => id !== data.id);
+            this.store.persistView();
+          }
         },
+        onSpecClick(row) { this.store.selected = row.id; this.store.persistView(); },
+        onScenarioClick(row) { this.store.selected = row.id; this.store.persistView(); },
         findItemPath(id) {
-          for (const spec of this.report.specs || []) {
+          for (const spec of this.store.report.specs || []) {
             for (const scn of spec.scenarios || []) {
               let found = false;
               walkItems(scenarioAllItems(scn), (item) => { if (item.id === id) found = true; });
@@ -594,18 +716,40 @@
           return [];
         },
         filterTreeNode(value, data) {
-          if (this.filter !== 'all' && data.verdict && data.kind !== 'folder' && data.kind !== 'phase' && data.kind !== 'suite') {
-            if (data.verdict !== this.filter && data.verdict !== 'none') return false;
+          if (this.store.filter !== 'all' && data.verdict && data.kind !== 'folder' && data.kind !== 'phase' && data.kind !== 'suite') {
+            if (data.verdict !== this.store.filter && data.verdict !== 'none') return false;
           }
           const q = String(value || '').trim().toLowerCase();
           if (!q) return true;
           return String(data.label || '').toLowerCase().includes(q);
+        },
+        restoreTreeExpand() {
+          const tree = this.$refs.scriptTree;
+          if (!tree) return;
+          (this.store.treeExpanded || []).forEach((id) => {
+            const n = tree.getNode(id);
+            if (n) n.expanded = true;
+          });
+          if (this.store.selected) tree.setCurrentKey(this.store.selected);
+        },
+        async pollLive() {
+          const payload = await fetchLive();
+          if (!payload || !payload.report) return;
+          if (payload.rev && payload.rev <= this.store.rev) {
+            this.store.running = !!payload.running;
+            return;
+          }
+          const scroll = captureScroll(this);
+          this.store.applyLive(payload, scroll);
+          Vue.nextTick(() => this.restoreTreeExpand());
         }
       }
     });
+    const pinia = createPinia();
+    app.use(pinia);
     app.use(ElementPlus);
     app.mount('#app');
-    document.title = 'Test Report Viewer - ' + (report.projectName || 'report');
+    document.title = 'Test Report Viewer - ' + (seeded.projectName || 'report');
   </script>
 </body>
 </html>
