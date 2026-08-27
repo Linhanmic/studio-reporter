@@ -329,10 +329,10 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
 On `SuiteResult`, the plugin generates a local HTML report modeled after CANoe Test Report Viewer:
 
 - Top title bar and verdict filter toolbar
-- Left **Execution Tree**: suite → specs (test groups) → scenarios (test cases)
-- Right content pane: overview statistics or test-step table
+- Nested **multi-level tables**: suite → folders → specs (test groups) → scenarios (test cases) → context / steps / teardown
+- Expandable child tables for nested concepts; long names and details wrap in place
 - Color-coded verdicts: pass (green), fail (red), skip (grey)
-- Nested concepts, hook failures, screenshots, stack traces, and data tables
+- Hook failures, screenshots, stack traces, and data tables
 
 Default output:
 

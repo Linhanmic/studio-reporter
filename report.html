@@ -27,11 +27,10 @@
       --folder: #d69e2e;
       --font: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
       --mono: "Cascadia Mono", "Consolas", "Microsoft YaHei Mono", monospace;
-      --tree-w: 280px;
       --indent: 8px;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; background: var(--chrome); color: var(--text); font: 13px/1.45 var(--font); }
+    html, body { margin: 0; height: 100%; background: var(--chrome); color: var(--text); font: 13px/1.4 var(--font); }
     body { display: flex; flex-direction: column; min-height: 100vh; }
     button, input, select { font: inherit; }
     .titlebar {
@@ -58,80 +57,33 @@
     .search { border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; min-width: 220px; }
     .ghost { border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
     .ghost:hover { background: #f7fafc; }
-    .workspace { flex: 1; display: grid; grid-template-columns: var(--tree-w) 6px 1fr; min-height: 0; }
-    .tree-pane, .content-pane { background: var(--panel); min-height: 0; overflow: auto; }
-    .tree-pane { display: flex; flex-direction: column; }
-    .splitter { background: var(--chrome); cursor: col-resize; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
-    .splitter:hover, .splitter.drag { background: var(--accent); }
-    .pane-title {
-      background: #f4f7fa; border-bottom: 1px solid var(--line);
-      padding: 6px 10px; font-weight: 600; color: var(--header); letter-spacing: .04em;
-      text-transform: uppercase; font-size: 11px; display: flex; justify-content: space-between;
-    }
-    .tree { padding: 2px 6px 12px 2px; }
-    .tree ul { list-style: none; margin: 0; padding: 0 0 0 var(--indent); position: relative; }
-    .tree > ul { padding-left: 2px; }
-    .tree li { position: relative; }
-    .tree ul::before {
-      content: ""; position: absolute; left: 3px; top: 0; bottom: 8px;
-      border-left: 1px solid var(--guide);
-    }
-    .tree > ul::before { display: none; }
-    .tree li::before {
-      content: ""; position: absolute; left: -5px; top: 10px; width: 8px;
-      border-top: 1px solid var(--guide);
-    }
-    .tree li:last-child::after {
-      content: ""; position: absolute; left: -5px; top: 11px; bottom: 0; width: 2px; background: var(--panel);
-    }
-    .node-row {
-      display: flex; align-items: center; gap: 3px; padding: 1px 4px 1px 1px;
-      cursor: pointer; border-radius: 3px; min-height: 18px; white-space: nowrap; min-width: 0;
-    }
-    .node-row:hover { background: #f0f7fb; }
-    .node-row.selected { background: var(--sel); }
-    .twisty {
-      width: 12px; flex: 0 0 12px; text-align: center; color: var(--muted);
-      font-size: 9px; line-height: 1;
-    }
-    .twisty.empty { visibility: hidden; }
-    .ico { width: 13px; height: 13px; flex: 0 0 13px; }
-    .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 auto; }
-    .kind {
-      color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .03em;
-      flex: 0 0 auto; display: none;
-    }
-    .node-row:hover .kind { display: inline; }
-    .count { color: var(--muted); font-size: 10px; margin-left: 4px; flex: 0 0 auto; }
-    .hidden { display: none !important; }
-    .content { padding: 14px 18px 28px; }
+    .content-pane { flex: 1; min-height: 0; overflow: auto; background: var(--panel); }
+    .content { padding: 10px 12px 24px; }
     .crumb { color: var(--muted); margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-    .crumb button {
-      border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0;
-    }
+    .crumb button { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; }
     .crumb button:hover { text-decoration: underline; }
     .crumb .sep { color: var(--guide); }
     .head {
       display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-      border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px;
+      border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 10px;
     }
-    .head h2 { margin: 0 0 4px; font-size: 18px; font-weight: 650; }
+    .head h2 { margin: 0 0 4px; font-size: 16px; font-weight: 650; }
     .meta { color: var(--muted); }
     .badge {
       display: inline-flex; align-items: center; gap: 6px;
-      border-radius: 3px; padding: 4px 10px; font-weight: 700; letter-spacing: .06em;
-      text-transform: uppercase; font-size: 12px; border: 1px solid transparent;
+      border-radius: 3px; padding: 2px 8px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; font-size: 11px; border: 1px solid transparent; white-space: nowrap;
     }
     .v-pass { background: var(--pass-bg); color: var(--pass); border-color: #9ae6b4; }
     .v-fail { background: var(--fail-bg); color: var(--fail); border-color: #feb2b2; }
     .v-skip { background: var(--skip-bg); color: var(--skip); border-color: #cbd5e0; }
     .v-none { background: #edf2f7; color: var(--none); border-color: #e2e8f0; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 12px 0 16px; }
-    .card { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; background: #fff; }
-    .card h3 { margin: 0 0 8px; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
-    .nums { display: flex; gap: 10px; flex-wrap: wrap; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin: 0 0 10px; }
+    .card { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; background: #fff; }
+    .card h3 { margin: 0 0 6px; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+    .nums { display: flex; gap: 8px; flex-wrap: wrap; }
     .nums span { font-weight: 650; }
-    .bar { height: 8px; background: #edf2f7; border-radius: 99px; overflow: hidden; display: flex; margin-top: 8px; }
+    .bar { height: 6px; background: #edf2f7; border-radius: 99px; overflow: hidden; display: flex; margin-top: 6px; }
     .bar i { display: block; height: 100%; }
     .bar .p { background: var(--pass); }
     .bar .f { background: var(--fail); }
@@ -139,34 +91,40 @@
     table.grid { width: 100%; border-collapse: collapse; border: 1px solid var(--line); }
     table.grid th, table.grid td { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
     table.grid th { background: #f4f7fa; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-    table.grid tbody tr:nth-child(even) { background: var(--row-alt); }
-    table.grid tbody tr.clickable { cursor: pointer; }
-    table.grid tbody tr.clickable:hover { background: #eef6fb; }
-    table.grid tbody tr.flash { outline: 2px solid var(--accent); }
-    .kv { width: 100%; border-collapse: collapse; }
-    .kv th { width: 180px; text-align: left; color: var(--muted); font-weight: 600; padding: 4px 8px 4px 0; }
-    .kv td { padding: 4px 0; }
-    .section { margin: 18px 0 8px; font-size: 13px; font-weight: 700; color: var(--header); display: flex; align-items: center; gap: 8px; }
-    .section .hint { font-weight: 500; color: var(--muted); font-size: 12px; }
-    .step-text .static { color: #2b6cb0; font-weight: 650; }
-    .step-text .dynamic { color: #805ad5; font-weight: 650; }
-    .step-text .special { color: #c05621; }
+    .ml-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); background: #fff; }
+    .ml-table th, .ml-table td { padding: 3px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .ml-table th { background: #e8eef4; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+    .ml-table col.ml-name { width: 42%; }
+    .ml-table col.ml-type { width: 78px; }
+    .ml-table col.ml-verdict { width: 76px; }
+    .ml-table col.ml-time { width: 96px; }
+    .ml-table .ml-type { color: var(--muted); font-size: 11px; }
+    .ml-table .ml-time { white-space: nowrap; color: var(--muted); }
+    .ml-name-cell { display: flex; align-items: flex-start; gap: 4px; min-width: 0; }
+    .ml-name-cell .label { word-break: break-word; overflow-wrap: anywhere; min-width: 0; }
+    .ml-detail { word-break: break-word; overflow-wrap: anywhere; color: var(--text); }
+    .ml-row { cursor: pointer; }
+    .ml-row:hover { background: #f0f7fb; }
+    .ml-row.selected { background: var(--sel); }
+    .ml-row.vrow-fail { box-shadow: inset 2px 0 0 var(--fail); }
+    .ml-nest > td {
+      padding: 0 0 0 var(--indent); border: 0; border-left: 2px solid var(--guide);
+      background: #f4f7fa;
+    }
+    .ml-table .ml-table { border-color: #c5d0dc; margin: 2px 0 4px; }
+    .ml-table .ml-table th { background: #eef3f8; }
+    .twisty {
+      width: 12px; flex: 0 0 12px; text-align: center; color: var(--muted);
+      font-size: 9px; line-height: 1; border: 0; background: none; cursor: pointer; padding: 2px 0;
+    }
+    .twisty.empty { visibility: hidden; }
+    .ico { width: 13px; height: 13px; flex: 0 0 13px; margin-top: 2px; }
     .err { color: var(--fail); white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
     .msg { color: var(--muted); white-space: pre-wrap; }
     .stack { white-space: pre-wrap; font-family: var(--mono); font-size: 11px; background: #f7fafc; border: 1px solid var(--line); padding: 8px; overflow: auto; }
-    .tree-cell { display: flex; align-items: stretch; gap: 0; width: 1%; white-space: nowrap; padding-right: 4px !important; }
-    .guides { display: inline-flex; align-items: stretch; min-height: 18px; }
-    .guides i { position: relative; width: 10px; flex: 0 0 10px; }
-    .g-bar::before, .g-mid::before { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; border-left: 1px solid var(--guide); }
-    .g-mid::after, .g-end::after { content: ""; position: absolute; left: 4px; top: 9px; width: 6px; border-top: 1px solid var(--guide); }
-    .g-end::before { content: ""; position: absolute; left: 4px; top: 0; height: 10px; border-left: 1px solid var(--guide); }
-    .guides .twisty { cursor: pointer; color: var(--muted); width: 12px; }
-    tr.row-concept { background: #eef5fb; }
-    tr.depth-1 { background: #f7fafc; }
-    td.desc { word-break: break-word; overflow-wrap: anywhere; padding-left: calc(6px + var(--d, 0) * 8px) !important; }
-    tr.depth-1 td:first-child, tr.depth-2 td:first-child, tr.depth-3 td:first-child, tr.depth-4 td:first-child {
-      box-shadow: inset 2px 0 0 var(--accent);
-    }
+    .step-text .static { color: #2b6cb0; font-weight: 650; }
+    .step-text .dynamic { color: #805ad5; font-weight: 650; }
+    .step-text .special { color: #c05621; }
     .shots { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
     .shots img { max-width: 240px; max-height: 160px; border: 1px solid var(--line); background: #fff; }
     .tags { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -177,14 +135,8 @@
       padding: 4px 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px;
     }
     .data-table { margin: 6px 0; }
-    @media (max-width: 900px) {
-      .workspace { grid-template-columns: 1fr; }
-      .splitter { display: none; }
-      .tree-pane { max-height: 36vh; border-bottom: 1px solid var(--line); }
-    }
     @media print {
-      .titlebar, .toolbar, .tree-pane, .splitter, .status { display: none !important; }
-      .workspace { display: block; }
+      .titlebar, .toolbar, .status { display: none !important; }
       body { background: #fff; }
     }
   </style>
@@ -209,15 +161,8 @@
     <button class="ghost" id="collapse-all" type="button">Collapse All</button>
     <button class="ghost" id="print" type="button">Print</button>
   </div>
-  <div class="workspace">
-    <aside class="tree-pane">
-      <div class="pane-title"><span>Execution Tree</span><span id="tree-hint">suite / folder / spec / case</span></div>
-      <div class="tree" id="tree"></div>
-    </aside>
-    <div class="splitter" id="splitter" title="Resize"></div>
-    <main class="content-pane">
-      <div class="content" id="content"></div>
-    </main>
+  <div class="content-pane">
+    <div class="content" id="content"></div>
   </div>
   <footer class="status">
     <span id="status-left">Ready</span>
@@ -226,7 +171,7 @@
   <script type="application/json" id="report-data">{{REPORT_JSON}}</script>
   <script>
     const report = JSON.parse(document.getElementById('report-data').textContent);
-    const state = { filter: 'all', query: '', selected: 'suite', open: new Set(['suite']), collapsed: new Set() };
+    const state = { filter: 'all', query: '', selected: 'suite', open: new Set(['suite']) };
     const index = { nodes: {}, crumbs: {} };
     const $ = (id) => document.getElementById(id);
 
@@ -312,14 +257,14 @@
       return texts.some(matchQuery);
     }
     function subtreeVisible(node) {
-      if (node.kind === 'item') {
-        return nodeVisible(itemVerdict(node.item), [itemText(node.item), node.label].concat(node.extraTexts || []));
-      }
-      const selfHit = nodeVisible(node.verdict, node.texts || [node.label]);
       const kids = (node.children || []).filter(subtreeVisible);
       node.visibleChildren = kids;
       if (state.filter === 'all' && !state.query.trim()) return true;
-      return selfHit || kids.length > 0;
+      const texts = node.kind === 'item'
+        ? [itemText(node.item), node.label].concat(node.extraTexts || [])
+        : (node.texts || [node.label]);
+      const verdict = node.kind === 'item' ? itemVerdict(node.item) : node.verdict;
+      return nodeVisible(verdict, texts) || kids.length > 0;
     }
 
     function buildItemNodes(items, crumbs) {
@@ -403,41 +348,81 @@
     const forest = buildFolderForest();
     Object.keys(index.nodes).forEach(id => {
       const n = index.nodes[id];
-      if (n && n.kind === 'folder') state.open.add(id);
+      if (!n) return;
+      if (n.kind === 'folder' || n.kind === 'spec' || n.verdict === 'fail') state.open.add(id);
     });
 
-    function hasKids(node) { return (node.visibleChildren || node.children || []).length > 0; }
     function kids(node) { return node.visibleChildren || node.children || []; }
-    function countLabel(node) {
-      const c = node.count;
-      if (!c || !c.total) return '';
-      return `${c.passed}/${c.total}`;
-    }
     function kindLabel(node) {
-      return ({ suite: 'suite', folder: 'folder', spec: 'spec', scenario: 'case', phase: 'group', item: node.itemKind || 'step' })[node.kind] || '';
+      const raw = ({ suite: 'Suite', folder: 'Folder', spec: 'Spec', scenario: 'Case', phase: 'Group', item: node.itemKind || 'step' })[node.kind] || '';
+      return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : '';
     }
-    function renderNode(node) {
-      if (!subtreeVisible(node) && node.id !== 'suite') return '';
-      const open = state.open.has(node.id);
-      const children = kids(node);
-      const twisty = children.length ? (open ? '▾' : '▸') : '';
-      const iconKind = node.kind === 'item' ? (node.itemKind || 'step') : node.kind;
-      let html = `<li><div class="node-row ${state.selected===node.id?'selected':''}" data-id="${esc(node.id)}" title="${esc(node.label)}">
-        <span class="twisty ${children.length ? '' : 'empty'}">${twisty}</span>
-        ${typeIcon(iconKind, node.verdict)}
-        <span class="label">${esc(node.label)}</span>
-        <span class="kind">${esc(kindLabel(node))}</span>
-        ${countLabel(node) ? `<span class="count">${esc(countLabel(node))}</span>` : ''}
-      </div>`;
-      if (open && children.length) {
-        html += `<ul>${children.map(renderNode).join('')}</ul>`;
+    function nodeDuration(node) {
+      if (node.kind === 'suite') return report.duration || '';
+      if (node.spec && node.kind === 'spec') return node.spec.duration || '';
+      if (node.scn && node.kind === 'scenario') return node.scn.duration || '';
+      const step = node.item && (node.item.step || (node.item.concept && node.item.concept.step));
+      return (step && step.duration) || '';
+    }
+    function nodeDetail(node) {
+      if (node.kind === 'suite') return `${esc(report.environment || '-')} · ${esc(report.timestamp || '')}`;
+      if (node.kind === 'folder') return esc(node.path || '');
+      if (node.kind === 'spec' && node.spec) {
+        return `${esc(node.spec.fileName || '')}${tags(node.spec.tags)}${(node.spec.errors||[]).map(e => `<div class="err">${esc(e.message)}</div>`).join('')}`;
       }
-      return html + '</li>';
+      if (node.kind === 'scenario' && node.scn) {
+        const scn = node.scn;
+        return `${tags(scn.tags)}${hookBlock(scn.preHookFailure)}${hookBlock(scn.postHookFailure)}${(scn.skipErrors||[]).map(e => `<div class="msg">${esc(e)}</div>`).join('')}${scn.scenarioDataTable ? dataTable(scn.scenarioDataTable) : ''}`;
+      }
+      if (node.item) {
+        const step = node.item.step || (node.item.concept && node.item.concept.step);
+        if (node.item.kind === 'comment') return esc(node.item.comment || '');
+        if (!step) return '';
+        const parts = [
+          stepText(step),
+          step.errorMessage ? `<div class="err">${esc(step.errorMessage)}</div>` : '',
+          step.skippedReason ? `<div class="msg">Skipped: ${esc(step.skippedReason)}</div>` : '',
+          (step.messages || []).map(m => `<div class="msg">${esc(m)}</div>`).join(''),
+          step.stackTrace ? `<pre class="stack">${esc(step.stackTrace)}</pre>` : '',
+          hookBlock(step.preHookFailure),
+          hookBlock(step.postHookFailure),
+          shotList([step.failureScreenshot].concat(step.screenshots || []).concat(step.preHookScreenshots || []).concat(step.postHookScreenshots || []))
+        ];
+        return parts.join('');
+      }
+      return '';
     }
-    function renderTree() {
-      subtreeVisible(forest);
-      forest.visibleChildren = (forest.children || []).filter(subtreeVisible);
-      $('tree').innerHTML = `<ul>${renderNode(forest)}</ul>`;
+    function nodeName(node) {
+      if (node.item && (node.item.kind === 'step' || node.item.kind === 'concept')) {
+        const step = node.item.step || (node.item.concept && node.item.concept.step);
+        return `<span class="step-text">${stepText(step) || esc(node.label)}</span>`;
+      }
+      return esc(node.label);
+    }
+    function renderLevel(nodes, withHead) {
+      const list = (nodes || []).filter(n => subtreeVisible(n) || n.id === 'suite');
+      if (!list.length) return '<div class="empty">No matching rows</div>';
+      const head = withHead ? `<thead><tr><th>Name</th><th>Type</th><th>Verdict</th><th>Duration</th><th>Detail</th></tr></thead>` : '';
+      const cols = `<colgroup><col class="ml-name"><col class="ml-type"><col class="ml-verdict"><col class="ml-time"><col></colgroup>`;
+      const rows = list.map(node => {
+        const childs = kids(node);
+        const open = state.open.has(node.id);
+        const iconKind = node.kind === 'item' ? (node.itemKind || 'step') : node.kind;
+        const twisty = childs.length
+          ? `<button type="button" class="twisty" data-toggle="${esc(node.id)}" aria-expanded="${open ? 'true' : 'false'}">${open ? '▾' : '▸'}</button>`
+          : `<span class="twisty empty">·</span>`;
+        const nested = (open && childs.length)
+          ? `<tr class="ml-nest"><td colspan="5">${renderLevel(childs, true)}</td></tr>`
+          : '';
+        return `<tr class="ml-row ${state.selected===node.id?'selected':''} ${node.verdict==='fail'?'vrow-fail':''}" data-id="${esc(node.id)}">
+          <td class="ml-name"><div class="ml-name-cell">${twisty}${typeIcon(iconKind, node.verdict)}<span class="label">${nodeName(node)}</span></div></td>
+          <td class="ml-type">${esc(kindLabel(node))}</td>
+          <td class="ml-verdict">${badge(node.verdict)}</td>
+          <td class="ml-time">${esc(nodeDuration(node))}</td>
+          <td class="ml-detail">${nodeDetail(node)}</td>
+        </tr>${nested}`;
+      }).join('');
+      return `<table class="ml-table">${cols}${head}<tbody>${rows}</tbody></table>`;
     }
     function ancestorsOf(id) {
       const ids = ['suite'];
@@ -446,24 +431,15 @@
       node.crumbs.forEach(c => ids.push(c.id));
       return ids;
     }
-    function select(id, opts) {
+    function select(id) {
       if (!index.nodes[id]) id = 'suite';
       state.selected = id;
       ancestorsOf(id).forEach(a => state.open.add(a));
       const node = index.nodes[id];
-      if (node && (node.kind === 'scenario' || node.kind === 'phase' || node.kind === 'item')) {
-        collectExpandIds(node, state.open, null);
-      }
-      renderTree();
+      if (node && node.children && node.children.length) state.open.add(id);
       renderContent();
-      if (opts && opts.scrollStep) {
-        const row = document.querySelector(`tr[data-step-id="${CSS.escape(id)}"]`);
-        if (row) {
-          row.classList.add('flash');
-          row.scrollIntoView({ block: 'center' });
-          setTimeout(() => row.classList.remove('flash'), 1200);
-        }
-      }
+      const row = document.querySelector(`tr.ml-row[data-id="${CSS.escape(id)}"]`);
+      if (row) row.scrollIntoView({ block: 'nearest' });
     }
     function crumbHtml(node) {
       const crumbs = (node && node.crumbs) || [{ id: 'suite', label: report.projectName }];
@@ -501,223 +477,64 @@
       }
       return esc(step.actualText || step.parsedText || '');
     }
-    function flattenSteps(items, depth, rows, lastFlags) {
-      const list = items || [];
-      list.forEach((item, i) => {
-        const last = i === list.length - 1;
-        const flags = lastFlags.concat([last]);
-        if (item.kind === 'comment') {
-          rows.push({ id: item.id, type: 'Comment', depth, lastFlags: flags, text: esc(item.comment), verdict: 'none', duration: '', extra: '', expandable: false });
-          return;
-        }
-        if (item.kind === 'step' && item.step) {
-          rows.push(Object.assign(stepRow('Step', item.step, depth, item.id), { lastFlags: flags, expandable: false }));
-          return;
-        }
-        if (item.kind === 'concept' && item.concept) {
-          const collapsed = state.collapsed.has(item.id);
-          rows.push(Object.assign(stepRow('Concept', item.concept.step, depth, item.id), { lastFlags: flags, expandable: true, collapsed, childCount: (item.concept.items || []).length }));
-          if (!collapsed) flattenSteps(item.concept.items, depth + 1, rows, flags);
-        }
-      });
-    }
-    function stepRow(type, step, depth, id) {
-      const extra = [
-        step && step.errorMessage ? `<div class="err">${esc(step.errorMessage)}</div>` : '',
-        step && step.skippedReason ? `<div class="msg">Skipped: ${esc(step.skippedReason)}</div>` : '',
-        ((step && step.messages) || []).map(m => `<div class="msg">${esc(m)}</div>`).join(''),
-        step && step.stackTrace ? `<pre class="stack">${esc(step.stackTrace)}</pre>` : '',
-        step ? hookBlock(step.preHookFailure) : '',
-        step ? hookBlock(step.postHookFailure) : '',
-        step ? shotList([step.failureScreenshot].concat(step.screenshots || []).concat(step.preHookScreenshots || []).concat(step.postHookScreenshots || [])) : ''
-      ].join('');
-      return { id, type, depth, text: `<span class="step-text">${stepText(step)}</span>`, verdict: (step && step.verdict) || 'none', duration: (step && step.duration) || '', extra };
-    }
-    function guideHtml(row) {
-      const flags = row.lastFlags || [];
-      let html = '<span class="guides">';
-      flags.forEach((last, i) => {
-        const isLeaf = i === flags.length - 1;
-        let cls = 'g-pad';
-        if (!isLeaf) cls = last ? 'g-pad' : 'g-bar';
-        else cls = last ? 'g-end' : 'g-mid';
-        html += `<i class="${cls}"></i>`;
-      });
-      html += '</span>';
-      if (row.expandable) html += `<span class="twisty" data-toggle="${esc(row.id)}">${row.collapsed ? '▸' : '▾'}</span>`;
-      return html;
-    }
-    function stepsTable(items, title, hint) {
-      const rows = [];
-      flattenSteps(items, 0, rows, []);
-      if (!rows.length) return '';
-      return `<div class="section">${esc(title)}${hint ? `<span class="hint">${esc(hint)}</span>` : ''}</div>
-        <table class="grid"><thead><tr><th>#</th><th></th><th>Type</th><th>Description</th><th>Verdict</th><th>Duration</th></tr></thead><tbody>${
-          rows.map((r, i) => `<tr class="depth-${r.depth} row-${esc(r.type.toLowerCase())}" style="--d:${r.depth||0}" data-step-id="${esc(r.id || '')}"><td>${i+1}</td><td class="tree-cell">${guideHtml(r)}</td><td>${esc(r.type)}</td><td class="desc">${r.text}${r.extra}</td><td>${badge(r.verdict)}</td><td>${esc(r.duration)}</td></tr>`).join('')
-        }</tbody></table>`;
-    }
-    function collectFolderSpecs(node, out) {
-      (node.children || []).forEach(ch => {
-        if (ch.kind === 'spec') out.push(ch.spec);
-        if (ch.kind === 'folder') collectFolderSpecs(ch, out);
-      });
-      return out;
-    }
-    function renderSuiteLike(node, specs) {
-      const s = node.count || report.summary.scenarios;
-      return `
-        ${crumbHtml(node)}
-        <div class="head"><div><h2>${esc(node.label)}</h2><div class="meta">${node.kind === 'suite' ? `${esc(report.timestamp)} · ${esc(report.duration)}` : esc(node.path || node.label)}</div></div>${badge(node.verdict)}</div>
-        ${node.kind === 'suite' ? `<table class="kv">
-          <tr><th>Environment</th><td>${esc(report.environment || '-')}</td></tr>
-          <tr><th>Tags</th><td>${esc(report.tags || '-')}</td></tr>
-          <tr><th>Success rate</th><td>${Number(report.successRate || 0).toFixed(2)}%</td></tr>
-          <tr><th>Started</th><td>${esc(report.timestampISO || report.timestamp)}</td></tr>
-        </table>` : ''}
-        <div class="stats">
-          ${node.kind === 'suite' ? statCard('Specifications', report.summary.specs) : ''}
-          ${statCard('Test Cases', s)}
-          ${node.kind === 'suite' ? statCard('Test Steps', report.summary.steps) : ''}
-        </div>
-        ${node.kind === 'suite' ? hookBlock(report.preHookFailure) + hookBlock(report.postHookFailure) : ''}
-        <div class="section">Specifications</div>
-        <table class="grid"><thead><tr><th>Name</th><th>Path</th><th>Cases</th><th>Verdict</th><th>Duration</th></tr></thead>
-        <tbody>${specs.map(spec => `<tr class="clickable" data-id="${esc(spec.id)}"><td>${esc(spec.heading)}</td><td>${esc((spec.folders||[]).concat([spec.heading]).join(' / '))}</td><td>${spec.summary.passed}/${spec.summary.total}</td><td>${badge(spec.verdict)}</td><td>${esc(spec.duration)}</td></tr>`).join('')}</tbody></table>`;
-    }
     function statCard(title, c) {
       c = c || emptyCounts();
       return `<div class="card"><h3>${esc(title)}</h3>
         <div class="nums"><span>${c.total} total</span><span style="color:var(--pass)">${c.passed} pass</span><span style="color:var(--fail)">${c.failed} fail</span><span style="color:var(--skip)">${c.skipped} skip</span></div>
         ${countBar(c)}</div>`;
     }
-    function renderSpec(spec) {
-      const node = index.nodes[spec.id];
-      return `
-        ${crumbHtml(node)}
-        <div class="head"><div><h2>${esc(spec.heading)}</h2><div class="meta">${esc(spec.fileName)} · ${esc(spec.duration)}</div>${tags(spec.tags)}</div>${badge(spec.verdict)}</div>
-        ${statCard('Test Cases', spec.summary)}
-        ${(spec.errors||[]).map(e => `<div class="err">${esc(e.type)}: ${esc(e.fileName)}:${e.lineNumber} ${esc(e.message)}</div>`).join('')}
-        ${(spec.preHookFailures||[]).concat(spec.postHookFailures||[]).map(hookBlock).join('')}
-        ${spec.datatable ? `<div class="section">Data Table</div>${dataTable(spec.datatable)}` : ''}
-        <div class="section">Test Cases</div>
-        <table class="grid"><thead><tr><th>Name</th><th>Tags</th><th>Verdict</th><th>Duration</th></tr></thead>
-        <tbody>${(spec.scenarios||[]).map(scn => `<tr class="clickable" data-id="${esc(scn.id)}"><td>${esc(scn.heading)}</td><td>${tags(scn.tags)}</td><td>${badge(scn.verdict)}</td><td>${esc(scn.duration)}</td></tr>`).join('')}</tbody></table>`;
-    }
-    function renderScenario(spec, scn) {
-      const node = index.nodes[scn.id];
-      return `
-        ${crumbHtml(node)}
-        <div class="head"><div><h2>${esc(scn.heading)}</h2><div class="meta">${esc(scn.duration)}${scn.retriesCount ? ' · retries ' + scn.retriesCount : ''}</div>${tags(scn.tags)}</div>${badge(scn.verdict)}</div>
-        ${hookBlock(scn.preHookFailure)}${hookBlock(scn.postHookFailure)}
-        ${(scn.skipErrors||[]).map(e => `<div class="msg">${esc(e)}</div>`).join('')}
-        ${scn.scenarioDataTable ? `<div class="section">Scenario Data Table</div>${dataTable(scn.scenarioDataTable)}` : ''}
-        ${stepsTable(scn.contexts, 'Context', 'before scenario')}
-        ${stepsTable(scn.items, 'Test Steps', 'scenario body')}
-        ${stepsTable(scn.teardowns, 'Teardown', 'after scenario')}
-        ${!(scn.contexts||[]).length && !(scn.items||[]).length && !(scn.teardowns||[]).length ? '<div class="empty">No test steps</div>' : ''}`;
-    }
-    function renderPhase(node) {
-      const spec = findSpecFor(node);
-      const scn = findScenarioFor(node);
-      if (scn) return renderScenario(spec, scn);
-      return renderSuiteLike(forest, report.specs || []);
-    }
-    function findSpecFor(node) {
-      if (node.spec) return node.spec;
-      const specCrumb = (node.crumbs || []).map(c => index.nodes[c.id]).find(n => n && n.kind === 'spec');
-      return specCrumb && specCrumb.spec;
-    }
-    function findScenarioFor(node) {
-      if (node.scn) return node.scn;
-      const scnCrumb = (node.crumbs || []).map(c => index.nodes[c.id]).find(n => n && n.kind === 'scenario');
-      return scnCrumb && scnCrumb.scn;
-    }
     function renderContent() {
+      subtreeVisible(forest);
       const node = index.nodes[state.selected] || forest;
-      let html = '';
-      if (node.kind === 'spec') html = renderSpec(node.spec);
-      else if (node.kind === 'scenario') html = renderScenario(node.spec, node.scn);
-      else if (node.kind === 'phase' || node.kind === 'item') {
-        const spec = findSpecFor(node);
-        const scn = findScenarioFor(node);
-        html = scn ? renderScenario(spec, scn) : renderSuiteLike(forest, report.specs || []);
-      } else if (node.kind === 'folder') html = renderSuiteLike(node, collectFolderSpecs(node, []));
-      else html = renderSuiteLike(forest, report.specs || []);
-      $('content').innerHTML = html;
-      $('status-left').textContent = node.label;
       const s = report.summary;
+      $('content').innerHTML = `${crumbHtml(node)}
+        <div class="head"><div><h2>${esc(report.projectName)}</h2><div class="meta">${esc(report.environment || '-')} · ${esc(report.timestamp || '')} · ${esc(report.duration || '')}</div></div>${badge(report.verdict)}</div>
+        <div class="stats">
+          ${statCard('Specifications', s.specs)}
+          ${statCard('Test Cases', s.scenarios)}
+          ${statCard('Test Steps', s.steps)}
+        </div>
+        ${hookBlock(report.preHookFailure)}${hookBlock(report.postHookFailure)}
+        ${renderLevel([forest], true)}`;
+      $('status-left').textContent = node.label;
       $('status-right').textContent = `Specs ${s.specs.passed}/${s.specs.total} · Cases ${s.scenarios.passed}/${s.scenarios.total} · Steps ${s.steps.passed}/${s.steps.total} · ${report.duration}`;
-      if (node.kind === 'item' || node.kind === 'phase') {
-        const row = document.querySelector(`tr[data-step-id="${CSS.escape(node.id)}"]`);
-        if (row) { row.classList.add('flash'); row.scrollIntoView({ block: 'center' }); }
-      }
     }
-    function collectExpandIds(node, into, untilKind) {
+    function collectExpandIds(node, into) {
       into.add(node.id);
-      (node.children || []).forEach(ch => {
-        if (untilKind && ch.kind === untilKind) { into.add(ch.id); return; }
-        collectExpandIds(ch, into, untilKind);
-      });
+      (node.children || []).forEach(ch => collectExpandIds(ch, into));
     }
-    $('tree').addEventListener('click', (e) => {
-      const row = e.target.closest('.node-row');
-      if (!row) return;
-      const id = row.getAttribute('data-id');
-      if (e.target.closest('.twisty') && id) {
-        if (state.open.has(id)) state.open.delete(id); else state.open.add(id);
-        renderTree();
-        return;
-      }
-      const node = index.nodes[id];
-      select(id, { scrollStep: node && (node.kind === 'item' || node.kind === 'phase') });
-    });
     $('content').addEventListener('click', (e) => {
       const toggle = e.target.closest('[data-toggle]');
       if (toggle) {
+        e.stopPropagation();
         const id = toggle.getAttribute('data-toggle');
-        if (state.collapsed.has(id)) state.collapsed.delete(id); else state.collapsed.add(id);
+        if (state.open.has(id)) state.open.delete(id); else state.open.add(id);
         renderContent();
         return;
       }
       const crumb = e.target.closest('.crumb button[data-id]');
       if (crumb) { select(crumb.getAttribute('data-id')); return; }
-      const row = e.target.closest('tr.clickable');
-      if (row && row.dataset.id) select(row.dataset.id);
+      const row = e.target.closest('tr.ml-row[data-id]');
+      if (row) select(row.getAttribute('data-id'));
     });
     $('filters').addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-filter]');
       if (!btn) return;
       state.filter = btn.dataset.filter;
       [...$('filters').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b === btn));
-      renderTree();
+      renderContent();
     });
-    $('search').addEventListener('input', (e) => { state.query = e.target.value; renderTree(); });
+    $('search').addEventListener('input', (e) => { state.query = e.target.value; renderContent(); });
     $('expand-all').addEventListener('click', () => {
       const ids = new Set();
-      collectExpandIds(forest, ids, 'scenario');
+      collectExpandIds(forest, ids);
       state.open = ids;
-      renderTree();
+      renderContent();
     });
-    $('collapse-all').addEventListener('click', () => { state.open = new Set(); renderTree(); });
+    $('collapse-all').addEventListener('click', () => { state.open = new Set(['suite']); renderContent(); });
     $('print').addEventListener('click', () => window.print());
-    (function splitter() {
-      const el = $('splitter');
-      let start = 0, width = 0, dragging = false;
-      el.addEventListener('mousedown', (e) => {
-        dragging = true; start = e.clientX; width = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tree-w'), 10) || 340;
-        el.classList.add('drag');
-        e.preventDefault();
-      });
-      window.addEventListener('mousemove', (e) => {
-        if (!dragging) return;
-        const next = Math.max(180, Math.min(480, width + e.clientX - start));
-        document.documentElement.style.setProperty('--tree-w', next + 'px');
-      });
-      window.addEventListener('mouseup', () => { dragging = false; el.classList.remove('drag'); });
-    })();
     document.title = 'Test Report Viewer - ' + (report.projectName || 'report');
     $('title-file').textContent = '— ' + (report.projectName || '');
-    renderTree();
     renderContent();
   </script>
 </body>

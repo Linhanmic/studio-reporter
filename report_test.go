@@ -339,7 +339,8 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	html := string(body)
 	for _, want := range []string{
 		"Test Report Viewer",
-		"Execution Tree",
+		"ml-table",
+		"ml-nest",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
@@ -347,7 +348,6 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"specs/auth",
 		"Context",
 		"Teardown",
-		"tree-cell",
 		`"folders":["specs","auth"]`,
 		`"verdict":"fail"`,
 	} {

@@ -89,8 +89,8 @@ When a suite finishes, the plugin writes a CANoe-style Test Report Viewer to `re
 The report includes:
 
 - Overall verdict, duration, environment, and success rate
-- An Execution Tree grouped by spec folders: suite → folder → spec → scenario → context/steps/teardown
-- Test step tables with tree guides for nested concepts
+- A nested multi-level table grouped by spec folders: suite → folder → spec → scenario → context/steps/teardown
+- Expandable child tables for nested concepts, with wrapping names and details
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 - Filter by verdict and search across specs, scenarios, and steps
 
