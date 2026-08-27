@@ -107,4 +107,7 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 	if snap.Report.Verdict != verdictFail {
 		t.Fatalf("final verdict = %s", snap.Report.Verdict)
 	}
+	if snap.Rev > 9007199254740991 {
+		t.Fatalf("rev %d is not JS-safe", snap.Rev)
+	}
 }

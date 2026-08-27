@@ -471,10 +471,11 @@
         },
         applyLive(payload, scroll) {
           if (!payload || !payload.report) return;
-          if (payload.rev && payload.rev <= this.rev) return;
+          const rev = Number(payload.rev) || 0;
+          if (rev && this.rev && rev <= this.rev) return;
           this.report = ensureReport(payload.report);
           this.running = !!payload.running;
-          this.rev = payload.rev || this.rev;
+          this.rev = rev || this.rev;
           Vue.nextTick(() => {
             if (!scroll) return;
             if (scroll.tree) scroll.tree.el.scrollTop = scroll.tree.top;
@@ -632,7 +633,7 @@
       },
       mounted() {
         this.pollLive();
-        this._liveTimer = setInterval(() => this.pollLive(), this.store.running ? 600 : 1500);
+        this._liveTimer = setInterval(() => this.pollLive(), 700);
       },
       beforeUnmount() {
         if (this._liveTimer) clearInterval(this._liveTimer);
@@ -735,7 +736,7 @@
         async pollLive() {
           const payload = await fetchLive();
           if (!payload || !payload.report) return;
-          if (payload.rev && payload.rev <= this.store.rev) {
+          if (payload.rev && this.store.rev && Number(payload.rev) <= this.store.rev) {
             this.store.running = !!payload.running;
             return;
           }

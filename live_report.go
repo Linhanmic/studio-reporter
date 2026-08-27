@@ -376,7 +376,11 @@ func (p *livePublisher) publishLocked(writeHTML bool) {
 		return
 	}
 	recountReport(p.report)
-	p.rev++
+	next := time.Now().UnixMilli()
+	if next <= p.rev {
+		next = p.rev + 1
+	}
+	p.rev = next
 	if writeHTML || !p.htmlWritten {
 		html, err := renderReportHTML(p.report)
 		if err != nil {

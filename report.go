@@ -278,7 +278,7 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 	if err := os.WriteFile(jsonPath, payload, 0o644); err != nil {
 		return nil, fmt.Errorf("write last_run_result.json: %w", err)
 	}
-	if err := writeLiveSnapshot(dir, &LiveSnapshot{Rev: time.Now().UnixNano(), Running: false, Report: report}); err != nil {
+	if err := writeLiveSnapshot(dir, &LiveSnapshot{Rev: time.Now().UnixMilli(), Running: false, Report: report}); err != nil {
 		return nil, err
 	}
 
