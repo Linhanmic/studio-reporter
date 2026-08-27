@@ -248,9 +248,9 @@
         const specVisible = nodeVisible(spec.verdict, [spec.heading, spec.fileName, ...(spec.tags || [])]) || scenarios.length > 0;
         return { spec, scenarios, specVisible };
       }).filter(x => x.specVisible);
-      const html = [`<div class="node open" data-id="suite">
+      const html = [`<div class="node ${state.open.has('suite') ? 'open' : ''}" data-id="suite">
         <div class="node-row ${state.selected==='suite'?'selected':''}" data-id="suite" style="padding-left:8px">
-          <span class="twisty">▾</span>${svgIcon(report.verdict)}<span class="label">${esc(report.projectName)}</span>
+          <span class="twisty">${state.open.has('suite') ? '▾' : '▸'}</span>${svgIcon(report.verdict)}<span class="label">${esc(report.projectName)}</span>
         </div>
         <div class="children">`];
       specs.forEach(({ spec, scenarios }) => {
@@ -421,7 +421,7 @@
       const row = e.target.closest('.node-row');
       if (!row) return;
       const id = row.getAttribute('data-id');
-      if (e.target.closest('.twisty') && id && id !== 'suite') {
+      if (e.target.closest('.twisty') && id) {
         if (state.open.has(id)) state.open.delete(id); else state.open.add(id);
         renderTree();
         return;
@@ -441,11 +441,13 @@
     });
     $('search').addEventListener('input', (e) => { state.query = e.target.value; renderTree(); });
     $('expand-all').addEventListener('click', () => {
-      state.open.add('suite');
-      (report.specs || []).forEach(s => state.open.add(s.id));
+      state.open = new Set(['suite', ...(report.specs || []).map(s => s.id)]);
       renderTree();
     });
-    $('collapse-all').addEventListener('click', () => { state.open = new Set(['suite']); renderTree(); });
+    $('collapse-all').addEventListener('click', () => {
+      state.open = new Set();
+      renderTree();
+    });
     $('print').addEventListener('click', () => window.print());
     document.title = 'Test Report Viewer - ' + (report.projectName || 'report');
     $('title-file').textContent = '— ' + (report.projectName || '');
