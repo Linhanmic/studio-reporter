@@ -27,7 +27,8 @@
       --folder: #d69e2e;
       --font: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
       --mono: "Cascadia Mono", "Consolas", "Microsoft YaHei Mono", monospace;
-      --tree-w: 340px;
+      --tree-w: 280px;
+      --indent: 8px;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; background: var(--chrome); color: var(--text); font: 13px/1.45 var(--font); }
@@ -67,37 +68,41 @@
       padding: 6px 10px; font-weight: 600; color: var(--header); letter-spacing: .04em;
       text-transform: uppercase; font-size: 11px; display: flex; justify-content: space-between;
     }
-    .tree { padding: 4px 8px 16px 4px; }
-    .tree ul { list-style: none; margin: 0; padding: 0 0 0 14px; position: relative; }
-    .tree > ul { padding-left: 6px; }
+    .tree { padding: 2px 6px 12px 2px; }
+    .tree ul { list-style: none; margin: 0; padding: 0 0 0 var(--indent); position: relative; }
+    .tree > ul { padding-left: 2px; }
     .tree li { position: relative; }
     .tree ul::before {
-      content: ""; position: absolute; left: 6px; top: 0; bottom: 10px;
+      content: ""; position: absolute; left: 3px; top: 0; bottom: 8px;
       border-left: 1px solid var(--guide);
     }
     .tree > ul::before { display: none; }
     .tree li::before {
-      content: ""; position: absolute; left: -8px; top: 13px; width: 12px;
+      content: ""; position: absolute; left: -5px; top: 10px; width: 8px;
       border-top: 1px solid var(--guide);
     }
     .tree li:last-child::after {
-      content: ""; position: absolute; left: -8px; top: 14px; bottom: 0; width: 2px; background: var(--panel);
+      content: ""; position: absolute; left: -5px; top: 11px; bottom: 0; width: 2px; background: var(--panel);
     }
     .node-row {
-      display: flex; align-items: center; gap: 5px; padding: 2px 6px 2px 2px;
-      cursor: pointer; border-radius: 3px; min-height: 22px; white-space: nowrap;
+      display: flex; align-items: center; gap: 3px; padding: 1px 4px 1px 1px;
+      cursor: pointer; border-radius: 3px; min-height: 18px; white-space: nowrap; min-width: 0;
     }
     .node-row:hover { background: #f0f7fb; }
     .node-row.selected { background: var(--sel); }
     .twisty {
-      width: 14px; flex: 0 0 14px; text-align: center; color: var(--muted);
-      font-size: 10px; line-height: 1;
+      width: 12px; flex: 0 0 12px; text-align: center; color: var(--muted);
+      font-size: 9px; line-height: 1;
     }
     .twisty.empty { visibility: hidden; }
-    .ico { width: 14px; height: 14px; flex: 0 0 14px; }
-    .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .kind { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; flex: 0 0 auto; }
-    .count { color: var(--muted); font-size: 11px; margin-left: auto; padding-left: 8px; flex: 0 0 auto; }
+    .ico { width: 13px; height: 13px; flex: 0 0 13px; }
+    .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 auto; }
+    .kind {
+      color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .03em;
+      flex: 0 0 auto; display: none;
+    }
+    .node-row:hover .kind { display: inline; }
+    .count { color: var(--muted); font-size: 10px; margin-left: 4px; flex: 0 0 auto; }
     .hidden { display: none !important; }
     .content { padding: 14px 18px 28px; }
     .crumb { color: var(--muted); margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
@@ -132,7 +137,7 @@
     .bar .f { background: var(--fail); }
     .bar .s { background: var(--skip); }
     table.grid { width: 100%; border-collapse: collapse; border: 1px solid var(--line); }
-    table.grid th, table.grid td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+    table.grid th, table.grid td { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
     table.grid th { background: #f4f7fa; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
     table.grid tbody tr:nth-child(even) { background: var(--row-alt); }
     table.grid tbody tr.clickable { cursor: pointer; }
@@ -149,18 +154,18 @@
     .err { color: var(--fail); white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
     .msg { color: var(--muted); white-space: pre-wrap; }
     .stack { white-space: pre-wrap; font-family: var(--mono); font-size: 11px; background: #f7fafc; border: 1px solid var(--line); padding: 8px; overflow: auto; }
-    .tree-cell { display: flex; align-items: stretch; gap: 0; min-width: 88px; }
-    .indent-block { display: inline-block; flex: 0 0 auto; height: 8px; }
-    .guides { display: inline-flex; align-items: stretch; min-height: 22px; }
-    .guides i { position: relative; width: 16px; flex: 0 0 16px; }
-    .g-bar::before, .g-mid::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; border-left: 1px solid var(--guide); }
-    .g-mid::after, .g-end::after { content: ""; position: absolute; left: 8px; top: 12px; width: 8px; border-top: 1px solid var(--guide); }
-    .g-end::before { content: ""; position: absolute; left: 8px; top: 0; height: 13px; border-left: 1px solid var(--guide); }
-    .guides .twisty { cursor: pointer; color: var(--muted); width: 14px; }
+    .tree-cell { display: flex; align-items: stretch; gap: 0; width: 1%; white-space: nowrap; padding-right: 4px !important; }
+    .guides { display: inline-flex; align-items: stretch; min-height: 18px; }
+    .guides i { position: relative; width: 10px; flex: 0 0 10px; }
+    .g-bar::before, .g-mid::before { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; border-left: 1px solid var(--guide); }
+    .g-mid::after, .g-end::after { content: ""; position: absolute; left: 4px; top: 9px; width: 6px; border-top: 1px solid var(--guide); }
+    .g-end::before { content: ""; position: absolute; left: 4px; top: 0; height: 10px; border-left: 1px solid var(--guide); }
+    .guides .twisty { cursor: pointer; color: var(--muted); width: 12px; }
     tr.row-concept { background: #eef5fb; }
     tr.depth-1 { background: #f7fafc; }
-    tr.depth-1 td:first-child, tr.depth-2 td:first-child, tr.depth-3 td:first-child {
-      box-shadow: inset 3px 0 0 var(--accent);
+    td.desc { word-break: break-word; overflow-wrap: anywhere; padding-left: calc(6px + var(--d, 0) * 8px) !important; }
+    tr.depth-1 td:first-child, tr.depth-2 td:first-child, tr.depth-3 td:first-child, tr.depth-4 td:first-child {
+      box-shadow: inset 2px 0 0 var(--accent);
     }
     .shots { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
     .shots img { max-width: 240px; max-height: 160px; border: 1px solid var(--line); background: #fff; }
@@ -417,7 +422,7 @@
       const children = kids(node);
       const twisty = children.length ? (open ? '▾' : '▸') : '';
       const iconKind = node.kind === 'item' ? (node.itemKind || 'step') : node.kind;
-      let html = `<li><div class="node-row ${state.selected===node.id?'selected':''}" data-id="${esc(node.id)}">
+      let html = `<li><div class="node-row ${state.selected===node.id?'selected':''}" data-id="${esc(node.id)}" title="${esc(node.label)}">
         <span class="twisty ${children.length ? '' : 'empty'}">${twisty}</span>
         ${typeIcon(iconKind, node.verdict)}
         <span class="label">${esc(node.label)}</span>
@@ -540,7 +545,6 @@
       });
       html += '</span>';
       if (row.expandable) html += `<span class="twisty" data-toggle="${esc(row.id)}">${row.collapsed ? '▸' : '▾'}</span>`;
-      else if (row.depth) html += `<span class="twisty empty">·</span>`;
       return html;
     }
     function stepsTable(items, title, hint) {
@@ -548,8 +552,8 @@
       flattenSteps(items, 0, rows, []);
       if (!rows.length) return '';
       return `<div class="section">${esc(title)}${hint ? `<span class="hint">${esc(hint)}</span>` : ''}</div>
-        <table class="grid"><thead><tr><th>#</th><th>Hierarchy</th><th>Type</th><th>Description</th><th>Verdict</th><th>Duration</th></tr></thead><tbody>${
-          rows.map((r, i) => `<tr class="depth-${r.depth} row-${esc(r.type.toLowerCase())}" data-step-id="${esc(r.id || '')}"><td>${i+1}</td><td class="tree-cell"><span class="indent-block" style="width:${(r.depth||0)*28}px"></span>${guideHtml(r)}</td><td>${esc(r.type)}</td><td class="desc" style="padding-left:${8 + (r.depth||0)*20}px">${r.text}${r.extra}</td><td>${badge(r.verdict)}</td><td>${esc(r.duration)}</td></tr>`).join('')
+        <table class="grid"><thead><tr><th>#</th><th></th><th>Type</th><th>Description</th><th>Verdict</th><th>Duration</th></tr></thead><tbody>${
+          rows.map((r, i) => `<tr class="depth-${r.depth} row-${esc(r.type.toLowerCase())}" style="--d:${r.depth||0}" data-step-id="${esc(r.id || '')}"><td>${i+1}</td><td class="tree-cell">${guideHtml(r)}</td><td>${esc(r.type)}</td><td class="desc">${r.text}${r.extra}</td><td>${badge(r.verdict)}</td><td>${esc(r.duration)}</td></tr>`).join('')
         }</tbody></table>`;
     }
     function collectFolderSpecs(node, out) {
@@ -706,7 +710,7 @@
       });
       window.addEventListener('mousemove', (e) => {
         if (!dragging) return;
-        const next = Math.max(220, Math.min(560, width + e.clientX - start));
+        const next = Math.max(180, Math.min(480, width + e.clientX - start));
         document.documentElement.style.setProperty('--tree-w', next + 'px');
       });
       window.addEventListener('mouseup', () => { dragging = false; el.classList.remove('drag'); });

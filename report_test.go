@@ -347,7 +347,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"specs/auth",
 		"Context",
 		"Teardown",
-		"Hierarchy",
+		"tree-cell",
 		`"folders":["specs","auth"]`,
 		`"verdict":"fail"`,
 	} {
