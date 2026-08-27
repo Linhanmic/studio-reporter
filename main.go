@@ -51,9 +51,20 @@ func main() {
 	// 第三个参数是帮助说明，运行 --help 时会显示
 	// start 是 *bool 类型（指针），所以后面要用 *start 来取值
 	start := flag.Bool("start", false, "Start the reporter gRPC server for Gauge execution")
+	input := flag.String("input", "", "Regenerate an HTML report from last_run_result.json")
+	out := flag.String("out", "", "Output directory for regenerated HTML report")
 	// 真正去解析命令行输入
 	// 在这行之前，定义的所有 flag 都只是"声明"，Parse() 之后才会拿到真正的值
 	flag.Parse()
+
+	if *input != "" {
+		generated, err := generateReportFromJSON(*input, *out)
+		if err != nil {
+			log.Fatalf("studio-reporter: %v", err)
+		}
+		fmt.Printf("HTML report written to %s\n", generated.IndexPath)
+		return
+	}
 
 	// 保护性检查：如果两个启动条件都不满足，就打印帮助信息并退出
 	// !*start：用户没有传 --start 参数

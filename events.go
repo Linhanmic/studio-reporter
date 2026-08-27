@@ -20,6 +20,7 @@ const (
 	EventConceptExecutionStarting  = "ConceptExecutionStarting"
 	EventConceptExecutionEnding    = "ConceptExecutionEnding"
 	EventSuiteResult               = "SuiteResult"
+	EventReportGenerated           = "ReportGenerated"
 )
 
 var protoMarshalOptions = protojson.MarshalOptions{
@@ -39,9 +40,13 @@ func newStudioEvent(eventType string, message proto.Message) (*StudioEvent, erro
 	if err != nil {
 		return nil, err
 	}
+	return newStudioEventPayload(eventType, payload), nil
+}
+
+func newStudioEventPayload(eventType string, payload json.RawMessage) *StudioEvent {
 	return &StudioEvent{
 		Type:      eventType,
 		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
 		Payload:   payload,
-	}, nil
+	}
 }

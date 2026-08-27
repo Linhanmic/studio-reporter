@@ -26,8 +26,11 @@ Configure the WebSocket endpoint via environment variable:
 
 | Environment Variable | Required | Default | Description |
 |---------------------|----------|---------|-------------|
-| `GAUGE_STUDIO_WS` | Yes | - | WebSocket server URL (e.g., `ws://127.0.0.1:8080`) |
+| `GAUGE_STUDIO_WS` | Yes (for live forwarding) | - | WebSocket server URL (e.g., `ws://127.0.0.1:8080`) |
 | `gauge_max_message_size` | No | `1024` | Maximum gRPC message size in MB |
+| `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
+| `overwrite_reports` | No | `true` | Overwrite the previous HTML report on each run |
+| `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to skip HTML report generation |
 
 ### Connection Behavior
 
@@ -302,6 +305,49 @@ Fired when all tests complete with final results.
 }
 ```
 
+### ReportGenerated
+
+Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` is set).
+
+- **Type**: `ReportGenerated`
+- **Payload Type**: object
+
+```json
+{
+  "type": "ReportGenerated",
+  "timestamp": "2026-07-29T15:00:00.223456789Z",
+  "payload": {
+    "reportPath": "/path/to/reports/studio-report/index.html",
+    "jsonPath": "/path/to/reports/studio-report/last_run_result.json",
+    "reportDir": "/path/to/reports/studio-report"
+  }
+}
+```
+
+## HTML Report
+
+On `SuiteResult`, the plugin generates a local HTML report modeled after CANoe Test Report Viewer:
+
+- Top title bar and verdict filter toolbar
+- Left **Execution Tree**: suite → specs (test groups) → scenarios (test cases)
+- Right content pane: overview statistics or test-step table
+- Color-coded verdicts: pass (green), fail (red), skip (grey)
+- Nested concepts, hook failures, screenshots, stack traces, and data tables
+
+Default output:
+
+```
+reports/studio-report/index.html
+reports/studio-report/last_run_result.json
+reports/studio-report/images/
+```
+
+Regenerate without re-running tests:
+
+```bash
+./bin/studio-reporter --input reports/studio-report/last_run_result.json --out /tmp/studio-report
+```
+
 ## Event Lifecycle
 
 ```
@@ -345,6 +391,9 @@ Fired when all tests complete with final results.
                              │                                   │
                              ▼                                   │
                         SuiteResult                              │
+                             │                                   │
+                             ▼                                   │
+                      ReportGenerated                            │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -432,6 +481,10 @@ class GaugeStudioReceiver {
 
   onSuiteResult(handler: (payload: any) => void): void {
     this.eventHandlers.set('SuiteResult', handler);
+  }
+
+  onReportGenerated(handler: (payload: any) => void): void {
+    this.eventHandlers.set('ReportGenerated', handler);
   }
 }
 

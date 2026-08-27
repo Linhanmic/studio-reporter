@@ -1,16 +1,17 @@
 # Studio Reporter Plugin
 
-A Gauge plugin that forwards test execution lifecycle events to Gauge Studio via WebSocket in real-time.
+A Gauge plugin that forwards test execution lifecycle events to Gauge Studio via WebSocket in real-time, and generates an HTML report in the CANoe Test Report Viewer style.
 
 ## Overview
 
-The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https://gauge.org/) that monitors test execution and forwards events to [Gauge Studio](https://github.com/gaugestudio/gauge-studio) via WebSocket.
+The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https://gauge.org/) that monitors test execution, forwards events to [Gauge Studio](https://github.com/gaugestudio/gauge-studio) via WebSocket, and writes a local HTML report when the suite finishes.
 
 ## Features
 
 - Real-time event forwarding via WebSocket
 - Auto-reconnect with exponential backoff
 - Supports all Gauge execution lifecycle events
+- HTML report generation (CANoe Test Report Viewer layout)
 - Cross-platform (Windows, Linux, macOS)
 - Configurable message size limits
 
@@ -41,8 +42,11 @@ go build -o bin/studio-reporter ./...
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GAUGE_STUDIO_WS` | Yes | - | WebSocket server URL (e.g., `ws://127.0.0.1:8080`) |
+| `GAUGE_STUDIO_WS` | Yes (for live forwarding) | - | WebSocket server URL (e.g., `ws://127.0.0.1:8080`) |
 | `gauge_max_message_size` | No | `1024` | Maximum gRPC message size in MB |
+| `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
+| `overwrite_reports` | No | `true` | Overwrite `reports/studio-report` on each run. Set `false` to keep timestamped copies |
+| `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to disable HTML report generation |
 
 ### Gauge Plugin Installation
 
@@ -76,6 +80,33 @@ gauge run specs/
 
 # Or with environment variable
 GAUGE_STUDIO_WS="ws://127.0.0.1:8080" ./bin/studio-reporter --start
+```
+
+## HTML Report
+
+When a suite finishes, the plugin writes a CANoe-style Test Report Viewer to `reports/studio-report/index.html` (unless `GAUGE_STUDIO_SKIP_REPORT` is set).
+
+The report includes:
+
+- Overall verdict, duration, environment, and success rate
+- An Execution Tree of specs (test groups) and scenarios (test cases)
+- Test step tables with pass / fail / skip verdicts
+- Nested concepts, hook failures, screenshots, stack traces, and data tables
+- Filter by verdict and search across specs, scenarios, and steps
+
+Open the file in a browser:
+
+```bash
+# Linux
+xdg-open reports/studio-report/index.html
+```
+
+### Regenerate a report
+
+The plugin also writes `last_run_result.json` next to `index.html`. You can rebuild the HTML without re-running tests:
+
+```bash
+./bin/studio-reporter --input reports/studio-report/last_run_result.json --out /tmp/studio-report
 ```
 
 ## Development
@@ -116,6 +147,9 @@ studio-reporter/
 ├── reporter.go          # gRPC handler implementation
 ├── events.go            # Event types and structures
 ├── forwarder.go         # WebSocket forwarder
+├── report.go            # HTML report model and generation
+├── report.html          # CANoe-style Test Report Viewer
+├── report_html.go       # Embedded report template
 ├── go.mod               # Go module definition
 ├── go.sum               # Go module checksums
 ├── plugin.json          # Gauge plugin configuration

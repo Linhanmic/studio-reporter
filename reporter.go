@@ -6,8 +6,9 @@ package main
 // import 语句引入其他包
 import (
 	"context" // 上下文：用于传递请求的生命周期信号（如超时、取消），gRPC 接口强制要求传入
-	"log"     // 输出日志
-	"os"      // 操作系统功能，这里用 os.Exit(0) 退出程序
+	"encoding/json"
+	"log" // 输出日志
+	"os"  // 操作系统功能，这里用 os.Exit(0) 退出程序
 
 	"github.com/getgauge/gauge-proto/go/gauge_messages" // Gauge 测试框架定义的 gRPC 消息类型（如各种 Request、Empty）
 	"google.golang.org/grpc"                            // gRPC 服务器相关功能
@@ -22,8 +23,8 @@ type reporterHandler struct {
 	// 这是 gRPC 的设计模式：避免接口变更时代码编译失败
 	// 比喻：偏科生抄作业——先抄全科作业（嵌入默认实现），然后把自己擅长的几道题改成正确答案
 	gauge_messages.UnimplementedReporterServer
-	server    *grpc.Server   // 指向 gRPC 服务器的指针，用于后续优雅关闭
-	forwarder *wsForwarder   // 指向 WebSocket 转发器，用于把事件发送给前端
+	server    *grpc.Server // 指向 gRPC 服务器的指针，用于后续优雅关闭
+	forwarder *wsForwarder // 指向 WebSocket 转发器，用于把事件发送给前端
 }
 
 // forwardEvent 是核心辅助方法，所有 Notify* 方法最终都调用它，避免代码重复
@@ -114,7 +115,31 @@ func (h *reporterHandler) NotifyConceptExecutionEnding(_ context.Context, req *g
 // NotifySuiteResult：Gauge 框架在测试套件执行结束时自动调用，传递最终结果汇总
 func (h *reporterHandler) NotifySuiteResult(_ context.Context, req *gauge_messages.SuiteExecutionResult) (*gauge_messages.Empty, error) {
 	h.forwardEvent(EventSuiteResult, req)
+	h.generateAndForwardReport(req)
 	return &gauge_messages.Empty{}, nil
+}
+
+func (h *reporterHandler) generateAndForwardReport(req *gauge_messages.SuiteExecutionResult) {
+	if shouldSkipReport() {
+		return
+	}
+	generated, err := generateReportFromSuite(req)
+	if err != nil {
+		log.Printf("studio-reporter: failed to generate HTML report: %v", err)
+		return
+	}
+	payload, err := json.Marshal(map[string]string{
+		"reportPath": generated.IndexPath,
+		"jsonPath":   generated.JSONPath,
+		"reportDir":  generated.Dir,
+	})
+	if err != nil {
+		log.Printf("studio-reporter: failed to marshal ReportGenerated event: %v", err)
+		return
+	}
+	if err := h.forwarder.forward(newStudioEventPayload(EventReportGenerated, payload)); err != nil {
+		log.Printf("studio-reporter: failed to forward %s event: %v", EventReportGenerated, err)
+	}
 }
 
 // Kill 是 gRPC 回调方法：Gauge 框架要求插件进程退出时调用

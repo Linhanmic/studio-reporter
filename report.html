@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test Report Viewer</title>
+  <style>
+    :root {
+      --header: #16324f;
+      --header-2: #1f4668;
+      --accent: #2b9ad4;
+      --chrome: #d9e2ec;
+      --panel: #ffffff;
+      --line: #c5d0dc;
+      --text: #1a202c;
+      --muted: #5a6a7a;
+      --pass: #2f855a;
+      --fail: #c53030;
+      --skip: #718096;
+      --none: #a0aec0;
+      --pass-bg: #c6f6d5;
+      --fail-bg: #fed7d7;
+      --skip-bg: #edf2f7;
+      --sel: #d6eaf8;
+      --row-alt: #f7fafc;
+      --font: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+      --mono: "Cascadia Mono", "Consolas", "Microsoft YaHei Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--chrome); color: var(--text); font: 13px/1.45 var(--font); }
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    button, input, select { font: inherit; }
+    .titlebar {
+      background: linear-gradient(180deg, var(--header-2), var(--header));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 14px;
+      min-height: 42px;
+    }
+    .logo {
+      width: 22px; height: 22px; border-radius: 3px;
+      background: var(--accent); display: grid; place-items: center;
+      font-weight: 700; font-size: 12px; color: #083344;
+    }
+    .titlebar h1 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: .02em; }
+    .titlebar .file { color: #cfe8f7; font-weight: 400; margin-left: 4px; }
+    .toolbar {
+      background: #eef3f8;
+      border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 6px 10px;
+    }
+    .toolbar .group { display: flex; align-items: center; gap: 6px; }
+    .seg { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: #fff; }
+    .seg button {
+      border: 0; background: transparent; padding: 4px 10px; cursor: pointer; color: var(--muted);
+    }
+    .seg button + button { border-left: 1px solid var(--line); }
+    .seg button.active { background: var(--header); color: #fff; }
+    .search {
+      border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; min-width: 220px;
+    }
+    .ghost {
+      border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 4px 10px; cursor: pointer;
+    }
+    .ghost:hover { background: #f7fafc; }
+    .workspace { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+    .tree-pane, .content-pane { background: var(--panel); min-height: 0; overflow: auto; }
+    .tree-pane { border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+    .pane-title {
+      background: #f4f7fa; border-bottom: 1px solid var(--line);
+      padding: 6px 10px; font-weight: 600; color: var(--header); letter-spacing: .04em;
+      text-transform: uppercase; font-size: 11px;
+    }
+    .tree { padding: 6px 0 16px; }
+    .node { user-select: none; }
+    .node-row {
+      display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 6px; cursor: pointer;
+      white-space: nowrap;
+    }
+    .node-row:hover { background: #f0f7fb; }
+    .node-row.selected { background: var(--sel); }
+    .twisty { width: 14px; text-align: center; color: var(--muted); font-size: 10px; flex: 0 0 14px; }
+    .ico { width: 14px; height: 14px; flex: 0 0 14px; }
+    .label { overflow: hidden; text-overflow: ellipsis; }
+    .children { display: none; }
+    .node.open > .children { display: block; }
+    .hidden { display: none !important; }
+    .content { padding: 14px 18px 28px; }
+    .crumb { color: var(--muted); margin-bottom: 8px; }
+    .head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 14px;
+    }
+    .head h2 { margin: 0 0 4px; font-size: 18px; font-weight: 650; }
+    .meta { color: var(--muted); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: 3px; padding: 4px 10px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; font-size: 12px; border: 1px solid transparent;
+    }
+    .v-pass { background: var(--pass-bg); color: var(--pass); border-color: #9ae6b4; }
+    .v-fail { background: var(--fail-bg); color: var(--fail); border-color: #feb2b2; }
+    .v-skip { background: var(--skip-bg); color: var(--skip); border-color: #cbd5e0; }
+    .v-none { background: #edf2f7; color: var(--none); border-color: #e2e8f0; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 12px 0 16px; }
+    .card { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; background: #fff; }
+    .card h3 { margin: 0 0 8px; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+    .nums { display: flex; gap: 10px; flex-wrap: wrap; }
+    .nums span { font-weight: 650; }
+    .bar { height: 8px; background: #edf2f7; border-radius: 99px; overflow: hidden; display: flex; margin-top: 8px; }
+    .bar i { display: block; height: 100%; }
+    .bar .p { background: var(--pass); }
+    .bar .f { background: var(--fail); }
+    .bar .s { background: var(--skip); }
+    table.grid { width: 100%; border-collapse: collapse; border: 1px solid var(--line); }
+    table.grid th, table.grid td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+    table.grid th { background: #f4f7fa; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    table.grid tbody tr:nth-child(even) { background: var(--row-alt); }
+    table.grid tbody tr.clickable { cursor: pointer; }
+    table.grid tbody tr.clickable:hover { background: #eef6fb; }
+    .kv { width: 100%; border-collapse: collapse; }
+    .kv th { width: 180px; text-align: left; color: var(--muted); font-weight: 600; padding: 4px 8px 4px 0; }
+    .kv td { padding: 4px 0; }
+    .section { margin: 18px 0 8px; font-size: 13px; font-weight: 700; color: var(--header); }
+    .step-text .static { color: #2b6cb0; font-weight: 650; }
+    .step-text .dynamic { color: #805ad5; font-weight: 650; }
+    .step-text .special { color: #c05621; }
+    .err { color: var(--fail); white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
+    .msg { color: var(--muted); white-space: pre-wrap; }
+    .stack { white-space: pre-wrap; font-family: var(--mono); font-size: 11px; background: #f7fafc; border: 1px solid var(--line); padding: 8px; overflow: auto; }
+    .indent-1 td:first-child { padding-left: 24px; }
+    .indent-2 td:first-child { padding-left: 40px; }
+    .indent-3 td:first-child { padding-left: 56px; }
+    .shots { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .shots img { max-width: 240px; max-height: 160px; border: 1px solid var(--line); background: #fff; }
+    .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .tag { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; border-radius: 3px; padding: 0 6px; font-size: 11px; }
+    .empty { color: var(--muted); padding: 24px; text-align: center; }
+    .status {
+      background: #eef3f8; border-top: 1px solid var(--line);
+      padding: 4px 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px;
+    }
+    .data-table { margin: 6px 0; }
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr; }
+      .tree-pane { max-height: 36vh; border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+    @media print {
+      .titlebar, .toolbar, .tree-pane, .status { display: none !important; }
+      .workspace { display: block; }
+      body { background: #fff; }
+    }
+  </style>
+</head>
+<body>
+  <header class="titlebar">
+    <div class="logo">TR</div>
+    <h1>Test Report Viewer <span class="file" id="title-file"></span></h1>
+  </header>
+  <div class="toolbar">
+    <div class="group">
+      <span>Verdict</span>
+      <div class="seg" id="filters">
+        <button data-filter="all" class="active">All</button>
+        <button data-filter="fail">Fail</button>
+        <button data-filter="pass">Pass</button>
+        <button data-filter="skip">Skip</button>
+      </div>
+    </div>
+    <input class="search" id="search" placeholder="Search specs / scenarios / steps" type="search">
+    <button class="ghost" id="expand-all" type="button">Expand All</button>
+    <button class="ghost" id="collapse-all" type="button">Collapse All</button>
+    <button class="ghost" id="print" type="button">Print</button>
+  </div>
+  <div class="workspace">
+    <aside class="tree-pane">
+      <div class="pane-title">Execution Tree</div>
+      <div class="tree" id="tree"></div>
+    </aside>
+    <main class="content-pane">
+      <div class="content" id="content"></div>
+    </main>
+  </div>
+  <footer class="status">
+    <span id="status-left">Ready</span>
+    <span id="status-right"></span>
+  </footer>
+  <script type="application/json" id="report-data">{{REPORT_JSON}}</script>
+  <script>
+    const report = JSON.parse(document.getElementById('report-data').textContent);
+    const state = { filter: 'all', query: '', selected: 'suite', open: new Set(['suite']) };
+    const $ = (id) => document.getElementById(id);
+
+    function verdictLabel(v) {
+      return ({ pass: 'Pass', fail: 'Fail', skip: 'Skip', none: 'None' })[v] || 'None';
+    }
+    function svgIcon(v) {
+      const color = { pass: '#2f855a', fail: '#c53030', skip: '#718096', none: '#a0aec0' }[v] || '#a0aec0';
+      const mark = { pass: 'M4 8.5l2.2 2.2L12 5', fail: 'M5 5l6 6M11 5l-6 6', skip: 'M4 8h8', none: '' }[v] || '';
+      return `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="${color}" stroke-width="1.6"/><path d="${mark}" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+    }
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function tags(list) {
+      if (!list || !list.length) return '';
+      return `<div class="tags">${list.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>`;
+    }
+    function badge(v) {
+      return `<span class="badge v-${esc(v)}">${esc(verdictLabel(v))}</span>`;
+    }
+    function countBar(c) {
+      const t = Math.max(c.total, 1);
+      return `<div class="bar"><i class="p" style="width:${100*c.passed/t}%"></i><i class="f" style="width:${100*c.failed/t}%"></i><i class="s" style="width:${100*c.skipped/t}%"></i></div>`;
+    }
+    function matchQuery(text) {
+      const q = state.query.trim().toLowerCase();
+      if (!q) return true;
+      return String(text || '').toLowerCase().includes(q);
+    }
+    function nodeVisible(verdict, texts) {
+      if (state.filter !== 'all' && verdict !== state.filter) return false;
+      if (!state.query.trim()) return true;
+      return texts.some(matchQuery);
+    }
+    function collectTexts(scn) {
+      const texts = [scn.heading, ...(scn.tags || [])];
+      const walk = (items) => {
+        (items || []).forEach(item => {
+          if (item.kind === 'step' && item.step) texts.push(item.step.actualText || item.step.parsedText);
+          if (item.kind === 'concept' && item.concept) {
+            if (item.concept.step) texts.push(item.concept.step.actualText || item.concept.step.parsedText);
+            walk(item.concept.items);
+          }
+          if (item.kind === 'comment') texts.push(item.comment);
+        });
+      };
+      walk(scn.items);
+      return texts;
+    }
+    function renderTree() {
+      const specs = (report.specs || []).map(spec => {
+        const scenarios = (spec.scenarios || []).filter(scn => nodeVisible(scn.verdict, collectTexts(scn).concat(spec.heading)));
+        const specVisible = nodeVisible(spec.verdict, [spec.heading, spec.fileName, ...(spec.tags || [])]) || scenarios.length > 0;
+        return { spec, scenarios, specVisible };
+      }).filter(x => x.specVisible);
+      const html = [`<div class="node open" data-id="suite">
+        <div class="node-row ${state.selected==='suite'?'selected':''}" data-id="suite" style="padding-left:8px">
+          <span class="twisty">▾</span>${svgIcon(report.verdict)}<span class="label">${esc(report.projectName)}</span>
+        </div>
+        <div class="children">`];
+      specs.forEach(({ spec, scenarios }) => {
+        const open = state.open.has(spec.id) ? 'open' : '';
+        html.push(`<div class="node ${open}" data-id="${esc(spec.id)}">
+          <div class="node-row ${state.selected===spec.id?'selected':''}" data-id="${esc(spec.id)}" style="padding-left:18px">
+            <span class="twisty">${scenarios.length ? (open ? '▾' : '▸') : '·'}</span>${svgIcon(spec.verdict)}<span class="label">${esc(spec.heading)}</span>
+          </div><div class="children">`);
+        scenarios.forEach(scn => {
+          html.push(`<div class="node-row ${state.selected===scn.id?'selected':''}" data-id="${esc(scn.id)}" style="padding-left:36px">
+            <span class="twisty"></span>${svgIcon(scn.verdict)}<span class="label">${esc(scn.heading)}</span>
+          </div>`);
+        });
+        html.push('</div></div>');
+      });
+      html.push('</div></div>');
+      $('tree').innerHTML = html.join('');
+    }
+    function findNode(id) {
+      if (id === 'suite') return { kind: 'suite', report };
+      for (const spec of report.specs || []) {
+        if (spec.id === id) return { kind: 'spec', spec };
+        for (const scn of spec.scenarios || []) {
+          if (scn.id === id) return { kind: 'scenario', spec, scn };
+        }
+      }
+      return { kind: 'suite', report };
+    }
+    function hookBlock(h) {
+      if (!h) return '';
+      return `<div class="card" style="border-color:#feb2b2">
+        <h3>${esc(h.hookName)} failed</h3>
+        <div class="err">${esc(h.errorMessage)}</div>
+        ${h.stackTrace ? `<pre class="stack">${esc(h.stackTrace)}</pre>` : ''}
+        ${shotList(h.failureScreenshot ? [h.failureScreenshot] : [])}
+      </div>`;
+    }
+    function shotList(paths) {
+      const list = (paths || []).filter(Boolean);
+      if (!list.length) return '';
+      return `<div class="shots">${list.map(p => `<a href="${esc(p)}" target="_blank"><img src="${esc(p)}" alt="screenshot"></a>`).join('')}</div>`;
+    }
+    function dataTable(t) {
+      if (!t || !t.headers) return '';
+      const head = `<tr>${t.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr>`;
+      const rows = (t.rows || []).map(r => `<tr>${(r||[]).map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('');
+      return `<table class="grid data-table"><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+    }
+    function stepText(step) {
+      if (!step) return '';
+      if (step.fragments && step.fragments.length) {
+        return step.fragments.map(f => {
+          if (f.kind === 'text') return esc(f.text);
+          if (f.kind === 'table') return `<div>${dataTable(f.table)}</div>`;
+          if (f.kind === 'multiline') return `<pre class="stack">${esc(f.text)}</pre>`;
+          return `<span class="${esc(f.kind)}">${esc(f.text)}</span>`;
+        }).join('');
+      }
+      return esc(step.actualText || step.parsedText || '');
+    }
+    function flattenSteps(items, depth, rows) {
+      (items || []).forEach(item => {
+        if (item.kind === 'comment') {
+          rows.push({ type: 'Comment', depth, text: esc(item.comment), verdict: 'none', duration: '', extra: '' });
+          return;
+        }
+        if (item.kind === 'step' && item.step) {
+          rows.push(stepRow('Step', item.step, depth));
+          return;
+        }
+        if (item.kind === 'concept' && item.concept) {
+          if (item.concept.step) rows.push(stepRow('Concept', item.concept.step, depth));
+          flattenSteps(item.concept.items, depth + 1, rows);
+        }
+      });
+    }
+    function stepRow(type, step, depth) {
+      const extra = [
+        step.errorMessage ? `<div class="err">${esc(step.errorMessage)}</div>` : '',
+        step.skippedReason ? `<div class="msg">Skipped: ${esc(step.skippedReason)}</div>` : '',
+        (step.messages || []).map(m => `<div class="msg">${esc(m)}</div>`).join(''),
+        step.stackTrace ? `<pre class="stack">${esc(step.stackTrace)}</pre>` : '',
+        hookBlock(step.preHookFailure),
+        hookBlock(step.postHookFailure),
+        shotList([step.failureScreenshot].concat(step.screenshots || []).concat(step.preHookScreenshots || []).concat(step.postHookScreenshots || []))
+      ].join('');
+      return { type, depth, text: `<span class="step-text">${stepText(step)}</span>`, verdict: step.verdict, duration: step.duration, extra };
+    }
+    function stepsTable(scn) {
+      const rows = [];
+      flattenSteps(scn.items, 0, rows);
+      if (!rows.length) return `<div class="empty">No test steps</div>`;
+      return `<table class="grid"><thead><tr><th>#</th><th>Type</th><th>Description</th><th>Verdict</th><th>Duration</th></tr></thead><tbody>${
+        rows.map((r, i) => `<tr class="indent-${Math.min(r.depth,3)}"><td>${i+1}</td><td>${esc(r.type)}</td><td>${r.text}${r.extra}</td><td>${badge(r.verdict)}</td><td>${esc(r.duration)}</td></tr>`).join('')
+      }</tbody></table>`;
+    }
+    function renderSuite() {
+      const s = report.summary;
+      return `
+        <div class="crumb">Test Configuration</div>
+        <div class="head"><div><h2>${esc(report.projectName)}</h2><div class="meta">${esc(report.timestamp)} · ${esc(report.duration)}</div></div>${badge(report.verdict)}</div>
+        <table class="kv">
+          <tr><th>Environment</th><td>${esc(report.environment || '-')}</td></tr>
+          <tr><th>Tags</th><td>${esc(report.tags || '-')}</td></tr>
+          <tr><th>Success rate</th><td>${Number(report.successRate || 0).toFixed(2)}%</td></tr>
+          <tr><th>Started</th><td>${esc(report.timestampISO || report.timestamp)}</td></tr>
+        </table>
+        <div class="stats">
+          ${statCard('Specifications', s.specs)}
+          ${statCard('Test Cases', s.scenarios)}
+          ${statCard('Test Steps', s.steps)}
+        </div>
+        ${hookBlock(report.preHookFailure)}${hookBlock(report.postHookFailure)}
+        ${(report.preHookMessages||[]).concat(report.postHookMessages||[]).map(m => `<div class="msg">${esc(m)}</div>`).join('')}
+        ${shotList((report.preHookScreenshots||[]).concat(report.postHookScreenshots||[]))}
+        <div class="section">Specifications</div>
+        <table class="grid"><thead><tr><th>Name</th><th>File</th><th>Cases</th><th>Verdict</th><th>Duration</th></tr></thead>
+        <tbody>${(report.specs||[]).map(spec => `<tr class="clickable" data-id="${esc(spec.id)}"><td>${esc(spec.heading)}</td><td>${esc(spec.fileName)}</td><td>${spec.summary.passed}/${spec.summary.total}</td><td>${badge(spec.verdict)}</td><td>${esc(spec.duration)}</td></tr>`).join('')}</tbody></table>`;
+    }
+    function statCard(title, c) {
+      c = c || { total: 0, passed: 0, failed: 0, skipped: 0 };
+      return `<div class="card"><h3>${esc(title)}</h3>
+        <div class="nums"><span>${c.total} total</span><span style="color:var(--pass)">${c.passed} pass</span><span style="color:var(--fail)">${c.failed} fail</span><span style="color:var(--skip)">${c.skipped} skip</span></div>
+        ${countBar(c)}</div>`;
+    }
+    function renderSpec(spec) {
+      return `
+        <div class="crumb">${esc(report.projectName)} / ${esc(spec.heading)}</div>
+        <div class="head"><div><h2>${esc(spec.heading)}</h2><div class="meta">${esc(spec.fileName)} · ${esc(spec.duration)}</div>${tags(spec.tags)}</div>${badge(spec.verdict)}</div>
+        ${statCard('Test Cases', spec.summary)}
+        ${(spec.errors||[]).map(e => `<div class="err">${esc(e.type)}: ${esc(e.fileName)}:${e.lineNumber} ${esc(e.message)}</div>`).join('')}
+        ${(spec.preHookFailures||[]).concat(spec.postHookFailures||[]).map(hookBlock).join('')}
+        ${spec.datatable ? `<div class="section">Data Table</div>${dataTable(spec.datatable)}` : ''}
+        <div class="section">Test Cases</div>
+        <table class="grid"><thead><tr><th>Name</th><th>Tags</th><th>Verdict</th><th>Duration</th></tr></thead>
+        <tbody>${(spec.scenarios||[]).map(scn => `<tr class="clickable" data-id="${esc(scn.id)}"><td>${esc(scn.heading)}</td><td>${tags(scn.tags)}</td><td>${badge(scn.verdict)}</td><td>${esc(scn.duration)}</td></tr>`).join('')}</tbody></table>`;
+    }
+    function renderScenario(spec, scn) {
+      return `
+        <div class="crumb">${esc(report.projectName)} / ${esc(spec.heading)} / ${esc(scn.heading)}</div>
+        <div class="head"><div><h2>${esc(scn.heading)}</h2><div class="meta">${esc(scn.duration)}${scn.retriesCount ? ' · retries ' + scn.retriesCount : ''}</div>${tags(scn.tags)}</div>${badge(scn.verdict)}</div>
+        ${hookBlock(scn.preHookFailure)}${hookBlock(scn.postHookFailure)}
+        ${(scn.skipErrors||[]).map(e => `<div class="msg">${esc(e)}</div>`).join('')}
+        ${scn.scenarioDataTable ? `<div class="section">Scenario Data Table</div>${dataTable(scn.scenarioDataTable)}` : ''}
+        <div class="section">Test Steps</div>
+        ${stepsTable(scn)}`;
+    }
+    function renderContent() {
+      const node = findNode(state.selected);
+      let html = '';
+      if (node.kind === 'spec') html = renderSpec(node.spec);
+      else if (node.kind === 'scenario') html = renderScenario(node.spec, node.scn);
+      else html = renderSuite();
+      $('content').innerHTML = html;
+      $('status-left').textContent = node.kind === 'scenario' ? node.scn.heading : node.kind === 'spec' ? node.spec.heading : report.projectName;
+      const s = report.summary;
+      $('status-right').textContent = `Specs ${s.specs.passed}/${s.specs.total} · Cases ${s.scenarios.passed}/${s.scenarios.total} · Steps ${s.steps.passed}/${s.steps.total} · ${report.duration}`;
+    }
+    function select(id) {
+      state.selected = id;
+      const parts = id.split('-scn-')[0];
+      if (parts && parts !== 'suite') state.open.add(parts);
+      state.open.add('suite');
+      renderTree();
+      renderContent();
+    }
+    $('tree').addEventListener('click', (e) => {
+      const row = e.target.closest('.node-row');
+      if (!row) return;
+      const id = row.getAttribute('data-id');
+      if (e.target.closest('.twisty') && id && id !== 'suite') {
+        if (state.open.has(id)) state.open.delete(id); else state.open.add(id);
+        renderTree();
+        return;
+      }
+      select(id);
+    });
+    $('content').addEventListener('click', (e) => {
+      const row = e.target.closest('tr.clickable');
+      if (row && row.dataset.id) select(row.dataset.id);
+    });
+    $('filters').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-filter]');
+      if (!btn) return;
+      state.filter = btn.dataset.filter;
+      [...$('filters').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b === btn));
+      renderTree();
+    });
+    $('search').addEventListener('input', (e) => { state.query = e.target.value; renderTree(); });
+    $('expand-all').addEventListener('click', () => {
+      state.open.add('suite');
+      (report.specs || []).forEach(s => state.open.add(s.id));
+      renderTree();
+    });
+    $('collapse-all').addEventListener('click', () => { state.open = new Set(['suite']); renderTree(); });
+    $('print').addEventListener('click', () => window.print());
+    document.title = 'Test Report Viewer - ' + (report.projectName || 'report');
+    $('title-file').textContent = '— ' + (report.projectName || '');
+    renderTree();
+    renderContent();
+  </script>
+</body>
+</html>
