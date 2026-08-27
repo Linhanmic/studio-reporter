@@ -4,538 +4,608 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Test Report Viewer</title>
+  <link rel="stylesheet" href="assets/element-plus.css">
   <style>
     :root {
       --header: #16324f;
       --header-2: #1f4668;
       --accent: #2b9ad4;
-      --chrome: #d9e2ec;
-      --panel: #ffffff;
-      --line: #c5d0dc;
-      --guide: #b7c4d1;
-      --text: #1a202c;
-      --muted: #5a6a7a;
+      --el-color-primary: #1f4668;
       --pass: #2f855a;
       --fail: #c53030;
       --skip: #718096;
-      --none: #a0aec0;
-      --pass-bg: #c6f6d5;
-      --fail-bg: #fed7d7;
-      --skip-bg: #edf2f7;
-      --sel: #d6eaf8;
-      --row-alt: #f7fafc;
-      --folder: #d69e2e;
-      --font: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
-      --mono: "Cascadia Mono", "Consolas", "Microsoft YaHei Mono", monospace;
-      --indent: 8px;
     }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; background: var(--chrome); color: var(--text); font: 13px/1.4 var(--font); }
-    body { display: flex; flex-direction: column; min-height: 100vh; }
-    button, input, select { font: inherit; }
-    .titlebar {
+    html, body { margin: 0; height: 100%; background: #d9e2ec; }
+    #app { height: 100%; }
+    .app-shell { height: 100%; display: flex; flex-direction: column; }
+    .app-header {
       background: linear-gradient(180deg, var(--header-2), var(--header));
-      color: #fff; display: flex; align-items: center; gap: 12px;
-      padding: 8px 14px; min-height: 42px;
+      color: #fff; padding: 10px 16px 12px; flex: 0 0 auto;
     }
-    .logo {
-      width: 22px; height: 22px; border-radius: 3px;
-      background: var(--accent); display: grid; place-items: center;
-      font-weight: 700; font-size: 12px; color: #083344;
-    }
-    .titlebar h1 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: .02em; }
-    .titlebar .file { color: #cfe8f7; font-weight: 400; margin-left: 4px; }
+    .app-header h1 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+    .app-header .meta { color: #cfe8f7; font-size: 12px; margin-bottom: 10px; }
+    .stat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .stat-card { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 6px; padding: 8px 10px; }
+    .stat-card .label { font-size: 11px; color: #cfe8f7; text-transform: uppercase; letter-spacing: .04em; }
+    .stat-card .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+    .stat-card .sub { font-size: 12px; color: #d6eaf8; margin-top: 2px; }
     .toolbar {
-      background: #eef3f8; border-bottom: 1px solid var(--line);
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 8px 12px; background: #eef3f8; border-bottom: 1px solid #c5d0dc;
     }
-    .toolbar .group { display: flex; align-items: center; gap: 6px; }
-    .seg { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: #fff; }
-    .seg button { border: 0; background: transparent; padding: 4px 10px; cursor: pointer; color: var(--muted); }
-    .seg button + button { border-left: 1px solid var(--line); }
-    .seg button.active { background: var(--header); color: #fff; }
-    .search { border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; min-width: 220px; }
-    .ghost { border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
-    .ghost:hover { background: #f7fafc; }
-    .content-pane { flex: 1; min-height: 0; overflow: auto; background: var(--panel); }
-    .content { padding: 10px 12px 24px; }
-    .crumb { color: var(--muted); margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-    .crumb button { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; }
-    .crumb button:hover { text-decoration: underline; }
-    .crumb .sep { color: var(--guide); }
-    .head {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-      border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 10px;
+    .workspace { flex: 1; min-height: 0; display: flex; }
+    .script-pane {
+      width: 340px; min-width: 240px; max-width: 48%;
+      border-right: 1px solid #c5d0dc; background: #fff; display: flex; flex-direction: column;
     }
-    .head h2 { margin: 0 0 4px; font-size: 16px; font-weight: 650; }
-    .meta { color: var(--muted); }
-    .badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      border-radius: 3px; padding: 2px 8px; font-weight: 700; letter-spacing: .06em;
-      text-transform: uppercase; font-size: 11px; border: 1px solid transparent; white-space: nowrap;
+    .pane-title {
+      padding: 8px 12px; font-size: 12px; font-weight: 700; color: #5a6a7a;
+      text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid #e2e8f0;
     }
-    .v-pass { background: var(--pass-bg); color: var(--pass); border-color: #9ae6b4; }
-    .v-fail { background: var(--fail-bg); color: var(--fail); border-color: #feb2b2; }
-    .v-skip { background: var(--skip-bg); color: var(--skip); border-color: #cbd5e0; }
-    .v-none { background: #edf2f7; color: var(--none); border-color: #e2e8f0; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin: 0 0 10px; }
-    .card { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; background: #fff; }
-    .card h3 { margin: 0 0 6px; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
-    .nums { display: flex; gap: 8px; flex-wrap: wrap; }
-    .nums span { font-weight: 650; }
-    .bar { height: 6px; background: #edf2f7; border-radius: 99px; overflow: hidden; display: flex; margin-top: 6px; }
-    .bar i { display: block; height: 100%; }
-    .bar .p { background: var(--pass); }
-    .bar .f { background: var(--fail); }
-    .bar .s { background: var(--skip); }
-    table.grid { width: 100%; border-collapse: collapse; border: 1px solid var(--line); }
-    table.grid th, table.grid td { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
-    table.grid th { background: #f4f7fa; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-    .ml-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--line); background: #fff; }
-    .ml-table th, .ml-table td { padding: 3px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-    .ml-table th { background: #e8eef4; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
-    .ml-table col.ml-name { width: 42%; }
-    .ml-table col.ml-type { width: 78px; }
-    .ml-table col.ml-verdict { width: 76px; }
-    .ml-table col.ml-time { width: 96px; }
-    .ml-table .ml-type { color: var(--muted); font-size: 11px; }
-    .ml-table .ml-time { white-space: nowrap; color: var(--muted); }
-    .ml-name-cell { display: flex; align-items: flex-start; gap: 4px; min-width: 0; }
-    .ml-name-cell .label { word-break: break-word; overflow-wrap: anywhere; min-width: 0; }
-    .ml-detail { word-break: break-word; overflow-wrap: anywhere; color: var(--text); }
-    .ml-row { cursor: pointer; }
-    .ml-row:hover { background: #f0f7fb; }
-    .ml-row.selected { background: var(--sel); }
-    .ml-row.vrow-fail { box-shadow: inset 2px 0 0 var(--fail); }
-    .ml-nest > td {
-      padding: 0 0 0 var(--indent); border: 0; border-left: 2px solid var(--guide);
-      background: #f4f7fa;
-    }
-    .ml-table .ml-table { border-color: #c5d0dc; margin: 2px 0 4px; }
-    .ml-table .ml-table th { background: #eef3f8; }
-    .twisty {
-      width: 12px; flex: 0 0 12px; text-align: center; color: var(--muted);
-      font-size: 9px; line-height: 1; border: 0; background: none; cursor: pointer; padding: 2px 0;
-    }
-    .twisty.empty { visibility: hidden; }
-    .ico { width: 13px; height: 13px; flex: 0 0 13px; margin-top: 2px; }
-    .err { color: var(--fail); white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
-    .msg { color: var(--muted); white-space: pre-wrap; }
-    .stack { white-space: pre-wrap; font-family: var(--mono); font-size: 11px; background: #f7fafc; border: 1px solid var(--line); padding: 8px; overflow: auto; }
-    .step-text .static { color: #2b6cb0; font-weight: 650; }
-    .step-text .dynamic { color: #805ad5; font-weight: 650; }
-    .step-text .special { color: #c05621; }
+    .script-tree { flex: 1; overflow: auto; padding: 8px; }
+    .result-pane { flex: 1; min-width: 0; overflow: auto; background: #f7fafc; padding: 10px 12px 20px; }
+    .tree-node { display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%; padding-right: 4px; }
+    .tree-node .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-node .time { color: #5a6a7a; font-variant-numeric: tabular-nums; font-size: 11px; flex: 0 0 auto; }
+    .nested-block { padding: 8px 8px 12px 12px; background: #f8fafc; }
+    .nested-block + .nested-block { padding-top: 0; }
+    .nested-title { font-size: 12px; color: #5a6a7a; margin: 0 0 6px; font-weight: 600; }
+    .name-cell { word-break: break-word; overflow-wrap: anywhere; }
+    .frag.static { color: #2b6cb0; font-weight: 650; }
+    .frag.dynamic { color: #805ad5; font-weight: 650; }
+    .frag.special { color: #c05621; }
+    .err { color: var(--fail); white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+    .msg { color: #5a6a7a; white-space: pre-wrap; }
+    .stack { white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 11px; background: #fff; border: 1px solid #e2e8f0; padding: 8px; }
     .shots { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-    .shots img { max-width: 240px; max-height: 160px; border: 1px solid var(--line); background: #fff; }
-    .tags { display: flex; gap: 4px; flex-wrap: wrap; }
-    .tag { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; border-radius: 3px; padding: 0 6px; font-size: 11px; }
-    .empty { color: var(--muted); padding: 24px; text-align: center; }
+    .shots img { max-width: 240px; max-height: 160px; border: 1px solid #e2e8f0; }
+    .el-table .no-expand .el-table__expand-icon { visibility: hidden; pointer-events: none; }
+    .row-fail { box-shadow: inset 3px 0 0 var(--fail); }
     .status {
-      background: #eef3f8; border-top: 1px solid var(--line);
-      padding: 4px 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px;
+      flex: 0 0 auto; background: #eef3f8; border-top: 1px solid #c5d0dc;
+      padding: 4px 12px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 12px;
     }
-    .data-table { margin: 6px 0; }
+    @media (max-width: 900px) {
+      .workspace { flex-direction: column; }
+      .script-pane { width: 100%; max-width: none; height: 280px; border-right: 0; border-bottom: 1px solid #c5d0dc; }
+      .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     @media print {
-      .titlebar, .toolbar, .status { display: none !important; }
-      body { background: #fff; }
+      .toolbar, .script-pane, .status { display: none !important; }
+      .workspace { display: block; overflow: visible; }
+      .result-pane { overflow: visible; }
     }
   </style>
 </head>
 <body>
-  <header class="titlebar">
-    <div class="logo">TR</div>
-    <h1>Test Report Viewer <span class="file" id="title-file"></span></h1>
-  </header>
-  <div class="toolbar">
-    <div class="group">
-      <span>Verdict</span>
-      <div class="seg" id="filters">
-        <button data-filter="all" class="active">All</button>
-        <button data-filter="fail">Fail</button>
-        <button data-filter="pass">Pass</button>
-        <button data-filter="skip">Skip</button>
+  <div id="app">
+    <div class="app-shell">
+      <header class="app-header">
+        <h1>Test Report Viewer — {{ report.projectName }}</h1>
+        <div class="meta">{{ report.environment || '-' }} · {{ report.timestamp || '' }} · 总耗时 {{ report.duration }}</div>
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="label">规格书</div>
+            <div class="value">{{ report.summary.specs.passed }}/{{ report.summary.specs.total }}</div>
+            <div class="sub">通过 / 共 {{ report.summary.specs.total }} · 失败 {{ report.summary.specs.failed }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">场景</div>
+            <div class="value">{{ report.summary.scenarios.passed }}/{{ report.summary.scenarios.total }}</div>
+            <div class="sub">通过 / 共 {{ report.summary.scenarios.total }} · 失败 {{ report.summary.scenarios.failed }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">步骤</div>
+            <div class="value">{{ report.summary.steps.passed }}/{{ report.summary.steps.total }}</div>
+            <div class="sub">通过 / 共 {{ report.summary.steps.total }} · 失败 {{ report.summary.steps.failed }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">运行时间</div>
+            <div class="value">{{ report.duration }}</div>
+            <div class="sub">成功率 {{ successRate }}%</div>
+          </div>
+        </div>
+      </header>
+      <div class="toolbar">
+        <el-radio-group v-model="filter" size="small">
+          <el-radio-button value="all">全部</el-radio-button>
+          <el-radio-button value="fail">失败</el-radio-button>
+          <el-radio-button value="pass">通过</el-radio-button>
+          <el-radio-button value="skip">跳过</el-radio-button>
+        </el-radio-group>
+        <el-input v-model="query" size="small" clearable placeholder="搜索规格书 / 场景 / 步骤" style="width: 260px"></el-input>
+        <el-button size="small" @click="expandAll">全部展开</el-button>
+        <el-button size="small" @click="collapseAll">全部折叠</el-button>
+        <el-button size="small" @click="printReport">打印</el-button>
       </div>
+      <div class="workspace">
+        <aside class="script-pane">
+          <div class="pane-title">脚本</div>
+          <div class="script-tree">
+            <el-tree
+              ref="scriptTree"
+              :data="treeData"
+              node-key="id"
+              highlight-current
+              :expand-on-click-node="false"
+              :default-expanded-keys="treeExpanded"
+              :filter-node-method="filterTreeNode"
+              @node-click="onTreeClick"
+            >
+              <template #default="{ data }">
+                <div class="tree-node">
+                  <span class="name">{{ data.label }}</span>
+                  <el-tag v-if="data.verdict && data.kind !== 'folder' && data.kind !== 'phase'" :type="tagType(data.verdict)" size="small" effect="plain">{{ verdictLabel(data.verdict) }}</el-tag>
+                  <span class="time">{{ data.duration }}</span>
+                </div>
+              </template>
+            </el-tree>
+          </div>
+        </aside>
+        <main class="result-pane">
+          <el-alert v-if="report.preHookFailure" type="error" :title="(report.preHookFailure.hookName || 'Hook') + ' 失败'" :description="report.preHookFailure.errorMessage" show-icon style="margin-bottom: 8px"></el-alert>
+          <el-alert v-if="report.postHookFailure" type="error" :title="(report.postHookFailure.hookName || 'Hook') + ' 失败'" :description="report.postHookFailure.errorMessage" show-icon style="margin-bottom: 8px"></el-alert>
+          <el-table
+            :data="visibleSpecs"
+            row-key="id"
+            border
+            stripe
+            size="small"
+            :expand-row-keys="expanded"
+            :row-class-name="rowClass"
+            @expand-change="onExpandChange"
+            @row-click="onSpecClick"
+          >
+            <el-table-column type="expand">
+              <template #default="{ row }">
+                <div class="nested-block">
+                  <div class="nested-title">场景 · {{ row.heading }} · {{ row.duration }}</div>
+                  <el-table
+                    :data="visibleScenarios(row)"
+                    row-key="id"
+                    border
+                    size="small"
+                    :expand-row-keys="expanded"
+                    :row-class-name="rowClass"
+                    @expand-change="onExpandChange"
+                    @row-click="onScenarioClick"
+                  >
+                    <el-table-column type="expand">
+                      <template #default="{ row: scn }">
+                        <div class="nested-block">
+                          <hook-block :hook="scn.preHookFailure"></hook-block>
+                          <hook-block :hook="scn.postHookFailure"></hook-block>
+                          <div class="nested-title">步骤 · {{ scn.heading }} · {{ scn.duration }}</div>
+                          <item-table :items="scenarioRows(scn)" :expanded="expanded" @expand-change="onExpandChange"></item-table>
+                        </div>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="名称" min-width="220">
+                      <template #default="{ row: scn }"><div class="name-cell">{{ scn.heading }}</div></template>
+                    </el-table-column>
+                    <el-table-column label="类型" width="80">场景</el-table-column>
+                    <el-table-column label="结果" width="90">
+                      <template #default="{ row: scn }"><el-tag :type="tagType(scn.verdict)" size="small">{{ verdictLabel(scn.verdict) }}</el-tag></template>
+                    </el-table-column>
+                    <el-table-column label="运行时间" width="120" prop="duration"></el-table-column>
+                    <el-table-column label="详情" min-width="160">
+                      <template #default="{ row: scn }">
+                        <el-tag v-for="tag in (scn.tags || [])" :key="tag" size="small" style="margin-right: 4px">{{ tag }}</el-tag>
+                        <span v-if="scn.skipErrors && scn.skipErrors.length" class="msg">{{ scn.skipErrors.join('; ') }}</span>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="名称" min-width="240">
+              <template #default="{ row }">
+                <div class="name-cell"><strong>{{ row.heading }}</strong><div class="msg">{{ row.fileName }}</div></div>
+              </template>
+            </el-table-column>
+            <el-table-column label="类型" width="80">规格书</el-table-column>
+            <el-table-column label="结果" width="90">
+              <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
+            </el-table-column>
+            <el-table-column label="运行时间" width="120" prop="duration"></el-table-column>
+            <el-table-column label="详情" min-width="180">
+              <template #default="{ row }">
+                场景 {{ row.summary.passed }}/{{ row.summary.total }}
+                <el-tag v-for="tag in (row.tags || [])" :key="tag" size="small" style="margin-left: 4px">{{ tag }}</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </main>
+      </div>
+      <footer class="status">
+        <span>{{ selectedLabel }}</span>
+        <span>规格书 {{ report.summary.specs.passed }}/{{ report.summary.specs.total }} · 场景 {{ report.summary.scenarios.passed }}/{{ report.summary.scenarios.total }} · 步骤 {{ report.summary.steps.passed }}/{{ report.summary.steps.total }} · {{ report.duration }}</span>
+      </footer>
     </div>
-    <input class="search" id="search" placeholder="Search specs / scenarios / steps" type="search">
-    <button class="ghost" id="expand-all" type="button">Expand All</button>
-    <button class="ghost" id="collapse-all" type="button">Collapse All</button>
-    <button class="ghost" id="print" type="button">Print</button>
   </div>
-  <div class="content-pane">
-    <div class="content" id="content"></div>
-  </div>
-  <footer class="status">
-    <span id="status-left">Ready</span>
-    <span id="status-right"></span>
-  </footer>
   <script type="application/json" id="report-data">{{REPORT_JSON}}</script>
+  <script src="assets/vue.global.prod.js"></script>
+  <script src="assets/element-plus.full.min.js"></script>
   <script>
     const report = JSON.parse(document.getElementById('report-data').textContent);
-    const state = { filter: 'all', query: '', selected: 'suite', open: new Set(['suite']) };
-    const index = { nodes: {}, crumbs: {} };
-    const $ = (id) => document.getElementById(id);
 
-    function verdictLabel(v) {
-      return ({ pass: 'Pass', fail: 'Fail', skip: 'Skip', none: 'None' })[v] || 'None';
-    }
-    function worse(a, b) {
+    const verdictLabel = (v) => ({ pass: '通过', fail: '失败', skip: '跳过', none: '—' })[v] || '—';
+    const tagType = (v) => ({ pass: 'success', fail: 'danger', skip: 'info', none: 'info' })[v] || 'info';
+    const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const worse = (a, b) => {
       const rank = { fail: 3, skip: 2, none: 1, pass: 0 };
       return (rank[a] || 0) >= (rank[b] || 0) ? a : b;
-    }
-    function addCounts(a, b) {
-      return { total: a.total + b.total, passed: a.passed + b.passed, failed: a.failed + b.failed, skipped: a.skipped + b.skipped };
-    }
-    function emptyCounts() { return { total: 0, passed: 0, failed: 0, skipped: 0 }; }
-    function specFolders(spec) {
-      if (spec.folders && spec.folders.length) return spec.folders;
-      const f = String(spec.fileName || '').replace(/\\/g, '/');
-      const parts = f.split('/');
-      parts.pop();
-      return parts.filter(p => p && p !== '.');
-    }
-    function typeIcon(kind, verdict) {
-      const color = { pass: '#2f855a', fail: '#c53030', skip: '#718096', none: '#a0aec0' }[verdict] || '#5a6a7a';
-      const icons = {
-        suite: `<rect x="3" y="3" width="10" height="10" rx="1.5" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M3 7h10M8 3v10" stroke="${color}" stroke-width="1.2"/>`,
-        folder: `<path d="M2.5 5.5h4l1.2 1.5H13.5v6.5H2.5z" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M2.5 7.2h11" stroke="${color}" stroke-width="1.2"/>`,
-        spec: `<path d="M4.5 2.5h5l3 3V13.5h-8z" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M9.5 2.5V6h3" stroke="${color}" stroke-width="1.2"/>`,
-        scenario: `<circle cx="8" cy="8" r="5.4" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M6.6 5.6l4.2 2.4-4.2 2.4z" fill="${color}"/>`,
-        concept: `<rect x="2.5" y="4" width="8" height="8" rx="1" fill="none" stroke="${color}" stroke-width="1.4"/><rect x="5.5" y="2.5" width="8" height="8" rx="1" fill="none" stroke="${color}" stroke-width="1.4"/>`,
-        step: `<circle cx="8" cy="8" r="5.2" fill="none" stroke="${color}" stroke-width="1.5"/><path d="M5.5 8h5" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>`,
-        comment: `<path d="M3 4h10v7H7l-3 2.5z" fill="none" stroke="${color}" stroke-width="1.4"/>`,
-        phase: `<path d="M3 8h10M8 3v10" stroke="${color}" stroke-width="1.4" stroke-linecap="round"/>`
-      };
-      return `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${icons[kind] || icons.step}</svg>`;
-    }
-    function esc(s) {
-      return String(s == null ? '' : s)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-    function tags(list) {
-      if (!list || !list.length) return '';
-      return `<div class="tags">${list.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>`;
-    }
-    function badge(v) { return `<span class="badge v-${esc(v)}">${esc(verdictLabel(v))}</span>`; }
-    function countBar(c) {
-      const t = Math.max(c.total, 1);
-      return `<div class="bar"><i class="p" style="width:${100*c.passed/t}%"></i><i class="f" style="width:${100*c.failed/t}%"></i><i class="s" style="width:${100*c.skipped/t}%"></i></div>`;
-    }
-    function matchQuery(text) {
-      const q = state.query.trim().toLowerCase();
-      if (!q) return true;
-      return String(text || '').toLowerCase().includes(q);
-    }
-    function itemText(item) {
+    };
+    const itemText = (item) => {
       if (!item) return '';
       if (item.kind === 'comment') return item.comment || '';
-      if (item.kind === 'step' && item.step) return item.step.actualText || item.step.parsedText || '';
-      if (item.kind === 'concept' && item.concept && item.concept.step) return item.concept.step.actualText || item.concept.step.parsedText || '';
-      return '';
-    }
-    function itemVerdict(item) {
+      const step = item.step || (item.concept && item.concept.step);
+      return (step && (step.actualText || step.parsedText)) || '';
+    };
+    const itemVerdict = (item) => {
       if (item.kind === 'step' && item.step) return item.step.verdict;
       if (item.kind === 'concept' && item.concept && item.concept.step) return item.concept.step.verdict;
       return 'none';
-    }
-    function walkItems(items, fn) {
-      (items || []).forEach(item => {
-        fn(item);
-        if (item.kind === 'concept' && item.concept) walkItems(item.concept.items, fn);
-      });
-    }
-    function scenarioAllItems(scn) {
-      return [].concat(scn.contexts || [], scn.items || [], scn.teardowns || []);
-    }
-    function scenarioTexts(scn) {
-      const texts = [scn.heading, ...(scn.tags || [])];
-      walkItems(scenarioAllItems(scn), item => texts.push(itemText(item)));
-      return texts;
-    }
-    function nodeVisible(verdict, texts) {
-      if (state.filter !== 'all' && verdict !== state.filter) return false;
-      if (!state.query.trim()) return true;
-      return texts.some(matchQuery);
-    }
-    function subtreeVisible(node) {
-      const kids = (node.children || []).filter(subtreeVisible);
-      node.visibleChildren = kids;
-      if (state.filter === 'all' && !state.query.trim()) return true;
-      const texts = node.kind === 'item'
-        ? [itemText(node.item), node.label].concat(node.extraTexts || [])
-        : (node.texts || [node.label]);
-      const verdict = node.kind === 'item' ? itemVerdict(node.item) : node.verdict;
-      return nodeVisible(verdict, texts) || kids.length > 0;
-    }
-
-    function buildItemNodes(items, crumbs) {
-      return (items || []).map(item => {
-        const label = itemText(item) || (item.kind === 'comment' ? 'Comment' : 'Step');
-        const children = item.kind === 'concept' && item.concept ? buildItemNodes(item.concept.items, crumbs.concat({ id: item.id, label })) : [];
-        const node = {
-          id: item.id, kind: 'item', itemKind: item.kind, item, label, verdict: itemVerdict(item),
-          children, crumbs: crumbs.concat({ id: item.id, label }), texts: [label]
-        };
-        index.nodes[node.id] = node;
-        return node;
-      });
-    }
-    function buildScenarioNode(spec, scn) {
-      const children = [];
-      if ((scn.contexts || []).length) {
-        const id = scn.id + '-phase-ctx';
-        const n = { id, kind: 'phase', label: 'Context', verdict: 'none', children: buildItemNodes(scn.contexts, [{ id: spec.id, label: spec.heading }, { id: scn.id, label: scn.heading }, { id, label: 'Context' }]), texts: ['Context'] };
-        index.nodes[id] = n;
-        children.push(n);
-      }
-      children.push.apply(children, buildItemNodes(scn.items, [{ id: spec.id, label: spec.heading }, { id: scn.id, label: scn.heading }]));
-      if ((scn.teardowns || []).length) {
-        const id = scn.id + '-phase-td';
-        const n = { id, kind: 'phase', label: 'Teardown', verdict: 'none', children: buildItemNodes(scn.teardowns, [{ id: spec.id, label: spec.heading }, { id: scn.id, label: scn.heading }, { id, label: 'Teardown' }]), texts: ['Teardown'] };
-        index.nodes[id] = n;
-        children.push(n);
-      }
-      const node = {
-        id: scn.id, kind: 'scenario', spec, scn, label: scn.heading, verdict: scn.verdict,
-        children, count: null, crumbs: [{ id: 'suite', label: report.projectName }, { id: spec.id, label: spec.heading }, { id: scn.id, label: scn.heading }],
-        texts: scenarioTexts(scn)
-      };
-      index.nodes[scn.id] = node;
-      return node;
-    }
-    function buildSpecNode(spec) {
-      const children = (spec.scenarios || []).map(scn => buildScenarioNode(spec, scn));
-      const node = {
-        id: spec.id, kind: 'spec', spec, label: spec.heading, verdict: spec.verdict,
-        children, count: spec.summary, crumbs: [{ id: 'suite', label: report.projectName }, { id: spec.id, label: spec.heading }],
-        texts: [spec.heading, spec.fileName].concat(spec.tags || [])
-      };
-      index.nodes[spec.id] = node;
-      return node;
-    }
-    function buildFolderForest() {
-      index.nodes = { suite: null };
-      const root = { id: 'suite', kind: 'suite', label: report.projectName, verdict: report.verdict, children: [], folders: {}, count: report.summary.scenarios, crumbs: [{ id: 'suite', label: report.projectName }], texts: [report.projectName] };
-      index.nodes.suite = root;
-      (report.specs || []).forEach(spec => {
-        let parent = root;
-        const folders = specFolders(spec);
-        const trail = [];
-        folders.forEach(name => {
-          trail.push(name);
-          const id = 'folder:' + trail.join('/');
-          if (!parent.folders) parent.folders = {};
-          if (!parent.folders[name]) {
-            const node = { id, kind: 'folder', label: name, path: trail.join('/'), parent, verdict: 'pass', children: [], folders: {}, count: emptyCounts(), crumbs: [{ id: 'suite', label: report.projectName }].concat(trail.map((_, i) => ({ id: 'folder:' + trail.slice(0, i + 1).join('/'), label: trail[i] }))), texts: [name, trail.join('/')] };
-            parent.folders[name] = node;
-            parent.children.push(node);
-            index.nodes[id] = node;
-          }
-          parent = parent.folders[name];
-        });
-        const specNode = buildSpecNode(spec);
-        specNode.crumbs = parent.crumbs.concat([{ id: spec.id, label: spec.heading }]);
-        specNode.parent = parent;
-        parent.children.push(specNode);
-        let roll = parent;
-        while (roll && roll.kind === 'folder') {
-          roll.verdict = worse(roll.verdict, spec.verdict);
-          roll.count = addCounts(roll.count, spec.summary || emptyCounts());
-          roll = roll.parent;
-        }
-      });
-      return root;
-    }
-    const forest = buildFolderForest();
-    Object.keys(index.nodes).forEach(id => {
-      const n = index.nodes[id];
-      if (!n) return;
-      if (n.kind === 'folder' || n.kind === 'spec' || n.verdict === 'fail') state.open.add(id);
-    });
-
-    function kids(node) { return node.visibleChildren || node.children || []; }
-    function kindLabel(node) {
-      const raw = ({ suite: 'Suite', folder: 'Folder', spec: 'Spec', scenario: 'Case', phase: 'Group', item: node.itemKind || 'step' })[node.kind] || '';
-      return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : '';
-    }
-    function nodeDuration(node) {
-      if (node.kind === 'suite') return report.duration || '';
-      if (node.spec && node.kind === 'spec') return node.spec.duration || '';
-      if (node.scn && node.kind === 'scenario') return node.scn.duration || '';
-      const step = node.item && (node.item.step || (node.item.concept && node.item.concept.step));
-      return (step && step.duration) || '';
-    }
-    function nodeDetail(node) {
-      if (node.kind === 'suite') return `${esc(report.environment || '-')} · ${esc(report.timestamp || '')}`;
-      if (node.kind === 'folder') return esc(node.path || '');
-      if (node.kind === 'spec' && node.spec) {
-        return `${esc(node.spec.fileName || '')}${tags(node.spec.tags)}${(node.spec.errors||[]).map(e => `<div class="err">${esc(e.message)}</div>`).join('')}`;
-      }
-      if (node.kind === 'scenario' && node.scn) {
-        const scn = node.scn;
-        return `${tags(scn.tags)}${hookBlock(scn.preHookFailure)}${hookBlock(scn.postHookFailure)}${(scn.skipErrors||[]).map(e => `<div class="msg">${esc(e)}</div>`).join('')}${scn.scenarioDataTable ? dataTable(scn.scenarioDataTable) : ''}`;
-      }
-      if (node.item) {
-        const step = node.item.step || (node.item.concept && node.item.concept.step);
-        if (node.item.kind === 'comment') return esc(node.item.comment || '');
-        if (!step) return '';
-        const parts = [
-          stepText(step),
-          step.errorMessage ? `<div class="err">${esc(step.errorMessage)}</div>` : '',
-          step.skippedReason ? `<div class="msg">Skipped: ${esc(step.skippedReason)}</div>` : '',
-          (step.messages || []).map(m => `<div class="msg">${esc(m)}</div>`).join(''),
-          step.stackTrace ? `<pre class="stack">${esc(step.stackTrace)}</pre>` : '',
-          hookBlock(step.preHookFailure),
-          hookBlock(step.postHookFailure),
-          shotList([step.failureScreenshot].concat(step.screenshots || []).concat(step.preHookScreenshots || []).concat(step.postHookScreenshots || []))
-        ];
-        return parts.join('');
-      }
-      return '';
-    }
-    function nodeName(node) {
-      if (node.item && (node.item.kind === 'step' || node.item.kind === 'concept')) {
-        const step = node.item.step || (node.item.concept && node.item.concept.step);
-        return `<span class="step-text">${stepText(step) || esc(node.label)}</span>`;
-      }
-      return esc(node.label);
-    }
-    function renderLevel(nodes, withHead) {
-      const list = (nodes || []).filter(n => subtreeVisible(n) || n.id === 'suite');
-      if (!list.length) return '<div class="empty">No matching rows</div>';
-      const head = withHead ? `<thead><tr><th>Name</th><th>Type</th><th>Verdict</th><th>Duration</th><th>Detail</th></tr></thead>` : '';
-      const cols = `<colgroup><col class="ml-name"><col class="ml-type"><col class="ml-verdict"><col class="ml-time"><col></colgroup>`;
-      const rows = list.map(node => {
-        const childs = kids(node);
-        const open = state.open.has(node.id);
-        const iconKind = node.kind === 'item' ? (node.itemKind || 'step') : node.kind;
-        const twisty = childs.length
-          ? `<button type="button" class="twisty" data-toggle="${esc(node.id)}" aria-expanded="${open ? 'true' : 'false'}">${open ? '▾' : '▸'}</button>`
-          : `<span class="twisty empty">·</span>`;
-        const nested = (open && childs.length)
-          ? `<tr class="ml-nest"><td colspan="5">${renderLevel(childs, true)}</td></tr>`
-          : '';
-        return `<tr class="ml-row ${state.selected===node.id?'selected':''} ${node.verdict==='fail'?'vrow-fail':''}" data-id="${esc(node.id)}">
-          <td class="ml-name"><div class="ml-name-cell">${twisty}${typeIcon(iconKind, node.verdict)}<span class="label">${nodeName(node)}</span></div></td>
-          <td class="ml-type">${esc(kindLabel(node))}</td>
-          <td class="ml-verdict">${badge(node.verdict)}</td>
-          <td class="ml-time">${esc(nodeDuration(node))}</td>
-          <td class="ml-detail">${nodeDetail(node)}</td>
-        </tr>${nested}`;
-      }).join('');
-      return `<table class="ml-table">${cols}${head}<tbody>${rows}</tbody></table>`;
-    }
-    function ancestorsOf(id) {
-      const ids = ['suite'];
-      const node = index.nodes[id];
-      if (!node || !node.crumbs) return ids;
-      node.crumbs.forEach(c => ids.push(c.id));
-      return ids;
-    }
-    function select(id) {
-      if (!index.nodes[id]) id = 'suite';
-      state.selected = id;
-      ancestorsOf(id).forEach(a => state.open.add(a));
-      const node = index.nodes[id];
-      if (node && node.children && node.children.length) state.open.add(id);
-      renderContent();
-      const row = document.querySelector(`tr.ml-row[data-id="${CSS.escape(id)}"]`);
-      if (row) row.scrollIntoView({ block: 'nearest' });
-    }
-    function crumbHtml(node) {
-      const crumbs = (node && node.crumbs) || [{ id: 'suite', label: report.projectName }];
-      return `<div class="crumb">${crumbs.map((c, i) => `${i ? '<span class="sep">/</span>' : ''}<button type="button" data-id="${esc(c.id)}">${esc(c.label)}</button>`).join('')}</div>`;
-    }
-    function hookBlock(h) {
-      if (!h) return '';
-      return `<div class="card" style="border-color:#feb2b2">
-        <h3>${esc(h.hookName)} failed</h3>
-        <div class="err">${esc(h.errorMessage)}</div>
-        ${h.stackTrace ? `<pre class="stack">${esc(h.stackTrace)}</pre>` : ''}
-        ${shotList(h.failureScreenshot ? [h.failureScreenshot] : [])}
-      </div>`;
-    }
-    function shotList(paths) {
-      const list = (paths || []).filter(Boolean);
-      if (!list.length) return '';
-      return `<div class="shots">${list.map(p => `<a href="${esc(p)}" target="_blank"><img src="${esc(p)}" alt="screenshot"></a>`).join('')}</div>`;
-    }
-    function dataTable(t) {
-      if (!t || !t.headers) return '';
-      const head = `<tr>${t.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr>`;
-      const rows = (t.rows || []).map(r => `<tr>${(r||[]).map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('');
-      return `<table class="grid data-table"><thead>${head}</thead><tbody>${rows}</tbody></table>`;
-    }
-    function stepText(step) {
+    };
+    const stepHTML = (step) => {
       if (!step) return '';
       if (step.fragments && step.fragments.length) {
-        return step.fragments.map(f => {
+        return step.fragments.map((f) => {
           if (f.kind === 'text') return esc(f.text);
-          if (f.kind === 'table') return `<div>${dataTable(f.table)}</div>`;
-          if (f.kind === 'multiline') return `<pre class="stack">${esc(f.text)}</pre>`;
-          return `<span class="${esc(f.kind)}">${esc(f.text)}</span>`;
+          if (f.kind === 'table') return '<span class="frag special">[table]</span>';
+          if (f.kind === 'multiline') return '<pre class="stack">' + esc(f.text) + '</pre>';
+          return '<span class="frag ' + esc(f.kind) + '">' + esc(f.text) + '</span>';
         }).join('');
       }
       return esc(step.actualText || step.parsedText || '');
+    };
+    const itemDuration = (item) => item.duration || (item.step && item.step.duration) || (item.concept && item.concept.duration) || '00:00:00.000';
+    const itemTime = (item) => item.executionTime || (item.step && item.step.executionTime) || (item.concept && item.concept.executionTime) || 0;
+    const formatDuration = (ms) => {
+      ms = Math.max(0, ms || 0);
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor(ms / 60000) % 60;
+      const s = (ms / 1000) - h * 3600 - m * 60;
+      return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + s.toFixed(3).padStart(6, '0');
+    };
+    const matchQuery = (q, texts) => {
+      if (!q) return true;
+      return texts.some((t) => String(t || '').toLowerCase().includes(q));
+    };
+    const walkItems = (items, fn) => {
+      (items || []).forEach((item) => {
+        fn(item);
+        if (item.kind === 'concept' && item.concept) walkItems(item.concept.items, fn);
+      });
+    };
+    const scenarioAllItems = (scn) => [].concat(scn.contexts || [], scn.items || [], scn.teardowns || []);
+    const scenarioTexts = (scn) => {
+      const texts = [scn.heading].concat(scn.tags || []);
+      walkItems(scenarioAllItems(scn), (item) => texts.push(itemText(item)));
+      return texts;
+    };
+    const specTexts = (spec) => {
+      const texts = [spec.heading, spec.fileName].concat(spec.tags || []);
+      (spec.scenarios || []).forEach((scn) => texts.push.apply(texts, scenarioTexts(scn)));
+      return texts;
+    };
+    const itemHasDetail = (item) => {
+      if (item.kind === 'concept' && item.concept && item.concept.items && item.concept.items.length) return true;
+      const step = item.step || (item.concept && item.concept.step);
+      if (!step) return !!item.comment;
+      return !!(step.errorMessage || step.stackTrace || step.skippedReason || (step.messages && step.messages.length) || step.failureScreenshot || (step.screenshots && step.screenshots.length) || step.preHookFailure || step.postHookFailure);
+    };
+
+    function buildItemNodes(items, phase) {
+      return (items || []).map((item) => {
+        const children = item.kind === 'concept' && item.concept ? buildItemNodes(item.concept.items, 'Step') : [];
+        return {
+          id: item.id,
+          label: itemText(item) || (item.kind === 'comment' ? '注释' : '步骤'),
+          kind: item.kind,
+          phase,
+          verdict: itemVerdict(item),
+          duration: itemDuration(item),
+          executionTime: itemTime(item),
+          children
+        };
+      });
     }
-    function statCard(title, c) {
-      c = c || emptyCounts();
-      return `<div class="card"><h3>${esc(title)}</h3>
-        <div class="nums"><span>${c.total} total</span><span style="color:var(--pass)">${c.passed} pass</span><span style="color:var(--fail)">${c.failed} fail</span><span style="color:var(--skip)">${c.skipped} skip</span></div>
-        ${countBar(c)}</div>`;
+    function sumTime(nodes) {
+      return (nodes || []).reduce((n, c) => n + (c.executionTime || 0), 0);
     }
-    function renderContent() {
-      subtreeVisible(forest);
-      const node = index.nodes[state.selected] || forest;
-      const s = report.summary;
-      $('content').innerHTML = `${crumbHtml(node)}
-        <div class="head"><div><h2>${esc(report.projectName)}</h2><div class="meta">${esc(report.environment || '-')} · ${esc(report.timestamp || '')} · ${esc(report.duration || '')}</div></div>${badge(report.verdict)}</div>
-        <div class="stats">
-          ${statCard('Specifications', s.specs)}
-          ${statCard('Test Cases', s.scenarios)}
-          ${statCard('Test Steps', s.steps)}
-        </div>
-        ${hookBlock(report.preHookFailure)}${hookBlock(report.postHookFailure)}
-        ${renderLevel([forest], true)}`;
-      $('status-left').textContent = node.label;
-      $('status-right').textContent = `Specs ${s.specs.passed}/${s.specs.total} · Cases ${s.scenarios.passed}/${s.scenarios.total} · Steps ${s.steps.passed}/${s.steps.total} · ${report.duration}`;
+    function buildTree(report) {
+      const root = {
+        id: 'suite', label: report.projectName, kind: 'suite', verdict: report.verdict,
+        duration: report.duration, executionTime: report.executionTime, children: []
+      };
+      const folders = {};
+      (report.specs || []).forEach((spec) => {
+        let parent = root;
+        const trail = [];
+        (spec.folders || []).forEach((name) => {
+          trail.push(name);
+          const id = 'folder:' + trail.join('/');
+          if (!folders[id]) {
+            const node = { id, label: name, kind: 'folder', verdict: 'pass', executionTime: 0, duration: formatDuration(0), children: [], path: trail.join('/') };
+            folders[id] = node;
+            parent.children.push(node);
+          }
+          parent = folders[id];
+        });
+        const specNode = {
+          id: spec.id, label: spec.heading, kind: 'spec', spec, verdict: spec.verdict,
+          duration: spec.duration, executionTime: spec.executionTime,
+          children: (spec.scenarios || []).map((scn) => {
+            const children = [];
+            if ((scn.contexts || []).length) {
+              const ctx = buildItemNodes(scn.contexts, 'Context');
+              children.push({ id: scn.id + '-phase-ctx', label: 'Context', kind: 'phase', verdict: 'none', executionTime: sumTime(ctx), duration: formatDuration(sumTime(ctx)), children: ctx });
+            }
+            children.push.apply(children, buildItemNodes(scn.items, 'Step'));
+            if ((scn.teardowns || []).length) {
+              const td = buildItemNodes(scn.teardowns, 'Teardown');
+              children.push({ id: scn.id + '-phase-td', label: 'Teardown', kind: 'phase', verdict: 'none', executionTime: sumTime(td), duration: formatDuration(sumTime(td)), children: td });
+            }
+            return {
+              id: scn.id, label: scn.heading, kind: 'scenario', specId: spec.id, scn, verdict: scn.verdict,
+              duration: scn.duration, executionTime: scn.executionTime, children
+            };
+          })
+        };
+        parent.children.push(specNode);
+      });
+      const roll = (node) => {
+        (node.children || []).forEach(roll);
+        if (node.kind === 'folder') {
+          node.executionTime = sumTime(node.children);
+          node.duration = formatDuration(node.executionTime);
+          node.verdict = (node.children || []).reduce((v, c) => worse(v, c.verdict || 'pass'), 'pass');
+        }
+      };
+      roll(root);
+      return [root];
     }
-    function collectExpandIds(node, into) {
-      into.add(node.id);
-      (node.children || []).forEach(ch => collectExpandIds(ch, into));
+    function collectExpandableIds(report) {
+      const ids = [];
+      (report.specs || []).forEach((spec) => {
+        ids.push(spec.id);
+        (spec.scenarios || []).forEach((scn) => {
+          ids.push(scn.id);
+          walkItems(scenarioAllItems(scn), (item) => {
+            if (itemHasDetail(item) || (item.kind === 'concept' && item.concept && item.concept.items && item.concept.items.length)) ids.push(item.id);
+          });
+        });
+      });
+      return ids;
     }
-    $('content').addEventListener('click', (e) => {
-      const toggle = e.target.closest('[data-toggle]');
-      if (toggle) {
-        e.stopPropagation();
-        const id = toggle.getAttribute('data-toggle');
-        if (state.open.has(id)) state.open.delete(id); else state.open.add(id);
-        renderContent();
-        return;
+    function defaultExpanded(report) {
+      const ids = [];
+      (report.specs || []).forEach((spec) => {
+        if (spec.verdict !== 'fail') return;
+        ids.push(spec.id);
+        (spec.scenarios || []).forEach((scn) => {
+          if (scn.verdict !== 'fail') return;
+          ids.push(scn.id);
+          walkItems(scenarioAllItems(scn), (item) => {
+            if (itemVerdict(item) === 'fail') ids.push(item.id);
+          });
+        });
+      });
+      return ids;
+    }
+    function treeExpandedKeys(nodes) {
+      const ids = ['suite'];
+      const walk = (list) => (list || []).forEach((n) => {
+        if (n.kind === 'folder' || n.kind === 'spec' || n.verdict === 'fail') ids.push(n.id);
+        walk(n.children);
+      });
+      walk(nodes);
+      return ids;
+    }
+
+    const HookBlock = {
+      name: 'HookBlock',
+      props: ['hook'],
+      template: `
+        <el-alert v-if="hook" type="error" :title="(hook.hookName || 'Hook') + ' 失败'" show-icon style="margin-bottom: 8px">
+          <pre class="err">{{ hook.errorMessage }}</pre>
+          <pre v-if="hook.stackTrace" class="stack">{{ hook.stackTrace }}</pre>
+        </el-alert>`
+    };
+    const ItemTable = {
+      name: 'ItemTable',
+      props: { items: { type: Array, default: () => [] }, expanded: { type: Array, default: () => [] } },
+      emits: ['expand-change'],
+      methods: {
+        tagType, verdictLabel, itemVerdict, itemDuration, itemHasDetail, stepHTML,
+        typeLabel(row) {
+          if (row.phase === 'Context') return 'Context';
+          if (row.phase === 'Teardown') return 'Teardown';
+          if (row.kind === 'concept') return '概念';
+          if (row.kind === 'comment') return '注释';
+          return '步骤';
+        },
+        nameHTML(row) {
+          if (row.kind === 'comment') return this.esc(row.comment || '');
+          const step = row.step || (row.concept && row.concept.step);
+          return this.stepHTML(step) || this.esc(row.comment || '');
+        },
+        esc,
+        rowClass({ row }) {
+          const fail = this.itemVerdict(row) === 'fail' ? 'row-fail' : '';
+          const no = this.itemHasDetail(row) ? '' : 'no-expand';
+          return [fail, no].filter(Boolean).join(' ');
+        },
+        shots(row) {
+          const step = row.step || (row.concept && row.concept.step);
+          if (!step) return [];
+          return [step.failureScreenshot].concat(step.screenshots || []).concat(step.preHookScreenshots || []).concat(step.postHookScreenshots || []).filter(Boolean);
+        }
+      },
+      template: `
+        <el-table :data="items" row-key="id" border size="small" :expand-row-keys="expanded" :row-class-name="rowClass" @expand-change="$emit('expand-change', $event)">
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <div class="nested-block">
+                <div v-if="row.kind === 'concept' && row.concept && row.concept.items && row.concept.items.length">
+                  <div class="nested-title">概念步骤 · {{ itemDuration(row) }}</div>
+                  <item-table :items="(row.concept.items || []).map(it => Object.assign({}, it, { phase: 'Step' }))" :expanded="expanded" @expand-change="$emit('expand-change', $event)"></item-table>
+                </div>
+                <template v-if="row.step || (row.concept && row.concept.step)">
+                  <div v-if="(row.step || row.concept.step).errorMessage" class="err">{{ (row.step || row.concept.step).errorMessage }}</div>
+                  <div v-if="(row.step || row.concept.step).skippedReason" class="msg">跳过：{{ (row.step || row.concept.step).skippedReason }}</div>
+                  <div v-for="m in ((row.step || row.concept.step).messages || [])" :key="m" class="msg">{{ m }}</div>
+                  <pre v-if="(row.step || row.concept.step).stackTrace" class="stack">{{ (row.step || row.concept.step).stackTrace }}</pre>
+                  <div v-if="shots(row).length" class="shots">
+                    <a v-for="p in shots(row)" :key="p" :href="p" target="_blank"><img :src="p" alt="screenshot"></a>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="名称" min-width="240">
+            <template #default="{ row }"><div class="name-cell" v-html="nameHTML(row)"></div></template>
+          </el-table-column>
+          <el-table-column label="类型" width="90">
+            <template #default="{ row }">{{ typeLabel(row) }}</template>
+          </el-table-column>
+          <el-table-column label="结果" width="90">
+            <template #default="{ row }"><el-tag :type="tagType(itemVerdict(row))" size="small">{{ verdictLabel(itemVerdict(row)) }}</el-tag></template>
+          </el-table-column>
+          <el-table-column label="运行时间" width="120">
+            <template #default="{ row }">{{ itemDuration(row) }}</template>
+          </el-table-column>
+        </el-table>`
+    };
+
+    const treeData = buildTree(report);
+    const app = Vue.createApp({
+      components: { ItemTable, HookBlock },
+      data() {
+        return {
+          report,
+          filter: 'all',
+          query: '',
+          selected: 'suite',
+          expanded: defaultExpanded(report),
+          treeData,
+          treeExpanded: treeExpandedKeys(treeData)
+        };
+      },
+      computed: {
+        successRate() {
+          const n = this.report.successRate;
+          return n == null ? 0 : Math.round(n);
+        },
+        q() { return this.query.trim().toLowerCase(); },
+        visibleSpecs() {
+          return (this.report.specs || []).filter((spec) => this.specVisible(spec));
+        },
+        selectedLabel() {
+          if (this.selected === 'suite') return this.report.projectName;
+          const spec = (this.report.specs || []).find((s) => s.id === this.selected);
+          if (spec) return spec.heading;
+          for (const s of this.report.specs || []) {
+            const scn = (s.scenarios || []).find((x) => x.id === this.selected);
+            if (scn) return s.heading + ' / ' + scn.heading;
+          }
+          return this.report.projectName;
+        }
+      },
+      watch: {
+        query() { this.$refs.scriptTree && this.$refs.scriptTree.filter(this.query); },
+        filter() { this.$refs.scriptTree && this.$refs.scriptTree.filter(this.query); }
+      },
+      methods: {
+        verdictLabel, tagType,
+        nodeVisible(verdict, texts) {
+          if (this.filter !== 'all' && verdict !== this.filter) return false;
+          return matchQuery(this.q, texts);
+        },
+        specVisible(spec) {
+          if (this.filter === 'all' && !this.q) return true;
+          if (this.nodeVisible(spec.verdict, specTexts(spec))) return true;
+          return (spec.scenarios || []).some((scn) => this.scenarioVisible(scn));
+        },
+        scenarioVisible(scn) {
+          if (this.filter === 'all' && !this.q) return true;
+          if (this.nodeVisible(scn.verdict, scenarioTexts(scn))) return true;
+          let hit = false;
+          walkItems(scenarioAllItems(scn), (item) => {
+            if (this.nodeVisible(itemVerdict(item), [itemText(item)])) hit = true;
+          });
+          return hit;
+        },
+        visibleScenarios(spec) {
+          return (spec.scenarios || []).filter((scn) => this.scenarioVisible(scn));
+        },
+        scenarioRows(scn) {
+          const rows = [];
+          (scn.contexts || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Context' })));
+          (scn.items || []).forEach((it) => rows.push(Object.assign({}, it, { phase: it.kind === 'concept' ? 'Concept' : 'Step' })));
+          (scn.teardowns || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Teardown' })));
+          if (this.filter === 'all' && !this.q) return rows;
+          const matchItem = (item) => {
+            if (this.nodeVisible(itemVerdict(item), [itemText(item), item.phase])) return true;
+            if (item.kind === 'concept' && item.concept) return (item.concept.items || []).some(matchItem);
+            return false;
+          };
+          return rows.filter(matchItem);
+        },
+        rowClass({ row }) {
+          return row.verdict === 'fail' ? 'row-fail' : '';
+        },
+        onExpandChange(row) {
+          const id = row && row.id;
+          if (!id) return;
+          const idx = this.expanded.indexOf(id);
+          if (idx >= 0) this.expanded = this.expanded.filter((x) => x !== id);
+          else this.expanded = this.expanded.concat([id]);
+        },
+        expandAll() { this.expanded = collectExpandableIds(this.report); },
+        collapseAll() { this.expanded = []; },
+        printReport() { window.print(); },
+        onTreeClick(data) {
+          this.selected = data.id;
+          if (data.kind === 'spec') this.ensureExpanded(data.id);
+          if (data.kind === 'scenario') this.ensureExpanded(data.specId, data.id);
+          if (data.kind === 'concept' || data.kind === 'step') {
+            const path = this.findItemPath(data.id);
+            if (path.length) this.ensureExpanded.apply(this, path);
+          }
+        },
+        onSpecClick(row) { this.selected = row.id; },
+        onScenarioClick(row) { this.selected = row.id; },
+        ensureExpanded() {
+          const ids = Array.prototype.slice.call(arguments);
+          ids.forEach((id) => {
+            if (id && this.expanded.indexOf(id) < 0) this.expanded = this.expanded.concat([id]);
+          });
+        },
+        findItemPath(id) {
+          for (const spec of this.report.specs || []) {
+            for (const scn of spec.scenarios || []) {
+              let found = false;
+              walkItems(scenarioAllItems(scn), (item) => { if (item.id === id) found = true; });
+              if (found) return [spec.id, scn.id, id];
+            }
+          }
+          return [];
+        },
+        filterTreeNode(value, data) {
+          if (this.filter !== 'all' && data.verdict && data.kind !== 'folder' && data.kind !== 'phase' && data.kind !== 'suite') {
+            if (data.verdict !== this.filter && data.verdict !== 'none') return false;
+          }
+          const q = String(value || '').trim().toLowerCase();
+          if (!q) return true;
+          return String(data.label || '').toLowerCase().includes(q);
+        }
       }
-      const crumb = e.target.closest('.crumb button[data-id]');
-      if (crumb) { select(crumb.getAttribute('data-id')); return; }
-      const row = e.target.closest('tr.ml-row[data-id]');
-      if (row) select(row.getAttribute('data-id'));
     });
-    $('filters').addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-filter]');
-      if (!btn) return;
-      state.filter = btn.dataset.filter;
-      [...$('filters').querySelectorAll('button')].forEach(b => b.classList.toggle('active', b === btn));
-      renderContent();
-    });
-    $('search').addEventListener('input', (e) => { state.query = e.target.value; renderContent(); });
-    $('expand-all').addEventListener('click', () => {
-      const ids = new Set();
-      collectExpandIds(forest, ids);
-      state.open = ids;
-      renderContent();
-    });
-    $('collapse-all').addEventListener('click', () => { state.open = new Set(['suite']); renderContent(); });
-    $('print').addEventListener('click', () => window.print());
+    app.use(ElementPlus);
+    app.mount('#app');
     document.title = 'Test Report Viewer - ' + (report.projectName || 'report');
-    $('title-file').textContent = '— ' + (report.projectName || '');
-    renderContent();
   </script>
 </body>
 </html>

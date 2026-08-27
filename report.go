@@ -114,16 +114,20 @@ type ScenarioReport struct {
 }
 
 type ItemReport struct {
-	ID      string         `json:"id"`
-	Kind    string         `json:"kind"`
-	Step    *StepReport    `json:"step,omitempty"`
-	Concept *ConceptReport `json:"concept,omitempty"`
-	Comment string         `json:"comment,omitempty"`
+	ID            string         `json:"id"`
+	Kind          string         `json:"kind"`
+	ExecutionTime int64          `json:"executionTime"`
+	Duration      string         `json:"duration"`
+	Step          *StepReport    `json:"step,omitempty"`
+	Concept       *ConceptReport `json:"concept,omitempty"`
+	Comment       string         `json:"comment,omitempty"`
 }
 
 type ConceptReport struct {
-	Step  *StepReport  `json:"step"`
-	Items []ItemReport `json:"items"`
+	Step          *StepReport  `json:"step"`
+	Items         []ItemReport `json:"items"`
+	ExecutionTime int64        `json:"executionTime"`
+	Duration      string       `json:"duration"`
 }
 
 type StepReport struct {
@@ -180,6 +184,31 @@ type GeneratedReport struct {
 	JSONPath  string
 }
 
+func writeReportAssets(dir string) error {
+	destDir := filepath.Join(dir, "assets")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return fmt.Errorf("create assets directory: %w", err)
+	}
+	entries, err := reportAssets.ReadDir("report-assets")
+	if err != nil {
+		return fmt.Errorf("read embedded assets: %w", err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		data, err := reportAssets.ReadFile(path.Join("report-assets", name))
+		if err != nil {
+			return fmt.Errorf("read asset %s: %w", name, err)
+		}
+		if err := os.WriteFile(filepath.Join(destDir, name), data, 0o644); err != nil {
+			return fmt.Errorf("write asset %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
 func shouldSkipReport() bool {
 	v := strings.ToLower(strings.TrimSpace(os.Getenv(skipReportEnv)))
 	return v == "true" || v == "1" || v == "yes"
@@ -224,6 +253,9 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 	imagesDir := filepath.Join(dir, "images")
 	if err := os.MkdirAll(imagesDir, 0o755); err != nil {
 		return nil, fmt.Errorf("create report directory: %w", err)
+	}
+	if err := writeReportAssets(dir); err != nil {
+		return nil, err
 	}
 	rewriteScreenshotPaths(report, copyScreenshots(collectScreenshotFiles(report), imagesDir))
 
@@ -382,6 +414,14 @@ func toSpecReport(id string, res *gauge_messages.ProtoSpecResult) SpecReport {
 			scnIndex++
 		}
 	}
+	if out.ExecutionTime == 0 {
+		var sum int64
+		for _, scn := range out.Scenarios {
+			sum += scn.ExecutionTime
+		}
+		out.ExecutionTime = sum
+		out.Duration = formatDuration(sum)
+	}
 	return out
 }
 
@@ -410,6 +450,11 @@ func toScenarioReport(id string, scn *gauge_messages.ProtoScenario, tableRowInde
 		out.IsScenarioTableDriven = true
 		out.ScenarioTableRowIndex = int(td.GetScenarioTableRowIndex())
 		out.ScenarioDataTable = toDataTable(td.GetScenarioDataTable())
+	}
+	sum := fillItemDurations(out.Contexts) + fillItemDurations(out.Items) + fillItemDurations(out.Teardowns)
+	if out.ExecutionTime == 0 && sum > 0 {
+		out.ExecutionTime = sum
+		out.Duration = formatDuration(sum)
 	}
 	return out
 }
@@ -616,6 +661,43 @@ func specFolders(fileName string) []string {
 		out = append(out, p)
 	}
 	return out
+}
+
+func fillItemDurations(items []ItemReport) int64 {
+	var total int64
+	for i := range items {
+		total += fillOneItemDuration(&items[i])
+	}
+	return total
+}
+
+func fillOneItemDuration(item *ItemReport) int64 {
+	var t int64
+	switch item.Kind {
+	case "step":
+		if item.Step != nil {
+			t = item.Step.ExecutionTime
+		}
+	case "concept":
+		if item.Concept != nil {
+			child := fillItemDurations(item.Concept.Items)
+			if item.Concept.Step != nil {
+				t = item.Concept.Step.ExecutionTime
+				if t == 0 {
+					t = child
+					item.Concept.Step.ExecutionTime = t
+					item.Concept.Step.Duration = formatDuration(t)
+				}
+			} else {
+				t = child
+			}
+			item.Concept.ExecutionTime = t
+			item.Concept.Duration = formatDuration(t)
+		}
+	}
+	item.ExecutionTime = t
+	item.Duration = formatDuration(t)
+	return t
 }
 
 func scenarioAllItems(scn *ScenarioReport) []ItemReport {

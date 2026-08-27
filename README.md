@@ -11,7 +11,7 @@ The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https
 - Real-time event forwarding via WebSocket
 - Auto-reconnect with exponential backoff
 - Supports all Gauge execution lifecycle events
-- HTML report generation (CANoe Test Report Viewer layout)
+- HTML report generation (Vue 3 + Element Plus, CANoe-style layout)
 - Cross-platform (Windows, Linux, macOS)
 - Configurable message size limits
 
@@ -84,13 +84,15 @@ GAUGE_STUDIO_WS="ws://127.0.0.1:8080" ./bin/studio-reporter --start
 
 ## HTML Report
 
-When a suite finishes, the plugin writes a CANoe-style Test Report Viewer to `reports/studio-report/index.html` (unless `GAUGE_STUDIO_SKIP_REPORT` is set).
+When a suite finishes, the plugin writes a Vue 3 + Element Plus Test Report Viewer to `reports/studio-report/index.html` (unless `GAUGE_STUDIO_SKIP_REPORT` is set).
 
 The report includes:
 
 - Overall verdict, duration, environment, and success rate
-- A nested multi-level table grouped by spec folders: suite → folder → spec → scenario → context/steps/teardown
-- Expandable child tables for nested concepts, with wrapping names and details
+- Vue 3 + Element Plus UI
+- A script tree (`el-tree`) grouped by spec folders, with duration on every node
+- Expandable result tables (`el-table` expand rows): spec → scenario → context/steps/teardown → concept children
+- Runtime for every spec, scenario, concept, and step (concept time falls back to the sum of child steps when missing)
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 - Filter by verdict and search across specs, scenarios, and steps
 

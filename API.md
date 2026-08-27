@@ -326,11 +326,12 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
 
 ## HTML Report
 
-On `SuiteResult`, the plugin generates a local HTML report modeled after CANoe Test Report Viewer:
+On `SuiteResult`, the plugin generates a local HTML report with Vue 3 and Element Plus:
 
-- Top title bar and verdict filter toolbar
-- Nested **multi-level tables**: suite → folders → specs (test groups) → scenarios (test cases) → context / steps / teardown
-- Expandable child tables for nested concepts; long names and details wrap in place
+- Top title bar, summary cards, and verdict filter toolbar
+- Left **script tree** (`el-tree`): suite → folders → specs → scenarios → context / steps / concepts
+- Main **expandable tables** (`el-table` expand rows): spec → scenario → steps / concepts
+- Runtime on every spec, scenario, concept, and step
 - Color-coded verdicts: pass (green), fail (red), skip (grey)
 - Hook failures, screenshots, stack traces, and data tables
 
@@ -340,6 +341,7 @@ Default output:
 reports/studio-report/index.html
 reports/studio-report/last_run_result.json
 reports/studio-report/images/
+reports/studio-report/assets/
 ```
 
 Regenerate without re-running tests:

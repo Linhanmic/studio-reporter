@@ -247,6 +247,9 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	if login.Heading != "Login" || login.Verdict != verdictPass || login.FileName != "specs/auth/login.spec" {
 		t.Fatalf("login spec = %+v", login)
 	}
+	if login.Duration != "00:00:00.400" || login.ExecutionTime != 400 {
+		t.Fatalf("login duration = %s / %d", login.Duration, login.ExecutionTime)
+	}
 	if got := strings.Join(login.Folders, "/"); got != "specs/auth" {
 		t.Fatalf("folders = %v", login.Folders)
 	}
@@ -254,6 +257,9 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 		t.Fatalf("login scenarios = %+v", login.Scenarios)
 	}
 	scn := login.Scenarios[0]
+	if scn.Duration != "00:00:00.250" || scn.ExecutionTime != 250 {
+		t.Fatalf("scenario duration = %s / %d", scn.Duration, scn.ExecutionTime)
+	}
 	if len(scn.Contexts) != 1 || scn.Contexts[0].Step.ActualText != "Open browser" {
 		t.Fatalf("contexts = %+v", scn.Contexts)
 	}
@@ -273,6 +279,15 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	if items[1].Concept == nil || len(items[1].Concept.Items) != 1 || items[1].Concept.Items[0].Step.ActualText != "Click submit" {
 		t.Fatalf("concept items = %+v", items[1].Concept)
 	}
+	if scn.Contexts[0].Duration != "00:00:00.020" || items[0].Duration != "00:00:00.080" {
+		t.Fatalf("step durations = ctx %s item %s", scn.Contexts[0].Duration, items[0].Duration)
+	}
+	if items[1].Duration != "00:00:00.090" || items[1].Concept.Duration != "00:00:00.090" {
+		t.Fatalf("concept duration = %s / %s", items[1].Duration, items[1].Concept.Duration)
+	}
+	if items[1].Concept.Items[0].Duration != "00:00:00.040" || scn.Teardowns[0].Duration != "00:00:00.015" {
+		t.Fatalf("nested durations = child %s teardown %s", items[1].Concept.Items[0].Duration, scn.Teardowns[0].Duration)
+	}
 
 	checkout := r.Specs[1]
 	if checkout.Verdict != verdictFail || checkout.Datatable == nil || checkout.Datatable.Rows[0][0] != "book" {
@@ -290,6 +305,34 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	}
 	if r.Specs[2].Verdict != verdictSkip || r.Specs[2].Errors[0].Message != "missing step" {
 		t.Fatalf("skipped spec = %+v", r.Specs[2])
+	}
+}
+
+func TestItemDurationRollup(t *testing.T) {
+	items := []ItemReport{{
+		ID:   "c",
+		Kind: "concept",
+		Concept: &ConceptReport{
+			Step: &StepReport{ActualText: "parent", Verdict: verdictPass, ExecutionTime: 0, Duration: formatDuration(0)},
+			Items: []ItemReport{{
+				ID:   "s",
+				Kind: "step",
+				Step: &StepReport{ActualText: "child", Verdict: verdictPass, ExecutionTime: 50, Duration: formatDuration(50)},
+			}},
+		},
+	}}
+	sum := fillItemDurations(items)
+	if sum != 50 {
+		t.Fatalf("sum = %d", sum)
+	}
+	if items[0].Duration != "00:00:00.050" || items[0].Concept.Duration != "00:00:00.050" {
+		t.Fatalf("concept rollup = %+v", items[0])
+	}
+	if items[0].Concept.Items[0].Duration != "00:00:00.050" {
+		t.Fatalf("child duration = %s", items[0].Concept.Items[0].Duration)
+	}
+	if items[0].Concept.Step.ExecutionTime != 50 {
+		t.Fatalf("concept step time = %d", items[0].Concept.Step.ExecutionTime)
 	}
 }
 
@@ -339,8 +382,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	html := string(body)
 	for _, want := range []string{
 		"Test Report Viewer",
-		"ml-table",
-		"ml-nest",
+		"el-table",
+		"el-tree",
+		"运行时间",
+		"脚本",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
@@ -350,6 +395,8 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"Teardown",
 		`"folders":["specs","auth"]`,
 		`"verdict":"fail"`,
+		"assets/vue.global.prod.js",
+		"assets/element-plus.full.min.js",
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("generated HTML missing %q", want)
@@ -357,6 +404,11 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	}
 	if _, err := os.Stat(generated.JSONPath); err != nil {
 		t.Fatalf("json not written: %v", err)
+	}
+	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css"} {
+		if _, err := os.Stat(filepath.Join(generated.Dir, "assets", asset)); err != nil {
+			t.Fatalf("asset %s missing: %v", asset, err)
+		}
 	}
 
 	out := filepath.Join(dir, "regenerated")
