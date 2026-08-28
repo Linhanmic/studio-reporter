@@ -4,9 +4,11 @@
 
 The Studio Reporter Plugin is a gRPC plugin for Gauge test framework that forwards test execution events to Gauge Studio via WebSocket in real-time.
 
+The on-disk report file format is specified separately in [REPORT_FORMAT.md](REPORT_FORMAT.md).
+
 ## Version
 
-- Plugin Version: 0.2.8
+- Plugin Version: 0.3.0
 - Protocol: WebSocket
 - Format: JSON
 
