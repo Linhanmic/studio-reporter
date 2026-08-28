@@ -73,11 +73,15 @@
     .data-kv { border-collapse: collapse; font-size: 11px; background: #fff; }
     .data-kv th, .data-kv td { border: 1px solid #c5d0dc; padding: 2px 8px; text-align: left; }
     .data-kv th { background: #e8eef4; color: #16324f; font-weight: 650; }
-    .msg-stack { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 2px; }
-    .msg-card.el-card { border: 1px solid #c5d0dc; background: #f8fafc; }
-    .msg-card .el-card__body { padding: 6px 8px; }
-    .msg-card-kicker { font-size: 10px; color: #5a6a7a; letter-spacing: .04em; margin-bottom: 2px; }
-    .msg-card-body { margin: 0; white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: #1a202c; }
+    .dense-table.el-table td.el-table__cell { vertical-align: top; }
+    .col-type .cell { white-space: nowrap; }
+    .out-stack { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 2px; max-width: 100%; }
+    .out-card {
+      border: 1px solid #b7c9d9; border-left: 3px solid var(--accent); background: #f4f8fb;
+      border-radius: 3px; padding: 5px 8px;
+    }
+    .out-card-label { font-size: 10px; color: #1f4668; font-weight: 650; margin-bottom: 2px; }
+    .out-card-body { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: #1a202c; }
     .status {
       flex: 0 0 auto; background: #eef3f8; border-top: 1px solid #c5d0dc;
       padding: 2px 10px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 11px;
@@ -192,7 +196,7 @@
                     <el-table-column label="名称" min-width="180">
                       <template #default="{ row: body }"><div class="name-cell">{{ bodyName(body) }}</div></template>
                     </el-table-column>
-                    <el-table-column label="类型" width="72">
+                    <el-table-column label="类型" width="90" class-name="col-type" label-class-name="col-type">
                       <template #default="{ row: body }">{{ bodyTypeLabel(body) }}</template>
                     </el-table-column>
                     <el-table-column label="结果" width="70">
@@ -208,7 +212,7 @@
                 <div class="name-cell"><strong>{{ row.heading }}</strong></div>
               </template>
             </el-table-column>
-            <el-table-column label="类型" width="58">规格书</el-table-column>
+            <el-table-column label="类型" width="90" class-name="col-type" label-class-name="col-type">规格书</el-table-column>
             <el-table-column label="结果" width="70">
               <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
             </el-table-column>
@@ -308,9 +312,15 @@
       const step = row && (row.step || (row.concept && row.concept.step));
       if (!step) return [];
       const out = [];
-      (step.preHookMessages || []).forEach((text) => out.push({ label: '前置输出', text: text }));
-      (step.messages || []).forEach((text) => out.push({ label: '控制台', text: text }));
-      (step.postHookMessages || []).forEach((text) => out.push({ label: '后置输出', text: text }));
+      const push = (label, list) => {
+        (list || []).forEach((text) => {
+          const t = String(text == null ? '' : text);
+          if (t !== '') out.push({ label: label, text: t });
+        });
+      };
+      push('前置输出', step.preHookMessages);
+      push('控制台', step.messages);
+      push('后置输出', step.postHookMessages);
       return out;
     };
     const worse = (a, b) => {
@@ -611,6 +621,17 @@
           <pre v-if="hook.stackTrace" class="stack">{{ hook.stackTrace }}</pre>
         </el-alert>`
     };
+    const OutputCards = {
+      name: 'OutputCards',
+      props: { items: { type: Array, default: () => [] } },
+      template: `
+        <div v-if="items && items.length" class="out-stack">
+          <div v-for="(m, i) in items" :key="i" class="out-card">
+            <div class="out-card-label">{{ m.label }}</div>
+            <pre class="out-card-body">{{ m.text }}</pre>
+          </div>
+        </div>`
+    };
     const DataSheet = {
       name: 'DataSheet',
       props: ['headers', 'cells', 'table', 'caption'],
@@ -680,7 +701,7 @@
           <el-table-column label="名称" min-width="180">
             <template #default="{ row: scn }"><div class="name-cell">{{ scn.heading }}</div></template>
           </el-table-column>
-          <el-table-column label="类型" width="58">场景</el-table-column>
+          <el-table-column label="类型" width="90" class-name="col-type" label-class-name="col-type">场景</el-table-column>
           <el-table-column label="结果" width="70">
             <template #default="{ row: scn }"><el-tag :type="tagType(scn.verdict)" size="small">{{ verdictLabel(scn.verdict) }}</el-tag></template>
           </el-table-column>
@@ -747,15 +768,10 @@
           <el-table-column label="名称" min-width="200">
             <template #default="{ row }">
               <div class="name-cell" v-html="nameHTML(row)"></div>
-              <div v-if="stepOutputs(row).length" class="msg-stack">
-                <el-card v-for="(m, i) in stepOutputs(row)" :key="'n-'+i" class="msg-card" shadow="never">
-                  <div class="msg-card-kicker">{{ m.label }}</div>
-                  <pre class="msg-card-body">{{ m.text }}</pre>
-                </el-card>
-              </div>
+              <output-cards :items="stepOutputs(row)"></output-cards>
             </template>
           </el-table-column>
-          <el-table-column label="类型" width="64">
+          <el-table-column label="类型" width="90" class-name="col-type" label-class-name="col-type">
             <template #default="{ row }">{{ typeLabel(row) }}</template>
           </el-table-column>
           <el-table-column label="结果" width="70">
@@ -768,6 +784,7 @@
     };
     ScenarioDetail.components = { DataSheet, HookBlock, ItemTable };
     ScenarioTable.components = { ScenarioDetail };
+    ItemTable.components = { OutputCards };
 
     function captureScroll(vm) {
       const result = vm.$refs.resultPane;
@@ -789,7 +806,7 @@
     }
 
     const app = Vue.createApp({
-      components: { ItemTable, HookBlock, DataSheet, ScenarioDetail, ScenarioTable },
+      components: { ItemTable, HookBlock, DataSheet, ScenarioDetail, ScenarioTable, OutputCards },
       setup() {
         const store = useReportStore();
         store.restoreView();

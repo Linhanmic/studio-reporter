@@ -213,3 +213,47 @@ func tableDrivenSpecItem(row int32, heading string, status gauge_messages.Execut
 		},
 	}
 }
+
+func TestLiveStepMessagesAppearUnderStep(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(reportsDirEnv, dir)
+	t.Setenv(overwriteReportsEnv, "true")
+
+	p := newLivePublisher()
+	spec := &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"}
+	scn := &gauge_messages.ScenarioInfo{Name: "Successful login"}
+	info := &gauge_messages.ExecutionInfo{
+		CurrentSpec:     spec,
+		CurrentScenario: scn,
+		CurrentStep:     &gauge_messages.StepInfo{Step: &gauge_messages.ExecuteStepRequest{ActualStepText: "Enter username as \"admin\""}},
+	}
+	p.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
+	p.onSpecStarting(&gauge_messages.ExecutionInfo{CurrentSpec: spec})
+	p.onScenarioStarting(&gauge_messages.ExecutionInfo{CurrentSpec: spec, CurrentScenario: scn})
+	p.onStepStarting(info)
+	p.onStepOrConceptEnding(&gauge_messages.ProtoStepResult{
+		ProtoItem: &gauge_messages.ProtoItem{
+			ItemType: gauge_messages.ProtoItem_Step,
+			Step: &gauge_messages.ProtoStep{
+				ActualText: "Enter username as \"admin\"",
+				ParsedText: "Enter username as {}",
+				StepExecutionResult: &gauge_messages.ProtoStepExecutionResult{
+					ExecutionResult: &gauge_messages.ProtoExecutionResult{
+						Failed:        false,
+						ExecutionTime: 80,
+						Message:       []string{"typed admin", "login form ready"},
+					},
+				},
+			},
+		},
+	}, info)
+
+	items := p.report.Specs[0].Scenarios[0].Items
+	if len(items) != 1 || items[0].Step == nil {
+		t.Fatalf("items = %+v", items)
+	}
+	got := items[0].Step.Messages
+	if len(got) != 2 || got[0] != "typed admin" || got[1] != "login form ready" {
+		t.Fatalf("messages = %#v", got)
+	}
+}
