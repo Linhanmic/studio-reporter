@@ -522,6 +522,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"out-card",
 		"out-stack",
 		"col-type",
+		`width="120"`,
 		"demo-project",
 		"Successful login",
 		"insufficient funds",

@@ -74,7 +74,19 @@
     .data-kv th, .data-kv td { border: 1px solid #c5d0dc; padding: 2px 8px; text-align: left; }
     .data-kv th { background: #e8eef4; color: #16324f; font-weight: 650; }
     .dense-table.el-table td.el-table__cell { vertical-align: top; }
-    .col-type .cell { white-space: nowrap; }
+    .dense-table.el-table th.col-type,
+    .dense-table.el-table td.col-type,
+    .dense-table.el-table th.col-type .cell,
+    .dense-table.el-table td.col-type .cell {
+      white-space: nowrap !important;
+      word-break: keep-all;
+    }
+    .dense-table.el-table th.col-type .cell,
+    .dense-table.el-table td.col-type .cell {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+    .type-label { white-space: nowrap; display: inline-block; }
     .out-stack { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 2px; max-width: 100%; }
     .out-card {
       border: 1px solid #b7c9d9; border-left: 3px solid var(--accent); background: #f4f8fb;
@@ -196,8 +208,8 @@
                     <el-table-column label="名称" min-width="180">
                       <template #default="{ row: body }"><div class="name-cell">{{ bodyName(body) }}</div></template>
                     </el-table-column>
-                    <el-table-column label="类型" width="90" class-name="col-type" label-class-name="col-type">
-                      <template #default="{ row: body }">{{ bodyTypeLabel(body) }}</template>
+                    <el-table-column label="类型" width="120" min-width="120" class-name="col-type" label-class-name="col-type">
+                      <template #default="{ row: body }"><span class="type-label">{{ bodyTypeLabel(body) }}</span></template>
                     </el-table-column>
                     <el-table-column label="结果" width="70">
                       <template #default="{ row: body }"><el-tag :type="tagType(body.verdict)" size="small">{{ verdictLabel(body.verdict) }}</el-tag></template>
@@ -212,7 +224,7 @@
                 <div class="name-cell"><strong>{{ row.heading }}</strong></div>
               </template>
             </el-table-column>
-            <el-table-column label="类型" width="90" class-name="col-type" label-class-name="col-type">规格书</el-table-column>
+            <el-table-column label="类型" width="120" min-width="120" class-name="col-type" label-class-name="col-type"><span class="type-label">规格书</span></el-table-column>
             <el-table-column label="结果" width="70">
               <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
             </el-table-column>
@@ -701,7 +713,7 @@
           <el-table-column label="名称" min-width="180">
             <template #default="{ row: scn }"><div class="name-cell">{{ scn.heading }}</div></template>
           </el-table-column>
-          <el-table-column label="类型" width="90" class-name="col-type" label-class-name="col-type">场景</el-table-column>
+          <el-table-column label="类型" width="120" min-width="120" class-name="col-type" label-class-name="col-type"><span class="type-label">场景</span></el-table-column>
           <el-table-column label="结果" width="70">
             <template #default="{ row: scn }"><el-tag :type="tagType(scn.verdict)" size="small">{{ verdictLabel(scn.verdict) }}</el-tag></template>
           </el-table-column>
@@ -771,8 +783,8 @@
               <output-cards :items="stepOutputs(row)"></output-cards>
             </template>
           </el-table-column>
-          <el-table-column label="类型" width="90" class-name="col-type" label-class-name="col-type">
-            <template #default="{ row }">{{ typeLabel(row) }}</template>
+          <el-table-column label="类型" width="120" min-width="120" class-name="col-type" label-class-name="col-type">
+            <template #default="{ row }"><span class="type-label">{{ typeLabel(row) }}</span></template>
           </el-table-column>
           <el-table-column label="结果" width="70">
             <template #default="{ row }"><el-tag :type="tagType(itemVerdict(row))" size="small">{{ verdictLabel(itemVerdict(row)) }}</el-tag></template>
