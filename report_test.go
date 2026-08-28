@@ -524,7 +524,6 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"col-type",
 		`width="120"`,
 		"scenarioRowsFor",
-		"数据行（",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
@@ -556,6 +555,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"'场景 · ' + spec.heading",
 		"步骤 · {{ scn.heading }}",
 		"数据驱动 · ' + spec.heading",
+		"specBodyTitle",
+		"数据行（",
+		"class=\"nested-title\">步骤",
+		"class=\"nested-title\">场景",
 	} {
 		if strings.Contains(html, not) {
 			t.Fatalf("generated HTML should not contain %q", not)
