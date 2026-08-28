@@ -17,7 +17,7 @@ The Studio Reporter Plugin is a gRPC plugin for Gauge test framework that forwar
 The plugin connects to the WebSocket server provided by Gauge Studio.
 
 - **Protocol**: `ws://` (WebSocket without TLS)
-- **Default Port**: 8080
+- **Default Port**: OS-assigned ephemeral port (GaugeStudio). Do not assume 8080.
 - **Path**: Root `/` or custom path
 
 ### Configuration
@@ -26,7 +26,7 @@ Configure the WebSocket endpoint via environment variable:
 
 | Environment Variable | Required | Default | Description |
 |---------------------|----------|---------|-------------|
-| `GAUGE_STUDIO_WS` | Yes (for live forwarding) | - | WebSocket server URL (e.g., `ws://127.0.0.1:8080`) |
+| `GAUGE_STUDIO_WS` | Yes (for live forwarding) | - | WebSocket server URL (e.g., `ws://127.0.0.1:<port>`) |
 | `gauge_max_message_size` | No | `1024` | Maximum gRPC message size in MB |
 | `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
 | `overwrite_reports` | No | `true` | Overwrite the previous HTML report on each run |
@@ -437,8 +437,8 @@ class GaugeStudioReceiver {
   private wss: WebSocketServer;
   private eventHandlers: Map<string, (payload: any) => void> = new Map();
 
-  constructor(port: number = 8080) {
-    this.wss = new WebSocketServer({ port });
+  constructor(port: number = 0) {
+    this.wss = new WebSocketServer({ host: '127.0.0.1', port });
     this.setupConnection();
   }
 
@@ -494,7 +494,7 @@ class GaugeStudioReceiver {
 }
 
 // Usage
-const receiver = new GaugeStudioReceiver(8080);
+const receiver = new GaugeStudioReceiver(0);
 
 receiver.onExecutionStarting((payload) => {
   console.log('Test suite started');
@@ -512,7 +512,7 @@ receiver.onSuiteResult((payload) => {
 
 ```bash
 # Set environment variable
-export GAUGE_STUDIO_WS="ws://127.0.0.1:8080"
+export GAUGE_STUDIO_WS="ws://127.0.0.1:<port>"
 
 # Run tests (plugin starts automatically)
 gauge run specs/

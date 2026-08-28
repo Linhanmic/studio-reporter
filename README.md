@@ -42,7 +42,7 @@ go build -o bin/studio-reporter ./...
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GAUGE_STUDIO_WS` | Yes (for live forwarding) | - | WebSocket server URL (e.g., `ws://127.0.0.1:8080`) |
+| `GAUGE_STUDIO_WS` | Yes (for live forwarding) | - | WebSocket server URL (e.g., `ws://127.0.0.1:<port>`，端口由 GaugeStudio 随机分配) |
 | `gauge_max_message_size` | No | `1024` | Maximum gRPC message size in MB |
 | `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
 | `overwrite_reports` | No | `true` | Overwrite `reports/studio-report` on each run. Set `false` to keep timestamped copies |
@@ -66,7 +66,7 @@ The plugin starts automatically when you run Gauge tests:
 
 ```bash
 # Set environment variable
-export GAUGE_STUDIO_WS="ws://127.0.0.1:8080"
+export GAUGE_STUDIO_WS="ws://127.0.0.1:<port>"
 
 # Run tests
 gauge run specs/
@@ -79,7 +79,7 @@ gauge run specs/
 ./bin/studio-reporter --start
 
 # Or with environment variable
-GAUGE_STUDIO_WS="ws://127.0.0.1:8080" ./bin/studio-reporter --start
+GAUGE_STUDIO_WS="ws://127.0.0.1:<port>" ./bin/studio-reporter --start
 ```
 
 ## HTML Report
