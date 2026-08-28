@@ -81,7 +81,10 @@ func main() {
 	// newWSForwarder() 是在其他文件中定义的函数（不在本文件中），创建一个 WebSocket 转发器对象
 	// 这个转发器负责把 Gauge 测试执行的事件通过 WebSocket 发送给前端 Studio 界面
 	forwarder := newWSForwarder()
-	// 调用该对象的 connect 方法，建立 WebSocket 连接
+	if err := forwarder.listen(); err != nil {
+		log.Fatalf("studio-reporter: %v", err)
+	}
+	// 若仍设置了 GAUGE_STUDIO_WS，则额外作为客户端连出去（可选，不再依赖注入）
 	forwarder.connect()
 
 	// if err := ...; err != nil 是 Go 的惯用写法：在 if 语句中声明变量并检查错误

@@ -8,7 +8,7 @@ The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https
 
 ## Features
 
-- Real-time event forwarding via WebSocket
+- Real-time event forwarding via WebSocket (plugin listens on a random port and prints the URL)
 - Auto-reconnect with exponential backoff
 - Supports all Gauge execution lifecycle events
 - HTML report generation (Vue 3 + Element Plus, CANoe-style layout)
@@ -42,7 +42,7 @@ go build -o bin/studio-reporter ./...
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GAUGE_STUDIO_WS` | Yes (for live forwarding) | - | WebSocket server URL (e.g., `ws://127.0.0.1:<port>`，端口由 GaugeStudio 随机分配) |
+| `GAUGE_STUDIO_WS` | No | - | Optional extra WebSocket URL to push events to. Live forwarding no longer requires this: the plugin listens on a random local port and prints `studio-reporter websocket: ws://127.0.0.1:<port>` |
 | `gauge_max_message_size` | No | `1024` | Maximum gRPC message size in MB |
 | `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
 | `overwrite_reports` | No | `true` | Overwrite `reports/studio-report` on each run. Set `false` to keep timestamped copies |
@@ -62,24 +62,22 @@ cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.2.0/
 
 ### Starting the Plugin
 
-The plugin starts automatically when you run Gauge tests:
+The plugin starts automatically when you run Gauge tests. It binds a random local WebSocket port and prints:
+
+```text
+studio-reporter websocket: ws://127.0.0.1:<port>
+```
+
+GaugeStudio (or any client) should connect to that URL. `GAUGE_STUDIO_WS` is no longer injected or required.
 
 ```bash
-# Set environment variable
-export GAUGE_STUDIO_WS="ws://127.0.0.1:<port>"
-
-# Run tests
 gauge run specs/
 ```
 
 ### Manual Start
 
 ```bash
-# Start the plugin directly
 ./bin/studio-reporter --start
-
-# Or with environment variable
-GAUGE_STUDIO_WS="ws://127.0.0.1:<port>" ./bin/studio-reporter --start
 ```
 
 ## HTML Report

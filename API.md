@@ -14,19 +14,23 @@ The Studio Reporter Plugin is a gRPC plugin for Gauge test framework that forwar
 
 ### Endpoint
 
-The plugin connects to the WebSocket server provided by Gauge Studio.
+The plugin **listens** on a random local WebSocket port after it starts. GaugeStudio (or any client) connects to the plugin.
 
 - **Protocol**: `ws://` (WebSocket without TLS)
-- **Default Port**: OS-assigned ephemeral port (GaugeStudio). Do not assume 8080.
-- **Path**: Root `/` or custom path
+- **Bind address**: `127.0.0.1:0` (OS-assigned ephemeral port)
+- **Stdout line** (parse this; do not inject `GAUGE_STUDIO_WS`):
+
+```text
+studio-reporter websocket: ws://127.0.0.1:<port>
+```
+
+- **Path**: `/`
 
 ### Configuration
 
-Configure the WebSocket endpoint via environment variable:
-
 | Environment Variable | Required | Default | Description |
 |---------------------|----------|---------|-------------|
-| `GAUGE_STUDIO_WS` | Yes (for live forwarding) | - | WebSocket server URL (e.g., `ws://127.0.0.1:<port>`) |
+| `GAUGE_STUDIO_WS` | No | - | Optional extra URL the plugin also pushes to as a client. Live forwarding does not require this. |
 | `gauge_max_message_size` | No | `1024` | Maximum gRPC message size in MB |
 | `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
 | `overwrite_reports` | No | `true` | Overwrite the previous HTML report on each run |
@@ -34,9 +38,9 @@ Configure the WebSocket endpoint via environment variable:
 
 ### Connection Behavior
 
-- Auto-reconnect on disconnection
-- Exponential backoff: 1s → 2s → 4s → 8s → 10s (max)
-- Silent operation if `GAUGE_STUDIO_WS` not set (events not forwarded)
+- Plugin binds a random port and prints `studio-reporter websocket: ws://127.0.0.1:<port>`
+- Studio connects to that URL and receives JSON envelopes
+- If `GAUGE_STUDIO_WS` is set, the plugin also connects outbound with auto-reconnect (1s → 2s → 4s → 8s → 10s)
 
 ## Message Format
 
@@ -408,10 +412,9 @@ Regenerate without re-running tests:
 
 | Error | Behavior |
 |-------|----------|
-| `GAUGE_STUDIO_WS` not set | Plugin starts normally, events not forwarded, warning logged |
-| Connection refused | Auto-retry with exponential backoff |
-| Connection dropped | Auto-reconnect, continue forwarding |
-| Invalid URL format | Warning logged, events not forwarded |
+| Plugin starts, prints websocket URL | Studio should connect to that URL; no env injection |
+| `GAUGE_STUDIO_WS` set | Optional extra outbound client; auto-retry with exponential backoff |
+| Connection dropped | Local listeners stay up; outbound client auto-reconnects |
 
 ### Message Errors
 
@@ -425,8 +428,6 @@ Regenerate without re-running tests:
 ### TypeScript/JavaScript Example
 
 ```typescript
-import { WebSocketServer } from 'ws';
-
 interface StudioEvent {
   type: string;
   timestamp: string;
@@ -434,54 +435,20 @@ interface StudioEvent {
 }
 
 class GaugeStudioReceiver {
-  private wss: WebSocketServer;
   private eventHandlers: Map<string, (payload: any) => void> = new Map();
 
-  constructor(port: number = 0) {
-    this.wss = new WebSocketServer({ host: '127.0.0.1', port });
-    this.setupConnection();
-  }
-
-  private setupConnection(): void {
-    this.wss.on('connection', (ws) => {
-      console.log('Studio Reporter connected');
-
-      ws.on('message', (data) => {
-        const event: StudioEvent = JSON.parse(data.toString());
-        this.handleEvent(event);
-      });
-
-      ws.on('close', () => {
-        console.log('Studio Reporter disconnected');
-      });
+  connect(url: string) {
+    const ws = new WebSocket(url);
+    ws.addEventListener('open', () => console.log('connected to', url));
+    ws.addEventListener('message', (ev) => {
+      const event: StudioEvent = JSON.parse(String(ev.data));
+      const handler = this.eventHandlers.get(event.type);
+      if (handler) handler(event.payload);
     });
-  }
-
-  private handleEvent(event: StudioEvent): void {
-    const handler = this.eventHandlers.get(event.type);
-    if (handler) {
-      handler(event.payload);
-    }
   }
 
   onExecutionStarting(handler: (payload: any) => void): void {
     this.eventHandlers.set('ExecutionStarting', handler);
-  }
-
-  onExecutionEnding(handler: (payload: any) => void): void {
-    this.eventHandlers.set('ExecutionEnding', handler);
-  }
-
-  onSpecExecutionStarting(handler: (payload: any) => void): void {
-    this.eventHandlers.set('SpecExecutionStarting', handler);
-  }
-
-  onScenarioExecutionStarting(handler: (payload: any) => void): void {
-    this.eventHandlers.set('ScenarioExecutionStarting', handler);
-  }
-
-  onStepExecutionEnding(handler: (payload: any) => void): void {
-    this.eventHandlers.set('StepExecutionEnding', handler);
   }
 
   onSuiteResult(handler: (payload: any) => void): void {
@@ -493,17 +460,9 @@ class GaugeStudioReceiver {
   }
 }
 
-// Usage
-const receiver = new GaugeStudioReceiver(0);
-
-receiver.onExecutionStarting((payload) => {
-  console.log('Test suite started');
-});
-
-receiver.onSuiteResult((payload) => {
-  console.log('Test suite completed');
-  console.log('Results:', payload.specResults);
-});
+// Parse plugin stdout: "studio-reporter websocket: ws://127.0.0.1:54321"
+const receiver = new GaugeStudioReceiver();
+receiver.connect('ws://127.0.0.1:54321');
 ```
 
 ## Environment Setup
@@ -511,11 +470,8 @@ receiver.onSuiteResult((payload) => {
 ### Starting the Plugin
 
 ```bash
-# Set environment variable
-export GAUGE_STUDIO_WS="ws://127.0.0.1:<port>"
-
-# Run tests (plugin starts automatically)
 gauge run specs/
+# stdout includes: studio-reporter websocket: ws://127.0.0.1:<port>
 ```
 
 ### Starting with Custom Message Size
