@@ -178,7 +178,7 @@
                     <el-tag v-for="tag in (row.tags || [])" :key="tag" size="small">{{ tag }}</el-tag>
                     <span v-for="err in (row.errors || [])" :key="err.message" class="msg">{{ err.message }}</span>
                   </div>
-                  <div class="nested-title">{{ specBodyTitle(row) }} · {{ row.duration }}</div>
+                  <div class="nested-title">{{ specBodyTitle(row) }}</div>
                   <el-table
                     class="dense-table"
                     :data="visibleSpecBodyRows(row)"
@@ -194,12 +194,12 @@
                       <template #default="{ row: body }">
                         <div class="nested-block" v-if="body.kind === 'datarow'">
                           <data-sheet :headers="body.headers" :cells="body.cells" caption="数据行"></data-sheet>
-                          <div class="nested-title">场景 · 第 {{ body.rowIndex + 1 }} 行 · {{ body.duration }}</div>
+                          <div class="nested-title">场景{{ body.scenarios && body.scenarios.length ? '（' + body.scenarios.length + '）' : '' }}</div>
                           <scenario-table :scenarios="body.scenarios || []" :expanded="store.expanded" @expand-change="onExpandChange" @select="onSelectRow"></scenario-table>
                         </div>
                         <div class="nested-block" v-else-if="body.kind === 'datadriven'">
                           <data-sheet v-if="groupSheet(body)" :table="groupSheet(body)" caption="数据表"></data-sheet>
-                          <div class="nested-title">场景 · {{ body.heading }} · {{ (body.scenarios || []).length }} 行</div>
+                          <div class="nested-title">场景{{ body.scenarios && body.scenarios.length ? '（' + body.scenarios.length + '）' : '' }}</div>
                           <scenario-table :scenarios="body.scenarios || []" :expanded="store.expanded" @expand-change="onExpandChange" @select="onSelectRow"></scenario-table>
                         </div>
                         <scenario-detail v-else :scn="body" :expanded="store.expanded" @expand-change="onExpandChange"></scenario-detail>
@@ -424,9 +424,10 @@
     };
     const specBodyTitle = (spec) => {
       const dt = spec && spec.datatable;
-      if (dt && dt.rows && dt.rows.length) return '数据行 · ' + spec.heading;
-      if ((spec.scenarios || []).some((s) => s.isScenarioTableDriven)) return '数据驱动 · ' + spec.heading;
-      return '场景 · ' + spec.heading;
+      const n = ((spec && spec.scenarios) || []).length;
+      if (dt && dt.rows && dt.rows.length) return '数据行（' + dt.rows.length + '）';
+      if ((spec.scenarios || []).some((s) => s.isScenarioTableDriven)) return '数据驱动';
+      return n ? ('场景（' + n + '）') : '场景';
     };
     const bodyTypeLabel = (row) => {
       if (row.kind === 'datarow') return '数据行';
@@ -672,7 +673,7 @@
           </div>
           <hook-block :hook="scn.preHookFailure"></hook-block>
           <hook-block :hook="scn.postHookFailure"></hook-block>
-          <div class="nested-title">步骤 · {{ scn.heading }} · {{ scn.duration }}</div>
+          <div class="nested-title">步骤</div>
           <item-table :items="rows()" :expanded="expanded" @expand-change="$emit('expand-change', $event)"></item-table>
         </div>`
     };
@@ -752,7 +753,7 @@
             <template #default="{ row }">
               <div class="nested-block">
                 <div v-if="row.kind === 'concept' && row.concept && row.concept.items && row.concept.items.length">
-                  <div class="nested-title">概念步骤 · {{ itemDuration(row) }}</div>
+                  <div class="nested-title">步骤</div>
                   <item-table :items="(row.concept.items || []).map(it => Object.assign({}, it, { phase: 'Step' }))" :expanded="expanded" @expand-change="$emit('expand-change', $event)"></item-table>
                 </div>
                 <template v-if="row.step || (row.concept && row.concept.step)">
