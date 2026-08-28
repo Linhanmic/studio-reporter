@@ -595,8 +595,9 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	if _, err := os.Stat(generated.JSONPath); err != nil {
 		t.Fatalf("json not written: %v", err)
 	}
-	if filepath.Base(generated.JSONPath) != uhilReportFile || !strings.HasSuffix(generated.JSONPath, ".uhilreport") {
-		t.Fatalf("report file should use .uhilreport extension, got %s", generated.JSONPath)
+	reportFile := filepath.Base(generated.JSONPath)
+	if !strings.HasPrefix(reportFile, "demo-project-") || !strings.HasSuffix(reportFile, uhilReportExt) {
+		t.Fatalf("report file should be <project>-<timestamp>%s, got %s", uhilReportExt, reportFile)
 	}
 	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css", "pinia.iife.prod.js", "report-app.js"} {
 		if _, err := os.Stat(filepath.Join(generated.Dir, "assets", asset)); err != nil {
@@ -637,8 +638,12 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	if len(hist.Runs) == 0 {
 		t.Fatal("history has no runs")
 	}
-	if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(hist.Runs[0].RelDir), uhilReportFile)); err != nil {
-		t.Fatalf("archive missing %s: %v", uhilReportFile, err)
+	if !strings.HasPrefix(hist.Runs[0].ID, "demo-project-") {
+		t.Fatalf("archive id should be <project>-<timestamp>, got %s", hist.Runs[0].ID)
+	}
+	archived, err := filepath.Glob(filepath.Join(root, filepath.FromSlash(hist.Runs[0].RelDir), "*"+uhilReportExt))
+	if err != nil || len(archived) != 1 || !strings.HasPrefix(filepath.Base(archived[0]), "demo-project-") {
+		t.Fatalf("archive missing <project>-<timestamp>%s: %v %v", uhilReportExt, archived, err)
 	}
 
 	out := filepath.Join(dir, "regenerated")

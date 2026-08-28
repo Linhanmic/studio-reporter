@@ -20,16 +20,16 @@ reports/studio-report/
 ├── manage.html           # Report management console (history list / open / delete)
 ├── assets/               # Viewer assets (vue, element-plus, pinia, report-app.js)
 ├── images/               # Screenshots of the latest run
-├── report.json           # Live snapshot envelope of the latest run (polled by the viewer)
-├── report-live.js        # Same payload as report.json, as JSONP for file:// viewing
-├── report.uhilreport     # Portable report file (raw Gauge SuiteExecutionResult, protojson)
-├── history.json          # Index of completed runs
-├── history-live.js       # Same payload as history.json, as JSONP for file:// viewing
-└── archives/<id>/        # One folder per completed run
-    ├── report.json       # Frozen snapshot envelope of that run
+├── report.json                        # Live snapshot envelope of the latest run (polled by the viewer)
+├── report-live.js                     # Same payload as report.json, as JSONP for file:// viewing
+├── <project>-<timestamp>.uhilreport   # Portable report file (raw Gauge SuiteExecutionResult, protojson)
+├── history.json                       # Index of completed runs
+├── history-live.js                    # Same payload as history.json, as JSONP for file:// viewing
+└── archives/<project>-<timestamp>/    # One folder per completed run
+    ├── report.json                    # Frozen snapshot envelope of that run
     ├── report-live.js
-    ├── report.uhilreport # Portable report file of that run
-    └── images/           # Screenshots of that run
+    ├── <project>-<timestamp>.uhilreport
+    └── images/                        # Screenshots of that run
 ```
 
 ## `report.json` — live snapshot envelope
@@ -67,15 +67,23 @@ Top-level fields:
 
 Each spec contains `scenarios`; each scenario contains `contexts` / `items` / `teardowns`; items are steps, nested concepts (`concept.items`), or comments. Screenshot fields hold paths **relative to the folder containing that `report.json`** (e.g. `images/foo.png`). The authoritative field list is the Go structs in `report.go` (`Report`, `SpecReport`, `ScenarioReport`, `ItemReport`, `StepReport`, `HookFailure`).
 
-## `report.uhilreport` — portable report file
+## `*.uhilreport` — portable report file
 
-The report file uses the **`.uhilreport`** extension. Its content is the unmodified Gauge `SuiteExecutionResult` in protojson encoding (UTF-8 JSON text). It is the portable interchange format: the full HTML report can be rebuilt from this single file on any machine:
+The report file uses the **`.uhilreport`** extension and is named after the run:
 
-```bash
-studio-reporter --input report.uhilreport --out /path/to/output
+```
+<project>-<YYYY-MM-DD_HH.MM.SS>.uhilreport     e.g. demo-project-2026-08-28_10.30.00.uhilreport
 ```
 
-Its schema is owned by Gauge (`gauge_messages.SuiteExecutionResult`), so it carries no `formatVersion` of its own. `--input` is content-based and also accepts `last_run_result.json` files written by plugin versions before 0.3.1 (same content, older name). Every archived run keeps its own copy under `archives/<id>/report.uhilreport`.
+The project name is sanitized for filesystem safety (path separators, `:*?"<>|` and spaces are replaced) and the timestamp is the suite execution time in local time. The report hub keeps only the latest run's file (stale `*.uhilreport` files are removed on each write); every archived run keeps its own copy under `archives/<project>-<timestamp>/`.
+
+Its content is the unmodified Gauge `SuiteExecutionResult` in protojson encoding (UTF-8 JSON text). It is the portable interchange format: the full HTML report can be rebuilt from this single file on any machine:
+
+```bash
+studio-reporter --input demo-project-2026-08-28_10.30.00.uhilreport --out /path/to/output
+```
+
+Its schema is owned by Gauge (`gauge_messages.SuiteExecutionResult`), so it carries no `formatVersion` of its own. `--input` is content-based and also accepts files written by older plugin versions (`report.uhilreport` from 0.3.1, `last_run_result.json` before that — same content, older names).
 
 ## `history.json` — run index
 
