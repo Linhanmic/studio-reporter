@@ -13,6 +13,8 @@ The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https
 - Supports all Gauge execution lifecycle events
 - HTML report generation (Vue 3 + Element Plus, CANoe-style layout)
 - Live result polling while Gauge is still running
+- Versioned report file format (see [REPORT_FORMAT.md](REPORT_FORMAT.md))
+- Standalone report management console (`manage.html`): list, open, and delete archived runs
 - Cross-platform (Windows, Linux, macOS)
 - Configurable message size limits
 
@@ -56,10 +58,10 @@ go build -o bin/studio-reporter ./...
 
 ```bash
 # Install the plugin
-gauge install studio-reporter --file studio-reporter-0.2.8-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.3.0-linux.x86_64.zip
 
 # Or copy to Gauge plugin directory
-cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.2.8/
+cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.3.0/
 ```
 
 ## Usage
@@ -109,6 +111,17 @@ xdg-open reports/studio-report/index.html
 
 Set `GAUGE_STUDIO_OPEN_BROWSER=true` if you want the old auto-open behavior.
 
+### Report files and management
+
+The on-disk format (`report.json`, `last_run_result.json`, `history.json`, `archives/`) is versioned and documented in [REPORT_FORMAT.md](REPORT_FORMAT.md).
+
+Every completed run is archived under `reports/studio-report/archives/<id>/`. The management console `reports/studio-report/manage.html` lists archived runs and opens them via `index.html?run=archives/<id>`. Deleting archives from the console requires serving the hub:
+
+```bash
+./bin/studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
+# then open http://127.0.0.1:8765/manage.html
+```
+
 ### Regenerate a report
 
 The plugin also writes `last_run_result.json` next to `index.html`. You can rebuild the HTML without re-running tests:
@@ -155,9 +168,11 @@ studio-reporter/
 ├── forwarder.go         # WebSocket forwarder
 ├── report.go            # HTML report model and generation
 ├── report.html          # Report viewer shell (CSS + Vue 3 app)
+├── manage.html          # Standalone report management console
 ├── report-assets/       # Vue / Element Plus / report-app.js
 ├── history.go           # Historical run index and archives
 ├── serve.go             # Optional HTTP server for history management
+├── REPORT_FORMAT.md     # Report file format specification
 ├── report_html.go       # Embedded report template
 ├── go.mod               # Go module definition
 ├── go.sum               # Go module checksums

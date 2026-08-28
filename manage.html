@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>报告管理 - Studio Reporter</title>
+  <link rel="stylesheet" href="assets/element-plus.css">
+  <style>
+    :root {
+      --header: #16324f;
+      --header-2: #1f4668;
+      --el-color-primary: #1f4668;
+      --pass: #276749;
+      --fail: #c53030;
+    }
+    html, body { margin: 0; height: 100%; background: #d9e2ec; }
+    #app { height: 100%; }
+    [v-cloak] { display: none !important; }
+    .app-shell { height: 100%; display: flex; flex-direction: column; }
+    .app-header {
+      background: linear-gradient(180deg, var(--header-2), var(--header));
+      color: #fff; padding: 8px 12px 10px; flex: 0 0 auto;
+    }
+    .app-header h1 { margin: 0 0 2px; font-size: 14px; font-weight: 600; }
+    .app-header .meta { color: #cfe8f7; font-size: 11px; }
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      padding: 6px 8px; background: #eef3f8; border-bottom: 1px solid #c5d0dc;
+    }
+    .toolbar .hint { font-size: 11px; color: #8a9aab; margin-left: 4px; }
+    .list-pane { flex: 1; min-height: 0; overflow: auto; background: #f7fafc; padding: 8px; }
+    .dense-table.el-table { font-size: 12px; }
+    .dense-table.el-table th.el-table__cell { padding: 3px 6px; font-size: 11px; }
+    .dense-table.el-table td.el-table__cell { padding: 2px 6px; }
+    .el-table .row-fail > td.el-table__cell { background: #ffe8e8 !important; }
+    .el-table .row-pass > td.el-table__cell { background: #e6ffed !important; }
+    .status {
+      flex: 0 0 auto; background: #eef3f8; border-top: 1px solid #c5d0dc;
+      padding: 3px 10px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="app-shell" v-cloak>
+      <header class="app-header">
+        <h1>报告管理 — Studio Reporter</h1>
+        <div class="meta">共 {{ runs.length }} 次运行 · 归档目录 archives/</div>
+      </header>
+      <div class="toolbar">
+        <el-button size="small" type="primary" @click="openCurrent">打开当前报告</el-button>
+        <el-button size="small" @click="reload">刷新</el-button>
+        <span v-if="!canDelete" class="hint">删除操作需要通过 studio-reporter --serve 打开本页</span>
+      </div>
+      <main class="list-pane">
+        <el-table v-if="runs.length" class="dense-table" :data="runs" row-key="id" border size="small" :row-class-name="rowClass">
+          <el-table-column label="时间" width="170" prop="timestamp"></el-table-column>
+          <el-table-column label="项目" min-width="160" prop="projectName"></el-table-column>
+          <el-table-column label="结果" width="80">
+            <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
+          </el-table-column>
+          <el-table-column label="规格书" width="90">
+            <template #default="{ row }">{{ counts(row, 'specs') }}</template>
+          </el-table-column>
+          <el-table-column label="场景" width="90">
+            <template #default="{ row }">{{ counts(row, 'scenarios') }}</template>
+          </el-table-column>
+          <el-table-column label="步骤" width="90">
+            <template #default="{ row }">{{ counts(row, 'steps') }}</template>
+          </el-table-column>
+          <el-table-column label="运行时间" width="110" prop="duration"></el-table-column>
+          <el-table-column label="操作" width="150">
+            <template #default="{ row }">
+              <el-button size="small" @click="openRun(row)">打开</el-button>
+              <el-button size="small" type="danger" :disabled="!canDelete" @click="removeRun(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-else description="暂无历史运行"></el-empty>
+      </main>
+      <footer class="status">
+        <span>history.json · formatVersion {{ formatVersion }}</span>
+        <span>studio-reporter 报告管理</span>
+      </footer>
+    </div>
+  </div>
+  <script src="assets/vue.global.prod.js"></script>
+  <script src="assets/element-plus.full.min.js"></script>
+  <script>
+    (function () {
+      function loadScriptData(src, key) {
+        return new Promise(function (resolve) {
+          var s = document.createElement('script');
+          s.src = src + '?ts=' + Date.now();
+          s.onload = function () {
+            var v = window[key];
+            try { delete window[key]; } catch (e) { window[key] = null; }
+            resolve(v || null);
+            s.remove();
+          };
+          s.onerror = function () { resolve(null); s.remove(); };
+          document.head.appendChild(s);
+        });
+      }
+      async function fetchHistory() {
+        try {
+          var res = await fetch('history.json?ts=' + Date.now(), { cache: 'no-store' });
+          if (res.ok) return await res.json();
+        } catch (e) {}
+        return loadScriptData('history-live.js', '__GAUGE_HISTORY__');
+      }
+
+      var app = Vue.createApp({
+        data: function () {
+          return {
+            runs: [],
+            formatVersion: '-',
+            canDelete: window.location.protocol === 'http:' || window.location.protocol === 'https:'
+          };
+        },
+        methods: {
+          verdictLabel: function (v) { return { pass: '通过', fail: '失败', skip: '跳过' }[v] || '—'; },
+          tagType: function (v) { return { pass: 'success', fail: 'danger', skip: 'info' }[v] || 'info'; },
+          rowClass: function (scope) {
+            var v = scope.row.verdict;
+            return v === 'fail' ? 'row-fail' : (v === 'pass' ? 'row-pass' : '');
+          },
+          counts: function (row, key) {
+            var c = row.summary && row.summary[key];
+            return c ? (c.passed + '/' + c.total) : '-';
+          },
+          openCurrent: function () { window.location.href = 'index.html'; },
+          openRun: function (row) {
+            if (row.relDir) {
+              window.location.href = 'index.html?run=' + encodeURIComponent(row.relDir);
+            } else {
+              window.location.href = 'index.html';
+            }
+          },
+          reload: async function () {
+            var data = await fetchHistory();
+            this.runs = (data && data.runs) || [];
+            this.formatVersion = (data && data.formatVersion) || '-';
+          },
+          removeRun: async function (row) {
+            try {
+              await ElementPlus.ElMessageBox.confirm(
+                '删除运行 ' + row.id + '？归档文件将被移除，且无法恢复。',
+                '删除历史运行',
+                { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+              );
+            } catch (e) { return; }
+            try {
+              var res = await fetch('api/history/' + encodeURIComponent(row.id), { method: 'DELETE' });
+              if (res.ok) {
+                ElementPlus.ElMessage.success('已删除 ' + row.id);
+                this.reload();
+              } else {
+                ElementPlus.ElMessage.error('删除失败：' + (await res.text()));
+              }
+            } catch (e) {
+              ElementPlus.ElMessage.error('删除失败：' + e);
+            }
+          }
+        },
+        mounted: function () { this.reload(); }
+      });
+      app.use(ElementPlus);
+      app.mount('#app');
+    })();
+  </script>
+</body>
+</html>
