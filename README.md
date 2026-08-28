@@ -19,13 +19,13 @@ The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https
 
 ### Download Pre-built Binaries
 
-Download the latest release from the [Releases](https://github.com/gaugestudio/studio-reporter/releases) page.
+Download the latest release from the [Releases](https://github.com/Linhanmic/studio-reporter/releases) page.
 
 ### Build from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/gaugestudio/studio-reporter.git
+git clone https://github.com/Linhanmic/studio-reporter.git
 cd studio-reporter
 
 # Build for current platform
@@ -52,10 +52,10 @@ go build -o bin/studio-reporter ./...
 
 ```bash
 # Install the plugin
-gauge install studio-reporter --file studio-reporter-0.1.0-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.2.0-linux.x86_64.zip
 
 # Or copy to Gauge plugin directory
-cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.1.0/
+cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.2.0/
 ```
 
 ## Usage
@@ -123,13 +123,11 @@ The plugin also writes `last_run_result.json` next to `index.html`. You can rebu
 ### Building
 
 ```bash
-# Build for all platforms
+# Build for all platforms (writes Gauge zip packages to dist/)
 ./build-all.sh
 
-# Build for specific platform
-GOOS=linux GOARCH=amd64 go build -o bin/studio-reporter-linux-amd64 ./...
-GOOS=windows GOARCH=amd64 go build -o bin/studio-reporter-windows-amd64.exe ./...
-GOOS=darwin GOARCH=amd64 go build -o bin/studio-reporter-darwin-amd64 ./...
+# Build a single platform zip
+./build.sh linux amd64
 ```
 
 ### Testing
