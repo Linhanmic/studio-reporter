@@ -519,6 +519,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"specBodyRows",
 		"kind: 'datarow'",
 		"data-kv",
+		"msg-card",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",

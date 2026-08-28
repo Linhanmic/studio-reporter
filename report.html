@@ -73,6 +73,11 @@
     .data-kv { border-collapse: collapse; font-size: 11px; background: #fff; }
     .data-kv th, .data-kv td { border: 1px solid #c5d0dc; padding: 2px 8px; text-align: left; }
     .data-kv th { background: #e8eef4; color: #16324f; font-weight: 650; }
+    .msg-stack { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 2px; }
+    .msg-card.el-card { border: 1px solid #c5d0dc; background: #f8fafc; }
+    .msg-card .el-card__body { padding: 6px 8px; }
+    .msg-card-kicker { font-size: 10px; color: #5a6a7a; letter-spacing: .04em; margin-bottom: 2px; }
+    .msg-card-body { margin: 0; white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: #1a202c; }
     .status {
       flex: 0 0 auto; background: #eef3f8; border-top: 1px solid #c5d0dc;
       padding: 2px 10px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 11px;
@@ -297,7 +302,16 @@
       if (item.kind === 'concept' && item.concept && item.concept.items && item.concept.items.length) return true;
       const step = item.step || (item.concept && item.concept.step);
       if (!step) return !!item.comment;
-      return !!(step.errorMessage || step.stackTrace || step.skippedReason || (step.messages && step.messages.length) || step.failureScreenshot || (step.screenshots && step.screenshots.length) || step.preHookFailure || step.postHookFailure);
+      return !!(step.errorMessage || step.stackTrace || step.skippedReason || step.failureScreenshot || (step.screenshots && step.screenshots.length) || step.preHookFailure || step.postHookFailure);
+    };
+    const stepOutputs = (row) => {
+      const step = row && (row.step || (row.concept && row.concept.step));
+      if (!step) return [];
+      const out = [];
+      (step.preHookMessages || []).forEach((text) => out.push({ label: '前置输出', text: text }));
+      (step.messages || []).forEach((text) => out.push({ label: '控制台', text: text }));
+      (step.postHookMessages || []).forEach((text) => out.push({ label: '后置输出', text: text }));
+      return out;
     };
     const worse = (a, b) => {
       const rank = { fail: 3, skip: 2, pass: 1, none: 0 };
@@ -678,7 +692,7 @@
       props: { items: { type: Array, default: () => [] }, expanded: { type: Array, default: () => [] } },
       emits: ['expand-change'],
       methods: {
-        tagType, verdictLabel, itemVerdict, itemDuration, itemHasDetail, stepHTML,
+        tagType, verdictLabel, itemVerdict, itemDuration, itemHasDetail, stepHTML, stepOutputs,
         typeLabel(row) {
           if (row.phase === 'Context') return 'Context';
           if (row.phase === 'Teardown') return 'Teardown';
@@ -722,7 +736,6 @@
                 <template v-if="row.step || (row.concept && row.concept.step)">
                   <div v-if="(row.step || row.concept.step).errorMessage" class="err">{{ (row.step || row.concept.step).errorMessage }}</div>
                   <div v-if="(row.step || row.concept.step).skippedReason" class="msg">跳过：{{ (row.step || row.concept.step).skippedReason }}</div>
-                  <div v-for="m in ((row.step || row.concept.step).messages || [])" :key="m" class="msg">{{ m }}</div>
                   <pre v-if="(row.step || row.concept.step).stackTrace" class="stack">{{ (row.step || row.concept.step).stackTrace }}</pre>
                   <div v-if="shots(row).length" class="shots">
                     <a v-for="p in shots(row)" :key="p" :href="p" target="_blank"><img :src="p" alt="screenshot"></a>
@@ -732,7 +745,15 @@
             </template>
           </el-table-column>
           <el-table-column label="名称" min-width="200">
-            <template #default="{ row }"><div class="name-cell" v-html="nameHTML(row)"></div></template>
+            <template #default="{ row }">
+              <div class="name-cell" v-html="nameHTML(row)"></div>
+              <div v-if="stepOutputs(row).length" class="msg-stack">
+                <el-card v-for="(m, i) in stepOutputs(row)" :key="'n-'+i" class="msg-card" shadow="never">
+                  <div class="msg-card-kicker">{{ m.label }}</div>
+                  <pre class="msg-card-body">{{ m.text }}</pre>
+                </el-card>
+              </div>
+            </template>
           </el-table-column>
           <el-table-column label="类型" width="64">
             <template #default="{ row }">{{ typeLabel(row) }}</template>
