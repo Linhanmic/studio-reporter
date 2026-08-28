@@ -32,7 +32,7 @@ const (
 	reportIndexFile          = "index.html"
 	manageIndexFile          = "manage.html"
 	reportFormatVersion      = 1
-	reportJSONFile           = "last_run_result.json"
+	uhilReportFile           = "report.uhilreport"
 	liveReportJSONFile       = "report.json"
 	liveReportJSFile         = "report-live.js"
 	reportTimeLayout         = "2006-01-02_15.04.05"
@@ -286,13 +286,13 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 		return nil, fmt.Errorf("write index.html: %w", err)
 	}
 
-	jsonPath := filepath.Join(dir, reportJSONFile)
+	jsonPath := filepath.Join(dir, uhilReportFile)
 	payload, err := protoMarshalOptions.Marshal(src)
 	if err != nil {
 		return nil, fmt.Errorf("marshal suite result: %w", err)
 	}
 	if err := os.WriteFile(jsonPath, payload, 0o644); err != nil {
-		return nil, fmt.Errorf("write last_run_result.json: %w", err)
+		return nil, fmt.Errorf("write %s: %w", uhilReportFile, err)
 	}
 	if err := writeLiveSnapshot(dir, &LiveSnapshot{Rev: time.Now().UnixMilli(), Running: false, Report: report}); err != nil {
 		return nil, err

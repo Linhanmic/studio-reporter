@@ -51,7 +51,7 @@ func main() {
 	// 第三个参数是帮助说明，运行 --help 时会显示
 	// start 是 *bool 类型（指针），所以后面要用 *start 来取值
 	start := flag.Bool("start", false, "Start the reporter gRPC server for Gauge execution")
-	input := flag.String("input", "", "Regenerate an HTML report from last_run_result.json")
+	input := flag.String("input", "", "Regenerate an HTML report from a .uhilreport file")
 	out := flag.String("out", "", "Output directory for regenerated HTML report")
 	serve := flag.Bool("serve", false, "Serve the studio-report directory over HTTP for history management")
 	serveDir := flag.String("dir", "", "Directory for --serve (default: reports/studio-report)")

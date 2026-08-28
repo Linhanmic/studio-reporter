@@ -257,7 +257,7 @@ func copyRunSnapshot(src, dest string) error {
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		return fmt.Errorf("create archive dir: %w", err)
 	}
-	names := []string{reportJSONFile, liveReportJSONFile, liveReportJSFile}
+	names := []string{uhilReportFile, liveReportJSONFile, liveReportJSFile}
 	for _, name := range names {
 		from := filepath.Join(src, name)
 		to := filepath.Join(dest, name)
@@ -325,7 +325,7 @@ func copyDir(src, dest string) error {
 func reservedHistoryName(id string) bool {
 	switch id {
 	case "", ".", "..", archivesFolderName, "assets", "images",
-		reportIndexFile, manageIndexFile, historyFileName, historyJSFile, reportJSONFile, liveReportJSONFile, liveReportJSFile:
+		reportIndexFile, manageIndexFile, historyFileName, historyJSFile, uhilReportFile, liveReportJSONFile, liveReportJSFile:
 		return true
 	default:
 		return strings.ContainsAny(id, `/\`)
