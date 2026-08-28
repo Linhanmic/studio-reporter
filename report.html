@@ -71,6 +71,8 @@
     .dense-table.el-table td.el-table__cell { padding: 1px 4px; }
     .dense-table .el-table__expand-icon { height: 16px; }
     .dense-table .el-tag { height: 18px; line-height: 16px; padding: 0 5px; }
+    .dense-table .el-table__body tr.el-table__row { cursor: pointer; }
+    .dense-table .el-table__body tr.no-expand { cursor: default; }
     .el-table .no-expand .el-table__expand-icon { visibility: hidden; pointer-events: none; }
     .el-table .row-pass > td.el-table__cell { background: var(--pass-row) !important; }
     .el-table .row-fail > td.el-table__cell { background: var(--fail-row) !important; }
@@ -348,6 +350,11 @@
       if (!step) return !!item.comment;
       return !!(step.errorMessage || step.stackTrace || step.skippedReason || (step.messages && step.messages.length) || step.failureScreenshot || (step.screenshots && step.screenshots.length) || step.preHookFailure || step.postHookFailure);
     };
+    function clickIsExpandControl(column, event) {
+      if (column && column.type === 'expand') return true;
+      const el = event && event.target;
+      return !!(el && el.closest && el.closest('.el-table__expand-icon'));
+    }
     function sumTime(nodes) {
       return (nodes || []).reduce((n, c) => n + (c.executionTime || 0), 0);
     }
@@ -648,6 +655,12 @@
           const no = this.itemHasDetail(row) ? '' : 'no-expand';
           return [tone, no].filter(Boolean).join(' ');
         },
+        onRowClick(row, column, event) {
+          if (event && event.stopPropagation) event.stopPropagation();
+          if (clickIsExpandControl(column, event)) return;
+          if (!this.itemHasDetail(row)) return;
+          this.$emit('expand-change', row);
+        },
         shots(row) {
           const step = row.step || (row.concept && row.concept.step);
           if (!step) return [];
@@ -655,7 +668,7 @@
         }
       },
       template: `
-        <el-table class="dense-table" :data="items" row-key="id" border size="small" :expand-row-keys="expanded" :row-class-name="rowClass" @expand-change="$emit('expand-change', $event)">
+        <el-table class="dense-table" :data="items" row-key="id" border size="small" :expand-row-keys="expanded" :row-class-name="rowClass" @expand-change="$emit('expand-change', $event)" @row-click="onRowClick">
           <el-table-column type="expand" width="28">
             <template #default="{ row }">
               <div class="nested-block">
@@ -793,6 +806,18 @@
           return v === 'fail' ? 'row-fail' : (v === 'pass' ? 'row-pass' : (v === 'skip' ? 'row-skip' : ''));
         },
         onExpandChange(row) { this.store.toggleExpand(row && row.id); },
+        onSpecClick(row, column, event) {
+          if (event && event.stopPropagation) event.stopPropagation();
+          this.store.selected = row.id;
+          if (!clickIsExpandControl(column, event)) this.store.toggleExpand(row.id);
+          this.store.persistView();
+        },
+        onScenarioClick(row, column, event) {
+          if (event && event.stopPropagation) event.stopPropagation();
+          this.store.selected = row.id;
+          if (!clickIsExpandControl(column, event)) this.store.toggleExpand(row.id);
+          this.store.persistView();
+        },
         expandAll() { this.store.expandAll(); Vue.nextTick(() => this.restoreTreeExpand()); },
         collapseAll() { this.store.collapseAll(); },
         printReport() { window.print(); },
@@ -813,8 +838,6 @@
           this.store.treeExpanded = this.store.treeExpanded.filter((id) => !drop.has(id));
           this.store.persistView();
         },
-        onSpecClick(row) { this.store.selected = row.id; this.store.persistView(); },
-        onScenarioClick(row) { this.store.selected = row.id; this.store.persistView(); },
         filterTreeNode(value, data) {
           if (this.store.filter !== 'all' && data.verdict && data.kind !== 'folder') {
             if (data.verdict !== this.store.filter && data.verdict !== 'none') return false;

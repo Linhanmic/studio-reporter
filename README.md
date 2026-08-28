@@ -90,7 +90,7 @@ The report includes:
 - Overall verdict, duration, environment, and success rate
 - Vue 3 + Element Plus + Pinia UI
 - A compact script tree (`el-tree`) that starts at `specs` and lists folders down to specification names only
-- Slim expandable result tables in accordion mode: at each level only one row is expanded
+- Slim expandable result tables in accordion mode: at each level only one row is expanded; click a row (or the arrow) to expand or collapse it
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
 - Live updates while the suite runs (`report.json`); the open page polls Pinia state in place (no reload, no scroll jump)

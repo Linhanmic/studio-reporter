@@ -433,6 +433,8 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"row-pass",
 		"row-fail",
 		"accordion",
+		"clickIsExpandControl",
+		"@row-click",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",

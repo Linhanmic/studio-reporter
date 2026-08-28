@@ -336,7 +336,7 @@ On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Element P
 - Top title bar, summary cards, and verdict filter toolbar
 - Left **script tree** (`el-tree`): `specs` → nested folders → specification names (scenarios stay in the result tables)
 - The first written `index.html` is opened in the default browser unless `GAUGE_STUDIO_SKIP_BROWSER` is set
-- Main **compact expandable tables** in accordion mode (`el-table` expand rows): only one node at the same level is expanded
+- Main **compact expandable tables** in accordion mode (`el-table` expand rows): only one node at the same level is expanded; click a row or its arrow to expand/collapse
 - Passed rows green, failed rows red
 - Runtime on every spec, scenario, concept, and step
 - Live `report.json` updates while the suite runs; the open page applies them through Pinia without reload or scroll jump
