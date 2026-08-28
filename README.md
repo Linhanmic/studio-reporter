@@ -12,7 +12,7 @@ The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https
 - Auto-reconnect with exponential backoff
 - Supports all Gauge execution lifecycle events
 - HTML report generation (Vue 3 + Element Plus, CANoe-style layout)
-- Overview dashboard, live result polling, and historical run management
+- Live result polling while Gauge is still running
 - Cross-platform (Windows, Linux, macOS)
 - Configurable message size limits
 
@@ -90,26 +90,21 @@ When a suite finishes, the plugin writes a Vue 3 + Element Plus Test Report View
 
 The report includes:
 
-- **总览** page (`#/overview`): verdict banner, pass/fail donuts, and a spec summary table
-- **详情** page (`#/detail`): slim expandable result tables in accordion mode
-- **历史** page (`#/history`): completed runs under `archives/`, with open / delete
-- Vue Router hash navigation between the three pages
+- Nested expandable result tables (spec → scenario → concept → step) with Gauge-style plus/minus fold controls
 - Overall verdict, duration, environment, and success rate
-- Vue 3 + Vue Router + Element Plus + Pinia UI
+- Vue 3 + Element Plus + Pinia UI
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
 - Live updates while the suite runs (`report.json`): seeded `running` flag, elapsed duration, current spec/scenario, success rate recount, no full-page reload
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 - Filter by verdict and search across specs, scenarios, and steps
+- Step console / hook output merged into a single output card
 
-The reporter does **not** open a browser. Open the file yourself, or serve the folder (needed to delete history from the UI):
+The reporter does **not** open a browser. Open the file yourself:
 
 ```bash
 # Linux
 xdg-open reports/studio-report/index.html
-
-# Optional local server (history delete API)
-./bin/studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 ```
 
 Set `GAUGE_STUDIO_OPEN_BROWSER=true` if you want the old auto-open behavior.
@@ -159,8 +154,8 @@ studio-reporter/
 ├── events.go            # Event types and structures
 ├── forwarder.go         # WebSocket forwarder
 ├── report.go            # HTML report model and generation
-├── report.html          # Report viewer shell (CSS + Vue Router pages)
-├── report-assets/       # Vue / Router / Element Plus / report-app.js
+├── report.html          # Report viewer shell (CSS + Vue 3 app)
+├── report-assets/       # Vue / Element Plus / report-app.js
 ├── history.go           # Historical run index and archives
 ├── serve.go             # Optional HTTP server for history management
 ├── report_html.go       # Embedded report template
