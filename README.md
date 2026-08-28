@@ -46,7 +46,7 @@ go build -o bin/studio-reporter ./...
 | `GAUGE_STUDIO_WS` | No | - | Optional extra WebSocket URL to push events to. Live forwarding no longer requires this: the plugin listens on a random local port and prints `studio-reporter websocket: ws://127.0.0.1:<port>` |
 | `gauge_max_message_size` | No | `1024` | Maximum gRPC message size in MB |
 | `gauge_reports_dir` | No | `reports` | Gauge 报告根目录。相对路径会相对 `GAUGE_PROJECT_ROOT`（或当前工作目录） |
-| `overwrite_reports` | No | `true` | Gauge 官方开关。`true` 覆盖 `reports/studio-report`；`false` 每次运行写入带时间戳的新目录 |
+| `overwrite_reports` | No | `true` | Gauge 官方开关（保留兼容）。live 报告始终写入 `reports/studio-report/`；每次完成都会归档到 `archives/<id>/` |
 | `over_write_reports` | No | - | `overwrite_reports` 的别名。二者都设置时以 `overwrite_reports` 为准 |
 | `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to disable HTML report generation |
 | `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Kept for compatibility; the reporter no longer opens a browser by default |
@@ -90,11 +90,12 @@ When a suite finishes, the plugin writes a Vue 3 + Element Plus Test Report View
 
 The report includes:
 
-- **总览** page: verdict banner, pass/fail donuts, and a spec summary table
-- **详情** page: slim expandable result tables in accordion mode
-- **历史** page: completed runs under `archives/`, with open / delete
+- **总览** page (`#/overview`): verdict banner, pass/fail donuts, and a spec summary table
+- **详情** page (`#/detail`): slim expandable result tables in accordion mode
+- **历史** page (`#/history`): completed runs under `archives/`, with open / delete
+- Vue Router hash navigation between the three pages
 - Overall verdict, duration, environment, and success rate
-- Vue 3 + Element Plus + Pinia UI
+- Vue 3 + Vue Router + Element Plus + Pinia UI
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
 - Live updates while the suite runs (`report.json`): seeded `running` flag, elapsed duration, current spec/scenario, success rate recount, no full-page reload
@@ -158,7 +159,8 @@ studio-reporter/
 ├── events.go            # Event types and structures
 ├── forwarder.go         # WebSocket forwarder
 ├── report.go            # HTML report model and generation
-├── report.html          # CANoe-style Test Report Viewer
+├── report.html          # Report viewer shell (CSS + Vue Router pages)
+├── report-assets/       # Vue / Router / Element Plus / report-app.js
 ├── history.go           # Historical run index and archives
 ├── serve.go             # Optional HTTP server for history management
 ├── report_html.go       # Embedded report template

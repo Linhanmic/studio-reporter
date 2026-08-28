@@ -307,18 +307,10 @@ func resolveReportDir() (string, error) {
 		return "", err
 	}
 	current := filepath.Join(abs, reportFolderName)
-	overwrite := shouldOverwriteReports()
-	if !overwrite {
-		stamp := time.Now().Format(reportTimeLayout)
-		current = filepath.Join(current, stamp)
-		for i := 1; dirExists(current); i++ {
-			current = filepath.Join(abs, reportFolderName, fmt.Sprintf("%s-%d", stamp, i))
-		}
-	}
 	if err := os.MkdirAll(current, 0o755); err != nil {
 		return "", fmt.Errorf("create reports dir: %w", err)
 	}
-	log.Printf("studio-reporter: report directory %s (overwrite=%v)", current, overwrite)
+	log.Printf("studio-reporter: report directory %s", current)
 	return current, nil
 }
 

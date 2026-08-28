@@ -489,6 +489,19 @@ func TestFormatDurationAndVerdicts(t *testing.T) {
 	}
 }
 
+func viewerSource(t *testing.T, dir string) string {
+	t.Helper()
+	html, err := os.ReadFile(filepath.Join(dir, reportIndexFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	js, err := os.ReadFile(filepath.Join(dir, "assets", "report-app.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(html) + "\n" + string(js)
+}
+
 func TestWriteAndRegenerateReport(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv(reportsDirEnv, dir)
@@ -499,12 +512,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	index := generated.IndexPath
-	body, err := os.ReadFile(index)
-	if err != nil {
-		t.Fatal(err)
-	}
-	html := string(body)
+	html := viewerSource(t, generated.Dir)
 	for _, want := range []string{
 		"Test Report Viewer",
 		"el-table",
@@ -529,6 +537,8 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"currentSpecId",
 		"followLive",
 		"safeRelDir",
+		"createWebHashHistory",
+		"router-view",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
@@ -543,6 +553,8 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"assets/vue.global.prod.js",
 		"assets/element-plus.full.min.js",
 		"assets/pinia.iife.prod.js",
+		"assets/vue-router.global.prod.js",
+		"assets/report-app.js",
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("generated HTML missing %q", want)
@@ -564,6 +576,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"数据行（",
 		"class=\"nested-title\">步骤",
 		"class=\"nested-title\">场景",
+		"pageFromHash",
+		"store.page",
+		"push('前置输出'",
+		"push('控制台'",
 	} {
 		if strings.Contains(html, not) {
 			t.Fatalf("generated HTML should not contain %q", not)
@@ -572,7 +588,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	if _, err := os.Stat(generated.JSONPath); err != nil {
 		t.Fatalf("json not written: %v", err)
 	}
-	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css", "pinia.iife.prod.js"} {
+	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css", "pinia.iife.prod.js", "vue-router.global.prod.js", "report-app.js"} {
 		if _, err := os.Stat(filepath.Join(generated.Dir, "assets", asset)); err != nil {
 			t.Fatalf("asset %s missing: %v", asset, err)
 		}
@@ -607,7 +623,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	}
 }
 
-func TestOverwriteAndTimestampedDirs(t *testing.T) {
+func TestReportDirAlwaysHub(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv(reportsDirEnv, dir)
 	t.Setenv(overwriteReportsEnv, "false")
@@ -619,11 +635,11 @@ func TestOverwriteAndTimestampedDirs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filepath.Base(filepath.Dir(a)) != reportFolderName {
-		t.Fatalf("parent = %s", filepath.Dir(a))
+	if filepath.Base(a) != reportFolderName {
+		t.Fatalf("hub = %s", a)
 	}
-	if a == b {
-		t.Fatal("timestamped dirs should differ when overwrite is false")
+	if a != b {
+		t.Fatalf("live hub should be stable: %s vs %s", a, b)
 	}
 
 	t.Setenv(overwriteReportsEnv, "true")
@@ -635,8 +651,8 @@ func TestOverwriteAndTimestampedDirs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c != d || filepath.Base(c) != reportFolderName {
-		t.Fatalf("overwrite dirs = %s %s", c, d)
+	if c != d || c != a || filepath.Base(c) != reportFolderName {
+		t.Fatalf("overwrite dirs = %s %s %s", a, c, d)
 	}
 }
 
@@ -653,11 +669,12 @@ func TestOverwriteReportsAliasAndProjectRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(a, filepath.Join(root, "out-reports", reportFolderName)) {
-		t.Fatalf("dir = %s, want under %s", a, filepath.Join(root, "out-reports", reportFolderName))
+	want := filepath.Join(root, "out-reports", reportFolderName)
+	if a != want && !strings.HasSuffix(a, filepath.Join("out-reports", reportFolderName)) {
+		t.Fatalf("dir = %s, want under %s", a, want)
 	}
-	if filepath.Base(filepath.Dir(a)) != reportFolderName {
-		t.Fatalf("timestamped parent = %s", filepath.Dir(a))
+	if filepath.Base(a) != reportFolderName {
+		t.Fatalf("hub dir = %s", a)
 	}
 	t.Setenv(overwriteReportsEnv, "true")
 	t.Setenv(overwriteReportsEnvAlias, "false")
@@ -677,8 +694,8 @@ func TestLiveAndFinalReportShareDirectoryWhenNotOverwriting(t *testing.T) {
 	if liveDir == "" {
 		t.Fatal("live dir empty")
 	}
-	if filepath.Base(filepath.Dir(liveDir)) != reportFolderName {
-		t.Fatalf("live dir should be timestamped under studio-report: %s", liveDir)
+	if filepath.Base(liveDir) != reportFolderName {
+		t.Fatalf("live dir should be studio-report hub: %s", liveDir)
 	}
 
 	generated, err := generateReportFromSuiteTo(&gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()}, liveDir)
@@ -691,8 +708,8 @@ func TestLiveAndFinalReportShareDirectoryWhenNotOverwriting(t *testing.T) {
 
 	p2 := newLivePublisher()
 	p2.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
-	if reportDirFromLive(p2) == liveDir {
-		t.Fatal("second run should keep a new timestamped report")
+	if reportDirFromLive(p2) != liveDir {
+		t.Fatal("second run should reuse the hub directory")
 	}
 }
 

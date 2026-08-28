@@ -33,7 +33,7 @@ studio-reporter websocket: ws://127.0.0.1:<port>
 | `GAUGE_STUDIO_WS` | No | - | Optional extra URL the plugin also pushes to as a client. Live forwarding does not require this. |
 | `gauge_max_message_size` | No | `1024` | Maximum gRPC message size in MB |
 | `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
-| `overwrite_reports` | No | `true` | Overwrite the previous HTML report on each run. Set `false` to keep a timestamped copy of every run |
+| `overwrite_reports` | No | `true` | Kept for Gauge compatibility. Live HTML always writes to `reports/studio-report/`; every completed run is archived under `archives/<id>/` |
 | `over_write_reports` | No | - | Alias of `overwrite_reports` |
 | `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to skip HTML report generation |
 | `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Compatibility flag; the reporter no longer opens a browser by default |
@@ -333,18 +333,17 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
 
 ## HTML Report
 
-On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Element Plus, and Pinia:
+On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Vue Router, Element Plus, and Pinia:
 
-- Pages: 总览 (dashboard), 详情 (nested tables), 历史 (archived runs)
+- Pages via hash routes: `#/overview` (dashboard), `#/detail` (nested tables), `#/history` (archived runs)
 - Compact expandable tables in accordion mode (`el-table` expand rows): only one node at the same level is expanded; click a row or its arrow to expand/collapse
+- Step console / hook output is merged into a single output card
 - Does not open a browser unless `GAUGE_STUDIO_OPEN_BROWSER` is set
 - Passed rows green, failed rows red
 - Runtime on every spec, scenario, concept, and step
 - Live `report.json` updates while the suite runs; the page is seeded with `running` / `currentSpecId` / elapsed duration and polls through Pinia without reload
-- Completed runs are indexed in `history.json` and copied to `archives/<timestamp>/`
+- The hub is always `reports/studio-report/` (`index.html`, `report.json`, Vue assets). Completed runs are indexed in `history.json` and copied to `archives/<id>/` as `report.json` / `report-live.js` / `images/` (no Vue `assets/` copy)
 - Hook failures, screenshots, stack traces, and data tables
-
-When `overwrite_reports` (or `over_write_reports`) is `false`, each run is stored under `reports/studio-report/<timestamp>/`. The hub `history.json` still lives in `reports/studio-report/`.
 
 Serve the report directory to enable in-page history deletion:
 

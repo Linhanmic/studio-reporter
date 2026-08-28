@@ -51,8 +51,15 @@ func TestRecordAndDeleteHistory(t *testing.T) {
 	if entry.ID == "" || entry.RelDir == "" {
 		t.Fatalf("entry = %+v", entry)
 	}
-	if _, err := os.Stat(filepath.Join(runDir, entry.RelDir, reportIndexFile)); err != nil {
-		t.Fatalf("archive missing: %v", err)
+	archive := filepath.Join(runDir, entry.RelDir)
+	if _, err := os.Stat(filepath.Join(archive, liveReportJSONFile)); err != nil {
+		t.Fatalf("archive missing report.json: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(archive, "assets")); err == nil {
+		t.Fatal("archive should not copy Vue assets")
+	}
+	if _, err := os.Stat(filepath.Join(archive, reportIndexFile)); err == nil {
+		t.Fatal("archive should not copy index.html")
 	}
 
 	if err := deleteHistoryRun(runDir, entry.ID); err != nil {
@@ -111,11 +118,7 @@ func TestLiveSnapshotTracksCurrentAndElapsed(t *testing.T) {
 		t.Fatalf("elapsed = %+v", snap.Report)
 	}
 
-	html, err := os.ReadFile(filepath.Join(dir, reportFolderName, reportIndexFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	body := string(html)
+	body := viewerSource(t, filepath.Join(dir, reportFolderName))
 	if !strings.Contains(body, `"running":true`) || !strings.Contains(body, "currentSpecId") {
 		t.Fatalf("live html seed missing running flag")
 	}

@@ -8,8 +8,11 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
+
+var historyMu sync.Mutex
 
 const (
 	historyFileName    = "history.json"
@@ -65,6 +68,8 @@ func historyRootFor(runDir string) (string, bool) {
 }
 
 func recordCompletedRun(runDir string, report *Report) error {
+	historyMu.Lock()
+	defer historyMu.Unlock()
 	if runDir == "" || report == nil {
 		return nil
 	}
@@ -102,7 +107,7 @@ func recordCompletedRun(runDir string, report *Report) error {
 		}
 		entry.ID = id
 		entry.RelDir = archivesFolderName + "/" + id
-		entry.Href = entry.RelDir + "/" + reportIndexFile
+		entry.Href = entry.RelDir + "/" + liveReportJSONFile
 	} else {
 		base := filepath.Base(absRun)
 		entry.ID = base
@@ -247,10 +252,7 @@ func copyRunSnapshot(src, dest string) error {
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		return fmt.Errorf("create archive dir: %w", err)
 	}
-	if err := writeReportAssets(dest); err != nil {
-		return err
-	}
-	names := []string{reportIndexFile, reportJSONFile, liveReportJSONFile, liveReportJSFile}
+	names := []string{reportJSONFile, liveReportJSONFile, liveReportJSFile}
 	for _, name := range names {
 		from := filepath.Join(src, name)
 		to := filepath.Join(dest, name)
@@ -334,6 +336,8 @@ func isHistoryRunDir(path string) bool {
 }
 
 func deleteHistoryRun(root, id string) error {
+	historyMu.Lock()
+	defer historyMu.Unlock()
 	id = filepath.Base(strings.TrimSpace(id))
 	if reservedHistoryName(id) {
 		return fmt.Errorf("invalid history id")

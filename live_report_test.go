@@ -82,11 +82,7 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 		t.Fatalf("spec duration = %s", snap.Report.Specs[0].Duration)
 	}
 
-	html, err := os.ReadFile(filepath.Join(out, reportIndexFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	body := string(html)
+	body := viewerSource(t, out)
 	for _, want := range []string{"pinia", "dense-table", "row-pass", "row-fail", "accordion"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("live html missing %q", want)
