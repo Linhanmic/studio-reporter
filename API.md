@@ -6,7 +6,7 @@ The Studio Reporter Plugin is a gRPC plugin for Gauge test framework that forwar
 
 ## Version
 
-- Plugin Version: 0.2.4
+- Plugin Version: 0.2.5
 - Protocol: WebSocket
 - Format: JSON
 
