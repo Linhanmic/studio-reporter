@@ -22,12 +22,13 @@ reports/studio-report/
 ├── images/               # Screenshots of the latest run
 ├── report.json           # Live snapshot envelope of the latest run (polled by the viewer)
 ├── report-live.js        # Same payload as report.json, as JSONP for file:// viewing
-├── last_run_result.json  # Raw Gauge SuiteExecutionResult (protojson), regeneration source
+├── report.uhilreport     # Portable report file (raw Gauge SuiteExecutionResult, protojson)
 ├── history.json          # Index of completed runs
 ├── history-live.js       # Same payload as history.json, as JSONP for file:// viewing
 └── archives/<id>/        # One folder per completed run
     ├── report.json       # Frozen snapshot envelope of that run
     ├── report-live.js
+    ├── report.uhilreport # Portable report file of that run
     └── images/           # Screenshots of that run
 ```
 
@@ -66,15 +67,15 @@ Top-level fields:
 
 Each spec contains `scenarios`; each scenario contains `contexts` / `items` / `teardowns`; items are steps, nested concepts (`concept.items`), or comments. Screenshot fields hold paths **relative to the folder containing that `report.json`** (e.g. `images/foo.png`). The authoritative field list is the Go structs in `report.go` (`Report`, `SpecReport`, `ScenarioReport`, `ItemReport`, `StepReport`, `HookFailure`).
 
-## `last_run_result.json` — regeneration source
+## `report.uhilreport` — portable report file
 
-The unmodified Gauge `SuiteExecutionResult` in protojson encoding. It is the portable interchange format: the full HTML report can be rebuilt from this single file on any machine:
+The report file uses the **`.uhilreport`** extension. Its content is the unmodified Gauge `SuiteExecutionResult` in protojson encoding (UTF-8 JSON text). It is the portable interchange format: the full HTML report can be rebuilt from this single file on any machine:
 
 ```bash
-studio-reporter --input last_run_result.json --out /path/to/output
+studio-reporter --input report.uhilreport --out /path/to/output
 ```
 
-Its schema is owned by Gauge (`gauge_messages.SuiteExecutionResult`), so it carries no `formatVersion` of its own.
+Its schema is owned by Gauge (`gauge_messages.SuiteExecutionResult`), so it carries no `formatVersion` of its own. `--input` is content-based and also accepts `last_run_result.json` files written by plugin versions before 0.3.1 (same content, older name). Every archived run keeps its own copy under `archives/<id>/report.uhilreport`.
 
 ## `history.json` — run index
 
