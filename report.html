@@ -39,21 +39,7 @@
       padding: 4px 8px; background: #eef3f8; border-bottom: 1px solid #c5d0dc;
     }
     .workspace { flex: 1; min-height: 0; display: flex; }
-    .script-pane {
-      width: 280px; min-width: 200px; max-width: 40%;
-      border-right: 1px solid #c5d0dc; background: #fff; display: flex; flex-direction: column;
-    }
-    .pane-title {
-      padding: 4px 8px; font-size: 11px; font-weight: 700; color: #5a6a7a;
-      text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid #e2e8f0;
-    }
-    .script-tree { flex: 1; overflow: auto; padding: 2px 4px; }
     .result-pane { flex: 1; min-width: 0; overflow: auto; background: #f7fafc; padding: 6px 8px 16px; }
-    .tree-node { display: flex; align-items: flex-start; gap: 3px; min-width: 0; width: 100%; padding-right: 2px; font-size: 12px; line-height: 1.25; }
-    .tree-node .name { flex: 1; min-width: 0; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
-    .tree-node .time { color: #5a6a7a; font-variant-numeric: tabular-nums; font-size: 10px; flex: 0 0 auto; }
-    .tree-pass .name { color: var(--pass); }
-    .tree-fail .name { color: var(--fail); font-weight: 650; }
     .nested-block { padding: 2px 2px 4px 6px; background: #f8fafc; }
     .nested-block + .nested-block { padding-top: 0; }
     .nested-title { font-size: 11px; color: #5a6a7a; margin: 0 0 3px; font-weight: 600; }
@@ -85,24 +71,11 @@
       flex: 0 0 auto; background: #eef3f8; border-top: 1px solid #c5d0dc;
       padding: 2px 10px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 11px;
     }
-    .script-tree .el-tree-node,
-    .script-tree .el-tree-node__content { white-space: normal; }
-    .script-tree .el-tree-node__content {
-      height: auto; min-height: 18px; align-items: flex-start;
-      padding-top: 1px; padding-right: 2px; padding-bottom: 1px;
-    }
-    .script-tree .el-tree-node__expand-icon { font-size: 10px; width: 10px; min-width: 10px; padding: 0; margin: 0; }
-    .script-tree .el-tree-node__content > .el-tree-node__expand-icon { margin-right: 0; }
-    .script-tree .el-tree-node__expand-icon.is-leaf {
-      width: 0; min-width: 0; overflow: hidden; visibility: hidden; padding: 0; margin: 0;
-    }
     @media (max-width: 900px) {
-      .workspace { flex-direction: column; }
-      .script-pane { width: 100%; max-width: none; height: 220px; border-right: 0; border-bottom: 1px solid #c5d0dc; }
       .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media print {
-      .toolbar, .script-pane, .status { display: none !important; }
+      .toolbar, .status { display: none !important; }
       .workspace { display: block; overflow: visible; }
       .result-pane { overflow: visible; }
     }
@@ -154,33 +127,6 @@
         <el-button size="small" @click="printReport">打印</el-button>
       </div>
       <div class="workspace">
-        <aside class="script-pane">
-          <div class="pane-title">脚本</div>
-          <div class="script-tree" ref="treePane">
-            <el-tree
-              ref="scriptTree"
-              :data="treeData"
-              node-key="id"
-              accordion
-              highlight-current
-              :indent="4"
-              :expand-on-click-node="false"
-              :default-expanded-keys="store.treeExpanded"
-              :filter-node-method="filterTreeNode"
-              @node-click="onTreeClick"
-              @node-expand="onTreeExpand"
-              @node-collapse="onTreeCollapse"
-            >
-              <template #default="{ data }">
-                <div class="tree-node" :class="treeClass(data.verdict)">
-                  <span class="name">{{ data.label }}</span>
-                  <el-tag v-if="data.verdict && data.kind !== 'folder' && data.kind !== 'phase'" :type="tagType(data.verdict)" size="small" effect="plain">{{ verdictLabel(data.verdict) }}</el-tag>
-                  <span class="time">{{ data.duration }}</span>
-                </div>
-              </template>
-            </el-tree>
-          </div>
-        </aside>
         <main class="result-pane" ref="resultPane">
           <el-alert v-if="store.report.preHookFailure" type="error" :title="(store.report.preHookFailure.hookName || 'Hook') + ' 失败'" :description="store.report.preHookFailure.errorMessage" show-icon style="margin-bottom: 6px"></el-alert>
           <el-alert v-if="store.report.postHookFailure" type="error" :title="(store.report.postHookFailure.hookName || 'Hook') + ' 失败'" :description="store.report.postHookFailure.errorMessage" show-icon style="margin-bottom: 6px"></el-alert>
@@ -285,12 +231,7 @@
 
     const verdictLabel = (v) => ({ pass: '通过', fail: '失败', skip: '跳过', none: '—' })[v] || '—';
     const tagType = (v) => ({ pass: 'success', fail: 'danger', skip: 'info', none: 'info' })[v] || 'info';
-    const treeClass = (v) => ({ pass: 'tree-pass', fail: 'tree-fail', skip: 'tree-skip' })[v] || '';
     const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    const worse = (a, b) => {
-      const rank = { fail: 3, skip: 2, none: 1, pass: 0 };
-      return (rank[a] || 0) >= (rank[b] || 0) ? a : b;
-    };
     const itemText = (item) => {
       if (!item) return '';
       if (item.kind === 'comment') return item.comment || '';
@@ -354,51 +295,6 @@
       if (column && column.type === 'expand') return true;
       const el = event && event.target;
       return !!(el && el.closest && el.closest('.el-table__expand-icon'));
-    }
-    function sumTime(nodes) {
-      return (nodes || []).reduce((n, c) => n + (c.executionTime || 0), 0);
-    }
-    function specFolderTrail(spec) {
-      const folders = (spec.folders || []).slice();
-      if (!folders.length || folders[0] !== 'specs') folders.unshift('specs');
-      return folders;
-    }
-    function emptySpecsRoot() {
-      return { id: 'folder:specs', label: 'specs', kind: 'folder', verdict: 'none', duration: '', executionTime: 0, children: [] };
-    }
-    function buildTree(report) {
-      report = ensureReport(report);
-      const virtual = { children: [] };
-      const folders = {};
-      (report.specs || []).forEach((spec) => {
-        let parent = virtual;
-        const trail = [];
-        specFolderTrail(spec).forEach((name) => {
-          trail.push(name);
-          const id = 'folder:' + trail.join('/');
-          if (!folders[id]) {
-            const node = { id, label: name, kind: 'folder', verdict: 'pass', executionTime: 0, duration: formatDuration(0), children: [], path: trail.join('/') };
-            folders[id] = node;
-            parent.children.push(node);
-          }
-          parent = folders[id];
-        });
-        parent.children.push({
-          id: spec.id, label: spec.heading, kind: 'spec', spec, verdict: spec.verdict,
-          duration: spec.duration, executionTime: spec.executionTime, children: []
-        });
-      });
-      const roll = (node) => {
-        (node.children || []).forEach(roll);
-        if (node.kind === 'folder') {
-          node.executionTime = sumTime(node.children);
-          node.duration = formatDuration(node.executionTime);
-          node.verdict = (node.children || []).reduce((v, c) => worse(v, c.verdict || 'pass'), 'pass');
-        }
-      };
-      const root = folders['folder:specs'] || emptySpecsRoot();
-      roll(root);
-      return [root];
     }
     function indexHierarchy(report) {
       const parentOf = {};
@@ -488,69 +384,8 @@
       if (failPath) ids.push.apply(ids, failPath);
       return accordionNormalize(report, ids);
     }
-    function findTreeNode(nodes, id, parentNodes) {
-      for (const n of nodes || []) {
-        if (n.id === id) return { node: n, siblings: parentNodes || nodes };
-        const inner = findTreeNode(n.children, id, n.children);
-        if (inner) return inner;
-      }
-      return null;
-    }
-    function treeDescendantIds(node) {
-      const out = [];
-      const walk = (n) => {
-        (n.children || []).forEach((c) => {
-          out.push(c.id);
-          walk(c);
-        });
-      };
-      if (node) walk(node);
-      return out;
-    }
-    function accordionTreeKeys(nodes, ids) {
-      const roots = (nodes || []).map((n) => n.id);
-      let next = roots.slice();
-      (ids || []).forEach((id) => {
-        if (roots.indexOf(id) >= 0) return;
-        const found = findTreeNode(nodes, id);
-        if (!found) {
-          if (next.indexOf(id) < 0) next.push(id);
-          return;
-        }
-        const drop = new Set();
-        (found.siblings || []).forEach((s) => {
-          if (s.id === id) return;
-          drop.add(s.id);
-          treeDescendantIds(s).forEach((d) => drop.add(d));
-        });
-        next = next.filter((x) => roots.indexOf(x) >= 0 || x === id || !drop.has(x));
-        if (next.indexOf(id) < 0) next.push(id);
-      });
-      return next;
-    }
-    function collectExpandableIds(report) {
-      return accordionPath(report);
-    }
     function defaultExpanded(report) {
       return accordionPath(report);
-    }
-    function treeExpandedKeys(nodes) {
-      const ids = [];
-      const pick = (list) => {
-        if (!list || !list.length) return;
-        const folders = list.filter((n) => n.kind === 'folder');
-        if (!folders.length) return;
-        const node = folders.find((n) => n.verdict === 'fail') || folders[0];
-        ids.push(node.id);
-        pick(node.children);
-      };
-      (nodes || []).forEach((n) => {
-        if (n.kind === 'folder') {
-          ids.push(n.id);
-          pick(n.children);
-        }
-      });
-      return ids;
     }
 
     const VIEW_KEY = 'studio-report-view';
@@ -562,9 +397,8 @@
         rev: 0,
         filter: 'all',
         query: '',
-        selected: 'folder:specs',
-        expanded: defaultExpanded(ensureReport(seeded)),
-        treeExpanded: treeExpandedKeys(buildTree(ensureReport(seeded)))
+        selected: '',
+        expanded: defaultExpanded(ensureReport(seeded))
       }),
       actions: {
         restoreView() {
@@ -575,14 +409,13 @@
             if (typeof saved.query === 'string') this.query = saved.query;
             if (saved.selected) this.selected = saved.selected;
             if (Array.isArray(saved.expanded) && saved.expanded.length) this.expanded = accordionNormalize(this.report, saved.expanded);
-            if (Array.isArray(saved.treeExpanded) && saved.treeExpanded.length) this.treeExpanded = accordionTreeKeys(buildTree(this.report), saved.treeExpanded);
           } catch (e) {}
         },
         persistView() {
           try {
             sessionStorage.setItem(VIEW_KEY, JSON.stringify({
               filter: this.filter, query: this.query, selected: this.selected,
-              expanded: this.expanded, treeExpanded: this.treeExpanded
+              expanded: this.expanded
             }));
           } catch (e) {}
         },
@@ -594,9 +427,7 @@
           this.running = !!payload.running;
           this.rev = rev || this.rev;
           Vue.nextTick(() => {
-            if (!scroll) return;
-            if (scroll.tree) scroll.tree.el.scrollTop = scroll.tree.top;
-            if (scroll.result) scroll.result.el.scrollTop = scroll.result.top;
+            if (scroll && scroll.result) scroll.result.el.scrollTop = scroll.result.top;
           });
         },
         toggleExpand(id) {
@@ -605,16 +436,8 @@
           else this.expanded = openAccordionIds(this.report, this.expanded, id);
           this.persistView();
         },
-        ensureExpanded() {
-          const ids = Array.prototype.slice.call(arguments);
-          ids.forEach((id) => {
-            if (id) this.expanded = openAccordionIds(this.report, this.expanded, id);
-          });
-          this.persistView();
-        },
         expandAll() {
           this.expanded = accordionPath(this.report);
-          this.treeExpanded = treeExpandedKeys(buildTree(this.report));
           this.persistView();
         },
         collapseAll() { this.expanded = []; this.persistView(); }
@@ -704,12 +527,8 @@
     };
 
     function captureScroll(vm) {
-      const tree = vm.$refs.treePane;
       const result = vm.$refs.resultPane;
-      return {
-        tree: tree ? { el: tree, top: tree.scrollTop } : null,
-        result: result ? { el: result, top: result.scrollTop } : null
-      };
+      return { result: result ? { el: result, top: result.scrollTop } : null };
     }
 
     async function fetchLive() {
@@ -739,12 +558,11 @@
           return n == null ? 0 : Math.round(n);
         },
         q() { return this.store.query.trim().toLowerCase(); },
-        treeData() { return buildTree(this.store.report); },
         visibleSpecs() {
           return (this.store.report.specs || []).filter((spec) => this.specVisible(spec));
         },
         selectedLabel() {
-          if (this.store.selected === 'folder:specs' || this.store.selected === 'suite') return this.store.report.projectName;
+          if (!this.store.selected || this.store.selected === 'folder:specs' || this.store.selected === 'suite') return this.store.report.projectName;
           const spec = (this.store.report.specs || []).find((s) => s.id === this.store.selected);
           if (spec) return spec.heading;
           for (const s of this.store.report.specs || []) {
@@ -755,8 +573,8 @@
         }
       },
       watch: {
-        'store.query'() { this.$refs.scriptTree && this.$refs.scriptTree.filter(this.store.query); this.store.persistView(); },
-        'store.filter'() { this.$refs.scriptTree && this.$refs.scriptTree.filter(this.store.query); this.store.persistView(); }
+        'store.query'() { this.store.persistView(); },
+        'store.filter'() { this.store.persistView(); }
       },
       mounted() {
         this.pollLive();
@@ -766,7 +584,7 @@
         if (this._liveTimer) clearInterval(this._liveTimer);
       },
       methods: {
-        verdictLabel, tagType, treeClass,
+        verdictLabel, tagType,
         nodeVisible(verdict, texts) {
           if (this.store.filter !== 'all' && verdict !== this.store.filter) return false;
           return matchQuery(this.q, texts);
@@ -818,50 +636,9 @@
           if (!clickIsExpandControl(column, event)) this.store.toggleExpand(row.id);
           this.store.persistView();
         },
-        expandAll() { this.store.expandAll(); Vue.nextTick(() => this.restoreTreeExpand()); },
+        expandAll() { this.store.expandAll(); },
         collapseAll() { this.store.collapseAll(); },
         printReport() { window.print(); },
-        onTreeClick(data) {
-          this.store.selected = data.id;
-          if (data.kind === 'spec') this.store.ensureExpanded(data.id);
-          this.store.persistView();
-        },
-        onTreeExpand(data) {
-          if (!data || !data.id) return;
-          this.store.treeExpanded = accordionTreeKeys(this.treeData, this.store.treeExpanded.concat([data.id]));
-          this.store.persistView();
-        },
-        onTreeCollapse(data) {
-          if (!data || !data.id) return;
-          const found = findTreeNode(this.treeData, data.id);
-          const drop = new Set([data.id].concat(found ? treeDescendantIds(found.node) : []));
-          this.store.treeExpanded = this.store.treeExpanded.filter((id) => !drop.has(id));
-          this.store.persistView();
-        },
-        filterTreeNode(value, data) {
-          if (this.store.filter !== 'all' && data.verdict && data.kind !== 'folder') {
-            if (data.verdict !== this.store.filter && data.verdict !== 'none') return false;
-          }
-          const q = String(value || '').trim().toLowerCase();
-          if (!q) return true;
-          return String(data.label || '').toLowerCase().includes(q);
-        },
-        restoreTreeExpand() {
-          const tree = this.$refs.scriptTree;
-          if (!tree) return;
-          this.store.treeExpanded = accordionTreeKeys(this.treeData, this.store.treeExpanded);
-          const keep = {};
-          (this.store.treeExpanded || []).forEach((id) => { keep[id] = true; });
-          const apply = (nodes) => {
-            (nodes || []).forEach((n) => {
-              const node = tree.getNode(n.id);
-              if (node) node.expanded = !!keep[n.id];
-              apply(n.children);
-            });
-          };
-          apply(this.treeData);
-          if (this.store.selected) tree.setCurrentKey(this.store.selected);
-        },
         async pollLive() {
           const payload = await fetchLive();
           if (!payload || !payload.report) return;
@@ -871,7 +648,6 @@
           }
           const scroll = captureScroll(this);
           this.store.applyLive(payload, scroll);
-          Vue.nextTick(() => this.restoreTreeExpand());
         }
       }
     });

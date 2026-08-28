@@ -44,8 +44,9 @@ go build -o bin/studio-reporter ./...
 |----------|----------|---------|-------------|
 | `GAUGE_STUDIO_WS` | No | - | Optional extra WebSocket URL to push events to. Live forwarding no longer requires this: the plugin listens on a random local port and prints `studio-reporter websocket: ws://127.0.0.1:<port>` |
 | `gauge_max_message_size` | No | `1024` | Maximum gRPC message size in MB |
-| `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
-| `overwrite_reports` | No | `true` | Overwrite `reports/studio-report` on each run. Set `false` to keep timestamped copies |
+| `gauge_reports_dir` | No | `reports` | Gauge 报告根目录。相对路径会相对 `GAUGE_PROJECT_ROOT`（或当前工作目录） |
+| `overwrite_reports` | No | `true` | Gauge 官方开关。`true` 覆盖 `reports/studio-report`；`false` 每次运行写入带时间戳的新目录 |
+| `over_write_reports` | No | - | `overwrite_reports` 的别名。二者都设置时以 `overwrite_reports` 为准 |
 | `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to disable HTML report generation |
 | `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Set to `true` to skip opening the report page in a browser |
 
@@ -89,7 +90,6 @@ The report includes:
 
 - Overall verdict, duration, environment, and success rate
 - Vue 3 + Element Plus + Pinia UI
-- A compact script tree (`el-tree`) that starts at `specs` and lists folders down to specification names only
 - Slim expandable result tables in accordion mode: at each level only one row is expanded; click a row (or the arrow) to expand or collapse it
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step

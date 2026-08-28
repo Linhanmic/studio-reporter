@@ -421,13 +421,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	for _, want := range []string{
 		"Test Report Viewer",
 		"el-table",
-		"el-tree",
-		`:indent="4"`,
-		"folder:specs",
-		"kind: 'spec'",
-		"children: []",
 		"运行时间",
-		"脚本",
 		"pinia",
 		"dense-table",
 		"row-pass",
@@ -458,7 +452,9 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"function buildItemNodes",
 		"id: 'suite'",
 		"kind: 'scenario'",
-		`:indent="18"`,
+		"el-tree",
+		"script-pane",
+		">脚本<",
 	} {
 		if strings.Contains(html, not) {
 			t.Fatalf("generated HTML should not contain %q", not)
@@ -528,6 +524,62 @@ func TestOverwriteAndTimestampedDirs(t *testing.T) {
 	}
 	if c != d || filepath.Base(c) != reportFolderName {
 		t.Fatalf("overwrite dirs = %s %s", c, d)
+	}
+}
+
+func TestOverwriteReportsAliasAndProjectRoot(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv(gaugeProjectRootEnv, root)
+	t.Setenv(reportsDirEnv, "out-reports")
+	t.Setenv(overwriteReportsEnv, "")
+	t.Setenv(overwriteReportsEnvAlias, "false")
+	if shouldOverwriteReports() {
+		t.Fatal("over_write_reports=false should keep each run")
+	}
+	a, err := resolveReportDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(a, filepath.Join(root, "out-reports", reportFolderName)) {
+		t.Fatalf("dir = %s, want under %s", a, filepath.Join(root, "out-reports", reportFolderName))
+	}
+	if filepath.Base(filepath.Dir(a)) != reportFolderName {
+		t.Fatalf("timestamped parent = %s", filepath.Dir(a))
+	}
+	t.Setenv(overwriteReportsEnv, "true")
+	t.Setenv(overwriteReportsEnvAlias, "false")
+	if !shouldOverwriteReports() {
+		t.Fatal("overwrite_reports should win over over_write_reports")
+	}
+}
+
+func TestLiveAndFinalReportShareDirectoryWhenNotOverwriting(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(reportsDirEnv, dir)
+	t.Setenv(overwriteReportsEnv, "false")
+
+	p := newLivePublisher()
+	p.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
+	liveDir := reportDirFromLive(p)
+	if liveDir == "" {
+		t.Fatal("live dir empty")
+	}
+	if filepath.Base(filepath.Dir(liveDir)) != reportFolderName {
+		t.Fatalf("live dir should be timestamped under studio-report: %s", liveDir)
+	}
+
+	generated, err := generateReportFromSuiteTo(&gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()}, liveDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if generated.Dir != liveDir {
+		t.Fatalf("final dir %s != live dir %s", generated.Dir, liveDir)
+	}
+
+	p2 := newLivePublisher()
+	p2.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
+	if reportDirFromLive(p2) == liveDir {
+		t.Fatal("second run should keep a new timestamped report")
 	}
 }
 

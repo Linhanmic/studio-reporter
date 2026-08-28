@@ -141,7 +141,7 @@ func (h *reporterHandler) generateAndForwardReport(req *gauge_messages.SuiteExec
 	if shouldSkipReport() {
 		return
 	}
-	generated, err := generateReportFromSuite(req)
+	generated, err := generateReportFromSuiteTo(req, reportDirFromLive(h.live))
 	if err != nil {
 		log.Printf("studio-reporter: failed to generate HTML report: %v", err)
 		return

@@ -18,20 +18,22 @@ import (
 )
 
 const (
-	verdictPass         = "pass"
-	verdictFail         = "fail"
-	verdictSkip         = "skip"
-	verdictNone         = "none"
-	reportsDirEnv       = "gauge_reports_dir"
-	overwriteReportsEnv = "overwrite_reports"
-	skipReportEnv       = "GAUGE_STUDIO_SKIP_REPORT"
-	defaultReportsDir   = "reports"
-	reportFolderName    = "studio-report"
-	reportIndexFile     = "index.html"
-	reportJSONFile      = "last_run_result.json"
-	liveReportJSONFile  = "report.json"
-	liveReportJSFile    = "report-live.js"
-	reportTimeLayout    = "2006-01-02_15.04.05"
+	verdictPass              = "pass"
+	verdictFail              = "fail"
+	verdictSkip              = "skip"
+	verdictNone              = "none"
+	reportsDirEnv            = "gauge_reports_dir"
+	overwriteReportsEnv      = "overwrite_reports"
+	overwriteReportsEnvAlias = "over_write_reports"
+	gaugeProjectRootEnv      = "GAUGE_PROJECT_ROOT"
+	skipReportEnv            = "GAUGE_STUDIO_SKIP_REPORT"
+	defaultReportsDir        = "reports"
+	reportFolderName         = "studio-report"
+	reportIndexFile          = "index.html"
+	reportJSONFile           = "last_run_result.json"
+	liveReportJSONFile       = "report.json"
+	liveReportJSFile         = "report-live.js"
+	reportTimeLayout         = "2006-01-02_15.04.05"
 )
 
 // Report is the JSON model consumed by the CANoe-style HTML viewer.
@@ -217,13 +219,22 @@ func shouldSkipReport() bool {
 }
 
 func generateReportFromSuite(req *gauge_messages.SuiteExecutionResult) (*GeneratedReport, error) {
+	return generateReportFromSuiteTo(req, "")
+}
+
+func generateReportFromSuiteTo(req *gauge_messages.SuiteExecutionResult, dir string) (*GeneratedReport, error) {
 	if req == nil || req.GetSuiteResult() == nil {
 		return nil, fmt.Errorf("suite result is empty")
 	}
 	report := toReport(req.GetSuiteResult())
-	dir, err := resolveReportDir()
-	if err != nil {
-		return nil, err
+	if dir == "" {
+		var err error
+		dir, err = resolveReportDir()
+		if err != nil {
+			return nil, err
+		}
+	} else if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, fmt.Errorf("create report directory: %w", err)
 	}
 	return writeReport(dir, report, req)
 }
@@ -288,16 +299,13 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 }
 
 func resolveReportDir() (string, error) {
-	base := strings.TrimSpace(os.Getenv(reportsDirEnv))
-	if base == "" {
-		base = defaultReportsDir
-	}
-	abs, err := filepath.Abs(base)
+	abs, err := reportsBaseDir()
 	if err != nil {
-		return "", fmt.Errorf("resolve reports dir: %w", err)
+		return "", err
 	}
 	current := filepath.Join(abs, reportFolderName)
-	if !shouldOverwriteReports() {
+	overwrite := shouldOverwriteReports()
+	if !overwrite {
 		stamp := time.Now().Format(reportTimeLayout)
 		current = filepath.Join(current, stamp)
 		for i := 1; dirExists(current); i++ {
@@ -307,7 +315,25 @@ func resolveReportDir() (string, error) {
 	if err := os.MkdirAll(current, 0o755); err != nil {
 		return "", fmt.Errorf("create reports dir: %w", err)
 	}
+	log.Printf("studio-reporter: report directory %s (overwrite=%v)", current, overwrite)
 	return current, nil
+}
+
+func reportsBaseDir() (string, error) {
+	base := firstNonEmptyEnv(reportsDirEnv)
+	if base == "" {
+		base = defaultReportsDir
+	}
+	if !filepath.IsAbs(base) {
+		if root := strings.TrimSpace(os.Getenv(gaugeProjectRootEnv)); root != "" {
+			base = filepath.Join(root, base)
+		}
+	}
+	abs, err := filepath.Abs(base)
+	if err != nil {
+		return "", fmt.Errorf("resolve reports dir: %w", err)
+	}
+	return abs, nil
 }
 
 func dirExists(path string) bool {
@@ -315,12 +341,23 @@ func dirExists(path string) bool {
 	return err == nil && info.IsDir()
 }
 
+func firstNonEmptyEnv(names ...string) string {
+	for _, name := range names {
+		if v, ok := os.LookupEnv(name); ok {
+			if s := strings.TrimSpace(v); s != "" {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
 func shouldOverwriteReports() bool {
-	v := strings.ToLower(strings.TrimSpace(os.Getenv(overwriteReportsEnv)))
+	v := strings.ToLower(firstNonEmptyEnv(overwriteReportsEnv, overwriteReportsEnvAlias))
 	if v == "" {
 		return true
 	}
-	return v == "true" || v == "1" || v == "yes"
+	return v == "true" || v == "1" || v == "yes" || v == "on"
 }
 
 func specStableID(fileName string, fallbackIndex int) string {

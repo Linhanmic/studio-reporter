@@ -371,6 +371,15 @@ func (p *livePublisher) ensureDirLocked() error {
 	return nil
 }
 
+func reportDirFromLive(p *livePublisher) string {
+	if p == nil {
+		return ""
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.dir
+}
+
 func (p *livePublisher) publishLocked(writeHTML bool) {
 	if p.dir == "" || p.report == nil {
 		return
