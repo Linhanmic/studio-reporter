@@ -102,7 +102,8 @@ func recordCompletedRun(runDir string, report *Report) error {
 	}
 
 	if rel == "." || rel == "" {
-		id := uniqueDirName(filepath.Join(absRoot, archivesFolderName), archiveStamp(report))
+		stamp := sanitizeFileName(report.ProjectName) + "-" + archiveStamp(report)
+		id := uniqueDirName(filepath.Join(absRoot, archivesFolderName), stamp)
 		dest := filepath.Join(absRoot, archivesFolderName, id)
 		if err := copyRunSnapshot(absRun, dest); err != nil {
 			return err
@@ -257,12 +258,19 @@ func copyRunSnapshot(src, dest string) error {
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		return fmt.Errorf("create archive dir: %w", err)
 	}
-	names := []string{uhilReportFile, liveReportJSONFile, liveReportJSFile}
+	names := []string{liveReportJSONFile, liveReportJSFile}
 	for _, name := range names {
 		from := filepath.Join(src, name)
 		to := filepath.Join(dest, name)
 		if err := copyFileIfExists(from, to); err != nil {
 			return err
+		}
+	}
+	if matches, err := filepath.Glob(filepath.Join(src, "*"+uhilReportExt)); err == nil {
+		for _, from := range matches {
+			if err := copyFileIfExists(from, filepath.Join(dest, filepath.Base(from))); err != nil {
+				return err
+			}
 		}
 	}
 	imgSrc := filepath.Join(src, "images")
@@ -325,10 +333,10 @@ func copyDir(src, dest string) error {
 func reservedHistoryName(id string) bool {
 	switch id {
 	case "", ".", "..", archivesFolderName, "assets", "images",
-		reportIndexFile, manageIndexFile, historyFileName, historyJSFile, uhilReportFile, liveReportJSONFile, liveReportJSFile:
+		reportIndexFile, manageIndexFile, historyFileName, historyJSFile, liveReportJSONFile, liveReportJSFile:
 		return true
 	default:
-		return strings.ContainsAny(id, `/\`)
+		return strings.ContainsAny(id, `/\`) || strings.HasSuffix(id, uhilReportExt)
 	}
 }
 

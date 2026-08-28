@@ -58,10 +58,10 @@ go build -o bin/studio-reporter ./...
 
 ```bash
 # Install the plugin
-gauge install studio-reporter --file studio-reporter-0.3.1-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.3.2-linux.x86_64.zip
 
 # Or copy to Gauge plugin directory
-cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.3.1/
+cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.3.2/
 ```
 
 ## Usage
@@ -113,7 +113,7 @@ Set `GAUGE_STUDIO_OPEN_BROWSER=true` if you want the old auto-open behavior.
 
 ### Report files and management
 
-The on-disk format (`report.json`, `report.uhilreport`, `history.json`, `archives/`) is versioned and documented in [REPORT_FORMAT.md](REPORT_FORMAT.md).
+The on-disk format (`report.json`, `<project>-<timestamp>.uhilreport`, `history.json`, `archives/`) is versioned and documented in [REPORT_FORMAT.md](REPORT_FORMAT.md).
 
 Every completed run is archived under `reports/studio-report/archives/<id>/`. The management console `reports/studio-report/manage.html` lists archived runs and opens them via `index.html?run=archives/<id>`. Deleting archives from the console requires serving the hub:
 
@@ -124,10 +124,10 @@ Every completed run is archived under `reports/studio-report/archives/<id>/`. Th
 
 ### Regenerate a report
 
-The plugin also writes the portable report file `report.uhilreport` next to `index.html` (and into every `archives/<id>/`). You can rebuild the HTML without re-running tests:
+The plugin also writes the portable report file `<project>-<timestamp>.uhilreport` next to `index.html` (and into every `archives/<project>-<timestamp>/`). You can rebuild the HTML without re-running tests:
 
 ```bash
-./bin/studio-reporter --input reports/studio-report/report.uhilreport --out /tmp/studio-report
+./bin/studio-reporter --input reports/studio-report/demo-project-2026-08-28_10.30.00.uhilreport --out /tmp/studio-report
 ```
 
 ## Development

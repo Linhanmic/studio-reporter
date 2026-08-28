@@ -8,7 +8,7 @@ The on-disk report file format is specified separately in [REPORT_FORMAT.md](REP
 
 ## Version
 
-- Plugin Version: 0.3.1
+- Plugin Version: 0.3.2
 - Protocol: WebSocket
 - Format: JSON
 
@@ -327,7 +327,7 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
   "timestamp": "2026-07-29T15:00:00.223456789Z",
   "payload": {
     "reportPath": "/path/to/reports/studio-report/index.html",
-    "jsonPath": "/path/to/reports/studio-report/report.uhilreport",
+    "jsonPath": "/path/to/reports/studio-report/demo-project-2026-08-28_10.30.00.uhilreport",
     "reportDir": "/path/to/reports/studio-report"
   }
 }
@@ -351,7 +351,7 @@ On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Element P
 Regenerate without re-running tests:
 
 ```bash
-./bin/studio-reporter --input reports/studio-report/report.uhilreport --out /tmp/studio-report
+./bin/studio-reporter --input reports/studio-report/demo-project-2026-08-28_10.30.00.uhilreport --out /tmp/studio-report
 ```
 
 ## Event Lifecycle

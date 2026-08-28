@@ -32,7 +32,7 @@ const (
 	reportIndexFile          = "index.html"
 	manageIndexFile          = "manage.html"
 	reportFormatVersion      = 1
-	uhilReportFile           = "report.uhilreport"
+	uhilReportExt            = ".uhilreport"
 	liveReportJSONFile       = "report.json"
 	liveReportJSFile         = "report-live.js"
 	reportTimeLayout         = "2006-01-02_15.04.05"
@@ -286,13 +286,19 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 		return nil, fmt.Errorf("write index.html: %w", err)
 	}
 
-	jsonPath := filepath.Join(dir, uhilReportFile)
+	// The hub keeps only the latest run's portable report file; archives keep the rest.
+	if stale, err := filepath.Glob(filepath.Join(dir, "*"+uhilReportExt)); err == nil {
+		for _, f := range stale {
+			_ = os.Remove(f)
+		}
+	}
+	jsonPath := filepath.Join(dir, uhilReportFileName(report))
 	payload, err := protoMarshalOptions.Marshal(src)
 	if err != nil {
 		return nil, fmt.Errorf("marshal suite result: %w", err)
 	}
 	if err := os.WriteFile(jsonPath, payload, 0o644); err != nil {
-		return nil, fmt.Errorf("write %s: %w", uhilReportFile, err)
+		return nil, fmt.Errorf("write %s: %w", filepath.Base(jsonPath), err)
 	}
 	if err := writeLiveSnapshot(dir, &LiveSnapshot{Rev: time.Now().UnixMilli(), Running: false, Report: report}); err != nil {
 		return nil, err
@@ -304,6 +310,32 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 	}
 	openReportPage(indexPath)
 	return &GeneratedReport{Dir: dir, IndexPath: indexPath, JSONPath: jsonPath}, nil
+}
+
+// sanitizeFileName makes a project name safe to use as a file or directory name.
+func sanitizeFileName(name string) string {
+	name = strings.TrimSpace(name)
+	repl := strings.NewReplacer(
+		"/", "-", "\\", "-", ":", ".", "*", "-", "?", "-",
+		"\"", "'", "<", "(", ">", ")", "|", "-", " ", "_",
+	)
+	name = strings.Trim(repl.Replace(name), ". ")
+	if name == "" {
+		return "report"
+	}
+	if len(name) > 100 {
+		name = name[:100]
+	}
+	return name
+}
+
+// uhilReportFileName is "<project>-<timestamp>.uhilreport".
+func uhilReportFileName(report *Report) string {
+	project := "report"
+	if report != nil {
+		project = sanitizeFileName(report.ProjectName)
+	}
+	return project + "-" + archiveStamp(report) + uhilReportExt
 }
 
 func resolveReportDir() (string, error) {
