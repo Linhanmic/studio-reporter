@@ -1,6 +1,6 @@
 {
   "id": "studio-reporter",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "name": "Gauge Studio Reporter",
   "description": "Forwards Gauge execution lifecycle events to Gauge Studio over WebSocket and writes a local HTML test report.",
   "capabilities": [
