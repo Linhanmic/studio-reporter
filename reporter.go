@@ -109,7 +109,7 @@ func (h *reporterHandler) NotifyStepExecutionEnding(_ context.Context, req *gaug
 // NotifyConceptExecutionStarting：Gauge 框架在某个概念（嵌套步骤）开始执行时自动调用
 func (h *reporterHandler) NotifyConceptExecutionStarting(_ context.Context, req *gauge_messages.ConceptExecutionStartingRequest) (*gauge_messages.Empty, error) {
 	h.forwardEvent(EventConceptExecutionStarting, req)
-	h.livePub().onStepStarting(req.GetCurrentExecutionInfo())
+	h.livePub().onConceptStarting(req.GetCurrentExecutionInfo())
 	return &gauge_messages.Empty{}, nil
 }
 

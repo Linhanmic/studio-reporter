@@ -67,6 +67,12 @@
     .el-table .row-fail:hover > td.el-table__cell { background: var(--fail-row-hover) !important; }
     .el-table .row-fail { box-shadow: inset 3px 0 0 var(--fail); }
     .el-table .row-pass { box-shadow: inset 3px 0 0 var(--pass); }
+    .expand-meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0 0 6px; }
+    .expand-meta .msg { margin: 0; }
+    .data-sheet { margin: 0 0 6px; }
+    .data-kv { border-collapse: collapse; font-size: 11px; background: #fff; }
+    .data-kv th, .data-kv td { border: 1px solid #c5d0dc; padding: 2px 8px; text-align: left; }
+    .data-kv th { background: #e8eef4; color: #16324f; font-weight: 650; }
     .status {
       flex: 0 0 auto; background: #eef3f8; border-top: 1px solid #c5d0dc;
       padding: 2px 10px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 11px;
@@ -144,49 +150,57 @@
             <el-table-column type="expand" width="28">
               <template #default="{ row }">
                 <div class="nested-block">
-                  <div class="nested-title">场景 · {{ row.heading }} · {{ row.duration }}</div>
+                  <hook-block v-for="(h, i) in (row.preHookFailures || [])" :key="'pre-'+i" :hook="h"></hook-block>
+                  <hook-block v-for="(h, i) in (row.postHookFailures || [])" :key="'post-'+i" :hook="h"></hook-block>
+                  <div class="expand-meta">
+                    <span class="msg">场景 {{ (row.summary && row.summary.passed) || 0 }}/{{ (row.summary && row.summary.total) || 0 }}</span>
+                    <el-tag v-for="tag in (row.tags || [])" :key="tag" size="small">{{ tag }}</el-tag>
+                    <span v-for="err in (row.errors || [])" :key="err.message" class="msg">{{ err.message }}</span>
+                  </div>
+                  <div class="nested-title">{{ specBodyTitle(row) }} · {{ row.duration }}</div>
                   <el-table
                     class="dense-table"
-                    :data="visibleScenarios(row)"
+                    :data="visibleSpecBodyRows(row)"
                     row-key="id"
                     border
                     size="small"
                     :expand-row-keys="store.expanded"
                     :row-class-name="rowClass"
                     @expand-change="onExpandChange"
-                    @row-click="onScenarioClick"
+                    @row-click="onBodyClick"
                   >
                     <el-table-column type="expand" width="28">
-                      <template #default="{ row: scn }">
-                        <div class="nested-block">
-                          <hook-block :hook="scn.preHookFailure"></hook-block>
-                          <hook-block :hook="scn.postHookFailure"></hook-block>
-                          <div class="nested-title">步骤 · {{ scn.heading }} · {{ scn.duration }}</div>
-                          <item-table :items="scenarioRows(scn)" :expanded="store.expanded" @expand-change="onExpandChange"></item-table>
+                      <template #default="{ row: body }">
+                        <div class="nested-block" v-if="body.kind === 'datarow'">
+                          <data-sheet :headers="body.headers" :cells="body.cells" caption="数据行"></data-sheet>
+                          <div class="nested-title">场景 · 第 {{ body.rowIndex + 1 }} 行 · {{ body.duration }}</div>
+                          <scenario-table :scenarios="body.scenarios || []" :expanded="store.expanded" @expand-change="onExpandChange" @select="onSelectRow"></scenario-table>
                         </div>
+                        <div class="nested-block" v-else-if="body.kind === 'datadriven'">
+                          <data-sheet v-if="groupSheet(body)" :table="groupSheet(body)" caption="数据表"></data-sheet>
+                          <div class="nested-title">场景 · {{ body.heading }} · {{ (body.scenarios || []).length }} 行</div>
+                          <scenario-table :scenarios="body.scenarios || []" :expanded="store.expanded" @expand-change="onExpandChange" @select="onSelectRow"></scenario-table>
+                        </div>
+                        <scenario-detail v-else :scn="body" :expanded="store.expanded" @expand-change="onExpandChange"></scenario-detail>
                       </template>
                     </el-table-column>
                     <el-table-column label="名称" min-width="180">
-                      <template #default="{ row: scn }"><div class="name-cell">{{ scn.heading }}</div></template>
+                      <template #default="{ row: body }"><div class="name-cell">{{ bodyName(body) }}</div></template>
                     </el-table-column>
-                    <el-table-column label="类型" width="58">场景</el-table-column>
+                    <el-table-column label="类型" width="72">
+                      <template #default="{ row: body }">{{ bodyTypeLabel(body) }}</template>
+                    </el-table-column>
                     <el-table-column label="结果" width="70">
-                      <template #default="{ row: scn }"><el-tag :type="tagType(scn.verdict)" size="small">{{ verdictLabel(scn.verdict) }}</el-tag></template>
+                      <template #default="{ row: body }"><el-tag :type="tagType(body.verdict)" size="small">{{ verdictLabel(body.verdict) }}</el-tag></template>
                     </el-table-column>
                     <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
-                    <el-table-column label="详情" min-width="120">
-                      <template #default="{ row: scn }">
-                        <el-tag v-for="tag in (scn.tags || [])" :key="tag" size="small" style="margin-right: 4px">{{ tag }}</el-tag>
-                        <span v-if="scn.skipErrors && scn.skipErrors.length" class="msg">{{ scn.skipErrors.join('; ') }}</span>
-                      </template>
-                    </el-table-column>
                   </el-table>
                 </div>
               </template>
             </el-table-column>
             <el-table-column label="名称" min-width="200">
               <template #default="{ row }">
-                <div class="name-cell"><strong>{{ row.heading }}</strong><div class="msg">{{ row.fileName }}</div></div>
+                <div class="name-cell"><strong>{{ row.heading }}</strong></div>
               </template>
             </el-table-column>
             <el-table-column label="类型" width="58">规格书</el-table-column>
@@ -194,12 +208,6 @@
               <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
             </el-table-column>
             <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
-            <el-table-column label="详情" min-width="140">
-              <template #default="{ row }">
-                场景 {{ row.summary.passed }}/{{ row.summary.total }}
-                <el-tag v-for="tag in (row.tags || [])" :key="tag" size="small" style="margin-left: 4px">{{ tag }}</el-tag>
-              </template>
-            </el-table-column>
           </el-table>
         </main>
       </div>
@@ -291,6 +299,126 @@
       if (!step) return !!item.comment;
       return !!(step.errorMessage || step.stackTrace || step.skippedReason || (step.messages && step.messages.length) || step.failureScreenshot || (step.screenshots && step.screenshots.length) || step.preHookFailure || step.postHookFailure);
     };
+    const worse = (a, b) => {
+      const rank = { fail: 3, skip: 2, pass: 1, none: 0 };
+      return (rank[a] || 0) >= (rank[b] || 0) ? (a || 'none') : (b || 'none');
+    };
+    const foldVerdict = (scns) => (scns || []).reduce((v, s) => worse(v, s.verdict), 'none');
+    const foldDuration = (scns) => formatDuration((scns || []).reduce((n, s) => n + (s.executionTime || 0), 0));
+    const rowCells = (dt, index) => {
+      if (!dt || !dt.rows || !dt.rows.length) return [];
+      if (index >= 0 && index < dt.rows.length) return dt.rows[index];
+      return dt.rows[0];
+    };
+    const dataRowHeading = (headers, cells, i) => {
+      const pairs = (headers || []).map((h, idx) => h + '=' + ((cells && cells[idx]) || '')).filter((p) => p !== '=');
+      const preview = pairs.length ? pairs.join(', ') : (cells || []).join(', ');
+      return preview ? ('第 ' + (i + 1) + ' 行 · ' + preview) : ('第 ' + (i + 1) + ' 行');
+    };
+    const scenarioRowData = (scn) => {
+      if (!scn) return null;
+      if (scn.isScenarioTableDriven && scn.scenarioDataTable) {
+        return { headers: scn.scenarioDataTable.headers || [], cells: rowCells(scn.scenarioDataTable, scn.scenarioTableRowIndex || 0) };
+      }
+      return null;
+    };
+    const groupSheet = (body) => {
+      const scns = (body && body.scenarios) || [];
+      const first = scns.find((s) => s.scenarioDataTable);
+      if (!first || !first.scenarioDataTable) return null;
+      const dt = first.scenarioDataTable;
+      if (dt.rows && dt.rows.length > 1) return { headers: dt.headers || [], rows: dt.rows };
+      return {
+        headers: dt.headers || [],
+        rows: scns.map((s) => rowCells(s.scenarioDataTable, s.scenarioTableRowIndex || 0))
+      };
+    };
+    const groupScenarioTableDriven = (scns) => {
+      const out = [];
+      const groups = {};
+      (scns || []).forEach((s) => {
+        if (s.isScenarioTableDriven) {
+          const key = s.heading;
+          if (!groups[key]) {
+            const g = { kind: 'datadriven', id: s.id + '-dd', heading: s.heading, scenarios: [] };
+            groups[key] = g;
+            out.push(g);
+          }
+          groups[key].scenarios.push(s);
+        } else {
+          out.push(Object.assign({ kind: 'scenario' }, s));
+        }
+      });
+      out.forEach((row) => {
+        if (row.kind === 'datadriven') {
+          row.verdict = foldVerdict(row.scenarios);
+          row.duration = foldDuration(row.scenarios);
+          row.executionTime = (row.scenarios || []).reduce((n, s) => n + (s.executionTime || 0), 0);
+        }
+      });
+      return out;
+    };
+    const specBodyRows = (spec) => {
+      const scns = (spec && spec.scenarios) || [];
+      const dt = spec && spec.datatable;
+      const rows = (dt && dt.rows) || [];
+      if (rows.length) {
+        const used = {};
+        const out = [];
+        rows.forEach((cells, i) => {
+          const scenarios = scns.filter((s) => s.tableRowIndex === i);
+          scenarios.forEach((s) => { used[s.id] = true; });
+          out.push({
+            kind: 'datarow',
+            id: spec.id + '-row-' + i,
+            heading: dataRowHeading(dt.headers || [], cells, i),
+            headers: dt.headers || [],
+            cells: cells || [],
+            rowIndex: i,
+            scenarios: scenarios,
+            verdict: foldVerdict(scenarios),
+            duration: foldDuration(scenarios),
+            executionTime: scenarios.reduce((n, s) => n + (s.executionTime || 0), 0)
+          });
+        });
+        scns.filter((s) => !used[s.id]).forEach((s) => out.push(Object.assign({ kind: 'scenario' }, s)));
+        return out;
+      }
+      return groupScenarioTableDriven(scns);
+    };
+    const specBodyTitle = (spec) => {
+      const dt = spec && spec.datatable;
+      if (dt && dt.rows && dt.rows.length) return '数据行 · ' + spec.heading;
+      if ((spec.scenarios || []).some((s) => s.isScenarioTableDriven)) return '数据驱动 · ' + spec.heading;
+      return '场景 · ' + spec.heading;
+    };
+    const bodyTypeLabel = (row) => {
+      if (row.kind === 'datarow') return '数据行';
+      if (row.kind === 'datadriven') return '数据驱动';
+      return '场景';
+    };
+    const bodyName = (row) => {
+      if (row.kind === 'datadriven') return row.heading + ' · ' + ((row.scenarios || []).length) + ' 行';
+      return row.heading;
+    };
+    const scenarioRowsFor = (store, scn) => {
+      const rows = [];
+      (scn.contexts || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Context' })));
+      (scn.items || []).forEach((it) => rows.push(Object.assign({}, it, { phase: it.kind === 'concept' ? 'Concept' : 'Step' })));
+      (scn.teardowns || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Teardown' })));
+      const q = (store.query || '').trim().toLowerCase();
+      if (store.filter === 'all' && !q) return rows;
+      const nodeVisible = (verdict, texts) => {
+        if (store.filter !== 'all' && verdict !== store.filter) return false;
+        return matchQuery(q, texts);
+      };
+      const matchItem = (item) => {
+        if (nodeVisible(itemVerdict(item), [itemText(item), item.phase])) return true;
+        if (item.kind === 'concept' && item.concept) return (item.concept.items || []).some(matchItem);
+        return false;
+      };
+      return rows.filter(matchItem);
+    };
     function clickIsExpandControl(column, event) {
       if (column && column.type === 'expand') return true;
       const el = event && event.target;
@@ -311,11 +439,20 @@
       childrenOf.__specs__ = specs.map((s) => s.id);
       specs.forEach((spec) => {
         parentOf[spec.id] = '__specs__';
-        const scns = spec.scenarios || [];
-        childrenOf[spec.id] = scns.map((s) => s.id);
-        scns.forEach((scn) => {
-          parentOf[scn.id] = spec.id;
-          addItems(scn.id, scenarioAllItems(scn));
+        const body = specBodyRows(spec);
+        childrenOf[spec.id] = body.map((row) => row.id);
+        body.forEach((row) => {
+          parentOf[row.id] = spec.id;
+          if (row.kind === 'datarow' || row.kind === 'datadriven') {
+            const scns = row.scenarios || [];
+            childrenOf[row.id] = scns.map((s) => s.id);
+            scns.forEach((scn) => {
+              parentOf[scn.id] = row.id;
+              addItems(scn.id, scenarioAllItems(scn));
+            });
+          } else {
+            addItems(row.id, scenarioAllItems(row));
+          }
         });
       });
       return { parentOf, childrenOf };
@@ -366,10 +503,17 @@
       const spec = specs.find((s) => s.verdict === 'fail') || specs[0];
       if (!spec) return ids;
       ids.push(spec.id);
-      const scns = spec.scenarios || [];
-      const scn = scns.find((s) => s.verdict === 'fail') || scns[0];
-      if (!scn) return ids;
-      ids.push(scn.id);
+      const body = specBodyRows(spec);
+      const bodyRow = body.find((r) => r.verdict === 'fail') || body[0];
+      if (!bodyRow) return ids;
+      ids.push(bodyRow.id);
+      let scn = bodyRow;
+      if (bodyRow.kind === 'datarow' || bodyRow.kind === 'datadriven') {
+        const scns = bodyRow.scenarios || [];
+        scn = scns.find((s) => s.verdict === 'fail') || scns[0];
+        if (!scn) return ids;
+        ids.push(scn.id);
+      }
       const pickFail = (items, trail) => {
         for (const item of items || []) {
           if (itemVerdict(item) === 'fail') return trail.concat([item.id]);
@@ -453,6 +597,82 @@
           <pre v-if="hook.stackTrace" class="stack">{{ hook.stackTrace }}</pre>
         </el-alert>`
     };
+    const DataSheet = {
+      name: 'DataSheet',
+      props: ['headers', 'cells', 'table', 'caption'],
+      computed: {
+        cols() { return (this.table && this.table.headers) || this.headers || []; },
+        body() {
+          if (this.table && this.table.rows) return this.table.rows;
+          return [this.cells || []];
+        }
+      },
+      template: `
+        <div v-if="cols.length" class="data-sheet">
+          <div v-if="caption" class="nested-title">{{ caption }}</div>
+          <table class="data-kv">
+            <thead><tr><th v-for="(h, i) in cols" :key="i">{{ h }}</th></tr></thead>
+            <tbody>
+              <tr v-for="(r, ri) in body" :key="ri"><td v-for="(c, ci) in r" :key="ci">{{ c }}</td></tr>
+            </tbody>
+          </table>
+        </div>`
+    };
+    const ScenarioDetail = {
+      name: 'ScenarioDetail',
+      props: { scn: { type: Object, required: true }, expanded: { type: Array, default: () => [] } },
+      emits: ['expand-change'],
+      setup() { return { store: useReportStore() }; },
+      methods: {
+        sheet() { return scenarioRowData(this.scn); },
+        rows() { return scenarioRowsFor(this.store, this.scn); }
+      },
+      template: `
+        <div class="nested-block">
+          <data-sheet v-if="sheet()" :headers="sheet().headers" :cells="sheet().cells" caption="数据行"></data-sheet>
+          <div class="expand-meta">
+            <el-tag v-for="tag in (scn.tags || [])" :key="tag" size="small">{{ tag }}</el-tag>
+            <span v-if="scn.skipErrors && scn.skipErrors.length" class="msg">{{ scn.skipErrors.join('; ') }}</span>
+          </div>
+          <hook-block :hook="scn.preHookFailure"></hook-block>
+          <hook-block :hook="scn.postHookFailure"></hook-block>
+          <div class="nested-title">步骤 · {{ scn.heading }} · {{ scn.duration }}</div>
+          <item-table :items="rows()" :expanded="expanded" @expand-change="$emit('expand-change', $event)"></item-table>
+        </div>`
+    };
+    const ScenarioTable = {
+      name: 'ScenarioTable',
+      props: { scenarios: { type: Array, default: () => [] }, expanded: { type: Array, default: () => [] } },
+      emits: ['expand-change', 'select'],
+      methods: {
+        tagType, verdictLabel,
+        rowClass({ row }) {
+          const v = row.verdict;
+          return v === 'fail' ? 'row-fail' : (v === 'pass' ? 'row-pass' : (v === 'skip' ? 'row-skip' : ''));
+        },
+        onRowClick(row, column, event) {
+          if (event && event.stopPropagation) event.stopPropagation();
+          this.$emit('select', row);
+          if (!clickIsExpandControl(column, event)) this.$emit('expand-change', row);
+        }
+      },
+      template: `
+        <el-table class="dense-table" :data="scenarios" row-key="id" border size="small" :expand-row-keys="expanded" :row-class-name="rowClass" @expand-change="$emit('expand-change', $event)" @row-click="onRowClick">
+          <el-table-column type="expand" width="28">
+            <template #default="{ row: scn }">
+              <scenario-detail :scn="scn" :expanded="expanded" @expand-change="$emit('expand-change', $event)"></scenario-detail>
+            </template>
+          </el-table-column>
+          <el-table-column label="名称" min-width="180">
+            <template #default="{ row: scn }"><div class="name-cell">{{ scn.heading }}</div></template>
+          </el-table-column>
+          <el-table-column label="类型" width="58">场景</el-table-column>
+          <el-table-column label="结果" width="70">
+            <template #default="{ row: scn }"><el-tag :type="tagType(scn.verdict)" size="small">{{ verdictLabel(scn.verdict) }}</el-tag></template>
+          </el-table-column>
+          <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
+        </el-table>`
+    };
     const ItemTable = {
       name: 'ItemTable',
       props: { items: { type: Array, default: () => [] }, expanded: { type: Array, default: () => [] } },
@@ -525,6 +745,8 @@
           </el-table-column>
         </el-table>`
     };
+    ScenarioDetail.components = { DataSheet, HookBlock, ItemTable };
+    ScenarioTable.components = { ScenarioDetail };
 
     function captureScroll(vm) {
       const result = vm.$refs.resultPane;
@@ -546,7 +768,7 @@
     }
 
     const app = Vue.createApp({
-      components: { ItemTable, HookBlock },
+      components: { ItemTable, HookBlock, DataSheet, ScenarioDetail, ScenarioTable },
       setup() {
         const store = useReportStore();
         store.restoreView();
@@ -603,21 +825,22 @@
           });
           return hit;
         },
+        specBodyTitle, bodyTypeLabel, bodyName, groupSheet,
+        visibleSpecBodyRows(spec) {
+          return specBodyRows(spec).map((row) => {
+            if (row.kind === 'datarow' || row.kind === 'datadriven') {
+              const scenarios = (row.scenarios || []).filter((scn) => this.scenarioVisible(scn));
+              if (!scenarios.length && (this.store.filter !== 'all' || this.q)) return null;
+              return Object.assign({}, row, { scenarios });
+            }
+            return this.scenarioVisible(row) ? row : null;
+          }).filter(Boolean);
+        },
         visibleScenarios(spec) {
           return (spec.scenarios || []).filter((scn) => this.scenarioVisible(scn));
         },
         scenarioRows(scn) {
-          const rows = [];
-          (scn.contexts || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Context' })));
-          (scn.items || []).forEach((it) => rows.push(Object.assign({}, it, { phase: it.kind === 'concept' ? 'Concept' : 'Step' })));
-          (scn.teardowns || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Teardown' })));
-          if (this.store.filter === 'all' && !this.q) return rows;
-          const matchItem = (item) => {
-            if (this.nodeVisible(itemVerdict(item), [itemText(item), item.phase])) return true;
-            if (item.kind === 'concept' && item.concept) return (item.concept.items || []).some(matchItem);
-            return false;
-          };
-          return rows.filter(matchItem);
+          return scenarioRowsFor(this.store, scn);
         },
         rowClass({ row }) {
           const v = row.verdict;
@@ -630,10 +853,14 @@
           if (!clickIsExpandControl(column, event)) this.store.toggleExpand(row.id);
           this.store.persistView();
         },
-        onScenarioClick(row, column, event) {
+        onBodyClick(row, column, event) {
           if (event && event.stopPropagation) event.stopPropagation();
           this.store.selected = row.id;
           if (!clickIsExpandControl(column, event)) this.store.toggleExpand(row.id);
+          this.store.persistView();
+        },
+        onSelectRow(row) {
+          if (row && row.id) this.store.selected = row.id;
           this.store.persistView();
         },
         expandAll() { this.store.expandAll(); },

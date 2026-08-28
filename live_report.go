@@ -29,6 +29,7 @@ type livePublisher struct {
 	htmlWritten   bool
 	currentSpecID string
 	currentScnID  string
+	conceptStack  []string
 }
 
 func newLivePublisher() *livePublisher {
@@ -125,6 +126,7 @@ func (p *livePublisher) onSpecStarting(info *gauge_messages.ExecutionInfo) {
 	id := specStableID(specInfo.GetFileName(), len(p.report.Specs))
 	p.currentSpecID = id
 	p.currentScnID = ""
+	p.conceptStack = nil
 	if idx := p.specIndex(id); idx >= 0 {
 		spec := &p.report.Specs[idx]
 		if specInfo.GetIsFailed() {
@@ -185,12 +187,11 @@ func (p *livePublisher) onScenarioStarting(info *gauge_messages.ExecutionInfo) {
 		return
 	}
 	heading := info.GetCurrentScenario().GetName()
-	for i := range p.report.Specs[idx].Scenarios {
-		if p.report.Specs[idx].Scenarios[i].Heading == heading {
-			p.currentScnID = p.report.Specs[idx].Scenarios[i].ID
-			p.publishLocked(false)
-			return
-		}
+	p.conceptStack = nil
+	if id := p.inProgressScenarioID(idx, heading); id != "" {
+		p.currentScnID = id
+		p.publishLocked(false)
+		return
 	}
 	id := fmt.Sprintf("%s-scn-%d", specID, len(p.report.Specs[idx].Scenarios))
 	verdict := verdictNone
@@ -198,11 +199,12 @@ func (p *livePublisher) onScenarioStarting(info *gauge_messages.ExecutionInfo) {
 		verdict = verdictFail
 	}
 	p.report.Specs[idx].Scenarios = append(p.report.Specs[idx].Scenarios, ScenarioReport{
-		ID:       id,
-		Heading:  heading,
-		Tags:     info.GetCurrentScenario().GetTags(),
-		Duration: formatDuration(0),
-		Verdict:  verdict,
+		ID:            id,
+		Heading:       heading,
+		Tags:          info.GetCurrentScenario().GetTags(),
+		Duration:      formatDuration(0),
+		Verdict:       verdict,
+		TableRowIndex: -1,
 	})
 	p.currentScnID = id
 	p.publishLocked(false)
@@ -219,6 +221,7 @@ func (p *livePublisher) onScenarioEnding(req *gauge_messages.ScenarioExecutionEn
 		p.currentSpecID = specStableID(info.GetCurrentSpec().GetFileName(), len(p.report.Specs))
 		p.ensureSpecFromInfo(info.GetCurrentSpec())
 	}
+	p.conceptStack = nil
 	if res := req.GetScenarioResult(); res != nil && res.GetProtoItem() != nil {
 		specIdx := p.specIndex(p.currentSpecID)
 		if specIdx < 0 {
@@ -226,12 +229,16 @@ func (p *livePublisher) onScenarioEnding(req *gauge_messages.ScenarioExecutionEn
 			return
 		}
 		item := res.GetProtoItem()
-		scnIndex := p.scenarioIndexByHeading(specIdx, scenarioHeadingOf(item))
+		scnIndex := p.scenarioIndexForResult(specIdx, item)
 		if scnIndex < 0 {
 			scnIndex = len(p.report.Specs[specIdx].Scenarios)
 		}
 		id := fmt.Sprintf("%s-scn-%d", p.currentSpecID, scnIndex)
+		if scnIndex < len(p.report.Specs[specIdx].Scenarios) {
+			id = p.report.Specs[specIdx].Scenarios[scnIndex].ID
+		}
 		if converted := scenarioFromProtoItem(id, item); converted != nil {
+			converted.ID = id
 			if scnIndex < len(p.report.Specs[specIdx].Scenarios) {
 				p.report.Specs[specIdx].Scenarios[scnIndex] = *converted
 			} else {
@@ -250,15 +257,16 @@ func (p *livePublisher) onStepStarting(info *gauge_messages.ExecutionInfo) {
 		return
 	}
 	p.syncCurrentFromInfo(info)
-	scn := p.currentScenario()
-	if scn == nil {
+	items := p.currentItems()
+	if items == nil {
 		return
 	}
 	text := ""
 	if step := info.GetCurrentStep().GetStep(); step != nil {
 		text = step.GetActualStepText()
 	}
-	id := fmt.Sprintf("%s-i-%d", scn.ID, len(scn.Items))
+	scn := p.currentScenario()
+	id := fmt.Sprintf("%s-i-%d", scn.ID, len(*items))
 	verdict := verdictNone
 	if info.GetCurrentStep().GetIsFailed() {
 		verdict = verdictFail
@@ -277,7 +285,49 @@ func (p *livePublisher) onStepStarting(info *gauge_messages.ExecutionInfo) {
 		},
 	}
 	fillOneItemDuration(&item)
-	scn.Items = append(scn.Items, item)
+	*items = append(*items, item)
+	p.publishLocked(false)
+}
+
+func (p *livePublisher) onConceptStarting(info *gauge_messages.ExecutionInfo) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !p.readyLocked() || info == nil {
+		return
+	}
+	p.syncCurrentFromInfo(info)
+	items := p.currentItems()
+	scn := p.currentScenario()
+	if items == nil || scn == nil {
+		return
+	}
+	text := ""
+	if info.GetCurrentStep() != nil && info.GetCurrentStep().GetStep() != nil {
+		text = info.GetCurrentStep().GetStep().GetActualStepText()
+	}
+	id := fmt.Sprintf("%s-c-%d-%d", scn.ID, len(p.conceptStack), len(*items))
+	verdict := verdictNone
+	if info.GetCurrentStep() != nil && info.GetCurrentStep().GetIsFailed() {
+		verdict = verdictFail
+	}
+	item := ItemReport{
+		ID:       id,
+		Kind:     "concept",
+		Duration: formatDuration(0),
+		Concept: &ConceptReport{
+			Step: &StepReport{
+				ActualText: text,
+				ParsedText: text,
+				Verdict:    verdict,
+				Duration:   formatDuration(0),
+			},
+			Items:    []ItemReport{},
+			Duration: formatDuration(0),
+		},
+	}
+	fillOneItemDuration(&item)
+	*items = append(*items, item)
+	p.conceptStack = append(p.conceptStack, id)
 	p.publishLocked(false)
 }
 
@@ -290,8 +340,21 @@ func (p *livePublisher) onStepOrConceptEnding(res *gauge_messages.ProtoStepResul
 	if info != nil {
 		p.syncCurrentFromInfo(info)
 	}
+	if res == nil || res.GetProtoItem() == nil {
+		return
+	}
+	if res.GetProtoItem().GetItemType() == gauge_messages.ProtoItem_Concept {
+		p.finishConceptLocked(res)
+	} else {
+		p.finishStepLocked(res)
+	}
+	p.publishLocked(false)
+}
+
+func (p *livePublisher) finishStepLocked(res *gauge_messages.ProtoStepResult) {
+	items := p.currentItems()
 	scn := p.currentScenario()
-	if scn == nil || res == nil || res.GetProtoItem() == nil {
+	if items == nil || scn == nil {
 		return
 	}
 	converted := toItemReports(fmt.Sprintf("%s-i", scn.ID), []*gauge_messages.ProtoItem{res.GetProtoItem()})
@@ -300,24 +363,29 @@ func (p *livePublisher) onStepOrConceptEnding(res *gauge_messages.ProtoStepResul
 	}
 	item := converted[0]
 	fillOneItemDuration(&item)
-	replaced := false
-	want := itemTextOf(&item)
-	for i := range scn.Items {
-		existing := &scn.Items[i]
-		if existing.Kind == item.Kind && itemTextOf(existing) == want && (existing.Step == nil || existing.Step.Verdict == verdictNone || existing.Step.Verdict == verdictFail) {
-			item.ID = existing.ID
-			scn.Items[i] = item
-			replaced = true
-			break
-		}
+	replaceOrAppendItem(items, item, scn.ID)
+}
+
+func (p *livePublisher) finishConceptLocked(res *gauge_messages.ProtoStepResult) {
+	scn := p.currentScenario()
+	if scn == nil {
+		return
 	}
-	if !replaced {
-		if item.ID == "" {
-			item.ID = fmt.Sprintf("%s-i-%d", scn.ID, len(scn.Items))
-		}
-		scn.Items = append(scn.Items, item)
+	parent := p.parentItems()
+	if parent == nil {
+		parent = &scn.Items
 	}
-	p.publishLocked(false)
+	converted := toItemReports(fmt.Sprintf("%s-c", scn.ID), []*gauge_messages.ProtoItem{res.GetProtoItem()})
+	if len(converted) == 0 {
+		return
+	}
+	item := converted[0]
+	fillOneItemDuration(&item)
+	if n := len(p.conceptStack); n > 0 {
+		item.ID = p.conceptStack[n-1]
+		p.conceptStack = p.conceptStack[:n-1]
+	}
+	replaceOrAppendItem(parent, item, scn.ID)
 }
 
 func (p *livePublisher) onSuiteResult(suite *gauge_messages.ProtoSuiteResult) {
@@ -453,11 +521,16 @@ func (p *livePublisher) syncCurrentFromInfo(info *gauge_messages.ExecutionInfo) 
 			return
 		}
 		heading := info.GetCurrentScenario().GetName()
-		for i := range p.report.Specs[idx].Scenarios {
-			if p.report.Specs[idx].Scenarios[i].Heading == heading {
-				p.currentScnID = p.report.Specs[idx].Scenarios[i].ID
-				return
+		if p.currentScnID != "" {
+			for i := range p.report.Specs[idx].Scenarios {
+				if p.report.Specs[idx].Scenarios[i].ID == p.currentScnID && p.report.Specs[idx].Scenarios[i].Heading == heading {
+					return
+				}
 			}
+		}
+		if id := p.inProgressScenarioID(idx, heading); id != "" {
+			p.currentScnID = id
+			return
 		}
 	}
 }
@@ -477,6 +550,159 @@ func (p *livePublisher) currentScenario() *ScenarioReport {
 		return nil
 	}
 	return &p.report.Specs[idx].Scenarios[n-1]
+}
+
+func (p *livePublisher) inProgressScenarioID(specIdx int, heading string) string {
+	if heading == "" || specIdx < 0 {
+		return ""
+	}
+	for i := range p.report.Specs[specIdx].Scenarios {
+		scn := p.report.Specs[specIdx].Scenarios[i]
+		if scn.Heading == heading && (scn.Verdict == verdictNone || scn.Verdict == "") {
+			return scn.ID
+		}
+	}
+	return ""
+}
+
+func (p *livePublisher) scenarioIndexForResult(specIdx int, item *gauge_messages.ProtoItem) int {
+	heading := scenarioHeadingOf(item)
+	specRow, scnRow := tableRowIndexesOf(item)
+	if specRow >= 0 {
+		for i := range p.report.Specs[specIdx].Scenarios {
+			s := p.report.Specs[specIdx].Scenarios[i]
+			if s.Heading == heading && s.TableRowIndex == specRow {
+				return i
+			}
+		}
+	}
+	if scnRow >= 0 {
+		for i := range p.report.Specs[specIdx].Scenarios {
+			s := p.report.Specs[specIdx].Scenarios[i]
+			if s.Heading == heading && s.IsScenarioTableDriven && s.ScenarioTableRowIndex == scnRow {
+				return i
+			}
+		}
+	}
+	if heading != "" && p.currentScnID != "" {
+		for i := range p.report.Specs[specIdx].Scenarios {
+			s := p.report.Specs[specIdx].Scenarios[i]
+			if s.ID == p.currentScnID && s.Heading == heading && (s.Verdict == verdictNone || s.Verdict == "") {
+				return i
+			}
+		}
+	}
+	if heading != "" {
+		if id := p.inProgressScenarioID(specIdx, heading); id != "" {
+			for i := range p.report.Specs[specIdx].Scenarios {
+				if p.report.Specs[specIdx].Scenarios[i].ID == id {
+					return i
+				}
+			}
+		}
+	}
+	if heading == "" && p.currentScnID != "" {
+		for i := range p.report.Specs[specIdx].Scenarios {
+			if p.report.Specs[specIdx].Scenarios[i].ID == p.currentScnID {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+func tableRowIndexesOf(item *gauge_messages.ProtoItem) (specRow, scnRow int) {
+	specRow, scnRow = -1, -1
+	if item == nil {
+		return
+	}
+	td := item.GetTableDrivenScenario()
+	if td == nil {
+		return
+	}
+	if td.GetIsSpecTableDriven() {
+		specRow = int(td.GetTableRowIndex())
+	}
+	if td.GetIsScenarioTableDriven() {
+		scnRow = int(td.GetScenarioTableRowIndex())
+	}
+	return
+}
+
+func (p *livePublisher) currentItems() *[]ItemReport {
+	scn := p.currentScenario()
+	if scn == nil {
+		return nil
+	}
+	items := &scn.Items
+	for _, id := range p.conceptStack {
+		found := false
+		for i := range *items {
+			if (*items)[i].ID == id && (*items)[i].Concept != nil {
+				items = &(*items)[i].Concept.Items
+				found = true
+				break
+			}
+		}
+		if !found {
+			break
+		}
+	}
+	return items
+}
+
+func (p *livePublisher) parentItems() *[]ItemReport {
+	scn := p.currentScenario()
+	if scn == nil {
+		return nil
+	}
+	if len(p.conceptStack) == 0 {
+		return &scn.Items
+	}
+	items := &scn.Items
+	for _, id := range p.conceptStack[:len(p.conceptStack)-1] {
+		found := false
+		for i := range *items {
+			if (*items)[i].ID == id && (*items)[i].Concept != nil {
+				items = &(*items)[i].Concept.Items
+				found = true
+				break
+			}
+		}
+		if !found {
+			return &scn.Items
+		}
+	}
+	return items
+}
+
+func replaceOrAppendItem(items *[]ItemReport, item ItemReport, scnID string) {
+	if items == nil {
+		return
+	}
+	if item.ID != "" {
+		for i := range *items {
+			if (*items)[i].ID == item.ID {
+				(*items)[i] = item
+				return
+			}
+		}
+	}
+	want := itemTextOf(&item)
+	for i := range *items {
+		existing := &(*items)[i]
+		if existing.Kind == item.Kind && itemTextOf(existing) == want && (existing.Step == nil || existing.Step.Verdict == verdictNone || existing.Step.Verdict == verdictFail) {
+			if item.ID == "" {
+				item.ID = existing.ID
+			}
+			(*items)[i] = item
+			return
+		}
+	}
+	if item.ID == "" {
+		item.ID = fmt.Sprintf("%s-i-%d", scnID, len(*items))
+	}
+	*items = append(*items, item)
 }
 
 func (p *livePublisher) scenarioIndexByHeading(specIdx int, heading string) int {

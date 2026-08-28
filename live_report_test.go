@@ -111,3 +111,105 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 		t.Fatalf("rev %d is not JS-safe", snap.Rev)
 	}
 }
+
+func TestLiveConceptNestsSteps(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(reportsDirEnv, dir)
+	t.Setenv(overwriteReportsEnv, "true")
+
+	p := newLivePublisher()
+	spec := &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"}
+	scn := &gauge_messages.ScenarioInfo{Name: "Successful login"}
+	p.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
+	p.onSpecStarting(&gauge_messages.ExecutionInfo{CurrentSpec: spec})
+	p.onScenarioStarting(&gauge_messages.ExecutionInfo{CurrentSpec: spec, CurrentScenario: scn})
+	p.onConceptStarting(&gauge_messages.ExecutionInfo{
+		CurrentSpec:     spec,
+		CurrentScenario: scn,
+		CurrentStep:     &gauge_messages.StepInfo{Step: &gauge_messages.ExecuteStepRequest{ActualStepText: "Log in"}},
+	})
+	p.onStepStarting(&gauge_messages.ExecutionInfo{
+		CurrentSpec:     spec,
+		CurrentScenario: scn,
+		CurrentStep:     &gauge_messages.StepInfo{Step: &gauge_messages.ExecuteStepRequest{ActualStepText: "Click submit"}},
+	})
+
+	got := p.report.Specs[0].Scenarios[0]
+	if len(got.Items) != 1 || got.Items[0].Kind != "concept" {
+		t.Fatalf("concept should be the only scenario item, got %+v", got.Items)
+	}
+	nested := got.Items[0].Concept.Items
+	if len(nested) != 1 || nested[0].Step == nil || nested[0].Step.ActualText != "Click submit" {
+		t.Fatalf("step should nest under concept, got %+v", nested)
+	}
+}
+
+func TestLiveTableDrivenScenariosKeepBothRows(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(reportsDirEnv, dir)
+	t.Setenv(overwriteReportsEnv, "true")
+
+	p := newLivePublisher()
+	spec := &gauge_messages.SpecInfo{Name: "Checkout", FileName: "specs/checkout.spec"}
+	heading := &gauge_messages.ScenarioInfo{Name: "Pay with card"}
+	info := &gauge_messages.ExecutionInfo{CurrentSpec: spec, CurrentScenario: heading}
+	p.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
+	p.onSpecStarting(&gauge_messages.ExecutionInfo{CurrentSpec: spec})
+	p.onScenarioStarting(info)
+	firstID := p.currentScnID
+	p.onScenarioEnding(&gauge_messages.ScenarioExecutionEndingRequest{
+		CurrentExecutionInfo: info,
+		ScenarioResult: &gauge_messages.ProtoScenarioResult{
+			ProtoItem: tableDrivenSpecItem(0, "Pay with card", gauge_messages.ExecutionStatus_FAILED),
+		},
+	})
+	p.onScenarioStarting(info)
+	secondID := p.currentScnID
+	p.onScenarioEnding(&gauge_messages.ScenarioExecutionEndingRequest{
+		CurrentExecutionInfo: info,
+		ScenarioResult: &gauge_messages.ProtoScenarioResult{
+			ProtoItem: tableDrivenSpecItem(1, "Pay with card", gauge_messages.ExecutionStatus_PASSED),
+		},
+	})
+
+	scns := p.report.Specs[0].Scenarios
+	if firstID == "" || secondID == "" || firstID == secondID {
+		t.Fatalf("ids = %s / %s", firstID, secondID)
+	}
+	if len(scns) != 2 {
+		t.Fatalf("scenarios = %+v", scns)
+	}
+	if scns[0].ID != firstID || scns[1].ID != secondID {
+		t.Fatalf("ids overwritten: %+v", scns)
+	}
+	if scns[0].TableRowIndex != 0 || scns[0].Verdict != verdictFail {
+		t.Fatalf("row 0 = %+v", scns[0])
+	}
+	if scns[1].TableRowIndex != 1 || scns[1].Verdict != verdictPass {
+		t.Fatalf("row 1 = %+v", scns[1])
+	}
+}
+
+func tableDrivenSpecItem(row int32, heading string, status gauge_messages.ExecutionStatus) *gauge_messages.ProtoItem {
+	return &gauge_messages.ProtoItem{
+		ItemType: gauge_messages.ProtoItem_TableDrivenScenario,
+		TableDrivenScenario: &gauge_messages.ProtoTableDrivenScenario{
+			IsSpecTableDriven: true,
+			TableRowIndex:     row,
+			Scenario: &gauge_messages.ProtoScenario{
+				ScenarioHeading: heading,
+				ExecutionStatus: status,
+				ExecutionTime:   10,
+				ScenarioItems: []*gauge_messages.ProtoItem{{
+					ItemType: gauge_messages.ProtoItem_Step,
+					Step: &gauge_messages.ProtoStep{
+						ActualText: "Pay",
+						StepExecutionResult: &gauge_messages.ProtoStepExecutionResult{
+							ExecutionResult: &gauge_messages.ProtoExecutionResult{Failed: status == gauge_messages.ExecutionStatus_FAILED, ExecutionTime: 10},
+						},
+					},
+				}},
+			},
+		},
+	}
+}

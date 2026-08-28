@@ -120,7 +120,7 @@ func sampleSuite() *gauge_messages.ProtoSuiteResult {
 			{
 				Failed:               true,
 				ExecutionTime:        800,
-				ScenarioCount:        1,
+				ScenarioCount:        2,
 				ScenarioFailedCount:  1,
 				ScenarioSkippedCount: 0,
 				ProtoSpec: &gauge_messages.ProtoSpec{
@@ -131,7 +131,10 @@ func sampleSuite() *gauge_messages.ProtoSuiteResult {
 							ItemType: gauge_messages.ProtoItem_Table,
 							Table: &gauge_messages.ProtoTable{
 								Headers: &gauge_messages.ProtoTableRow{Cells: []string{"item"}},
-								Rows:    []*gauge_messages.ProtoTableRow{{Cells: []string{"book"}}},
+								Rows: []*gauge_messages.ProtoTableRow{
+									{Cells: []string{"book"}},
+									{Cells: []string{"pen"}},
+								},
 							},
 						},
 						{
@@ -167,6 +170,30 @@ func sampleSuite() *gauge_messages.ProtoSuiteResult {
 										{
 											ItemType: gauge_messages.ProtoItem_Comment,
 											Comment:  &gauge_messages.ProtoComment{Text: "note"},
+										},
+									},
+								},
+							},
+						},
+						{
+							ItemType: gauge_messages.ProtoItem_TableDrivenScenario,
+							TableDrivenScenario: &gauge_messages.ProtoTableDrivenScenario{
+								IsSpecTableDriven: true,
+								TableRowIndex:     1,
+								Scenario: &gauge_messages.ProtoScenario{
+									ScenarioHeading: "Pay with card",
+									ExecutionTime:   80,
+									ExecutionStatus: gauge_messages.ExecutionStatus_PASSED,
+									ScenarioItems: []*gauge_messages.ProtoItem{
+										{
+											ItemType: gauge_messages.ProtoItem_Step,
+											Step: &gauge_messages.ProtoStep{
+												ActualText: "Pay 5",
+												ParsedText: "Pay {}",
+												StepExecutionResult: &gauge_messages.ProtoStepExecutionResult{
+													ExecutionResult: &gauge_messages.ProtoExecutionResult{Failed: false, ExecutionTime: 80},
+												},
+											},
 										},
 									},
 								},
@@ -246,6 +273,53 @@ func sampleSuite() *gauge_messages.ProtoSuiteResult {
 					},
 				},
 			},
+			{
+				Failed:        false,
+				ExecutionTime: 90,
+				ScenarioCount: 2,
+				ProtoSpec: &gauge_messages.ProtoSpec{
+					SpecHeading: "Search",
+					FileName:    "specs/search.spec",
+					Items: []*gauge_messages.ProtoItem{
+						searchTableScenario(0, "laptop"),
+						searchTableScenario(1, "phone"),
+					},
+				},
+			},
+		},
+	}
+}
+
+func searchTableScenario(row int32, query string) *gauge_messages.ProtoItem {
+	return &gauge_messages.ProtoItem{
+		ItemType: gauge_messages.ProtoItem_TableDrivenScenario,
+		TableDrivenScenario: &gauge_messages.ProtoTableDrivenScenario{
+			IsScenarioTableDriven: true,
+			ScenarioTableRowIndex: row,
+			ScenarioDataTable: &gauge_messages.ProtoTable{
+				Headers: &gauge_messages.ProtoTableRow{Cells: []string{"query"}},
+				Rows: []*gauge_messages.ProtoTableRow{
+					{Cells: []string{"laptop"}},
+					{Cells: []string{"phone"}},
+				},
+			},
+			Scenario: &gauge_messages.ProtoScenario{
+				ScenarioHeading: "Search item",
+				ExecutionTime:   45,
+				ExecutionStatus: gauge_messages.ExecutionStatus_PASSED,
+				ScenarioItems: []*gauge_messages.ProtoItem{
+					{
+						ItemType: gauge_messages.ProtoItem_Step,
+						Step: &gauge_messages.ProtoStep{
+							ActualText: "Search " + query,
+							ParsedText: "Search {}",
+							StepExecutionResult: &gauge_messages.ProtoStepExecutionResult{
+								ExecutionResult: &gauge_messages.ProtoExecutionResult{Failed: false, ExecutionTime: 45},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -261,13 +335,13 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	if r.Duration != "00:00:01.234" {
 		t.Fatalf("duration = %s", r.Duration)
 	}
-	if len(r.Specs) != 4 {
+	if len(r.Specs) != 5 {
 		t.Fatalf("specs = %d", len(r.Specs))
 	}
-	if r.Summary.Specs != (Counts{Total: 4, Passed: 2, Failed: 1, Skipped: 1}) {
+	if r.Summary.Specs != (Counts{Total: 5, Passed: 3, Failed: 1, Skipped: 1}) {
 		t.Fatalf("spec counts = %+v", r.Summary.Specs)
 	}
-	if r.Summary.Scenarios != (Counts{Total: 4, Passed: 2, Failed: 1, Skipped: 1}) {
+	if r.Summary.Scenarios != (Counts{Total: 7, Passed: 5, Failed: 1, Skipped: 1}) {
 		t.Fatalf("scenario counts = %+v", r.Summary.Scenarios)
 	}
 	if r.Summary.Steps.Total < 4 || r.Summary.Steps.Failed != 1 || r.Summary.Steps.Skipped != 1 {
@@ -321,7 +395,7 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	}
 
 	checkout := r.Specs[1]
-	if checkout.Verdict != verdictFail || checkout.Datatable == nil || checkout.Datatable.Rows[0][0] != "book" {
+	if checkout.Verdict != verdictFail || checkout.Datatable == nil || len(checkout.Datatable.Rows) != 2 || checkout.Datatable.Rows[0][0] != "book" {
 		t.Fatalf("checkout spec = %+v", checkout)
 	}
 	pay := checkout.Scenarios[0]
@@ -334,6 +408,9 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	if pay.Items[1].Kind != "comment" || pay.Items[1].Comment != "note" {
 		t.Fatalf("comment item = %+v", pay.Items[1])
 	}
+	if len(checkout.Scenarios) != 2 || checkout.Scenarios[1].TableRowIndex != 1 || checkout.Scenarios[1].Verdict != verdictPass {
+		t.Fatalf("checkout rows = %+v", checkout.Scenarios)
+	}
 	if r.Specs[2].Verdict != verdictSkip || r.Specs[2].Errors[0].Message != "missing step" {
 		t.Fatalf("skipped spec = %+v", r.Specs[2])
 	}
@@ -343,6 +420,16 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	}
 	if got := strings.Join(nested.Folders, "/"); got != "specs/modules/payments/gateway" {
 		t.Fatalf("nested folders = %v", nested.Folders)
+	}
+	search := r.Specs[4]
+	if search.Heading != "Search" || len(search.Scenarios) != 2 {
+		t.Fatalf("search spec = %+v", search)
+	}
+	if !search.Scenarios[0].IsScenarioTableDriven || search.Scenarios[0].ScenarioTableRowIndex != 0 || search.Scenarios[1].ScenarioTableRowIndex != 1 {
+		t.Fatalf("search table rows = %+v", search.Scenarios)
+	}
+	if search.Scenarios[0].ScenarioDataTable == nil || search.Scenarios[0].ScenarioDataTable.Rows[0][0] != "laptop" {
+		t.Fatalf("search data = %+v", search.Scenarios[0].ScenarioDataTable)
 	}
 }
 
@@ -429,6 +516,9 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"accordion",
 		"clickIsExpandControl",
 		"@row-click",
+		"specBodyRows",
+		"kind: 'datarow'",
+		"data-kv",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
@@ -451,10 +541,11 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	for _, not := range []string{
 		"function buildItemNodes",
 		"id: 'suite'",
-		"kind: 'scenario'",
 		"el-tree",
 		"script-pane",
 		">脚本<",
+		"row.fileName",
+		`label="详情"`,
 	} {
 		if strings.Contains(html, not) {
 			t.Fatalf("generated HTML should not contain %q", not)
