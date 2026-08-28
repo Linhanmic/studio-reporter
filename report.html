@@ -47,10 +47,10 @@
       padding: 4px 8px; font-size: 11px; font-weight: 700; color: #5a6a7a;
       text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid #e2e8f0;
     }
-    .script-tree { flex: 1; overflow: auto; padding: 4px 6px; }
+    .script-tree { flex: 1; overflow: auto; padding: 2px 4px; }
     .result-pane { flex: 1; min-width: 0; overflow: auto; background: #f7fafc; padding: 6px 8px 16px; }
-    .tree-node { display: flex; align-items: center; gap: 4px; min-width: 0; width: 100%; padding-right: 2px; font-size: 12px; line-height: 1.25; }
-    .tree-node .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-node { display: flex; align-items: flex-start; gap: 3px; min-width: 0; width: 100%; padding-right: 2px; font-size: 12px; line-height: 1.25; }
+    .tree-node .name { flex: 1; min-width: 0; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
     .tree-node .time { color: #5a6a7a; font-variant-numeric: tabular-nums; font-size: 10px; flex: 0 0 auto; }
     .tree-pass .name { color: var(--pass); }
     .tree-fail .name { color: var(--fail); font-weight: 650; }
@@ -83,7 +83,17 @@
       flex: 0 0 auto; background: #eef3f8; border-top: 1px solid #c5d0dc;
       padding: 2px 10px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 11px;
     }
-    .el-tree-node__content { height: 22px; }
+    .script-tree .el-tree-node,
+    .script-tree .el-tree-node__content { white-space: normal; }
+    .script-tree .el-tree-node__content {
+      height: auto; min-height: 18px; align-items: flex-start;
+      padding-top: 1px; padding-right: 2px; padding-bottom: 1px;
+    }
+    .script-tree .el-tree-node__expand-icon { font-size: 10px; width: 10px; min-width: 10px; padding: 0; margin: 0; }
+    .script-tree .el-tree-node__content > .el-tree-node__expand-icon { margin-right: 0; }
+    .script-tree .el-tree-node__expand-icon.is-leaf {
+      width: 0; min-width: 0; overflow: hidden; visibility: hidden; padding: 0; margin: 0;
+    }
     @media (max-width: 900px) {
       .workspace { flex-direction: column; }
       .script-pane { width: 100%; max-width: none; height: 220px; border-right: 0; border-bottom: 1px solid #c5d0dc; }
@@ -151,6 +161,7 @@
               node-key="id"
               accordion
               highlight-current
+              :indent="4"
               :expand-on-click-node="false"
               :default-expanded-keys="store.treeExpanded"
               :filter-node-method="filterTreeNode"
@@ -337,30 +348,25 @@
       if (!step) return !!item.comment;
       return !!(step.errorMessage || step.stackTrace || step.skippedReason || (step.messages && step.messages.length) || step.failureScreenshot || (step.screenshots && step.screenshots.length) || step.preHookFailure || step.postHookFailure);
     };
-    function buildItemNodes(items, phase) {
-      return (items || []).map((item) => {
-        const children = item.kind === 'concept' && item.concept ? buildItemNodes(item.concept.items, 'Step') : [];
-        return {
-          id: item.id, label: itemText(item) || (item.kind === 'comment' ? '注释' : '步骤'),
-          kind: item.kind, phase, verdict: itemVerdict(item), duration: itemDuration(item),
-          executionTime: itemTime(item), children
-        };
-      });
-    }
     function sumTime(nodes) {
       return (nodes || []).reduce((n, c) => n + (c.executionTime || 0), 0);
     }
+    function specFolderTrail(spec) {
+      const folders = (spec.folders || []).slice();
+      if (!folders.length || folders[0] !== 'specs') folders.unshift('specs');
+      return folders;
+    }
+    function emptySpecsRoot() {
+      return { id: 'folder:specs', label: 'specs', kind: 'folder', verdict: 'none', duration: '', executionTime: 0, children: [] };
+    }
     function buildTree(report) {
       report = ensureReport(report);
-      const root = {
-        id: 'suite', label: report.projectName, kind: 'suite', verdict: report.verdict,
-        duration: report.duration, executionTime: report.executionTime, children: []
-      };
+      const virtual = { children: [] };
       const folders = {};
       (report.specs || []).forEach((spec) => {
-        let parent = root;
+        let parent = virtual;
         const trail = [];
-        (spec.folders || []).forEach((name) => {
+        specFolderTrail(spec).forEach((name) => {
           trail.push(name);
           const id = 'folder:' + trail.join('/');
           if (!folders[id]) {
@@ -372,20 +378,7 @@
         });
         parent.children.push({
           id: spec.id, label: spec.heading, kind: 'spec', spec, verdict: spec.verdict,
-          duration: spec.duration, executionTime: spec.executionTime,
-          children: (spec.scenarios || []).map((scn) => {
-            const children = [];
-            if ((scn.contexts || []).length) {
-              const ctx = buildItemNodes(scn.contexts, 'Context');
-              children.push({ id: scn.id + '-phase-ctx', label: 'Context', kind: 'phase', verdict: 'none', executionTime: sumTime(ctx), duration: formatDuration(sumTime(ctx)), children: ctx });
-            }
-            children.push.apply(children, buildItemNodes(scn.items, 'Step'));
-            if ((scn.teardowns || []).length) {
-              const td = buildItemNodes(scn.teardowns, 'Teardown');
-              children.push({ id: scn.id + '-phase-td', label: 'Teardown', kind: 'phase', verdict: 'none', executionTime: sumTime(td), duration: formatDuration(sumTime(td)), children: td });
-            }
-            return { id: scn.id, label: scn.heading, kind: 'scenario', specId: spec.id, scn, verdict: scn.verdict, duration: scn.duration, executionTime: scn.executionTime, children };
-          })
+          duration: spec.duration, executionTime: spec.executionTime, children: []
         });
       });
       const roll = (node) => {
@@ -396,6 +389,7 @@
           node.verdict = (node.children || []).reduce((v, c) => worse(v, c.verdict || 'pass'), 'pass');
         }
       };
+      const root = folders['folder:specs'] || emptySpecsRoot();
       roll(root);
       return [root];
     }
@@ -507,9 +501,10 @@
       return out;
     }
     function accordionTreeKeys(nodes, ids) {
-      let next = ['suite'];
+      const roots = (nodes || []).map((n) => n.id);
+      let next = roots.slice();
       (ids || []).forEach((id) => {
-        if (id === 'suite') return;
+        if (roots.indexOf(id) >= 0) return;
         const found = findTreeNode(nodes, id);
         if (!found) {
           if (next.indexOf(id) < 0) next.push(id);
@@ -521,7 +516,7 @@
           drop.add(s.id);
           treeDescendantIds(s).forEach((d) => drop.add(d));
         });
-        next = next.filter((x) => x === 'suite' || x === id || !drop.has(x));
+        next = next.filter((x) => roots.indexOf(x) >= 0 || x === id || !drop.has(x));
         if (next.indexOf(id) < 0) next.push(id);
       });
       return next;
@@ -533,14 +528,21 @@
       return accordionPath(report);
     }
     function treeExpandedKeys(nodes) {
-      const ids = ['suite'];
+      const ids = [];
       const pick = (list) => {
         if (!list || !list.length) return;
-        const node = list.find((n) => n.verdict === 'fail') || list[0];
-        if (node && node.id && node.id !== 'suite') ids.push(node.id);
-        if (node) pick(node.children);
+        const folders = list.filter((n) => n.kind === 'folder');
+        if (!folders.length) return;
+        const node = folders.find((n) => n.verdict === 'fail') || folders[0];
+        ids.push(node.id);
+        pick(node.children);
       };
-      if (nodes && nodes[0]) pick(nodes[0].children);
+      (nodes || []).forEach((n) => {
+        if (n.kind === 'folder') {
+          ids.push(n.id);
+          pick(n.children);
+        }
+      });
       return ids;
     }
 
@@ -553,7 +555,7 @@
         rev: 0,
         filter: 'all',
         query: '',
-        selected: 'suite',
+        selected: 'folder:specs',
         expanded: defaultExpanded(ensureReport(seeded)),
         treeExpanded: treeExpandedKeys(buildTree(ensureReport(seeded)))
       }),
@@ -729,7 +731,7 @@
           return (this.store.report.specs || []).filter((spec) => this.specVisible(spec));
         },
         selectedLabel() {
-          if (this.store.selected === 'suite') return this.store.report.projectName;
+          if (this.store.selected === 'folder:specs' || this.store.selected === 'suite') return this.store.report.projectName;
           const spec = (this.store.report.specs || []).find((s) => s.id === this.store.selected);
           if (spec) return spec.heading;
           for (const s of this.store.report.specs || []) {
@@ -797,11 +799,6 @@
         onTreeClick(data) {
           this.store.selected = data.id;
           if (data.kind === 'spec') this.store.ensureExpanded(data.id);
-          if (data.kind === 'scenario') this.store.ensureExpanded(data.specId, data.id);
-          if (data.kind === 'concept' || data.kind === 'step') {
-            const path = this.findItemPath(data.id);
-            if (path.length) this.store.ensureExpanded.apply(this.store, path);
-          }
           this.store.persistView();
         },
         onTreeExpand(data) {
@@ -816,29 +813,10 @@
           this.store.treeExpanded = this.store.treeExpanded.filter((id) => !drop.has(id));
           this.store.persistView();
         },
-        findItemPath(id) {
-          for (const spec of this.store.report.specs || []) {
-            for (const scn of spec.scenarios || []) {
-              const itemPath = [];
-              const walk = (items, trail) => {
-                for (const item of items || []) {
-                  if (item.id === id) {
-                    itemPath.push.apply(itemPath, trail.concat([item.id]));
-                    return true;
-                  }
-                  if (item.kind === 'concept' && item.concept && walk(item.concept.items, trail.concat([item.id]))) return true;
-                }
-                return false;
-              };
-              if (walk(scenarioAllItems(scn), [])) return [spec.id, scn.id].concat(itemPath);
-            }
-          }
-          return [];
-        },
         onSpecClick(row) { this.store.selected = row.id; this.store.persistView(); },
         onScenarioClick(row) { this.store.selected = row.id; this.store.persistView(); },
         filterTreeNode(value, data) {
-          if (this.store.filter !== 'all' && data.verdict && data.kind !== 'folder' && data.kind !== 'phase' && data.kind !== 'suite') {
+          if (this.store.filter !== 'all' && data.verdict && data.kind !== 'folder') {
             if (data.verdict !== this.store.filter && data.verdict !== 'none') return false;
           }
           const q = String(value || '').trim().toLowerCase();

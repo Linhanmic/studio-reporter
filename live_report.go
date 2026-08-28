@@ -389,6 +389,7 @@ func (p *livePublisher) publishLocked(writeHTML bool) {
 			logLive("write html: %v", err)
 		} else {
 			p.htmlWritten = true
+			openReportPage(filepath.Join(p.dir, reportIndexFile))
 		}
 	}
 	if err := writeLiveSnapshot(p.dir, &LiveSnapshot{Rev: p.rev, Running: p.running, Report: p.report}); err != nil {

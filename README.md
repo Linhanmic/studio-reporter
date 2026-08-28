@@ -47,6 +47,7 @@ go build -o bin/studio-reporter ./...
 | `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
 | `overwrite_reports` | No | `true` | Overwrite `reports/studio-report` on each run. Set `false` to keep timestamped copies |
 | `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to disable HTML report generation |
+| `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Set to `true` to skip opening the report page in a browser |
 
 ### Gauge Plugin Installation
 
@@ -88,7 +89,7 @@ The report includes:
 
 - Overall verdict, duration, environment, and success rate
 - Vue 3 + Element Plus + Pinia UI
-- A compact script tree (`el-tree`) grouped by spec folders, with duration on every node
+- A compact script tree (`el-tree`) that starts at `specs` and lists folders down to specification names only
 - Slim expandable result tables in accordion mode: at each level only one row is expanded
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
@@ -96,7 +97,7 @@ The report includes:
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 - Filter by verdict and search across specs, scenarios, and steps
 
-Open the file in a browser:
+The plugin opens `index.html` in the default browser the first time the report is written (live run or suite end). Set `GAUGE_STUDIO_SKIP_BROWSER=true` to keep the file on disk only. You can still open it yourself:
 
 ```bash
 # Linux

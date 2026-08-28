@@ -215,6 +215,37 @@ func sampleSuite() *gauge_messages.ProtoSuiteResult {
 					},
 				},
 			},
+			{
+				Failed:        false,
+				ExecutionTime: 12,
+				ScenarioCount: 1,
+				ProtoSpec: &gauge_messages.ProtoSpec{
+					SpecHeading: "Very long payment gateway specification covering nested directory wrapping",
+					FileName:    "specs/modules/payments/gateway/very-long-payment-gateway-specification.spec",
+					Items: []*gauge_messages.ProtoItem{
+						{
+							ItemType: gauge_messages.ProtoItem_Scenario,
+							Scenario: &gauge_messages.ProtoScenario{
+								ScenarioHeading: "Charge card",
+								ExecutionTime:   12,
+								ExecutionStatus: gauge_messages.ExecutionStatus_PASSED,
+								ScenarioItems: []*gauge_messages.ProtoItem{
+									{
+										ItemType: gauge_messages.ProtoItem_Step,
+										Step: &gauge_messages.ProtoStep{
+											ActualText: "Charge 1",
+											ParsedText: "Charge {}",
+											StepExecutionResult: &gauge_messages.ProtoStepExecutionResult{
+												ExecutionResult: &gauge_messages.ProtoExecutionResult{Failed: false, ExecutionTime: 12},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -230,13 +261,13 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	if r.Duration != "00:00:01.234" {
 		t.Fatalf("duration = %s", r.Duration)
 	}
-	if len(r.Specs) != 3 {
+	if len(r.Specs) != 4 {
 		t.Fatalf("specs = %d", len(r.Specs))
 	}
-	if r.Summary.Specs != (Counts{Total: 3, Passed: 1, Failed: 1, Skipped: 1}) {
+	if r.Summary.Specs != (Counts{Total: 4, Passed: 2, Failed: 1, Skipped: 1}) {
 		t.Fatalf("spec counts = %+v", r.Summary.Specs)
 	}
-	if r.Summary.Scenarios != (Counts{Total: 3, Passed: 1, Failed: 1, Skipped: 1}) {
+	if r.Summary.Scenarios != (Counts{Total: 4, Passed: 2, Failed: 1, Skipped: 1}) {
 		t.Fatalf("scenario counts = %+v", r.Summary.Scenarios)
 	}
 	if r.Summary.Steps.Total < 4 || r.Summary.Steps.Failed != 1 || r.Summary.Steps.Skipped != 1 {
@@ -305,6 +336,13 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	}
 	if r.Specs[2].Verdict != verdictSkip || r.Specs[2].Errors[0].Message != "missing step" {
 		t.Fatalf("skipped spec = %+v", r.Specs[2])
+	}
+	nested := r.Specs[3]
+	if nested.Heading != "Very long payment gateway specification covering nested directory wrapping" {
+		t.Fatalf("nested spec heading = %s", nested.Heading)
+	}
+	if got := strings.Join(nested.Folders, "/"); got != "specs/modules/payments/gateway" {
+		t.Fatalf("nested folders = %v", nested.Folders)
 	}
 }
 
@@ -384,6 +422,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"Test Report Viewer",
 		"el-table",
 		"el-tree",
+		`:indent="4"`,
+		"folder:specs",
+		"kind: 'spec'",
+		"children: []",
 		"运行时间",
 		"脚本",
 		"pinia",
@@ -399,6 +441,8 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"Context",
 		"Teardown",
 		`"folders":["specs","auth"]`,
+		`"folders":["specs","modules","payments","gateway"]`,
+		"Very long payment gateway specification covering nested directory wrapping",
 		`"verdict":"fail"`,
 		"assets/vue.global.prod.js",
 		"assets/element-plus.full.min.js",
@@ -406,6 +450,16 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("generated HTML missing %q", want)
+		}
+	}
+	for _, not := range []string{
+		"function buildItemNodes",
+		"id: 'suite'",
+		"kind: 'scenario'",
+		`:indent="18"`,
+	} {
+		if strings.Contains(html, not) {
+			t.Fatalf("generated HTML should not contain %q", not)
 		}
 	}
 	if _, err := os.Stat(generated.JSONPath); err != nil {
@@ -431,6 +485,14 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	}
 	if !strings.Contains(string(regen), "Pay with card") {
 		t.Fatal("regenerated report missing scenario")
+	}
+	if dest := strings.TrimSpace(os.Getenv("STUDIO_REPORT_DEMO")); dest != "" {
+		if err := os.MkdirAll(dest, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.CopyFS(dest, os.DirFS(generated.Dir)); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 

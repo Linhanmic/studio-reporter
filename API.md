@@ -35,6 +35,7 @@ studio-reporter websocket: ws://127.0.0.1:<port>
 | `gauge_reports_dir` | No | `reports` | Directory for generated HTML reports |
 | `overwrite_reports` | No | `true` | Overwrite the previous HTML report on each run |
 | `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to skip HTML report generation |
+| `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Set to `true` to skip opening the HTML report in a browser |
 
 ### Connection Behavior
 
@@ -333,7 +334,8 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
 On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Element Plus, and Pinia:
 
 - Top title bar, summary cards, and verdict filter toolbar
-- Left **script tree** (`el-tree`): suite → folders → specs → scenarios → context / steps / concepts
+- Left **script tree** (`el-tree`): `specs` → nested folders → specification names (scenarios stay in the result tables)
+- The first written `index.html` is opened in the default browser unless `GAUGE_STUDIO_SKIP_BROWSER` is set
 - Main **compact expandable tables** in accordion mode (`el-table` expand rows): only one node at the same level is expanded
 - Passed rows green, failed rows red
 - Runtime on every spec, scenario, concept, and step

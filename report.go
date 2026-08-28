@@ -283,6 +283,7 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 	}
 
 	log.Printf("studio-reporter: HTML report written to %s", indexPath)
+	openReportPage(indexPath)
 	return &GeneratedReport{Dir: dir, IndexPath: indexPath, JSONPath: jsonPath}, nil
 }
 
