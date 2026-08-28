@@ -1,47 +1,55 @@
-# Build script for studio-reporter plugin (Windows)
-# Usage: .\build.ps1 [platform] [arch]
+# Build a Gauge-installable zip for one platform (Windows).
+# Usage: .\build.ps1 [platform] [arch] [version]
+# Zip layout: plugin.json + bin/studio-reporter[.exe]
 
 param(
     [string]$Platform = "windows",
     [string]$Arch = "amd64",
-    [string]$Version = "0.1.0"
+    [string]$Version = ""
 )
 
-Write-Host "Building studio-reporter for $Platform/$Arch..." -ForegroundColor Green
+$ErrorActionPreference = "Stop"
+$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $Root
 
-# Create temp bin directory
-if (Test-Path "bin") {
-    Remove-Item -Recurse -Force "bin"
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $plugin = Get-Content -Raw -Path "plugin.json" | ConvertFrom-Json
+    $Version = $plugin.version
 }
-New-Item -ItemType Directory -Path "bin" | Out-Null
 
-# Create dist directory
+$archLabel = switch ($Arch) {
+    "amd64" { "x86_64" }
+    "386" { "x86" }
+    default { $Arch }
+}
+
+$binName = if ($Platform -eq "windows") { "studio-reporter.exe" } else { "studio-reporter" }
+
+Write-Host "Building studio-reporter $Version for $Platform/$Arch ($archLabel)..." -ForegroundColor Green
+
+$stage = Join-Path ([System.IO.Path]::GetTempPath()) ("studio-reporter-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path (Join-Path $stage "bin") | Out-Null
 if (-not (Test-Path "dist")) {
     New-Item -ItemType Directory -Path "dist" | Out-Null
 }
 
-# Set environment variables
-$env:GOOS = $Platform
-$env:GOARCH = $Arch
+try {
+    $env:CGO_ENABLED = "0"
+    $env:GOOS = $Platform
+    $env:GOARCH = $Arch
+    go build -trimpath -ldflags="-s -w" -o (Join-Path $stage "bin\$binName") .
+    Copy-Item "plugin.json" -Destination $stage
 
-# Build binary
-if ($Platform -eq "windows") {
-    go build -o bin\studio-reporter.exe ./...
-} else {
-    go build -o bin\studio-reporter ./...
+    $zipName = "studio-reporter-$Version-$Platform.$archLabel.zip"
+    $zipPath = Join-Path $Root "dist\$zipName"
+    if (Test-Path $zipPath) {
+        Remove-Item -Force $zipPath
+    }
+    Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zipPath -Force
+    Write-Host "Build complete: dist\$zipName" -ForegroundColor Green
 }
-
-# Copy plugin.json to bin
-Copy-Item "plugin.json" -Destination "bin/"
-
-# Create zip filename
-$zipName = "studio-reporter-$Version-$Platform.$Arch.zip"
-$zipPath = "dist\$zipName"
-
-# Create zip file
-Compress-Archive -Path "bin\*" -DestinationPath $zipPath -Force
-
-# Clean up bin directory
-Remove-Item -Recurse -Force "bin"
-
-Write-Host "Build complete: $zipPath" -ForegroundColor Green
+finally {
+    if (Test-Path $stage) {
+        Remove-Item -Recurse -Force $stage
+    }
+}

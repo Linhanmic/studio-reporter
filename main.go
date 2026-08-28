@@ -51,9 +51,28 @@ func main() {
 	// 第三个参数是帮助说明，运行 --help 时会显示
 	// start 是 *bool 类型（指针），所以后面要用 *start 来取值
 	start := flag.Bool("start", false, "Start the reporter gRPC server for Gauge execution")
-	// 真正去解析命令行输入
-	// 在这行之前，定义的所有 flag 都只是"声明"，Parse() 之后才会拿到真正的值
+	input := flag.String("input", "", "Regenerate an HTML report from last_run_result.json")
+	out := flag.String("out", "", "Output directory for regenerated HTML report")
+	serve := flag.Bool("serve", false, "Serve the studio-report directory over HTTP for history management")
+	serveDir := flag.String("dir", "", "Directory for --serve (default: reports/studio-report)")
+	serveAddr := flag.String("addr", "127.0.0.1:8765", "Listen address for --serve")
 	flag.Parse()
+
+	if *serve {
+		if err := serveReportDir(*serveDir, *serveAddr); err != nil {
+			log.Fatalf("studio-reporter: %v", err)
+		}
+		return
+	}
+
+	if *input != "" {
+		generated, err := generateReportFromJSON(*input, *out)
+		if err != nil {
+			log.Fatalf("studio-reporter: %v", err)
+		}
+		fmt.Printf("HTML report written to %s\n", generated.IndexPath)
+		return
+	}
 
 	// 保护性检查：如果两个启动条件都不满足，就打印帮助信息并退出
 	// !*start：用户没有传 --start 参数
@@ -70,7 +89,10 @@ func main() {
 	// newWSForwarder() 是在其他文件中定义的函数（不在本文件中），创建一个 WebSocket 转发器对象
 	// 这个转发器负责把 Gauge 测试执行的事件通过 WebSocket 发送给前端 Studio 界面
 	forwarder := newWSForwarder()
-	// 调用该对象的 connect 方法，建立 WebSocket 连接
+	if err := forwarder.listen(); err != nil {
+		log.Fatalf("studio-reporter: %v", err)
+	}
+	// 若仍设置了 GAUGE_STUDIO_WS，则额外作为客户端连出去（可选，不再依赖注入）
 	forwarder.connect()
 
 	// if err := ...; err != nil 是 Go 的惯用写法：在 if 语句中声明变量并检查错误

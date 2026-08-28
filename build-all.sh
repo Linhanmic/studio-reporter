@@ -1,66 +1,39 @@
 #!/bin/bash
 
-# Cross-platform build script for studio-reporter plugin
+# Cross-platform Gauge plugin packages.
 # Usage: ./build-all.sh [version]
 
-set -e
+set -euo pipefail
 
-VERSION=${1:-"0.1.0"}
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+
+VERSION=${1:-}
 
 echo "Building studio-reporter for all platforms..."
-
-# Create dist directory
 mkdir -p dist
 
-# Build for Linux amd64
-echo "Building for Linux amd64..."
-rm -rf bin && mkdir -p bin
-GOOS=linux GOARCH=amd64 go build -o bin/studio-reporter ./...
-cp plugin.json bin/
-cd bin && zip -r "../dist/studio-reporter-${VERSION}-linux.amd64.zip" . && cd ..
-rm -rf bin
+targets=(
+  "linux amd64"
+  "linux arm64"
+  "darwin amd64"
+  "darwin arm64"
+  "windows amd64"
+  "windows arm64"
+)
 
-# Build for Linux arm64
-echo "Building for Linux arm64..."
-rm -rf bin && mkdir -p bin
-GOOS=linux GOARCH=arm64 go build -o bin/studio-reporter ./...
-cp plugin.json bin/
-cd bin && zip -r "../dist/studio-reporter-${VERSION}-linux.arm64.zip" . && cd ..
-rm -rf bin
+for target in "${targets[@]}"; do
+  # shellcheck disable=SC2086
+  set -- $target
+  if [ -n "$VERSION" ]; then
+    "$ROOT/build.sh" "$1" "$2" "$VERSION"
+  else
+    "$ROOT/build.sh" "$1" "$2"
+  fi
+done
 
-# Build for macOS amd64
-echo "Building for macOS amd64..."
-rm -rf bin && mkdir -p bin
-GOOS=darwin GOARCH=amd64 go build -o bin/studio-reporter ./...
-cp plugin.json bin/
-cd bin && zip -r "../dist/studio-reporter-${VERSION}-darwin.amd64.zip" . && cd ..
-rm -rf bin
-
-# Build for macOS arm64 (Apple Silicon)
-echo "Building for macOS arm64..."
-rm -rf bin && mkdir -p bin
-GOOS=darwin GOARCH=arm64 go build -o bin/studio-reporter ./...
-cp plugin.json bin/
-cd bin && zip -r "../dist/studio-reporter-${VERSION}-darwin.arm64.zip" . && cd ..
-rm -rf bin
-
-# Build for Windows amd64
-echo "Building for Windows amd64..."
-rm -rf bin && mkdir -p bin
-GOOS=windows GOARCH=amd64 go build -o bin/studio-reporter.exe ./...
-cp plugin.json bin/
-cd bin && zip -r "../dist/studio-reporter-${VERSION}-windows.amd64.zip" . && cd ..
-rm -rf bin
-
-# Build for Windows arm64
-echo "Building for Windows arm64..."
-rm -rf bin && mkdir -p bin
-GOOS=windows GOARCH=arm64 go build -o bin/studio-reporter.exe ./...
-cp plugin.json bin/
-cd bin && zip -r "../dist/studio-reporter-${VERSION}-windows.arm64.zip" . && cd ..
-rm -rf bin
-
+echo
 echo "All builds complete!"
-echo ""
+echo
 echo "Distribution packages:"
 ls -la dist/
