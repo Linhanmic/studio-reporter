@@ -78,11 +78,13 @@ func sampleSuite() *gauge_messages.ProtoSuiteResult {
 													Value:         "admin",
 												}},
 											},
+											PreHookMessages:  []string{"hook: before type"},
+											PostHookMessages: []string{"hook: after type"},
 											StepExecutionResult: &gauge_messages.ProtoStepExecutionResult{
 												ExecutionResult: &gauge_messages.ProtoExecutionResult{
 													Failed:        false,
 													ExecutionTime: 80,
-													Message:       []string{"typed admin"},
+													Message:       []string{"typed admin", "login form ready"},
 												},
 											},
 										},

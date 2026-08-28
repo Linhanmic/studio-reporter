@@ -175,7 +175,7 @@
         </div>
       </header>
       <div class="toolbar">
-        <el-radio-group class="nav-group" :model-value="currentPage" size="small" @change="goPage">
+        <el-radio-group class="nav-group" :model-value="currentPage" size="small" @update:model-value="goPage">
           <el-radio-button value="overview">总览</el-radio-button>
           <el-radio-button value="detail">详情</el-radio-button>
           <el-radio-button value="history">历史</el-radio-button>

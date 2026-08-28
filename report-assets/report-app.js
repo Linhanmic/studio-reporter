@@ -708,7 +708,8 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
           };
         },
         goPage(name) {
-          const next = name || 'overview';
+          const next = String(name || 'overview');
+          if (!this.$router) return;
           if (this.$route && this.$route.name === next) return;
           this.$router.push({ name: next });
         },
