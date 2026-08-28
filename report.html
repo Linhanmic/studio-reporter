@@ -442,18 +442,7 @@
       (scn.contexts || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Context' })));
       (scn.items || []).forEach((it) => rows.push(Object.assign({}, it, { phase: it.kind === 'concept' ? 'Concept' : 'Step' })));
       (scn.teardowns || []).forEach((it) => rows.push(Object.assign({}, it, { phase: 'Teardown' })));
-      const q = (store.query || '').trim().toLowerCase();
-      if (store.filter === 'all' && !q) return rows;
-      const nodeVisible = (verdict, texts) => {
-        if (store.filter !== 'all' && verdict !== store.filter) return false;
-        return matchQuery(q, texts);
-      };
-      const matchItem = (item) => {
-        if (nodeVisible(itemVerdict(item), [itemText(item), item.phase])) return true;
-        if (item.kind === 'concept' && item.concept) return (item.concept.items || []).some(matchItem);
-        return false;
-      };
-      return rows.filter(matchItem);
+      return rows;
     };
     function clickIsExpandControl(column, event) {
       if (column && column.type === 'expand') return true;
@@ -857,21 +846,21 @@
       },
       methods: {
         verdictLabel, tagType,
-        nodeVisible(verdict, texts) {
-          if (this.store.filter !== 'all' && verdict !== this.store.filter) return false;
-          return matchQuery(this.q, texts);
-        },
         specVisible(spec) {
           if (this.store.filter === 'all' && !this.q) return true;
-          if (this.nodeVisible(spec.verdict, specTexts(spec))) return true;
+          if (!matchQuery(this.q, specTexts(spec))) return false;
+          if (this.store.filter === 'all') return true;
+          if (spec.verdict === this.store.filter) return true;
           return (spec.scenarios || []).some((scn) => this.scenarioVisible(scn));
         },
         scenarioVisible(scn) {
           if (this.store.filter === 'all' && !this.q) return true;
-          if (this.nodeVisible(scn.verdict, scenarioTexts(scn))) return true;
+          if (!matchQuery(this.q, scenarioTexts(scn))) return false;
+          if (this.store.filter === 'all') return true;
+          if (scn.verdict === this.store.filter) return true;
           let hit = false;
           walkItems(scenarioAllItems(scn), (item) => {
-            if (this.nodeVisible(itemVerdict(item), [itemText(item)])) hit = true;
+            if (itemVerdict(item) === this.store.filter) hit = true;
           });
           return hit;
         },
