@@ -52,10 +52,10 @@ go build -o bin/studio-reporter ./...
 
 ```bash
 # Install the plugin
-gauge install studio-reporter --file studio-reporter-0.2.0-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.2.1-linux.x86_64.zip
 
 # Or copy to Gauge plugin directory
-cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.2.0/
+cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.2.1/
 ```
 
 ## Usage
