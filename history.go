@@ -21,8 +21,10 @@ const (
 )
 
 // HistoryFile is the on-disk index of completed runs.
+// FormatVersion is bumped on breaking changes; see REPORT_FORMAT.md.
 type HistoryFile struct {
-	Runs []HistoryEntry `json:"runs"`
+	FormatVersion int            `json:"formatVersion"`
+	Runs          []HistoryEntry `json:"runs"`
 }
 
 // HistoryEntry is one completed (or current) report the hub can open.
@@ -228,6 +230,9 @@ func writeHistoryFile(root string, hist *HistoryFile) error {
 	if hist == nil {
 		hist = &HistoryFile{}
 	}
+	if hist.FormatVersion == 0 {
+		hist.FormatVersion = reportFormatVersion
+	}
 	var buf strings.Builder
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(true)
@@ -320,7 +325,7 @@ func copyDir(src, dest string) error {
 func reservedHistoryName(id string) bool {
 	switch id {
 	case "", ".", "..", archivesFolderName, "assets", "images",
-		reportIndexFile, historyFileName, historyJSFile, reportJSONFile, liveReportJSONFile, liveReportJSFile:
+		reportIndexFile, manageIndexFile, historyFileName, historyJSFile, reportJSONFile, liveReportJSONFile, liveReportJSFile:
 		return true
 	default:
 		return strings.ContainsAny(id, `/\`)

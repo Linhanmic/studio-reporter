@@ -33,6 +33,7 @@ func serveReportDir(dir, addr string) error {
 	}
 	log.Printf("studio-reporter: serving %s at http://%s/", abs, listener.Addr())
 	fmt.Printf("studio-reporter serve: http://%s/\n", listener.Addr())
+	fmt.Printf("studio-reporter manage: http://%s/%s\n", listener.Addr(), manageIndexFile)
 	return http.Serve(listener, historyServeMux(abs))
 }
 

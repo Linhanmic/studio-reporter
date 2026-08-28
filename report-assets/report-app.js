@@ -1,6 +1,15 @@
 const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
     const seededEnvelope = rawSeed && rawSeed.report ? rawSeed : { rev: 0, running: false, report: rawSeed };
     const seeded = JSON.parse(JSON.stringify(seededEnvelope.report || {}));
+    // ?run=archives/<id> opens an archived run from the report hub (see manage.html).
+    const runDir = (() => {
+      try { return safeRelDir(new URLSearchParams(window.location.search).get('run') || ''); } catch (e) { return ''; }
+    })();
+    const assetHref = (p) => {
+      p = String(p == null ? '' : p);
+      if (!p || !runDir || /^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(p)) return p;
+      return runDir + '/' + p;
+    };
     const emptyCounts = () => ({ total: 0, passed: 0, failed: 0, skipped: 0 });
     const ensureReport = (r) => {
       r = r || {};
@@ -308,23 +317,22 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
       return accordionPath(report);
     }
 
-    const VIEW_KEY = 'studio-report-view';
+    const VIEW_KEY = 'studio-report-view' + (runDir ? ':' + runDir : '');
     const { createPinia, defineStore } = Pinia;
     const useReportStore = defineStore('report', {
       state: () => ({
-        report: ensureReport(seeded),
-        running: !!seededEnvelope.running,
-        rev: Number(seededEnvelope.rev) || 0,
+        report: ensureReport(runDir ? {} : seeded),
+        running: runDir ? false : !!seededEnvelope.running,
+        rev: runDir ? 0 : (Number(seededEnvelope.rev) || 0),
         filter: 'all',
         query: '',
         selected: '',
-        expanded: defaultExpanded(ensureReport(seeded)),
+        expanded: runDir ? [] : defaultExpanded(ensureReport(seeded)),
         followLive: true,
-        archiveId: '',
-        currentSpecId: seededEnvelope.currentSpecId || '',
-        currentScenarioId: seededEnvelope.currentScenarioId || '',
-        startedAt: Number(seededEnvelope.startedAt) || 0,
-        history: { runs: [] },
+        archiveDir: runDir,
+        currentSpecId: runDir ? '' : (seededEnvelope.currentSpecId || ''),
+        currentScenarioId: runDir ? '' : (seededEnvelope.currentScenarioId || ''),
+        startedAt: runDir ? 0 : (Number(seededEnvelope.startedAt) || 0),
         clock: Date.now()
       }),
       actions: {
@@ -348,16 +356,17 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
           } catch (e) {}
         },
         applyLive(payload, scroll) {
-          if (this.archiveId) return;
           if (!payload || !payload.report) return;
           const rev = Number(payload.rev) || 0;
           if (rev && this.rev && rev <= this.rev) {
             this.running = !!payload.running;
             return;
           }
+          const firstLoad = !this.rev && this.archiveDir;
           this.report = ensureReport(JSON.parse(JSON.stringify(payload.report)));
-          this.running = !!payload.running;
+          this.running = this.archiveDir ? false : !!payload.running;
           this.rev = rev || this.rev;
+          if (firstLoad && !this.expanded.length) this.expanded = defaultExpanded(this.report);
           this.currentSpecId = payload.currentSpecId || '';
           this.currentScenarioId = payload.currentScenarioId || '';
           this.startedAt = Number(payload.startedAt) || this.startedAt;
@@ -490,7 +499,7 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
       props: { items: { type: Array, default: () => [] }, expanded: { type: Array, default: () => [] } },
       emits: ['expand-change'],
       methods: {
-        tagType, verdictLabel, itemVerdict, itemDuration, itemHasDetail, stepHTML, stepOutputs,
+        tagType, verdictLabel, itemVerdict, itemDuration, itemHasDetail, stepHTML, stepOutputs, assetHref,
         typeLabel(row) {
           if (row.phase === 'Context') return 'Context';
           if (row.phase === 'Teardown') return 'Teardown';
@@ -535,7 +544,7 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
                   <div v-if="(row.step || row.concept.step).skippedReason" class="msg">跳过：{{ (row.step || row.concept.step).skippedReason }}</div>
                   <pre v-if="(row.step || row.concept.step).stackTrace" class="stack">{{ (row.step || row.concept.step).stackTrace }}</pre>
                   <div v-if="shots(row).length" class="shots">
-                    <a v-for="p in shots(row)" :key="p" :href="p" target="_blank"><img :src="p" alt="screenshot"></a>
+                    <a v-for="p in shots(row)" :key="p" :href="assetHref(p)" target="_blank"><img :src="assetHref(p)" alt="screenshot"></a>
                   </div>
                 </template>
               </div>
@@ -596,9 +605,10 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
       return rel;
     }
     async function fetchLive() {
-      const json = await fetchJSON(['report.json']);
+      const base = runDir ? runDir + '/' : '';
+      const json = await fetchJSON([base + 'report.json']);
       if (json) return json;
-      return loadScriptData('report-live.js', '__GAUGE_LIVE__');
+      return loadScriptData(base + 'report-live.js', '__GAUGE_LIVE__');
     }
     const reportViewMixin = {
       computed: {
@@ -724,8 +734,10 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
       },
       mounted() {
         this.pollLive();
-        this._liveTimer = setInterval(() => this.pollLive(), 700);
-        this._tickTimer = setInterval(() => { this.store.clock = Date.now(); }, 250);
+        if (!this.store.archiveDir) {
+          this._liveTimer = setInterval(() => this.pollLive(), 700);
+          this._tickTimer = setInterval(() => { this.store.clock = Date.now(); }, 250);
+        }
       },
       beforeUnmount() {
         if (this._liveTimer) clearInterval(this._liveTimer);

@@ -539,6 +539,9 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"safeRelDir",
 		"tone-pass",
 		"el-table__expand-icon--expanded::before",
+		`"formatVersion":1`,
+		"archiveDir",
+		"assetHref",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
@@ -599,6 +602,22 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(generated.Dir, liveReportJSONFile)); err != nil {
 		t.Fatalf("live report.json missing: %v", err)
+	}
+	liveJSON, err := os.ReadFile(filepath.Join(generated.Dir, liveReportJSONFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(liveJSON), `"formatVersion":1`) {
+		t.Fatalf("report.json missing formatVersion: %s", string(liveJSON)[:120])
+	}
+	managePage, err := os.ReadFile(filepath.Join(generated.Dir, manageIndexFile))
+	if err != nil {
+		t.Fatalf("manage.html missing: %v", err)
+	}
+	for _, want := range []string{"报告管理", "api/history/", "index.html?run=", "__GAUGE_HISTORY__"} {
+		if !strings.Contains(string(managePage), want) {
+			t.Fatalf("manage.html missing %q", want)
+		}
 	}
 	root := filepath.Join(dir, reportFolderName)
 	if _, err := os.Stat(filepath.Join(root, historyFileName)); err != nil {

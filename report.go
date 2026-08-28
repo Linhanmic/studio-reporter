@@ -30,6 +30,8 @@ const (
 	defaultReportsDir        = "reports"
 	reportFolderName         = "studio-report"
 	reportIndexFile          = "index.html"
+	manageIndexFile          = "manage.html"
+	reportFormatVersion      = 1
 	reportJSONFile           = "last_run_result.json"
 	liveReportJSONFile       = "report.json"
 	liveReportJSFile         = "report-live.js"
@@ -209,6 +211,9 @@ func writeReportAssets(dir string) error {
 		if err := os.WriteFile(filepath.Join(destDir, name), data, 0o644); err != nil {
 			return fmt.Errorf("write asset %s: %w", name, err)
 		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, manageIndexFile), manageHTMLPage, 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", manageIndexFile, err)
 	}
 	return nil
 }
@@ -1082,6 +1087,9 @@ func renderSnapshotHTML(snap *LiveSnapshot) ([]byte, error) {
 	}
 	if snap.Report == nil {
 		snap.Report = &Report{ProjectName: "Gauge Suite", Duration: formatDuration(0), Verdict: verdictNone}
+	}
+	if snap.FormatVersion == 0 {
+		snap.FormatVersion = reportFormatVersion
 	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)

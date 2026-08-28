@@ -44,6 +44,9 @@ func TestRecordAndDeleteHistory(t *testing.T) {
 	if err := json.Unmarshal(raw, &hist); err != nil {
 		t.Fatal(err)
 	}
+	if hist.FormatVersion != reportFormatVersion {
+		t.Fatalf("history formatVersion = %d", hist.FormatVersion)
+	}
 	if len(hist.Runs) != 1 {
 		t.Fatalf("runs = %+v", hist.Runs)
 	}

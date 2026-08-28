@@ -1,6 +1,7 @@
 # Binaries
 bin/
 dist/
+/studio-reporter
 *.exe
 *.exe~
 *.dll

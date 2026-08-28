@@ -14,7 +14,9 @@ import (
 )
 
 // LiveSnapshot is the JSON envelope the Vue/Pinia viewer polls.
+// FormatVersion is bumped on breaking changes; see REPORT_FORMAT.md.
 type LiveSnapshot struct {
+	FormatVersion     int     `json:"formatVersion"`
 	Rev               int64   `json:"rev"`
 	Running           bool    `json:"running"`
 	Report            *Report `json:"report"`
@@ -43,6 +45,9 @@ func newLivePublisher() *livePublisher {
 func writeLiveSnapshot(dir string, snap *LiveSnapshot) error {
 	if snap == nil || snap.Report == nil {
 		return fmt.Errorf("live snapshot is empty")
+	}
+	if snap.FormatVersion == 0 {
+		snap.FormatVersion = reportFormatVersion
 	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)

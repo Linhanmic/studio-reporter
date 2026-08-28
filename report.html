@@ -140,6 +140,7 @@
           Test Report Viewer — {{ store.report.projectName }}
           <el-tag v-if="store.running" type="warning" size="small" effect="dark">实时</el-tag>
           <el-tag v-else type="success" size="small" effect="dark">已完成</el-tag>
+          <el-tag v-if="store.archiveDir" type="info" size="small" effect="dark">归档</el-tag>
           <span v-if="store.running && liveNowLabel" class="live-now">当前：{{ liveNowLabel }}</span>
         </h1>
         <div class="meta">{{ store.report.environment || '-' }} · {{ store.report.timestamp || '' }} · 总耗时 {{ displayDuration }}</div>
