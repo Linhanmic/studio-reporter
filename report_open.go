@@ -36,7 +36,7 @@ func openReportPage(indexPath string) {
 		log.Printf("studio-reporter: open report: %v", err)
 		return
 	}
-	go openReportOnce.Do(func() {
+	openReportOnce.Do(func() {
 		if err := openInBrowser(abs); err != nil {
 			log.Printf("studio-reporter: open report page: %v", err)
 			return
@@ -46,7 +46,12 @@ func openReportPage(indexPath string) {
 }
 
 func openInBrowser(path string) error {
-	return browserCommand(path).Start()
+	cmd := browserCommand(path)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go func() { _ = cmd.Wait() }()
+	return nil
 }
 
 func browserCommand(path string) *exec.Cmd {
