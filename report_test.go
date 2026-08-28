@@ -528,6 +528,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"历史",
 		"currentSpecId",
 		"followLive",
+		"safeRelDir",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",

@@ -297,6 +297,7 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 	if err := recordCompletedRun(dir, report); err != nil {
 		log.Printf("studio-reporter: history: %v", err)
 	}
+	openReportPage(indexPath)
 	return &GeneratedReport{Dir: dir, IndexPath: indexPath, JSONPath: jsonPath}, nil
 }
 

@@ -134,3 +134,65 @@ func TestRecountAlwaysUpdatesSuccessRate(t *testing.T) {
 		t.Fatalf("successRate = %v", r.SuccessRate)
 	}
 }
+
+func TestDeleteHistoryDoesNotRemoveHubFiles(t *testing.T) {
+	root := t.TempDir()
+	hub := filepath.Join(root, reportFolderName)
+	if err := os.MkdirAll(hub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	index := filepath.Join(hub, reportIndexFile)
+	if err := os.WriteFile(index, []byte("<html></html>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := deleteHistoryRun(hub, reportIndexFile); err == nil {
+		t.Fatal("expected error deleting index.html")
+	}
+	if _, err := os.Stat(index); err != nil {
+		t.Fatal("hub index.html must remain")
+	}
+}
+
+func TestRecordCompletedRunIgnoresExternalDir(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv(reportsDirEnv, root)
+	out := filepath.Join(root, "elsewhere")
+	if err := os.MkdirAll(out, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := recordCompletedRun(out, toReport(sampleSuite())); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, reportFolderName, historyFileName)); err == nil {
+		t.Fatal("external --out should not write project history")
+	}
+}
+
+func TestHistoryDeleteRejectsNonRunFiles(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(reportsDirEnv, dir)
+	t.Setenv(overwriteReportsEnv, "true")
+	runDir := filepath.Join(dir, reportFolderName)
+	if err := os.MkdirAll(runDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	report := toReport(sampleSuite())
+	if err := os.WriteFile(filepath.Join(runDir, reportIndexFile), []byte("<html></html>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeLiveSnapshot(runDir, &LiveSnapshot{Rev: 1, Running: false, Report: report}); err != nil {
+		t.Fatal(err)
+	}
+	if err := recordCompletedRun(runDir, report); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, historyFileName+".bak"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := deleteHistoryRun(runDir, historyFileName); err == nil {
+		t.Fatal("should not delete history.json")
+	}
+	if _, err := os.Stat(filepath.Join(runDir, historyFileName)); err != nil {
+		t.Fatal("history.json missing after rejected delete")
+	}
+}

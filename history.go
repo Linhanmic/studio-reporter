@@ -45,24 +45,43 @@ func studioReportRoot() (string, error) {
 	return filepath.Join(base, reportFolderName), nil
 }
 
+func historyRootFor(runDir string) (string, bool) {
+	abs, err := filepath.Abs(runDir)
+	if err != nil {
+		return "", false
+	}
+	cur := abs
+	for i := 0; i < 5; i++ {
+		if filepath.Base(cur) == reportFolderName {
+			return cur, true
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			break
+		}
+		cur = parent
+	}
+	return "", false
+}
+
 func recordCompletedRun(runDir string, report *Report) error {
 	if runDir == "" || report == nil {
 		return nil
 	}
-	root, err := studioReportRoot()
-	if err != nil {
-		return err
+	root, ok := historyRootFor(runDir)
+	if !ok {
+		return nil
 	}
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return fmt.Errorf("create history root: %w", err)
 	}
 	absRun, err := filepath.Abs(runDir)
 	if err != nil {
-		absRun = runDir
+		return fmt.Errorf("resolve run dir: %w", err)
 	}
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
-		absRoot = root
+		return fmt.Errorf("resolve history root: %w", err)
 	}
 
 	entry := historyEntryFromReport(report)
@@ -71,8 +90,11 @@ func recordCompletedRun(runDir string, report *Report) error {
 		rel = ""
 	}
 	rel = filepath.ToSlash(rel)
+	if strings.Contains(rel, "..") {
+		return nil
+	}
 
-	if rel == "." || rel == "" || strings.HasPrefix(rel, "..") {
+	if rel == "." || rel == "" {
 		id := uniqueDirName(filepath.Join(absRoot, archivesFolderName), archiveStamp(report))
 		dest := filepath.Join(absRoot, archivesFolderName, id)
 		if err := copyRunSnapshot(absRun, dest); err != nil {
@@ -261,8 +283,9 @@ func copyFileIfExists(src, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		os.Remove(dest)
 		return err
 	}
 	return out.Close()
@@ -292,9 +315,27 @@ func copyDir(src, dest string) error {
 	return nil
 }
 
+func reservedHistoryName(id string) bool {
+	switch id {
+	case "", ".", "..", archivesFolderName, "assets", "images",
+		reportIndexFile, historyFileName, historyJSFile, reportJSONFile, liveReportJSONFile, liveReportJSFile:
+		return true
+	default:
+		return strings.ContainsAny(id, `/\`)
+	}
+}
+
+func isHistoryRunDir(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+	return fileExists(filepath.Join(path, reportIndexFile)) || fileExists(filepath.Join(path, liveReportJSONFile))
+}
+
 func deleteHistoryRun(root, id string) error {
 	id = filepath.Base(strings.TrimSpace(id))
-	if id == "" || id == "." || id == ".." || id == archivesFolderName || id == "assets" || id == "images" {
+	if reservedHistoryName(id) {
 		return fmt.Errorf("invalid history id")
 	}
 	absRoot, err := filepath.Abs(root)
@@ -311,10 +352,10 @@ func deleteHistoryRun(root, id string) error {
 		if err != nil {
 			continue
 		}
-		if abs == absRoot || !strings.HasPrefix(abs, absRoot+string(os.PathSeparator)) {
+		if abs == absRoot || !strings.HasPrefix(abs+string(os.PathSeparator), absRoot+string(os.PathSeparator)) {
 			continue
 		}
-		if !dirExists(abs) && !fileExists(abs) {
+		if !isHistoryRunDir(abs) {
 			continue
 		}
 		if err := os.RemoveAll(abs); err != nil {

@@ -919,10 +919,20 @@
       return new Promise((resolve) => {
         const s = document.createElement('script');
         s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'ts=' + Date.now();
-        s.onload = () => { const v = window[key]; resolve(v || null); s.remove(); };
+        s.onload = () => {
+          const v = window[key];
+          try { delete window[key]; } catch (e) { window[key] = null; }
+          resolve(v || null);
+          s.remove();
+        };
         s.onerror = () => { resolve(null); s.remove(); };
         document.head.appendChild(s);
       });
+    }
+    function safeRelDir(rel) {
+      rel = String(rel || '').replace(/\\/g, '/').replace(/\/+$/, '');
+      if (!rel || rel.charAt(0) === '/' || rel.indexOf('..') >= 0 || /^[a-zA-Z]:/.test(rel)) return '';
+      return rel;
     }
     async function fetchLive() {
       const json = await fetchJSON(['report.json']);
@@ -1123,13 +1133,9 @@
         },
         async openHistoryRun(row) {
           if (!row) return;
-          const rel = (row.relDir || '').replace(/\/+$/, '');
+          const rel = safeRelDir(row.relDir);
           let payload = rel ? await fetchJSON([rel + '/report.json']) : null;
           if (!payload && rel) payload = await loadScriptData(rel + '/report-live.js', '__GAUGE_LIVE__');
-          if (!payload && row.href) {
-            window.location.href = row.href;
-            return;
-          }
           const report = payload && (payload.report || payload);
           if (!report) {
             if (window.ElementPlus && ElementPlus.ElMessage) ElementPlus.ElMessage.warning('无法读取该次报告快照');
