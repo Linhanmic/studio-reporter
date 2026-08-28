@@ -441,7 +441,7 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
         rows() { return scenarioRowsFor(this.store, this.scn); }
       },
       template: `
-        <div class="nested-block">
+        <div class="nested-block" :class="'tone-' + (scn.verdict || 'none')">
           <data-sheet v-if="sheet()" :headers="sheet().headers" :cells="sheet().cells" caption="数据行"></data-sheet>
           <div class="expand-meta">
             <el-tag v-for="tag in (scn.tags || [])" :key="tag" size="small">{{ tag }}</el-tag>
@@ -526,7 +526,7 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
         <el-table class="dense-table" :data="items" row-key="id" border size="small" :expand-row-keys="expanded" :row-class-name="rowClass" @expand-change="$emit('expand-change', $event)" @row-click="onRowClick">
           <el-table-column type="expand" width="28">
             <template #default="{ row }">
-              <div class="nested-block">
+              <div class="nested-block" :class="'tone-' + itemVerdict(row)">
                 <div v-if="row.kind === 'concept' && row.concept && row.concept.items && row.concept.items.length">
                   <item-table :items="(row.concept.items || []).map(it => Object.assign({}, it, { phase: 'Step' }))" :expanded="expanded" @expand-change="$emit('expand-change', $event)"></item-table>
                 </div>
@@ -563,7 +563,7 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
     ItemTable.components = { OutputCards };
 
     function captureScroll() {
-      const result = document.querySelector('main.result-pane:not(.overview-pane)');
+      const result = document.querySelector('main.result-pane');
       return { result: result ? { el: result, top: result.scrollTop } : null };
     }
 
@@ -600,18 +600,8 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
       if (json) return json;
       return loadScriptData('report-live.js', '__GAUGE_LIVE__');
     }
-    async function fetchHistory() {
-      const json = await fetchJSON(['history.json', '../history.json']);
-      if (json) return json;
-      return (await loadScriptData('history-live.js', '__GAUGE_HISTORY__'))
-        || (await loadScriptData('../history-live.js', '__GAUGE_HISTORY__'));
-    }
     const reportViewMixin = {
       computed: {
-        currentPage() {
-          const name = this.$route && this.$route.name;
-          return name || 'overview';
-        },
         successRate() {
           const n = this.store.report.successRate;
           return n == null ? 0 : Math.round(n);
@@ -626,14 +616,6 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
         visibleSpecs() {
           return (this.store.report.specs || []).filter((spec) => this.specVisible(spec));
         },
-        donutItems() {
-          const s = this.store.report.summary || {};
-          return [
-            { label: '规格书', counts: s.specs || emptyCounts() },
-            { label: '场景', counts: s.scenarios || emptyCounts() },
-            { label: '步骤', counts: s.steps || emptyCounts() }
-          ];
-        },
         liveNowLabel() {
           const spec = (this.store.report.specs || []).find((s) => s.id === this.store.currentSpecId);
           if (!spec) return '';
@@ -641,7 +623,6 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
           return scn ? (spec.heading + ' / ' + scn.heading) : spec.heading;
         },
         selectedLabel() {
-          if (this.store.archiveId) return '历史 · ' + this.store.archiveId;
           if (!this.store.selected || this.store.selected === 'folder:specs' || this.store.selected === 'suite') return this.store.report.projectName;
           const spec = (this.store.report.specs || []).find((s) => s.id === this.store.selected);
           if (spec) return spec.heading;
@@ -683,41 +664,10 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
             return this.scenarioVisible(row) ? row : null;
           }).filter(Boolean);
         },
-        visibleScenarios(spec) {
-          return (spec.scenarios || []).filter((scn) => this.scenarioVisible(scn));
-        },
-        scenarioRows(scn) {
-          return scenarioRowsFor(this.store, scn);
-        },
         rowClass({ row }) {
           const v = row.verdict;
           const live = this.store.running && row.id && (row.id === this.store.currentSpecId || row.id === this.store.currentScenarioId) ? ' row-live' : '';
           return (v === 'fail' ? 'row-fail' : (v === 'pass' ? 'row-pass' : (v === 'skip' ? 'row-skip' : ''))) + live;
-        },
-        historyRowClass({ row }) {
-          return row.verdict === 'fail' ? 'row-fail' : (row.verdict === 'pass' ? 'row-pass' : (row.verdict === 'skip' ? 'row-skip' : ''));
-        },
-        donutStyle(counts) {
-          const c = counts || emptyCounts();
-          const t = Math.max(c.total || 0, 1);
-          const p = 100 * (c.passed || 0) / t;
-          const f = 100 * (c.failed || 0) / t;
-          const s = 100 * (c.skipped || 0) / t;
-          return {
-            background: 'conic-gradient(#276749 0 ' + p + '%, #c53030 ' + p + '% ' + (p + f) + '%, #718096 ' + (p + f) + '% ' + (p + f + s) + '%, #e2e8f0 ' + (p + f + s) + '% 100%)'
-          };
-        },
-        goPage(name) {
-          const next = String(name || 'overview');
-          if (!this.$router) return;
-          if (this.$route && this.$route.name === next) return;
-          this.$router.push({ name: next });
-        },
-        openSpecDetail(row) {
-          if (!row || !row.id) return;
-          this.store.selected = row.id;
-          this.store.expanded = openAccordionIds(this.store.report, [], row.id);
-          this.goPage('detail');
         },
         onExpandChange(row) { this.store.toggleExpand(row && row.id); },
         onSpecClick(row, column, event) {
@@ -740,7 +690,7 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
         collapseAll() { this.store.collapseAll(); },
         printReport() { window.print(); },
         async pollLive() {
-          if (this._liveBusy || this.store.archiveId) return;
+          if (this._liveBusy) return;
           this._liveBusy = true;
           try {
             const payload = await fetchLive();
@@ -756,63 +706,13 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
           } finally {
             this._liveBusy = false;
           }
-        },
-        async refreshHistory() {
-          const hist = await fetchHistory();
-          this.store.history = hist && Array.isArray(hist.runs) ? hist : { runs: (hist && hist.runs) || [] };
-        },
-        async openHistoryRun(row) {
-          if (!row) return;
-          const rel = safeRelDir(row.relDir);
-          let payload = rel ? await fetchJSON([rel + '/report.json']) : null;
-          if (!payload && rel) payload = await loadScriptData(rel + '/report-live.js', '__GAUGE_LIVE__');
-          const report = payload && (payload.report || payload);
-          if (!report) {
-            if (window.ElementPlus && ElementPlus.ElMessage) ElementPlus.ElMessage.warning('无法读取该次报告快照');
-            return;
-          }
-          this.store.archiveId = row.id || rel;
-          this.store.running = false;
-          this.store.followLive = false;
-          this.store.report = ensureReport(report);
-          this.store.expanded = defaultExpanded(this.store.report);
-          this.goPage('overview');
-        },
-        async deleteHistoryRun(row) {
-          if (!row || !row.id) return;
-          try {
-            const res = await fetch('/api/history/' + encodeURIComponent(row.id), { method: 'DELETE' });
-            if (!res.ok) throw new Error(await res.text());
-            await this.refreshHistory();
-            if (this.store.archiveId === row.id) this.backToCurrent();
-            if (window.ElementPlus && ElementPlus.ElMessage) ElementPlus.ElMessage.success('已删除 ' + row.id);
-          } catch (e) {
-            const msg = '删除失败。请在报告目录运行 studio-reporter --serve 后再删，或手动删除 archives/' + row.id;
-            if (window.ElementPlus && ElementPlus.ElMessage) ElementPlus.ElMessage.warning(msg);
-          }
-        },
-        async backToCurrent() {
-          this.store.archiveId = '';
-          this.store.rev = 0;
-          await this.pollLive();
-          this.goPage('overview');
         }
       }
     };
 
-    const pageSetup = () => ({ store: useReportStore() });
-    const OverviewPage = { name: 'OverviewPage', mixins: [reportViewMixin], setup: pageSetup, template: '#tpl-overview' };
-    const HistoryPage = { name: 'HistoryPage', mixins: [reportViewMixin], setup: pageSetup, template: '#tpl-history' };
-    const DetailPage = {
-      name: 'DetailPage',
-      mixins: [reportViewMixin],
-      components: { HookBlock, DataSheet, ScenarioDetail, ScenarioTable },
-      setup: pageSetup,
-      template: '#tpl-detail'
-    };
-
     const app = Vue.createApp({
       mixins: [reportViewMixin],
+      components: { ItemTable, HookBlock, DataSheet, ScenarioDetail, ScenarioTable, OutputCards },
       setup() {
         const store = useReportStore();
         store.restoreView();
@@ -824,7 +724,6 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
       },
       mounted() {
         this.pollLive();
-        this.refreshHistory();
         this._liveTimer = setInterval(() => this.pollLive(), 700);
         this._tickTimer = setInterval(() => { this.store.clock = Date.now(); }, 250);
       },
@@ -834,17 +733,7 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
       }
     });
     const pinia = createPinia();
-    const router = VueRouter.createRouter({
-      history: VueRouter.createWebHashHistory(),
-      routes: [
-        { path: '/', redirect: '/overview' },
-        { path: '/overview', name: 'overview', component: OverviewPage },
-        { path: '/detail', name: 'detail', component: DetailPage },
-        { path: '/history', name: 'history', component: HistoryPage }
-      ]
-    });
     app.use(pinia);
-    app.use(router);
     app.use(ElementPlus);
     app.mount('#app');
     document.title = 'Test Report Viewer - ' + (seeded.projectName || 'report');

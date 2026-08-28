@@ -6,7 +6,7 @@ The Studio Reporter Plugin is a gRPC plugin for Gauge test framework that forwar
 
 ## Version
 
-- Plugin Version: 0.2.7
+- Plugin Version: 0.2.8
 - Protocol: WebSocket
 - Format: JSON
 
@@ -333,23 +333,18 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
 
 ## HTML Report
 
-On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Vue Router, Element Plus, and Pinia:
+On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Element Plus, and Pinia:
 
-- Pages via hash routes: `#/overview` (dashboard), `#/detail` (nested tables), `#/history` (archived runs)
-- Compact expandable tables in accordion mode (`el-table` expand rows): only one node at the same level is expanded; click a row or its arrow to expand/collapse
+- Nested expandable tables: spec → data row / scenario → concept → step
+- Fold controls match Gauge html-report: plus/minus squares; expanded blocks use a 5px left color bar (pass / fail / skip)
+- Accordion mode: only one node at the same level is expanded; click a row or its fold control to expand/collapse
 - Step console / hook output is merged into a single output card
 - Does not open a browser unless `GAUGE_STUDIO_OPEN_BROWSER` is set
 - Passed rows green, failed rows red
 - Runtime on every spec, scenario, concept, and step
 - Live `report.json` updates while the suite runs; the page is seeded with `running` / `currentSpecId` / elapsed duration and polls through Pinia without reload
-- The hub is always `reports/studio-report/` (`index.html`, `report.json`, Vue assets). Completed runs are indexed in `history.json` and copied to `archives/<id>/` as `report.json` / `report-live.js` / `images/` (no Vue `assets/` copy)
+- The hub is always `reports/studio-report/` (`index.html`, `report.json`, Vue assets)
 - Hook failures, screenshots, stack traces, and data tables
-
-Serve the report directory to enable in-page history deletion:
-
-```bash
-./bin/studio-reporter --serve --dir reports/studio-report
-```
 
 Regenerate without re-running tests:
 

@@ -534,13 +534,11 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"col-type",
 		`width="120"`,
 		"scenarioRowsFor",
-		"总览",
-		"历史",
 		"currentSpecId",
 		"followLive",
 		"safeRelDir",
-		"createWebHashHistory",
-		"router-view",
+		"tone-pass",
+		"el-table__expand-icon--expanded::before",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
@@ -555,7 +553,6 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"assets/vue.global.prod.js",
 		"assets/element-plus.full.min.js",
 		"assets/pinia.iife.prod.js",
-		"assets/vue-router.global.prod.js",
 		"assets/report-app.js",
 	} {
 		if !strings.Contains(html, want) {
@@ -582,6 +579,11 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"store.page",
 		"push('前置输出'",
 		"push('控制台'",
+		"总览",
+		"createWebHashHistory",
+		"router-view",
+		"tpl-overview",
+		"tpl-history",
 	} {
 		if strings.Contains(html, not) {
 			t.Fatalf("generated HTML should not contain %q", not)
@@ -590,7 +592,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	if _, err := os.Stat(generated.JSONPath); err != nil {
 		t.Fatalf("json not written: %v", err)
 	}
-	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css", "pinia.iife.prod.js", "vue-router.global.prod.js", "report-app.js"} {
+	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css", "pinia.iife.prod.js", "report-app.js"} {
 		if _, err := os.Stat(filepath.Join(generated.Dir, "assets", asset)); err != nil {
 			t.Fatalf("asset %s missing: %v", asset, err)
 		}
