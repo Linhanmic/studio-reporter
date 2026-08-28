@@ -53,9 +53,17 @@ func main() {
 	start := flag.Bool("start", false, "Start the reporter gRPC server for Gauge execution")
 	input := flag.String("input", "", "Regenerate an HTML report from last_run_result.json")
 	out := flag.String("out", "", "Output directory for regenerated HTML report")
-	// 真正去解析命令行输入
-	// 在这行之前，定义的所有 flag 都只是"声明"，Parse() 之后才会拿到真正的值
+	serve := flag.Bool("serve", false, "Serve the studio-report directory over HTTP for history management")
+	serveDir := flag.String("dir", "", "Directory for --serve (default: reports/studio-report)")
+	serveAddr := flag.String("addr", "127.0.0.1:8765", "Listen address for --serve")
 	flag.Parse()
+
+	if *serve {
+		if err := serveReportDir(*serveDir, *serveAddr); err != nil {
+			log.Fatalf("studio-reporter: %v", err)
+		}
+		return
+	}
 
 	if *input != "" {
 		generated, err := generateReportFromJSON(*input, *out)

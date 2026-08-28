@@ -294,7 +294,9 @@ func writeReport(dir string, report *Report, src proto.Message) (*GeneratedRepor
 	}
 
 	log.Printf("studio-reporter: HTML report written to %s", indexPath)
-	openReportPage(indexPath)
+	if err := recordCompletedRun(dir, report); err != nil {
+		log.Printf("studio-reporter: history: %v", err)
+	}
 	return &GeneratedReport{Dir: dir, IndexPath: indexPath, JSONPath: jsonPath}, nil
 }
 
@@ -409,8 +411,10 @@ func recountReport(r *Report) {
 		r.ExecutionTime = totalTime
 		r.Duration = formatDuration(totalTime)
 	}
-	if r.Summary.Specs.Total > 0 && r.SuccessRate == 0 {
+	if r.Summary.Specs.Total > 0 {
 		r.SuccessRate = 100 * float32(r.Summary.Specs.Passed) / float32(r.Summary.Specs.Total)
+	} else {
+		r.SuccessRate = 0
 	}
 }
 
@@ -1076,10 +1080,20 @@ func rewriteStepScreenshots(step *StepReport, mapList func([]string) []string, m
 }
 
 func renderReportHTML(report *Report) ([]byte, error) {
+	return renderSnapshotHTML(&LiveSnapshot{Rev: time.Now().UnixMilli(), Running: false, Report: report})
+}
+
+func renderSnapshotHTML(snap *LiveSnapshot) ([]byte, error) {
+	if snap == nil {
+		snap = &LiveSnapshot{}
+	}
+	if snap.Report == nil {
+		snap.Report = &Report{ProjectName: "Gauge Suite", Duration: formatDuration(0), Verdict: verdictNone}
+	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(true)
-	if err := enc.Encode(report); err != nil {
+	if err := enc.Encode(snap); err != nil {
 		return nil, fmt.Errorf("encode report json: %w", err)
 	}
 	jsonData := strings.TrimSpace(buf.String())

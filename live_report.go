@@ -15,9 +15,12 @@ import (
 
 // LiveSnapshot is the JSON envelope the Vue/Pinia viewer polls.
 type LiveSnapshot struct {
-	Rev     int64   `json:"rev"`
-	Running bool    `json:"running"`
-	Report  *Report `json:"report"`
+	Rev               int64   `json:"rev"`
+	Running           bool    `json:"running"`
+	Report            *Report `json:"report"`
+	CurrentSpecID     string  `json:"currentSpecId,omitempty"`
+	CurrentScenarioID string  `json:"currentScenarioId,omitempty"`
+	StartedAt         int64   `json:"startedAt,omitempty"`
 }
 
 type livePublisher struct {
@@ -30,6 +33,7 @@ type livePublisher struct {
 	currentSpecID string
 	currentScnID  string
 	conceptStack  []string
+	startedAt     int64
 }
 
 func newLivePublisher() *livePublisher {
@@ -109,6 +113,11 @@ func (p *livePublisher) onExecutionStarting(info *gauge_messages.ExecutionInfo, 
 		}
 	}
 	p.running = true
+	p.startedAt = time.Now().UnixMilli()
+	p.htmlWritten = false
+	p.currentSpecID = ""
+	p.currentScnID = ""
+	p.conceptStack = nil
 	if err := p.ensureDirLocked(); err != nil {
 		logLive("init report dir: %v", err)
 		return
@@ -453,23 +462,38 @@ func (p *livePublisher) publishLocked(writeHTML bool) {
 		return
 	}
 	recountReport(p.report)
+	if p.running && p.startedAt > 0 {
+		elapsed := time.Now().UnixMilli() - p.startedAt
+		if elapsed < 0 {
+			elapsed = 0
+		}
+		p.report.ExecutionTime = elapsed
+		p.report.Duration = formatDuration(elapsed)
+	}
 	next := time.Now().UnixMilli()
 	if next <= p.rev {
 		next = p.rev + 1
 	}
 	p.rev = next
+	snap := &LiveSnapshot{
+		Rev:               p.rev,
+		Running:           p.running,
+		Report:            p.report,
+		CurrentSpecID:     p.currentSpecID,
+		CurrentScenarioID: p.currentScnID,
+		StartedAt:         p.startedAt,
+	}
 	if writeHTML || !p.htmlWritten {
-		html, err := renderReportHTML(p.report)
+		html, err := renderSnapshotHTML(snap)
 		if err != nil {
 			logLive("render html: %v", err)
 		} else if err := atomicWriteFile(filepath.Join(p.dir, reportIndexFile), html); err != nil {
 			logLive("write html: %v", err)
 		} else {
 			p.htmlWritten = true
-			openReportPage(filepath.Join(p.dir, reportIndexFile))
 		}
 	}
-	if err := writeLiveSnapshot(p.dir, &LiveSnapshot{Rev: p.rev, Running: p.running, Report: p.report}); err != nil {
+	if err := writeLiveSnapshot(p.dir, snap); err != nil {
 		logLive("write live snapshot: %v", err)
 	}
 }

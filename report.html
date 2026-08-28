@@ -67,6 +67,7 @@
     .el-table .row-fail:hover > td.el-table__cell { background: var(--fail-row-hover) !important; }
     .el-table .row-fail { box-shadow: inset 3px 0 0 var(--fail); }
     .el-table .row-pass { box-shadow: inset 3px 0 0 var(--pass); }
+    .el-table .row-live > td.el-table__cell { outline: 1px dashed var(--accent); }
     .expand-meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0 0 6px; }
     .expand-meta .msg { margin: 0; }
     .data-sheet { margin: 0 0 6px; }
@@ -98,8 +99,38 @@
       flex: 0 0 auto; background: #eef3f8; border-top: 1px solid #c5d0dc;
       padding: 2px 10px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 11px;
     }
+    .toolbar .nav-group { margin-right: 8px; }
+    .overview-pane { padding: 10px 12px 20px; }
+    .overview-hero { display: grid; grid-template-columns: minmax(180px, 240px) 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; }
+    .verdict-banner {
+      border-radius: 6px; padding: 14px 16px; color: #fff;
+      background: #4a5568; display: flex; flex-direction: column; justify-content: center; gap: 4px;
+    }
+    .verdict-banner.verdict-pass { background: linear-gradient(160deg, #276749, #2f855a); }
+    .verdict-banner.verdict-fail { background: linear-gradient(160deg, #c53030, #9b2c2c); }
+    .verdict-banner.verdict-skip { background: linear-gradient(160deg, #718096, #4a5568); }
+    .verdict-banner.verdict-none { background: linear-gradient(160deg, #2b9ad4, #1f4668); }
+    .verdict-label { font-size: 22px; font-weight: 700; letter-spacing: .04em; }
+    .verdict-meta { font-size: 12px; opacity: .9; }
+    .live-now { font-size: 12px; margin-top: 6px; background: rgba(255,255,255,.15); border-radius: 3px; padding: 4px 6px; }
+    .donut-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .donut-card {
+      background: #fff; border: 1px solid #c5d0dc; border-radius: 6px;
+      padding: 10px; display: flex; gap: 10px; align-items: center;
+    }
+    .donut { width: 72px; height: 72px; border-radius: 50%; flex: 0 0 auto; position: relative; }
+    .donut::after {
+      content: ''; position: absolute; inset: 16px; border-radius: 50%; background: #fff;
+    }
+    .donut-legend { font-size: 11px; color: #4a5568; line-height: 1.4; }
+    .donut-title { font-size: 13px; font-weight: 700; color: #16324f; margin-bottom: 2px; }
+    .overview-h { font-size: 13px; margin: 8px 0 6px; color: #16324f; }
+    .history-help { font-size: 11px; color: #5a6a7a; margin: 0 0 8px; }
+    .history-actions { display: flex; gap: 4px; }
     @media (max-width: 900px) {
       .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .overview-hero { grid-template-columns: 1fr; }
+      .donut-row { grid-template-columns: 1fr; }
     }
     @media print {
       .toolbar, .status { display: none !important; }
@@ -115,9 +146,10 @@
         <h1>
           Test Report Viewer — {{ store.report.projectName }}
           <el-tag v-if="store.running" type="warning" size="small" effect="dark">实时</el-tag>
+          <el-tag v-else-if="store.archiveId" type="info" size="small" effect="dark">历史</el-tag>
           <el-tag v-else type="success" size="small" effect="dark">已完成</el-tag>
         </h1>
-        <div class="meta">{{ store.report.environment || '-' }} · {{ store.report.timestamp || '' }} · 总耗时 {{ store.report.duration }}</div>
+        <div class="meta">{{ store.report.environment || '-' }} · {{ store.report.timestamp || '' }} · 总耗时 {{ displayDuration }}</div>
         <div class="stat-row">
           <div class="stat-card">
             <div class="label">规格书</div>
@@ -136,25 +168,93 @@
           </div>
           <div class="stat-card">
             <div class="label">运行时间</div>
-            <div class="value">{{ store.report.duration }}</div>
+            <div class="value">{{ displayDuration }}</div>
             <div class="sub">成功率 {{ successRate }}%</div>
           </div>
         </div>
       </header>
       <div class="toolbar">
-        <el-radio-group v-model="store.filter" size="small">
-          <el-radio-button value="all">全部</el-radio-button>
-          <el-radio-button value="fail">失败</el-radio-button>
-          <el-radio-button value="pass">通过</el-radio-button>
-          <el-radio-button value="skip">跳过</el-radio-button>
+        <el-radio-group class="nav-group" v-model="store.page" size="small" @change="onPageChange">
+          <el-radio-button value="overview">总览</el-radio-button>
+          <el-radio-button value="detail">详情</el-radio-button>
+          <el-radio-button value="history">历史</el-radio-button>
         </el-radio-group>
-        <el-input v-model="store.query" size="small" clearable placeholder="搜索规格书 / 场景 / 步骤" style="width: 220px"></el-input>
-        <el-button size="small" @click="expandAll">全部展开</el-button>
-        <el-button size="small" @click="collapseAll">全部折叠</el-button>
+        <template v-if="store.page !== 'history'">
+          <el-radio-group v-model="store.filter" size="small">
+            <el-radio-button value="all">全部</el-radio-button>
+            <el-radio-button value="fail">失败</el-radio-button>
+            <el-radio-button value="pass">通过</el-radio-button>
+            <el-radio-button value="skip">跳过</el-radio-button>
+          </el-radio-group>
+          <el-input v-model="store.query" size="small" clearable placeholder="搜索规格书 / 场景 / 步骤" style="width: 220px"></el-input>
+        </template>
+        <template v-if="store.page === 'detail'">
+          <el-button size="small" @click="expandAll">全部展开</el-button>
+          <el-button size="small" @click="collapseAll">全部折叠</el-button>
+        </template>
+        <el-switch v-if="store.running && store.page === 'detail'" v-model="store.followLive" size="small" active-text="跟随实时" style="margin-left: 4px"></el-switch>
         <el-button size="small" @click="printReport">打印</el-button>
+        <el-button v-if="store.archiveId" size="small" @click="backToCurrent">返回本次</el-button>
       </div>
       <div class="workspace">
-        <main class="result-pane" ref="resultPane">
+        <main v-if="store.page === 'overview'" class="result-pane overview-pane">
+          <div class="overview-hero">
+            <div class="verdict-banner" :class="'verdict-' + (store.running ? 'none' : (store.report.verdict || 'none'))">
+              <div class="verdict-label">{{ store.running ? '正在执行' : verdictLabel(store.report.verdict) }}</div>
+              <div class="verdict-meta">{{ store.report.projectName }} · {{ displayDuration }}</div>
+              <div v-if="store.running && liveNowLabel" class="live-now">当前：{{ liveNowLabel }}</div>
+            </div>
+            <div class="donut-row">
+              <div class="donut-card" v-for="item in donutItems" :key="item.label">
+                <div class="donut" :style="donutStyle(item.counts)"></div>
+                <div class="donut-legend">
+                  <div class="donut-title">{{ item.label }}</div>
+                  <div>通过 {{ item.counts.passed || 0 }} · 失败 {{ item.counts.failed || 0 }} · 跳过 {{ item.counts.skipped || 0 }}</div>
+                  <div>共 {{ item.counts.total || 0 }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h2 class="overview-h">规格书</h2>
+          <el-table class="dense-table" :data="visibleSpecs" row-key="id" border size="small" :row-class-name="rowClass" @row-click="openSpecDetail">
+            <el-table-column label="名称" min-width="220">
+              <template #default="{ row }"><div class="name-cell"><strong>{{ row.heading }}</strong></div></template>
+            </el-table-column>
+            <el-table-column label="结果" width="80">
+              <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
+            </el-table-column>
+            <el-table-column label="场景" width="110">
+              <template #default="{ row }">{{ (row.summary && row.summary.passed) || 0 }}/{{ (row.summary && row.summary.total) || 0 }}</template>
+            </el-table-column>
+            <el-table-column label="运行时间" width="110" prop="duration"></el-table-column>
+          </el-table>
+        </main>
+        <main v-else-if="store.page === 'history'" class="result-pane overview-pane">
+          <p class="history-help">共 {{ (store.history.runs || []).length }} 次历史运行。打开会载入当时的快照；删除需要先运行 <code>studio-reporter --serve</code>。</p>
+          <el-button size="small" style="margin-bottom: 8px" @click="refreshHistory">刷新列表</el-button>
+          <el-table class="dense-table" :data="store.history.runs || []" row-key="id" border size="small" :row-class-name="historyRowClass">
+            <el-table-column label="时间" min-width="160">
+              <template #default="{ row }">{{ row.timestamp || row.id }}</template>
+            </el-table-column>
+            <el-table-column label="项目" min-width="140" prop="projectName"></el-table-column>
+            <el-table-column label="结果" width="80">
+              <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
+            </el-table-column>
+            <el-table-column label="规格书" width="100">
+              <template #default="{ row }">{{ (row.summary && row.summary.specs && row.summary.specs.passed) || 0 }}/{{ (row.summary && row.summary.specs && row.summary.specs.total) || 0 }}</template>
+            </el-table-column>
+            <el-table-column label="耗时" width="110" prop="duration"></el-table-column>
+            <el-table-column label="操作" width="160">
+              <template #default="{ row }">
+                <div class="history-actions">
+                  <el-button size="small" type="primary" @click.stop="openHistoryRun(row)">打开</el-button>
+                  <el-button size="small" type="danger" @click.stop="deleteHistoryRun(row)">删除</el-button>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </main>
+        <main v-show="store.page === 'detail'" class="result-pane" ref="resultPane">
           <el-alert v-if="store.report.preHookFailure" type="error" :title="(store.report.preHookFailure.hookName || 'Hook') + ' 失败'" :description="store.report.preHookFailure.errorMessage" show-icon style="margin-bottom: 6px"></el-alert>
           <el-alert v-if="store.report.postHookFailure" type="error" :title="(store.report.postHookFailure.hookName || 'Hook') + ' 失败'" :description="store.report.postHookFailure.errorMessage" show-icon style="margin-bottom: 6px"></el-alert>
           <el-table
@@ -231,7 +331,7 @@
       </div>
       <footer class="status">
         <span>{{ selectedLabel }}</span>
-        <span>规格书 {{ store.report.summary.specs.passed }}/{{ store.report.summary.specs.total }} · 场景 {{ store.report.summary.scenarios.passed }}/{{ store.report.summary.scenarios.total }} · 步骤 {{ store.report.summary.steps.passed }}/{{ store.report.summary.steps.total }} · {{ store.report.duration }}</span>
+        <span>规格书 {{ store.report.summary.specs.passed }}/{{ store.report.summary.specs.total }} · 场景 {{ store.report.summary.scenarios.passed }}/{{ store.report.summary.scenarios.total }} · 步骤 {{ store.report.summary.steps.passed }}/{{ store.report.summary.steps.total }} · {{ displayDuration }}</span>
       </footer>
     </div>
   </div>
@@ -241,7 +341,9 @@
   <script src="assets/pinia.iife.prod.js"></script>
   <script src="assets/element-plus.full.min.js"></script>
   <script>
-    const seeded = JSON.parse(document.getElementById('report-data').textContent);
+    const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
+    const seededEnvelope = rawSeed && rawSeed.report ? rawSeed : { rev: 0, running: false, report: rawSeed };
+    const seeded = JSON.parse(JSON.stringify(seededEnvelope.report || {}));
     const emptyCounts = () => ({ total: 0, passed: 0, failed: 0, skipped: 0 });
     const ensureReport = (r) => {
       r = r || {};
@@ -553,12 +655,20 @@
     const useReportStore = defineStore('report', {
       state: () => ({
         report: ensureReport(seeded),
-        running: false,
-        rev: 0,
+        running: !!seededEnvelope.running,
+        rev: Number(seededEnvelope.rev) || 0,
         filter: 'all',
         query: '',
         selected: '',
-        expanded: defaultExpanded(ensureReport(seeded))
+        expanded: defaultExpanded(ensureReport(seeded)),
+        page: 'overview',
+        followLive: true,
+        archiveId: '',
+        currentSpecId: seededEnvelope.currentSpecId || '',
+        currentScenarioId: seededEnvelope.currentScenarioId || '',
+        startedAt: Number(seededEnvelope.startedAt) || 0,
+        history: { runs: [] },
+        clock: Date.now()
       }),
       actions: {
         restoreView() {
@@ -568,6 +678,8 @@
             if (saved.filter) this.filter = saved.filter;
             if (typeof saved.query === 'string') this.query = saved.query;
             if (saved.selected) this.selected = saved.selected;
+            if (saved.page) this.page = saved.page;
+            if (typeof saved.followLive === 'boolean') this.followLive = saved.followLive;
             if (Array.isArray(saved.expanded) && saved.expanded.length) this.expanded = accordionNormalize(this.report, saved.expanded);
           } catch (e) {}
         },
@@ -575,17 +687,30 @@
           try {
             sessionStorage.setItem(VIEW_KEY, JSON.stringify({
               filter: this.filter, query: this.query, selected: this.selected,
-              expanded: this.expanded
+              expanded: this.expanded, page: this.page, followLive: this.followLive
             }));
           } catch (e) {}
         },
         applyLive(payload, scroll) {
+          if (this.archiveId) return;
           if (!payload || !payload.report) return;
           const rev = Number(payload.rev) || 0;
-          if (rev && this.rev && rev <= this.rev) return;
-          this.report = ensureReport(payload.report);
+          if (rev && this.rev && rev <= this.rev) {
+            this.running = !!payload.running;
+            return;
+          }
+          this.report = ensureReport(JSON.parse(JSON.stringify(payload.report)));
           this.running = !!payload.running;
           this.rev = rev || this.rev;
+          this.currentSpecId = payload.currentSpecId || '';
+          this.currentScenarioId = payload.currentScenarioId || '';
+          this.startedAt = Number(payload.startedAt) || this.startedAt;
+          if (this.running && this.followLive) {
+            let exp = this.expanded.slice();
+            if (this.currentSpecId) exp = openAccordionIds(this.report, exp, this.currentSpecId);
+            if (this.currentScenarioId) exp = openAccordionIds(this.report, exp, this.currentScenarioId);
+            this.expanded = exp;
+          }
           Vue.nextTick(() => {
             if (scroll && scroll.result) scroll.result.el.scrollTop = scroll.result.top;
           });
@@ -781,18 +906,40 @@
       return { result: result ? { el: result, top: result.scrollTop } : null };
     }
 
-    async function fetchLive() {
-      try {
-        const res = await fetch('report.json?ts=' + Date.now(), { cache: 'no-store' });
-        if (res.ok) return await res.json();
-      } catch (e) {}
+    async function fetchJSON(urls) {
+      for (const url of urls) {
+        try {
+          const res = await fetch(url + (url.indexOf('?') >= 0 ? '&' : '?') + 'ts=' + Date.now(), { cache: 'no-store' });
+          if (res.ok) return await res.json();
+        } catch (e) {}
+      }
+      return null;
+    }
+    function loadScriptData(src, key) {
       return new Promise((resolve) => {
         const s = document.createElement('script');
-        s.src = 'report-live.js?ts=' + Date.now();
-        s.onload = () => { resolve(window.__GAUGE_LIVE__ || null); s.remove(); };
+        s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'ts=' + Date.now();
+        s.onload = () => { const v = window[key]; resolve(v || null); s.remove(); };
         s.onerror = () => { resolve(null); s.remove(); };
         document.head.appendChild(s);
       });
+    }
+    async function fetchLive() {
+      const json = await fetchJSON(['report.json']);
+      if (json) return json;
+      return loadScriptData('report-live.js', '__GAUGE_LIVE__');
+    }
+    async function fetchHistory() {
+      const json = await fetchJSON(['history.json', '../history.json']);
+      if (json) return json;
+      return (await loadScriptData('history-live.js', '__GAUGE_HISTORY__'))
+        || (await loadScriptData('../history-live.js', '__GAUGE_HISTORY__'));
+    }
+    function pageFromHash() {
+      const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+      if (raw === 'detail' || raw === 'report') return 'detail';
+      if (raw === 'history') return 'history';
+      return 'overview';
     }
 
     const app = Vue.createApp({
@@ -800,6 +947,8 @@
       setup() {
         const store = useReportStore();
         store.restoreView();
+        if (!location.hash) store.page = store.page || 'overview';
+        else store.page = pageFromHash();
         return { store };
       },
       computed: {
@@ -807,11 +956,32 @@
           const n = this.store.report.successRate;
           return n == null ? 0 : Math.round(n);
         },
+        displayDuration() {
+          if (this.store.running && this.store.startedAt) {
+            return formatDuration(Math.max(0, this.store.clock - this.store.startedAt));
+          }
+          return this.store.report.duration;
+        },
         q() { return this.store.query.trim().toLowerCase(); },
         visibleSpecs() {
           return (this.store.report.specs || []).filter((spec) => this.specVisible(spec));
         },
+        donutItems() {
+          const s = this.store.report.summary || {};
+          return [
+            { label: '规格书', counts: s.specs || emptyCounts() },
+            { label: '场景', counts: s.scenarios || emptyCounts() },
+            { label: '步骤', counts: s.steps || emptyCounts() }
+          ];
+        },
+        liveNowLabel() {
+          const spec = (this.store.report.specs || []).find((s) => s.id === this.store.currentSpecId);
+          if (!spec) return '';
+          const scn = (spec.scenarios || []).find((x) => x.id === this.store.currentScenarioId);
+          return scn ? (spec.heading + ' / ' + scn.heading) : spec.heading;
+        },
         selectedLabel() {
+          if (this.store.archiveId) return '历史 · ' + this.store.archiveId;
           if (!this.store.selected || this.store.selected === 'folder:specs' || this.store.selected === 'suite') return this.store.report.projectName;
           const spec = (this.store.report.specs || []).find((s) => s.id === this.store.selected);
           if (spec) return spec.heading;
@@ -824,14 +994,21 @@
       },
       watch: {
         'store.query'() { this.store.persistView(); },
-        'store.filter'() { this.store.persistView(); }
+        'store.filter'() { this.store.persistView(); },
+        'store.page'() { this.store.persistView(); }
       },
       mounted() {
         this.pollLive();
+        this.refreshHistory();
         this._liveTimer = setInterval(() => this.pollLive(), 700);
+        this._tickTimer = setInterval(() => { this.store.clock = Date.now(); }, 250);
+        this._onHash = () => { this.store.page = pageFromHash(); };
+        window.addEventListener('hashchange', this._onHash);
       },
       beforeUnmount() {
         if (this._liveTimer) clearInterval(this._liveTimer);
+        if (this._tickTimer) clearInterval(this._tickTimer);
+        if (this._onHash) window.removeEventListener('hashchange', this._onHash);
       },
       methods: {
         verdictLabel, tagType,
@@ -872,7 +1049,35 @@
         },
         rowClass({ row }) {
           const v = row.verdict;
-          return v === 'fail' ? 'row-fail' : (v === 'pass' ? 'row-pass' : (v === 'skip' ? 'row-skip' : ''));
+          const live = this.store.running && row.id && (row.id === this.store.currentSpecId || row.id === this.store.currentScenarioId) ? ' row-live' : '';
+          return (v === 'fail' ? 'row-fail' : (v === 'pass' ? 'row-pass' : (v === 'skip' ? 'row-skip' : ''))) + live;
+        },
+        historyRowClass({ row }) {
+          return row.verdict === 'fail' ? 'row-fail' : (row.verdict === 'pass' ? 'row-pass' : (row.verdict === 'skip' ? 'row-skip' : ''));
+        },
+        donutStyle(counts) {
+          const c = counts || emptyCounts();
+          const t = Math.max(c.total || 0, 1);
+          const p = 100 * (c.passed || 0) / t;
+          const f = 100 * (c.failed || 0) / t;
+          const s = 100 * (c.skipped || 0) / t;
+          return {
+            background: 'conic-gradient(#276749 0 ' + p + '%, #c53030 ' + p + '% ' + (p + f) + '%, #718096 ' + (p + f) + '% ' + (p + f + s) + '%, #e2e8f0 ' + (p + f + s) + '% 100%)'
+          };
+        },
+        onPageChange(page) {
+          const next = page || this.store.page || 'overview';
+          this.store.page = next;
+          const hash = '#/' + next;
+          if (location.hash !== hash) location.hash = hash;
+          this.store.persistView();
+        },
+        openSpecDetail(row) {
+          if (!row || !row.id) return;
+          this.store.selected = row.id;
+          this.store.expanded = openAccordionIds(this.store.report, [], row.id);
+          this.store.page = 'detail';
+          this.onPageChange('detail');
         },
         onExpandChange(row) { this.store.toggleExpand(row && row.id); },
         onSpecClick(row, column, event) {
@@ -895,14 +1100,68 @@
         collapseAll() { this.store.collapseAll(); },
         printReport() { window.print(); },
         async pollLive() {
-          const payload = await fetchLive();
-          if (!payload || !payload.report) return;
-          if (payload.rev && this.store.rev && Number(payload.rev) <= this.store.rev) {
-            this.store.running = !!payload.running;
+          if (this._liveBusy || this.store.archiveId) return;
+          this._liveBusy = true;
+          try {
+            const payload = await fetchLive();
+            if (!payload || !payload.report) return;
+            if (payload.rev && this.store.rev && Number(payload.rev) <= this.store.rev) {
+              this.store.running = !!payload.running;
+              if (payload.currentSpecId) this.store.currentSpecId = payload.currentSpecId;
+              if (payload.currentScenarioId) this.store.currentScenarioId = payload.currentScenarioId;
+              return;
+            }
+            const scroll = captureScroll(this);
+            this.store.applyLive(payload, scroll);
+          } finally {
+            this._liveBusy = false;
+          }
+        },
+        async refreshHistory() {
+          const hist = await fetchHistory();
+          this.store.history = hist && Array.isArray(hist.runs) ? hist : { runs: (hist && hist.runs) || [] };
+        },
+        async openHistoryRun(row) {
+          if (!row) return;
+          const rel = (row.relDir || '').replace(/\/+$/, '');
+          let payload = rel ? await fetchJSON([rel + '/report.json']) : null;
+          if (!payload && rel) payload = await loadScriptData(rel + '/report-live.js', '__GAUGE_LIVE__');
+          if (!payload && row.href) {
+            window.location.href = row.href;
             return;
           }
-          const scroll = captureScroll(this);
-          this.store.applyLive(payload, scroll);
+          const report = payload && (payload.report || payload);
+          if (!report) {
+            if (window.ElementPlus && ElementPlus.ElMessage) ElementPlus.ElMessage.warning('无法读取该次报告快照');
+            return;
+          }
+          this.store.archiveId = row.id || rel;
+          this.store.running = false;
+          this.store.followLive = false;
+          this.store.report = ensureReport(report);
+          this.store.expanded = defaultExpanded(this.store.report);
+          this.store.page = 'overview';
+          this.onPageChange('overview');
+        },
+        async deleteHistoryRun(row) {
+          if (!row || !row.id) return;
+          try {
+            const res = await fetch('/api/history/' + encodeURIComponent(row.id), { method: 'DELETE' });
+            if (!res.ok) throw new Error(await res.text());
+            await this.refreshHistory();
+            if (this.store.archiveId === row.id) this.backToCurrent();
+            if (window.ElementPlus && ElementPlus.ElMessage) ElementPlus.ElMessage.success('已删除 ' + row.id);
+          } catch (e) {
+            const msg = '删除失败。请在报告目录运行 studio-reporter --serve 后再删，或手动删除 archives/' + row.id;
+            if (window.ElementPlus && ElementPlus.ElMessage) ElementPlus.ElMessage.warning(msg);
+          }
+        },
+        async backToCurrent() {
+          this.store.archiveId = '';
+          this.store.rev = 0;
+          await this.pollLive();
+          this.store.page = 'overview';
+          this.onPageChange('overview');
         }
       }
     });

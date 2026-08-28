@@ -524,6 +524,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"col-type",
 		`width="120"`,
 		"scenarioRowsFor",
+		"总览",
+		"历史",
+		"currentSpecId",
+		"followLive",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
@@ -574,6 +578,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(generated.Dir, liveReportJSONFile)); err != nil {
 		t.Fatalf("live report.json missing: %v", err)
+	}
+	root := filepath.Join(dir, reportFolderName)
+	if _, err := os.Stat(filepath.Join(root, historyFileName)); err != nil {
+		t.Fatalf("history.json missing: %v", err)
 	}
 
 	out := filepath.Join(dir, "regenerated")

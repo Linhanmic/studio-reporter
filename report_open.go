@@ -12,6 +12,7 @@ import (
 )
 
 const skipBrowserEnv = "GAUGE_STUDIO_SKIP_BROWSER"
+const openBrowserEnv = "GAUGE_STUDIO_OPEN_BROWSER"
 
 var openReportOnce sync.Once
 
@@ -19,11 +20,19 @@ func shouldSkipBrowser() bool {
 	if flag.Lookup("test.v") != nil {
 		return true
 	}
-	return skipBrowserEnvSet()
+	if skipBrowserEnvSet() {
+		return true
+	}
+	return !openBrowserEnvSet()
 }
 
 func skipBrowserEnvSet() bool {
 	v := strings.ToLower(strings.TrimSpace(os.Getenv(skipBrowserEnv)))
+	return v == "true" || v == "1" || v == "yes"
+}
+
+func openBrowserEnvSet() bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(openBrowserEnv)))
 	return v == "true" || v == "1" || v == "yes"
 }
 

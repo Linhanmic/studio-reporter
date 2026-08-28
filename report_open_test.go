@@ -53,6 +53,21 @@ func TestBrowserCommand(t *testing.T) {
 	}
 }
 
+func TestOpenBrowserOptIn(t *testing.T) {
+	t.Setenv(openBrowserEnv, "")
+	if openBrowserEnvSet() {
+		t.Fatal("browser opt-in defaults to off")
+	}
+	t.Setenv(openBrowserEnv, "true")
+	if !openBrowserEnvSet() {
+		t.Fatal("GAUGE_STUDIO_OPEN_BROWSER=true should opt in")
+	}
+	t.Setenv(openBrowserEnv, "false")
+	if openBrowserEnvSet() {
+		t.Fatal("false should not opt in")
+	}
+}
+
 func TestOpenReportPageNoopsWhenSkipped(t *testing.T) {
 	openReportPage("")
 	openReportPage("/tmp/does-not-exist-index.html")

@@ -12,6 +12,7 @@ The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https
 - Auto-reconnect with exponential backoff
 - Supports all Gauge execution lifecycle events
 - HTML report generation (Vue 3 + Element Plus, CANoe-style layout)
+- Overview dashboard, live result polling, and historical run management
 - Cross-platform (Windows, Linux, macOS)
 - Configurable message size limits
 
@@ -48,16 +49,17 @@ go build -o bin/studio-reporter ./...
 | `overwrite_reports` | No | `true` | Gauge 官方开关。`true` 覆盖 `reports/studio-report`；`false` 每次运行写入带时间戳的新目录 |
 | `over_write_reports` | No | - | `overwrite_reports` 的别名。二者都设置时以 `overwrite_reports` 为准 |
 | `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to disable HTML report generation |
-| `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Set to `true` to skip opening the report page in a browser |
+| `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Kept for compatibility; the reporter no longer opens a browser by default |
+| `GAUGE_STUDIO_OPEN_BROWSER` | No | - | Set to `true` to restore opening `index.html` in the default browser |
 
 ### Gauge Plugin Installation
 
 ```bash
 # Install the plugin
-gauge install studio-reporter --file studio-reporter-0.2.5-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.2.6-linux.x86_64.zip
 
 # Or copy to Gauge plugin directory
-cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.2.5/
+cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.2.6/
 ```
 
 ## Usage
@@ -88,21 +90,28 @@ When a suite finishes, the plugin writes a Vue 3 + Element Plus Test Report View
 
 The report includes:
 
+- **总览** page: verdict banner, pass/fail donuts, and a spec summary table
+- **详情** page: slim expandable result tables in accordion mode
+- **历史** page: completed runs under `archives/`, with open / delete
 - Overall verdict, duration, environment, and success rate
 - Vue 3 + Element Plus + Pinia UI
-- Slim expandable result tables in accordion mode: at each level only one row is expanded; click a row (or the arrow) to expand or collapse it
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
-- Live updates while the suite runs (`report.json`); the open page polls Pinia state in place (no reload, no scroll jump)
+- Live updates while the suite runs (`report.json`): seeded `running` flag, elapsed duration, current spec/scenario, success rate recount, no full-page reload
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 - Filter by verdict and search across specs, scenarios, and steps
 
-The plugin opens `index.html` in the default browser the first time the report is written (live run or suite end). Set `GAUGE_STUDIO_SKIP_BROWSER=true` to keep the file on disk only. You can still open it yourself:
+The reporter does **not** open a browser. Open the file yourself, or serve the folder (needed to delete history from the UI):
 
 ```bash
 # Linux
 xdg-open reports/studio-report/index.html
+
+# Optional local server (history delete API)
+./bin/studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 ```
+
+Set `GAUGE_STUDIO_OPEN_BROWSER=true` if you want the old auto-open behavior.
 
 ### Regenerate a report
 
@@ -150,6 +159,8 @@ studio-reporter/
 ├── forwarder.go         # WebSocket forwarder
 ├── report.go            # HTML report model and generation
 ├── report.html          # CANoe-style Test Report Viewer
+├── history.go           # Historical run index and archives
+├── serve.go             # Optional HTTP server for history management
 ├── report_html.go       # Embedded report template
 ├── go.mod               # Go module definition
 ├── go.sum               # Go module checksums

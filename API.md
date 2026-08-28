@@ -6,7 +6,7 @@ The Studio Reporter Plugin is a gRPC plugin for Gauge test framework that forwar
 
 ## Version
 
-- Plugin Version: 0.2.5
+- Plugin Version: 0.2.6
 - Protocol: WebSocket
 - Format: JSON
 
@@ -36,7 +36,8 @@ studio-reporter websocket: ws://127.0.0.1:<port>
 | `overwrite_reports` | No | `true` | Overwrite the previous HTML report on each run. Set `false` to keep a timestamped copy of every run |
 | `over_write_reports` | No | - | Alias of `overwrite_reports` |
 | `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to skip HTML report generation |
-| `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Set to `true` to skip opening the HTML report in a browser |
+| `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Compatibility flag; the reporter no longer opens a browser by default |
+| `GAUGE_STUDIO_OPEN_BROWSER` | No | - | Set to `true` to open `index.html` in the default browser |
 
 ### Connection Behavior
 
@@ -334,15 +335,22 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
 
 On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Element Plus, and Pinia:
 
-- Top title bar, summary cards, and verdict filter toolbar
+- Pages: 总览 (dashboard), 详情 (nested tables), 历史 (archived runs)
 - Compact expandable tables in accordion mode (`el-table` expand rows): only one node at the same level is expanded; click a row or its arrow to expand/collapse
-- The first written `index.html` is opened in the default browser unless `GAUGE_STUDIO_SKIP_BROWSER` is set
+- Does not open a browser unless `GAUGE_STUDIO_OPEN_BROWSER` is set
 - Passed rows green, failed rows red
 - Runtime on every spec, scenario, concept, and step
-- Live `report.json` updates while the suite runs; the open page applies them through Pinia without reload or scroll jump
+- Live `report.json` updates while the suite runs; the page is seeded with `running` / `currentSpecId` / elapsed duration and polls through Pinia without reload
+- Completed runs are indexed in `history.json` and copied to `archives/<timestamp>/`
 - Hook failures, screenshots, stack traces, and data tables
 
-When `overwrite_reports` (or `over_write_reports`) is `false`, each run is stored under `reports/studio-report/<timestamp>/`.
+When `overwrite_reports` (or `over_write_reports`) is `false`, each run is stored under `reports/studio-report/<timestamp>/`. The hub `history.json` still lives in `reports/studio-report/`.
+
+Serve the report directory to enable in-page history deletion:
+
+```bash
+./bin/studio-reporter --serve --dir reports/studio-report
+```
 
 Regenerate without re-running tests:
 
