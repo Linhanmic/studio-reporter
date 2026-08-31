@@ -58,10 +58,10 @@ go build -o bin/studio-reporter ./...
 
 ```bash
 # Install the plugin
-gauge install studio-reporter --file studio-reporter-0.3.2-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.3.3-linux.x86_64.zip
 
 # Or copy to Gauge plugin directory
-cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.3.2/
+cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.3.3/
 ```
 
 ## Usage
@@ -97,7 +97,7 @@ The report includes:
 - Vue 3 + Element Plus + Pinia UI
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
-- Live updates while the suite runs (`report.json`): seeded `running` flag, elapsed duration, current spec/scenario, success rate recount, no full-page reload
+- Live updates while the suite runs (`report.json`): Spec → Scenario only (no step/concept trees until the final suite report); seeded `running` flag, elapsed duration, current spec/scenario, success rate recount, no full-page reload
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 - Filter by verdict and search across specs, scenarios, and steps
 - Step console / hook output merged into a single output card

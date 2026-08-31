@@ -34,7 +34,7 @@ reports/studio-report/
 
 ## `report.json` — live snapshot envelope
 
-Written atomically on every update while the suite runs, and once more when it finishes. The viewer polls it every 700 ms.
+Written atomically on every Spec / Scenario update while the suite runs, and once more when it finishes. The viewer polls it every 700 ms. **While `running` is true, each scenario omits `contexts` / `items` / `teardowns`** (live detail stops at the scenario layer). The final snapshot after `SuiteResult` restores the full step tree.
 
 | Field | Type | Description |
 |---|---|---|

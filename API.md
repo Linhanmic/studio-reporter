@@ -8,7 +8,7 @@ The on-disk report file format is specified separately in [REPORT_FORMAT.md](REP
 
 ## Version
 
-- Plugin Version: 0.3.2
+- Plugin Version: 0.3.3
 - Protocol: WebSocket
 - Format: JSON
 
