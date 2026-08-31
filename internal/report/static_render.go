@@ -12,6 +12,9 @@ import (
 //go:embed static_report.css
 var staticReportCSS string
 
+//go:embed static_report.js
+var staticReportJS string
+
 // RenderReportHTML builds a self-contained static HTML report (no embedded JSON / no Vue).
 func RenderReportHTML(r *Report) ([]byte, error) {
 	if r == nil {
@@ -27,6 +30,7 @@ func RenderReportHTML(r *Report) ([]byte, error) {
 	b.WriteString(staticReportCSS)
 	b.WriteString("</style>\n</head>\n<body>\n<div class=\"app-shell\">\n")
 	writeStaticHeader(&b, r)
+	writeFilterToolbar(&b, r.Summary.Steps)
 	b.WriteString("<main class=\"result-pane\">\n")
 	writeHookAlert(&b, r.PreHookFailure, "Before Suite")
 	writeHookAlert(&b, r.PostHookFailure, "After Suite")
@@ -35,6 +39,9 @@ func RenderReportHTML(r *Report) ([]byte, error) {
 	}
 	b.WriteString("</main>\n")
 	writeStaticFooter(&b, r)
+	b.WriteString("<script>\n")
+	b.WriteString(staticReportJS)
+	b.WriteString("</script>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
 	return b.Bytes(), nil
 }
@@ -65,18 +72,6 @@ func writeStaticHeader(b *bytes.Buffer, r *Report) {
 	b.WriteString("</div><div class=\"sub\">成功率 ")
 	b.WriteString(html.EscapeString(fmt.Sprintf("%.0f", r.SuccessRate)))
 	b.WriteString("%</div></div>\n</div></header>\n")
-}
-
-func writeStatCard(b *bytes.Buffer, label string, c Counts) {
-	b.WriteString("<div class=\"stat-card\"><div class=\"label\">")
-	b.WriteString(html.EscapeString(label))
-	b.WriteString("</div><div class=\"value\">")
-	b.WriteString(html.EscapeString(fmt.Sprintf("%d/%d", c.Passed, c.Total)))
-	b.WriteString("</div><div class=\"sub\">通过 / 共 ")
-	b.WriteString(html.EscapeString(fmt.Sprintf("%d", c.Total)))
-	b.WriteString(" · 失败 ")
-	b.WriteString(html.EscapeString(fmt.Sprintf("%d", c.Failed)))
-	b.WriteString("</div></div>\n")
 }
 
 func writeStaticFooter(b *bytes.Buffer, r *Report) {
@@ -110,13 +105,7 @@ func writeHookAlert(b *bytes.Buffer, h *HookFailure, name string) {
 
 func writeSpecBlock(b *bytes.Buffer, spec *SpecReport, open bool) {
 	tone := toneClass(spec.Verdict)
-	b.WriteString("<details class=\"report-block ")
-	b.WriteString(tone)
-	if open {
-		b.WriteString("\" open>\n")
-	} else {
-		b.WriteString("\">\n")
-	}
+	writeReportBlockOpen(b, tone, spec.Verdict, open)
 	writeBlockSummary(b, html.EscapeString(spec.Heading), "规格书", spec.Verdict, spec.Duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	if len(spec.Folders) > 0 {
@@ -150,9 +139,7 @@ func writeBodyRow(b *bytes.Buffer, row bodyRow) {
 		return
 	}
 	tone := toneClass(row.verdict)
-	b.WriteString("<details class=\"report-block ")
-	b.WriteString(tone)
-	b.WriteString("\">")
+	writeReportBlockOpen(b, tone, row.verdict, false)
 	writeBlockSummary(b, html.EscapeString(bodyName(row)), bodyTypeLabel(row), row.verdict, row.duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	if row.kind == "datarow" && len(row.headers) > 0 {
@@ -166,13 +153,7 @@ func writeBodyRow(b *bytes.Buffer, row bodyRow) {
 
 func writeScenarioBlock(b *bytes.Buffer, scn ScenarioReport, open bool) {
 	tone := toneClass(scn.Verdict)
-	b.WriteString("<details class=\"report-block ")
-	b.WriteString(tone)
-	if open {
-		b.WriteString("\" open>\n")
-	} else {
-		b.WriteString("\">\n")
-	}
+	writeReportBlockOpen(b, tone, scn.Verdict, open)
 	writeBlockSummary(b, html.EscapeString(scn.Heading), "场景", scn.Verdict, scn.Duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	writeHookAlert(b, scn.PreHookFailure, "Before Scenario")
@@ -227,13 +208,7 @@ func writeConceptBlock(b *bytes.Buffer, item ItemReport) {
 	tone := toneClass(verdict)
 	name := itemTextHTML(item)
 	open := verdict == VerdictFail
-	b.WriteString("<details class=\"report-block ")
-	b.WriteString(tone)
-	if open {
-		b.WriteString("\" open>\n")
-	} else {
-		b.WriteString("\">\n")
-	}
+	writeReportBlockOpen(b, tone, verdict, open)
 	writeBlockSummary(b, name, "概念", verdict, itemDurationStr(item))
 	b.WriteString("<div class=\"block-body\">\n")
 	for _, child := range concept.Items {
@@ -254,13 +229,7 @@ func writeStepBlock(b *bytes.Buffer, phase string, item ItemReport) {
 	tone := toneClass(verdict)
 	name := stepTextHTML(step)
 	open := verdict == VerdictFail
-	b.WriteString("<details class=\"report-block ")
-	b.WriteString(tone)
-	if open {
-		b.WriteString("\" open>\n")
-	} else {
-		b.WriteString("\">\n")
-	}
+	writeReportBlockOpen(b, tone, verdict, open)
 	writeBlockSummary(b, name, itemTypeLabel(phase, item), verdict, itemDurationStr(item))
 	b.WriteString("<div class=\"block-body\">\n")
 	writeStepExtras(b, step)
