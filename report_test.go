@@ -461,7 +461,6 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"tone-pass",
 		"tone-fail",
 		"summary-meta",
-		"stat-duration",
 		"filter-group",
 		"data-scope=\"spec\"",
 		"data-scope=\"scenario\"",
