@@ -4,35 +4,35 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/getgauge/gauge-proto/go/gauge_messages"
+	"github.com/gaugestudio/studio-reporter/internal/report"
 )
 
 func TestRecordAndDeleteHistory(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv(reportsDirEnv, root)
-	t.Setenv(overwriteReportsEnv, "true")
+	t.Setenv(report.ReportsDirEnv, root)
+	t.Setenv(report.OverwriteReportsEnv, "true")
 
-	runDir := filepath.Join(root, reportFolderName)
+	runDir := filepath.Join(root, report.FolderName)
 	if err := os.MkdirAll(runDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	report := toReport(sampleSuite())
-	html, err := renderReportHTML(report)
+	r := report.FromSuite(sampleSuite())
+	html, err := report.RenderReportHTML(r)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(runDir, reportIndexFile), html, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(runDir, report.IndexFile), html, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := writeLiveSnapshot(runDir, &LiveSnapshot{Rev: 1, Running: false, Report: report}); err != nil {
+	if err := report.WriteLiveSnapshot(runDir, &report.LiveSnapshot{Rev: 1, Running: false, Report: r}); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := recordCompletedRun(runDir, report); err != nil {
+	if err := recordCompletedRun(runDir, r); err != nil {
 		t.Fatal(err)
 	}
 	histPath := filepath.Join(runDir, historyFileName)
@@ -44,7 +44,7 @@ func TestRecordAndDeleteHistory(t *testing.T) {
 	if err := json.Unmarshal(raw, &hist); err != nil {
 		t.Fatal(err)
 	}
-	if hist.FormatVersion != reportFormatVersion {
+	if hist.FormatVersion != report.FormatVersion {
 		t.Fatalf("history formatVersion = %d", hist.FormatVersion)
 	}
 	if len(hist.Runs) != 1 {
@@ -55,14 +55,14 @@ func TestRecordAndDeleteHistory(t *testing.T) {
 		t.Fatalf("entry = %+v", entry)
 	}
 	archive := filepath.Join(runDir, entry.RelDir)
-	if _, err := os.Stat(filepath.Join(archive, liveReportJSONFile)); err != nil {
+	if _, err := os.Stat(filepath.Join(archive, report.LiveReportJSONFile)); err != nil {
 		t.Fatalf("archive missing report.json: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(archive, report.IndexFile)); err != nil {
+		t.Fatalf("archive missing static index.html: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(archive, "assets")); err == nil {
 		t.Fatal("archive should not copy Vue assets")
-	}
-	if _, err := os.Stat(filepath.Join(archive, reportIndexFile)); err == nil {
-		t.Fatal("archive should not copy index.html")
 	}
 
 	if err := deleteHistoryRun(runDir, entry.ID); err != nil {
@@ -82,60 +82,49 @@ func TestRecordAndDeleteHistory(t *testing.T) {
 
 func TestLiveSnapshotTracksCurrentAndElapsed(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv(reportsDirEnv, dir)
-	t.Setenv(overwriteReportsEnv, "true")
+	t.Setenv(report.ReportsDirEnv, dir)
+	t.Setenv(report.OverwriteReportsEnv, "true")
 
-	p := newLivePublisher()
-	p.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
+	p := report.NewLivePublisher(nil)
+	p.OnExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
 	time.Sleep(15 * time.Millisecond)
-	p.onSpecStarting(&gauge_messages.ExecutionInfo{
-		ProjectName: "demo-project",
-		CurrentSpec: &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"},
-	})
-	p.onScenarioStarting(&gauge_messages.ExecutionInfo{
-		CurrentSpec:     &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"},
-		CurrentScenario: &gauge_messages.ScenarioInfo{Name: "Successful login"},
-	})
 
-	raw, err := os.ReadFile(filepath.Join(dir, reportFolderName, liveReportJSONFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var snap LiveSnapshot
-	if err := json.Unmarshal(raw, &snap); err != nil {
-		t.Fatal(err)
-	}
-	if !snap.Running {
-		t.Fatal("expected running")
+	snap := p.Snapshot()
+	if snap == nil || !snap.Running {
+		t.Fatal("expected running in-memory snapshot")
 	}
 	if snap.StartedAt == 0 {
 		t.Fatal("startedAt missing")
 	}
-	if snap.CurrentSpecID != "spec:specs/auth/login.spec" {
+	p.OnSpecStarting(&gauge_messages.ExecutionInfo{
+		ProjectName: "demo-project",
+		CurrentSpec: &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"},
+	})
+	if snap := p.Snapshot(); snap.CurrentSpecID != "spec:specs/auth/login.spec" {
 		t.Fatalf("currentSpecId = %s", snap.CurrentSpecID)
 	}
+	p.OnScenarioStarting(&gauge_messages.ExecutionInfo{
+		CurrentSpec:     &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"},
+		CurrentScenario: &gauge_messages.ScenarioInfo{Name: "Successful login"},
+	})
+	snap = p.Snapshot()
 	if snap.CurrentScenarioID == "" {
 		t.Fatal("currentScenarioId empty")
 	}
 	if snap.Report == nil || snap.Report.ExecutionTime < 10 {
 		t.Fatalf("elapsed = %+v", snap.Report)
 	}
-
-	body := viewerSource(t, filepath.Join(dir, reportFolderName))
-	if !strings.Contains(body, `"running":true`) || !strings.Contains(body, "currentSpecId") {
-		t.Fatalf("live html seed missing running flag")
-	}
 }
 
 func TestRecountAlwaysUpdatesSuccessRate(t *testing.T) {
-	r := &Report{
+	r := &report.Report{
 		SuccessRate: 100,
-		Specs: []SpecReport{
-			{Verdict: verdictPass, Scenarios: []ScenarioReport{{Verdict: verdictPass}}},
-			{Verdict: verdictFail, Scenarios: []ScenarioReport{{Verdict: verdictFail}}},
+		Specs: []report.SpecReport{
+			{Verdict: report.VerdictPass, Scenarios: []report.ScenarioReport{{Verdict: report.VerdictPass}}},
+			{Verdict: report.VerdictFail, Scenarios: []report.ScenarioReport{{Verdict: report.VerdictFail}}},
 		},
 	}
-	recountReport(r)
+	report.Recount(r)
 	if r.SuccessRate != 50 {
 		t.Fatalf("successRate = %v", r.SuccessRate)
 	}
@@ -143,15 +132,15 @@ func TestRecountAlwaysUpdatesSuccessRate(t *testing.T) {
 
 func TestDeleteHistoryDoesNotRemoveHubFiles(t *testing.T) {
 	root := t.TempDir()
-	hub := filepath.Join(root, reportFolderName)
+	hub := filepath.Join(root, report.FolderName)
 	if err := os.MkdirAll(hub, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	index := filepath.Join(hub, reportIndexFile)
+	index := filepath.Join(hub, report.IndexFile)
 	if err := os.WriteFile(index, []byte("<html></html>"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := deleteHistoryRun(hub, reportIndexFile); err == nil {
+	if err := deleteHistoryRun(hub, report.IndexFile); err == nil {
 		t.Fatal("expected error deleting index.html")
 	}
 	if _, err := os.Stat(index); err != nil {
@@ -161,35 +150,35 @@ func TestDeleteHistoryDoesNotRemoveHubFiles(t *testing.T) {
 
 func TestRecordCompletedRunIgnoresExternalDir(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv(reportsDirEnv, root)
+	t.Setenv(report.ReportsDirEnv, root)
 	out := filepath.Join(root, "elsewhere")
 	if err := os.MkdirAll(out, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := recordCompletedRun(out, toReport(sampleSuite())); err != nil {
+	if err := recordCompletedRun(out, report.FromSuite(sampleSuite())); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(root, reportFolderName, historyFileName)); err == nil {
+	if _, err := os.Stat(filepath.Join(root, report.FolderName, historyFileName)); err == nil {
 		t.Fatal("external --out should not write project history")
 	}
 }
 
 func TestHistoryDeleteRejectsNonRunFiles(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv(reportsDirEnv, dir)
-	t.Setenv(overwriteReportsEnv, "true")
-	runDir := filepath.Join(dir, reportFolderName)
+	t.Setenv(report.ReportsDirEnv, dir)
+	t.Setenv(report.OverwriteReportsEnv, "true")
+	runDir := filepath.Join(dir, report.FolderName)
 	if err := os.MkdirAll(runDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	report := toReport(sampleSuite())
-	if err := os.WriteFile(filepath.Join(runDir, reportIndexFile), []byte("<html></html>"), 0o644); err != nil {
+	r := report.FromSuite(sampleSuite())
+	if err := os.WriteFile(filepath.Join(runDir, report.IndexFile), []byte("<html></html>"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := writeLiveSnapshot(runDir, &LiveSnapshot{Rev: 1, Running: false, Report: report}); err != nil {
+	if err := report.WriteLiveSnapshot(runDir, &report.LiveSnapshot{Rev: 1, Running: false, Report: r}); err != nil {
 		t.Fatal(err)
 	}
-	if err := recordCompletedRun(runDir, report); err != nil {
+	if err := recordCompletedRun(runDir, r); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(runDir, historyFileName+".bak"), []byte("{}"), 0o644); err != nil {

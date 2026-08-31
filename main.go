@@ -20,6 +20,7 @@ import (
 
 	// 第三方库（GitHub）：Gauge 测试框架的 gRPC 消息定义
 	"github.com/getgauge/gauge-proto/go/gauge_messages"
+	"github.com/gaugestudio/studio-reporter/internal/report"
 	// 第三方库（Google）：gRPC 通信框架
 	"google.golang.org/grpc"
 )
@@ -66,7 +67,10 @@ func main() {
 	}
 
 	if *input != "" {
-		generated, err := generateReportFromJSON(*input, *out)
+		generated, err := report.GenerateFromJSON(*input, *out, &report.FinalWriter{
+			OnIndexHTMLWritten: openReportPage,
+			History:            historyRecorder{},
+		})
 		if err != nil {
 			log.Fatalf("studio-reporter: %v", err)
 		}

@@ -20,6 +20,7 @@ const (
 	EventConceptExecutionStarting  = "ConceptExecutionStarting"
 	EventConceptExecutionEnding    = "ConceptExecutionEnding"
 	EventSuiteResult               = "SuiteResult"
+	EventReportSnapshot            = "ReportSnapshot"
 	EventReportGenerated           = "ReportGenerated"
 )
 

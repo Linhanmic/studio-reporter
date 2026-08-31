@@ -16,16 +16,18 @@ The report hub is always `<gauge_reports_dir>/studio-report/` (default `reports/
 
 ```
 reports/studio-report/
-├── index.html            # Report viewer (Vue 3 + Element Plus, seeded with the latest run)
+├── index.html            # Static HTML report (fully rendered, no embedded JSON)
+├── viewer.html           # Live Vue viewer (WebSocket / poll report.json)
 ├── manage.html           # Report management console (history list / open / delete)
-├── assets/               # Viewer assets (vue, element-plus, pinia, report-app.js)
+├── assets/               # Live viewer assets (vue, element-plus, pinia, report-app.js)
 ├── images/               # Screenshots of the latest run
-├── report.json                        # Live snapshot envelope of the latest run (polled by the viewer)
+├── report.json                        # Snapshot envelope of the latest run (debug / live viewer)
 ├── report-live.js                     # Same payload as report.json, as JSONP for file:// viewing
 ├── <project>-<timestamp>.uhilreport   # Portable report file (raw Gauge SuiteExecutionResult, protojson)
 ├── history.json                       # Index of completed runs
 ├── history-live.js                    # Same payload as history.json, as JSONP for file:// viewing
 └── archives/<project>-<timestamp>/    # One folder per completed run
+    ├── index.html                     # Static HTML report for that run
     ├── report.json                    # Frozen snapshot envelope of that run
     ├── report-live.js
     ├── <project>-<timestamp>.uhilreport
@@ -34,7 +36,7 @@ reports/studio-report/
 
 ## `report.json` — live snapshot envelope
 
-Written atomically on every update while the suite runs, and once more when it finishes. The viewer polls it every 700 ms.
+Written atomically **when the suite finishes** (and on `--input` regeneration). While the suite is still running, the plugin keeps the tree in memory and streams `ReportSnapshot` events over WebSocket instead of updating this file. `viewer.html` polls it every 700 ms when WebSocket is unavailable. **While `running` is true, each scenario omits `contexts` / `items` / `teardowns`** (live detail stops at the scenario layer). The final snapshot after `SuiteResult` restores the full step tree.
 
 | Field | Type | Description |
 |---|---|---|
@@ -65,7 +67,7 @@ Top-level fields:
 | `specs` | array | Spec reports |
 | `preHookFailure`, `postHookFailure` | object | Suite hook failures (optional) |
 
-Each spec contains `scenarios`; each scenario contains `contexts` / `items` / `teardowns`; items are steps, nested concepts (`concept.items`), or comments. Screenshot fields hold paths **relative to the folder containing that `report.json`** (e.g. `images/foo.png`). The authoritative field list is the Go structs in `report.go` (`Report`, `SpecReport`, `ScenarioReport`, `ItemReport`, `StepReport`, `HookFailure`).
+Each spec contains `scenarios`; each scenario contains `contexts` / `items` / `teardowns`; items are steps, nested concepts (`concept.items`), or comments. Screenshot fields hold paths **relative to the folder containing that `report.json`** (e.g. `images/foo.png`). The authoritative field list is the Go structs in `internal/report/model.go` (`Report`, `SpecReport`, `ScenarioReport`, `ItemReport`, `StepReport`, `HookFailure`).
 
 ## `*.uhilreport` — portable report file
 
@@ -98,25 +100,23 @@ Each entry:
 |---|---|---|
 | `id` | string | Archive folder name (timestamp-based, unique) |
 | `relDir` | string | Run folder relative to the hub, e.g. `archives/<id>` |
-| `href` | string | Relative path to the run's `report.json` |
+| `href` | string | Relative path to the run's static `index.html` |
 | `projectName`, `timestamp`, `timestampISO`, `duration`, `verdict`, `failed` | | Copied from the run |
 | `summary` | object | Same shape as the report summary |
 
 `history-live.js` assigns the identical payload to `window.__GAUGE_HISTORY__` for `file://` viewing.
 
-## Opening archived runs
+## Opening reports
 
-The viewer accepts a `run` query parameter holding a hub-relative folder:
+- **Latest completed run:** open `index.html` — a self-contained static HTML page with all data pre-rendered (no Vue, no embedded JSON).
+- **Live run:** open `viewer.html?ws=ws://127.0.0.1:<port>` (or poll `report.json` after finalize).
+- **Archived run:** open `archives/<id>/index.html` directly (each archive folder contains its own static report).
 
-```
-index.html?run=archives/2026-08-28_10.00.00
-```
-
-It then loads `<run>/report.json` (fallback `<run>/report-live.js`), resolves screenshots against that folder, disables live polling, and shows an「归档」badge. The parameter is sanitized: absolute paths, drive letters, and `..` segments are rejected.
+`viewer.html` still accepts a `run` query parameter for hub-relative folders (loads `<run>/report.json`). The parameter is sanitized: absolute paths, drive letters, and `..` segments are rejected.
 
 ## Management console and HTTP API
 
-`manage.html` is a standalone page written next to `index.html`. It lists `history.json`, opens runs via `index.html?run=...`, and deletes archives through the HTTP API. Deleting requires serving the hub:
+`manage.html` is a standalone page written next to `index.html`. It lists `history.json`, opens runs via their static `index.html`, and deletes archives through the HTTP API. Deleting requires serving the hub:
 
 ```bash
 studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765

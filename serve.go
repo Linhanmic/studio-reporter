@@ -10,11 +10,13 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/gaugestudio/studio-reporter/internal/report"
 )
 
 func serveReportDir(dir, addr string) error {
 	if dir == "" {
-		root, err := studioReportRoot()
+		root, err := report.StudioReportRoot()
 		if err != nil {
 			return err
 		}
@@ -33,7 +35,7 @@ func serveReportDir(dir, addr string) error {
 	}
 	log.Printf("studio-reporter: serving %s at http://%s/", abs, listener.Addr())
 	fmt.Printf("studio-reporter serve: http://%s/\n", listener.Addr())
-	fmt.Printf("studio-reporter manage: http://%s/%s\n", listener.Addr(), manageIndexFile)
+	fmt.Printf("studio-reporter manage: http://%s/%s\n", listener.Addr(), report.ManageIndexFile)
 	return http.Serve(listener, historyServeMux(abs))
 }
 

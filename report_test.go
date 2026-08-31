@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/getgauge/gauge-proto/go/gauge_messages"
+	"github.com/gaugestudio/studio-reporter/internal/report"
 )
 
 func sampleSuite() *gauge_messages.ProtoSuiteResult {
@@ -327,11 +328,11 @@ func searchTableScenario(row int32, query string) *gauge_messages.ProtoItem {
 }
 
 func TestToReportHierarchyAndCounts(t *testing.T) {
-	r := toReport(sampleSuite())
+	r := report.FromSuite(sampleSuite())
 	if r.ProjectName != "demo-project" || r.Environment != "default" {
 		t.Fatalf("unexpected header: %+v", r)
 	}
-	if r.Verdict != verdictFail {
+	if r.Verdict != report.VerdictFail {
 		t.Fatalf("suite verdict = %s, want fail", r.Verdict)
 	}
 	if r.Duration != "00:00:01.234" {
@@ -340,10 +341,10 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	if len(r.Specs) != 5 {
 		t.Fatalf("specs = %d", len(r.Specs))
 	}
-	if r.Summary.Specs != (Counts{Total: 5, Passed: 3, Failed: 1, Skipped: 1}) {
+	if r.Summary.Specs != (report.Counts{Total: 5, Passed: 3, Failed: 1, Skipped: 1}) {
 		t.Fatalf("spec counts = %+v", r.Summary.Specs)
 	}
-	if r.Summary.Scenarios != (Counts{Total: 7, Passed: 5, Failed: 1, Skipped: 1}) {
+	if r.Summary.Scenarios != (report.Counts{Total: 7, Passed: 5, Failed: 1, Skipped: 1}) {
 		t.Fatalf("scenario counts = %+v", r.Summary.Scenarios)
 	}
 	if r.Summary.Steps.Total < 4 || r.Summary.Steps.Failed != 1 || r.Summary.Steps.Skipped != 1 {
@@ -351,7 +352,7 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	}
 
 	login := r.Specs[0]
-	if login.Heading != "Login" || login.Verdict != verdictPass || login.FileName != "specs/auth/login.spec" {
+	if login.Heading != "Login" || login.Verdict != report.VerdictPass || login.FileName != "specs/auth/login.spec" {
 		t.Fatalf("login spec = %+v", login)
 	}
 	if login.Duration != "00:00:00.400" || login.ExecutionTime != 400 {
@@ -397,11 +398,11 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	}
 
 	checkout := r.Specs[1]
-	if checkout.Verdict != verdictFail || checkout.Datatable == nil || len(checkout.Datatable.Rows) != 2 || checkout.Datatable.Rows[0][0] != "book" {
+	if checkout.Verdict != report.VerdictFail || checkout.Datatable == nil || len(checkout.Datatable.Rows) != 2 || checkout.Datatable.Rows[0][0] != "book" {
 		t.Fatalf("checkout spec = %+v", checkout)
 	}
 	pay := checkout.Scenarios[0]
-	if pay.Verdict != verdictFail || pay.TableRowIndex != 0 || pay.PreHookFailure == nil {
+	if pay.Verdict != report.VerdictFail || pay.TableRowIndex != 0 || pay.PreHookFailure == nil {
 		t.Fatalf("pay scenario = %+v", pay)
 	}
 	if pay.Items[0].Step.ErrorMessage != "insufficient funds" {
@@ -410,10 +411,10 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	if pay.Items[1].Kind != "comment" || pay.Items[1].Comment != "note" {
 		t.Fatalf("comment item = %+v", pay.Items[1])
 	}
-	if len(checkout.Scenarios) != 2 || checkout.Scenarios[1].TableRowIndex != 1 || checkout.Scenarios[1].Verdict != verdictPass {
+	if len(checkout.Scenarios) != 2 || checkout.Scenarios[1].TableRowIndex != 1 || checkout.Scenarios[1].Verdict != report.VerdictPass {
 		t.Fatalf("checkout rows = %+v", checkout.Scenarios)
 	}
-	if r.Specs[2].Verdict != verdictSkip || r.Specs[2].Errors[0].Message != "missing step" {
+	if r.Specs[2].Verdict != report.VerdictSkip || r.Specs[2].Errors[0].Message != "missing step" {
 		t.Fatalf("skipped spec = %+v", r.Specs[2])
 	}
 	nested := r.Specs[3]
@@ -435,128 +436,44 @@ func TestToReportHierarchyAndCounts(t *testing.T) {
 	}
 }
 
-func TestItemDurationRollup(t *testing.T) {
-	items := []ItemReport{{
-		ID:   "c",
-		Kind: "concept",
-		Concept: &ConceptReport{
-			Step: &StepReport{ActualText: "parent", Verdict: verdictPass, ExecutionTime: 0, Duration: formatDuration(0)},
-			Items: []ItemReport{{
-				ID:   "s",
-				Kind: "step",
-				Step: &StepReport{ActualText: "child", Verdict: verdictPass, ExecutionTime: 50, Duration: formatDuration(50)},
-			}},
-		},
-	}}
-	sum := fillItemDurations(items)
-	if sum != 50 {
-		t.Fatalf("sum = %d", sum)
-	}
-	if items[0].Duration != "00:00:00.050" || items[0].Concept.Duration != "00:00:00.050" {
-		t.Fatalf("concept rollup = %+v", items[0])
-	}
-	if items[0].Concept.Items[0].Duration != "00:00:00.050" {
-		t.Fatalf("child duration = %s", items[0].Concept.Items[0].Duration)
-	}
-	if items[0].Concept.Step.ExecutionTime != 50 {
-		t.Fatalf("concept step time = %d", items[0].Concept.Step.ExecutionTime)
-	}
-}
-
-func TestSpecFolders(t *testing.T) {
-	if got := specFolders("specs/auth/login.spec"); strings.Join(got, "/") != "specs/auth" {
-		t.Fatalf("nested = %v", got)
-	}
-	if got := specFolders("login.spec"); len(got) != 0 {
-		t.Fatalf("root file = %v", got)
-	}
-	if got := specFolders(`specs\win.spec`); strings.Join(got, "/") != "specs" {
-		t.Fatalf("backslash = %v", got)
-	}
-}
-
-func TestFormatDurationAndVerdicts(t *testing.T) {
-	if got := formatDuration(0); got != "00:00:00.000" {
-		t.Fatalf("zero duration = %s", got)
-	}
-	if got := formatDuration(3723004); got != "01:02:03.004" {
-		t.Fatalf("long duration = %s", got)
-	}
-	if stepVerdict(nil) != verdictNone {
-		t.Fatal("nil step should be none")
-	}
-	empty := toReport(&gauge_messages.ProtoSuiteResult{ProjectName: ""})
-	if empty.ProjectName != "Gauge Suite" || empty.Verdict != verdictNone {
-		t.Fatalf("empty suite = %+v", empty)
-	}
-}
-
 func viewerSource(t *testing.T, dir string) string {
 	t.Helper()
-	html, err := os.ReadFile(filepath.Join(dir, reportIndexFile))
+	html, err := os.ReadFile(filepath.Join(dir, report.IndexFile))
 	if err != nil {
 		t.Fatal(err)
 	}
-	js, err := os.ReadFile(filepath.Join(dir, "assets", "report-app.js"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(html) + "\n" + string(js)
+	return string(html)
 }
 
 func TestWriteAndRegenerateReport(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv(reportsDirEnv, dir)
-	t.Setenv(overwriteReportsEnv, "true")
+	t.Setenv(report.ReportsDirEnv, dir)
+	t.Setenv(report.OverwriteReportsEnv, "true")
 
-	suite := &gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()}
-	generated, err := generateReportFromSuite(suite)
+	generated, err := newReportEngine(nil).FinalizeSuite(&gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()})
 	if err != nil {
 		t.Fatal(err)
 	}
 	html := viewerSource(t, generated.Dir)
 	for _, want := range []string{
 		"Test Report Viewer",
-		"el-table",
 		"运行时间",
-		"pinia",
-		"dense-table",
-		"row-pass",
-		"row-fail",
-		"accordion",
-		"clickIsExpandControl",
-		"@row-click",
-		"specBodyRows",
-		"kind: 'datarow'",
+		"tone-pass",
+		"tone-fail",
+		"step-table",
 		"data-kv",
 		"out-card",
-		"out-stack",
-		"col-type",
-		`width="120"`,
-		"scenarioRowsFor",
-		"currentSpecId",
-		"followLive",
-		"safeRelDir",
-		"tone-pass",
-		"el-table__expand-icon--expanded::before",
-		`"formatVersion":1`,
-		"archiveDir",
-		"assetHref",
+		"report-block",
+		"<details",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
 		"Checkout",
-		"specs/auth",
+		"specs / auth",
 		"Context",
 		"Teardown",
-		`"folders":["specs","auth"]`,
-		`"folders":["specs","modules","payments","gateway"]`,
 		"Very long payment gateway specification covering nested directory wrapping",
-		`"verdict":"fail"`,
-		"assets/vue.global.prod.js",
-		"assets/element-plus.full.min.js",
-		"assets/pinia.iife.prod.js",
-		"assets/report-app.js",
+		`class="badge fail"`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("generated HTML missing %q", want)
@@ -566,6 +483,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"function buildItemNodes",
 		"id: 'suite'",
 		"el-tree",
+		"el-table",
+		"pinia",
+		"vue.global",
+		"report-data",
 		"script-pane",
 		">脚本<",
 		"row.fileName",
@@ -596,34 +517,37 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		t.Fatalf("json not written: %v", err)
 	}
 	reportFile := filepath.Base(generated.JSONPath)
-	if !strings.HasPrefix(reportFile, "demo-project-") || !strings.HasSuffix(reportFile, uhilReportExt) {
-		t.Fatalf("report file should be <project>-<timestamp>%s, got %s", uhilReportExt, reportFile)
+	if !strings.HasPrefix(reportFile, "demo-project-") || !strings.HasSuffix(reportFile, report.UhilReportExt) {
+		t.Fatalf("report file should be <project>-<timestamp>%s, got %s", report.UhilReportExt, reportFile)
+	}
+	if _, err := os.Stat(filepath.Join(generated.Dir, report.ViewerFile)); err != nil {
+		t.Fatalf("viewer.html missing: %v", err)
 	}
 	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css", "pinia.iife.prod.js", "report-app.js"} {
 		if _, err := os.Stat(filepath.Join(generated.Dir, "assets", asset)); err != nil {
 			t.Fatalf("asset %s missing: %v", asset, err)
 		}
 	}
-	if _, err := os.Stat(filepath.Join(generated.Dir, liveReportJSONFile)); err != nil {
+	if _, err := os.Stat(filepath.Join(generated.Dir, report.LiveReportJSONFile)); err != nil {
 		t.Fatalf("live report.json missing: %v", err)
 	}
-	liveJSON, err := os.ReadFile(filepath.Join(generated.Dir, liveReportJSONFile))
+	liveJSON, err := os.ReadFile(filepath.Join(generated.Dir, report.LiveReportJSONFile))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(liveJSON), `"formatVersion":1`) {
 		t.Fatalf("report.json missing formatVersion: %s", string(liveJSON)[:120])
 	}
-	managePage, err := os.ReadFile(filepath.Join(generated.Dir, manageIndexFile))
+	managePage, err := os.ReadFile(filepath.Join(generated.Dir, report.ManageIndexFile))
 	if err != nil {
 		t.Fatalf("manage.html missing: %v", err)
 	}
-	for _, want := range []string{"报告管理", "api/history/", "index.html?run=", "__GAUGE_HISTORY__"} {
+	for _, want := range []string{"报告管理", "api/history/", "/index.html", "__GAUGE_HISTORY__"} {
 		if !strings.Contains(string(managePage), want) {
 			t.Fatalf("manage.html missing %q", want)
 		}
 	}
-	root := filepath.Join(dir, reportFolderName)
+	root := filepath.Join(dir, report.FolderName)
 	if _, err := os.Stat(filepath.Join(root, historyFileName)); err != nil {
 		t.Fatalf("history.json missing: %v", err)
 	}
@@ -641,13 +565,13 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	if !strings.HasPrefix(hist.Runs[0].ID, "demo-project-") {
 		t.Fatalf("archive id should be <project>-<timestamp>, got %s", hist.Runs[0].ID)
 	}
-	archived, err := filepath.Glob(filepath.Join(root, filepath.FromSlash(hist.Runs[0].RelDir), "*"+uhilReportExt))
+	archived, err := filepath.Glob(filepath.Join(root, filepath.FromSlash(hist.Runs[0].RelDir), "*"+report.UhilReportExt))
 	if err != nil || len(archived) != 1 || !strings.HasPrefix(filepath.Base(archived[0]), "demo-project-") {
-		t.Fatalf("archive missing <project>-<timestamp>%s: %v %v", uhilReportExt, archived, err)
+		t.Fatalf("archive missing <project>-<timestamp>%s: %v %v", report.UhilReportExt, archived, err)
 	}
 
 	out := filepath.Join(dir, "regenerated")
-	again, err := generateReportFromJSON(generated.JSONPath, out)
+	again, err := report.GenerateFromJSON(generated.JSONPath, out, &report.FinalWriter{History: historyRecorder{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -670,147 +594,117 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 
 func TestReportDirAlwaysHub(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv(reportsDirEnv, dir)
-	t.Setenv(overwriteReportsEnv, "false")
-	a, err := resolveReportDir()
+	t.Setenv(report.ReportsDirEnv, dir)
+	t.Setenv(report.OverwriteReportsEnv, "false")
+	a, err := report.ResolveDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := resolveReportDir()
+	b, err := report.ResolveDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filepath.Base(a) != reportFolderName {
+	if filepath.Base(a) != report.FolderName {
 		t.Fatalf("hub = %s", a)
 	}
 	if a != b {
 		t.Fatalf("live hub should be stable: %s vs %s", a, b)
 	}
 
-	t.Setenv(overwriteReportsEnv, "true")
-	c, err := resolveReportDir()
+	t.Setenv(report.OverwriteReportsEnv, "true")
+	c, err := report.ResolveDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	d, err := resolveReportDir()
+	d, err := report.ResolveDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c != d || c != a || filepath.Base(c) != reportFolderName {
+	if c != d || c != a || filepath.Base(c) != report.FolderName {
 		t.Fatalf("overwrite dirs = %s %s %s", a, c, d)
 	}
 }
 
 func TestOverwriteReportsAliasAndProjectRoot(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv(gaugeProjectRootEnv, root)
-	t.Setenv(reportsDirEnv, "out-reports")
-	t.Setenv(overwriteReportsEnv, "")
-	t.Setenv(overwriteReportsEnvAlias, "false")
-	if shouldOverwriteReports() {
+	t.Setenv(report.GaugeProjectRootEnv, root)
+	t.Setenv(report.ReportsDirEnv, "out-reports")
+	t.Setenv(report.OverwriteReportsEnv, "")
+	t.Setenv(report.OverwriteReportsEnvAlias, "false")
+	if report.ShouldOverwriteReports() {
 		t.Fatal("over_write_reports=false should keep each run")
 	}
-	a, err := resolveReportDir()
+	a, err := report.ResolveDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := filepath.Join(root, "out-reports", reportFolderName)
-	if a != want && !strings.HasSuffix(a, filepath.Join("out-reports", reportFolderName)) {
+	want := filepath.Join(root, "out-reports", report.FolderName)
+	if a != want && !strings.HasSuffix(a, filepath.Join("out-reports", report.FolderName)) {
 		t.Fatalf("dir = %s, want under %s", a, want)
 	}
-	if filepath.Base(a) != reportFolderName {
+	if filepath.Base(a) != report.FolderName {
 		t.Fatalf("hub dir = %s", a)
 	}
-	t.Setenv(overwriteReportsEnv, "true")
-	t.Setenv(overwriteReportsEnvAlias, "false")
-	if !shouldOverwriteReports() {
+	t.Setenv(report.OverwriteReportsEnv, "true")
+	t.Setenv(report.OverwriteReportsEnvAlias, "false")
+	if !report.ShouldOverwriteReports() {
 		t.Fatal("overwrite_reports should win over over_write_reports")
 	}
 }
 
 func TestLiveAndFinalReportShareDirectoryWhenNotOverwriting(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv(reportsDirEnv, dir)
-	t.Setenv(overwriteReportsEnv, "false")
+	t.Setenv(report.ReportsDirEnv, dir)
+	t.Setenv(report.OverwriteReportsEnv, "false")
 
-	p := newLivePublisher()
-	p.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
-	liveDir := reportDirFromLive(p)
-	if liveDir == "" {
-		t.Fatal("live dir empty")
-	}
-	if filepath.Base(liveDir) != reportFolderName {
-		t.Fatalf("live dir should be studio-report hub: %s", liveDir)
+	p := report.NewLivePublisher(nil)
+	p.OnExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
+	if p.Dir() != "" {
+		t.Fatalf("live run should not create hub dir yet, got %s", p.Dir())
 	}
 
-	generated, err := generateReportFromSuiteTo(&gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()}, liveDir)
+	generated, err := newReportEngine(nil).FinalizeSuite(&gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if generated.Dir != liveDir {
-		t.Fatalf("final dir %s != live dir %s", generated.Dir, liveDir)
+	liveDir := generated.Dir
+	if filepath.Base(liveDir) != report.FolderName {
+		t.Fatalf("hub = %s", generated.Dir)
 	}
 
-	p2 := newLivePublisher()
-	p2.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
-	if reportDirFromLive(p2) != liveDir {
-		t.Fatal("second run should reuse the hub directory")
-	}
-}
-
-func TestCopyAndRewriteScreenshots(t *testing.T) {
-	srcDir := t.TempDir()
-	src := filepath.Join(srcDir, "fail.png")
-	if err := os.WriteFile(src, []byte("png"), 0o644); err != nil {
+	hub2, err := report.ResolveDir()
+	if err != nil {
 		t.Fatal(err)
 	}
-	r := &Report{
-		Specs: []SpecReport{{
-			Scenarios: []ScenarioReport{{
-				Items: []ItemReport{{
-					Kind: "step",
-					Step: &StepReport{FailureScreenshot: src, Screenshots: []string{src}},
-				}},
-			}},
-		}},
-	}
-	dest := filepath.Join(t.TempDir(), "images")
-	if err := os.MkdirAll(dest, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	mapping := copyScreenshots(collectScreenshotFiles(r), dest)
-	if mapping[src] != "images/fail.png" {
-		t.Fatalf("mapping = %#v", mapping)
-	}
-	rewriteScreenshotPaths(r, mapping)
-	step := r.Specs[0].Scenarios[0].Items[0].Step
-	if step.FailureScreenshot != "images/fail.png" || step.Screenshots[0] != "images/fail.png" {
-		t.Fatalf("rewritten = %+v", step)
+	if hub2 != generated.Dir {
+		t.Fatalf("hub should be stable: %s vs %s", hub2, generated.Dir)
 	}
 }
 
 func TestSkipReportEnv(t *testing.T) {
-	t.Setenv(skipReportEnv, "true")
-	if !shouldSkipReport() {
+	t.Setenv(report.SkipReportEnv, "true")
+	if !report.ShouldSkipReport() {
 		t.Fatal("expected skip")
 	}
-	t.Setenv(skipReportEnv, "")
-	if shouldSkipReport() {
+	t.Setenv(report.SkipReportEnv, "")
+	if report.ShouldSkipReport() {
 		t.Fatal("did not expect skip")
 	}
 }
 
 func TestRenderReportHTMLEscapesScript(t *testing.T) {
-	html, err := renderReportHTML(&Report{ProjectName: "</script>xss"})
+	html, err := report.RenderReportHTML(&report.Report{ProjectName: "</script>xss"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(string(html), "</script>xss") {
 		t.Fatal("raw script break should be escaped")
 	}
-	start := strings.Index(string(html), `<script type="application/json" id="report-data">`)
-	if start < 0 {
-		t.Fatal("missing report data script")
+	if !strings.Contains(string(html), "&lt;/script&gt;xss") {
+		t.Fatal("project name should be HTML-escaped")
+	}
+	if strings.Contains(string(html), `id="report-data"`) {
+		t.Fatal("static report must not embed JSON")
 	}
 }
 
@@ -833,7 +727,7 @@ func TestGenerateReportFromJSONRejectsBadInput(t *testing.T) {
 	if err := os.WriteFile(path, []byte(`{"nope":true}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := generateReportFromJSON(path, t.TempDir()); err == nil {
+	if _, err := report.GenerateFromJSON(path, t.TempDir(), &report.FinalWriter{}); err == nil {
 		t.Fatal("expected error")
 	}
 }

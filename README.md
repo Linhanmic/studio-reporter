@@ -88,25 +88,26 @@ gauge run specs/
 
 ## HTML Report
 
-When a suite finishes, the plugin writes a Vue 3 + Element Plus Test Report Viewer to `reports/studio-report/index.html` (unless `GAUGE_STUDIO_SKIP_REPORT` is set).
+When a suite finishes, the plugin writes a **static HTML report** to `reports/studio-report/index.html` (unless `GAUGE_STUDIO_SKIP_REPORT` is set). The page is fully rendered on the server side — no embedded JSON, no Vue runtime required to read the report.
 
 The report includes:
 
-- Nested expandable result tables (spec → scenario → concept → step) with Gauge-style plus/minus fold controls
+- Nested expandable result blocks (spec → scenario → concept → step)
 - Overall verdict, duration, environment, and success rate
-- Vue 3 + Element Plus + Pinia UI
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
-- Live updates while the suite runs (`report.json`): seeded `running` flag, elapsed duration, current spec/scenario, success rate recount, no full-page reload
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
-- Filter by verdict and search across specs, scenarios, and steps
-- Step console / hook output merged into a single output card
+
+**Live viewing** while the suite runs uses `viewer.html` (Vue 3 + Element Plus): the plugin keeps the report tree **in memory** and pushes `ReportSnapshot` over WebSocket; **no disk writes until the suite finishes**. Connect via `viewer.html?ws=ws://127.0.0.1:<port>` (or poll `report.json` after finalize).
 
 The reporter does **not** open a browser. Open the file yourself:
 
 ```bash
-# Linux
+# Linux — completed report
 xdg-open reports/studio-report/index.html
+
+# Live run (optional)
+xdg-open 'reports/studio-report/viewer.html?ws=ws://127.0.0.1:8765'
 ```
 
 Set `GAUGE_STUDIO_OPEN_BROWSER=true` if you want the old auto-open behavior.
@@ -115,7 +116,7 @@ Set `GAUGE_STUDIO_OPEN_BROWSER=true` if you want the old auto-open behavior.
 
 The on-disk format (`report.json`, `<project>-<timestamp>.uhilreport`, `history.json`, `archives/`) is versioned and documented in [REPORT_FORMAT.md](REPORT_FORMAT.md).
 
-Every completed run is archived under `reports/studio-report/archives/<id>/`. The management console `reports/studio-report/manage.html` lists archived runs and opens them via `index.html?run=archives/<id>`. Deleting archives from the console requires serving the hub:
+Every completed run is archived under `reports/studio-report/archives/<id>/` (including a static `index.html`). The management console `reports/studio-report/manage.html` lists archived runs and opens them directly. Deleting archives from the console requires serving the hub:
 
 ```bash
 ./bin/studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
@@ -164,16 +165,16 @@ go tool cover -html=coverage.out
 studio-reporter/
 ├── main.go              # Entry point
 ├── reporter.go          # gRPC handler implementation
+├── report_bridge.go     # Wires history + browser into report.Engine
 ├── events.go            # Event types and structures
 ├── forwarder.go         # WebSocket forwarder
-├── report.go            # HTML report model and generation
-├── report.html          # Report viewer shell (CSS + Vue 3 app)
+├── internal/report/     # Report generation module (model, live, writer, static render)
+├── viewer.html          # Live report viewer shell (embedded into internal/report)
 ├── manage.html          # Standalone report management console
-├── report-assets/       # Vue / Element Plus / report-app.js
+├── report-assets/       # Vue / Element Plus / report-app.js (live viewer only)
 ├── history.go           # Historical run index and archives
 ├── serve.go             # Optional HTTP server for history management
 ├── REPORT_FORMAT.md     # Report file format specification
-├── report_html.go       # Embedded report template
 ├── go.mod               # Go module definition
 ├── go.sum               # Go module checksums
 ├── plugin.json          # Gauge plugin configuration
