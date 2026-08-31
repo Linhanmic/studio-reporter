@@ -7,21 +7,34 @@ import (
 	"strconv"
 )
 
-func writeFilterToolbar(b *bytes.Buffer, c Counts) {
-	b.WriteString("<div class=\"toolbar\"><div class=\"filter-group\" role=\"group\" aria-label=\"结果过滤\">\n")
-	writeFilterBtn(b, "all", "全部", c.Total, true)
-	writeFilterBtn(b, VerdictFail, "失败", c.Failed, false)
-	writeFilterBtn(b, VerdictPass, "通过", c.Passed, false)
-	writeFilterBtn(b, VerdictSkip, "跳过", c.Skipped, false)
-	b.WriteString("</div></div>\n")
+func writeFilterToolbar(b *bytes.Buffer, specs, scenarios Counts) {
+	b.WriteString("<div class=\"toolbar\">")
+	writeFilterGroup(b, "spec", "规格书", specs)
+	writeFilterGroup(b, "scenario", "场景", scenarios)
+	b.WriteString("</div>\n")
 }
 
-func writeFilterBtn(b *bytes.Buffer, filter, label string, count int, active bool) {
+func writeFilterGroup(b *bytes.Buffer, scope, label string, c Counts) {
+	b.WriteString("<div class=\"filter-group\" role=\"group\" aria-label=\"")
+	b.WriteString(html.EscapeString(label))
+	b.WriteString("过滤\" data-scope=\"")
+	b.WriteString(html.EscapeString(scope))
+	b.WriteString("\">\n")
+	writeFilterBtn(b, scope, "all", "全部", c.Total, true)
+	writeFilterBtn(b, scope, VerdictFail, "失败", c.Failed, false)
+	writeFilterBtn(b, scope, VerdictPass, "通过", c.Passed, false)
+	writeFilterBtn(b, scope, VerdictSkip, "跳过", c.Skipped, false)
+	b.WriteString("</div>\n")
+}
+
+func writeFilterBtn(b *bytes.Buffer, scope, filter, label string, count int, active bool) {
 	b.WriteString("<button type=\"button\" class=\"filter-btn filter-")
 	b.WriteString(html.EscapeString(filter))
 	if active {
 		b.WriteString(" active")
 	}
+	b.WriteString("\" data-scope=\"")
+	b.WriteString(html.EscapeString(scope))
 	b.WriteString("\" data-filter=\"")
 	b.WriteString(html.EscapeString(filter))
 	b.WriteString("\" aria-pressed=\"")

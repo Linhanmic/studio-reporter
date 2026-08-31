@@ -30,7 +30,7 @@ html, body {
 }
 .app-header h1 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
 .app-header .meta { color: #cfe8f7; font-size: 11px; margin-bottom: 8px; }
-.stat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.stat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .stat-card { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 4px; padding: 4px 8px; }
 .stat-card .label { font-size: 10px; color: #cfe8f7; text-transform: uppercase; }
 .stat-card .value { font-size: 15px; font-weight: 700; }
@@ -38,13 +38,26 @@ html, body {
 .toolbar {
   flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 6px 10px;
   background: #eef3f8;
   border-bottom: 1px solid #c5d0dc;
 }
-.filter-group { display: flex; flex-wrap: wrap; gap: 4px; }
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.filter-group::before {
+  content: attr(aria-label);
+  font-size: 11px;
+  color: #5a6a7a;
+  margin-right: 2px;
+  white-space: nowrap;
+}
 .filter-btn {
   border: 1px solid #c5d0dc;
   background: #fff;

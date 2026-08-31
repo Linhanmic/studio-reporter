@@ -1,12 +1,10 @@
 (function () {
-  var group = document.querySelector('.filter-group');
-  if (!group) return;
-
   var KEY = 'studio-report-filter';
-  var filter = 'all';
+  var state = { spec: 'all', scenario: 'all' };
   try {
-    var saved = sessionStorage.getItem(KEY);
-    if (saved) filter = saved;
+    var saved = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+    if (saved && saved.spec) state.spec = saved.spec;
+    if (saved && saved.scenario) state.scenario = saved.scenario;
   } catch (e) {}
 
   function blockDepth(el) {
@@ -19,51 +17,50 @@
     return d;
   }
 
-  function scenarioMatchesFilter(scn, f) {
-    if (scn.dataset.verdict === f) return true;
-    var inner = scn.querySelectorAll('.report-block[data-kind="step"], .report-block[data-kind="concept"]');
-    for (var i = 0; i < inner.length; i++) {
-      if (inner[i].dataset.verdict === f) return true;
-    }
-    return false;
-  }
-
-  function showScenarioSubtree(scn) {
-    scn.classList.remove('filter-hidden');
-    scn.querySelectorAll('.report-block').forEach(function (el) {
-      el.classList.remove('filter-hidden');
+  function showSubtree(el) {
+    el.classList.remove('filter-hidden');
+    el.querySelectorAll('.report-block').forEach(function (inner) {
+      inner.classList.remove('filter-hidden');
     });
   }
 
-  function applyFilter(next) {
-    filter = next || 'all';
-    try { sessionStorage.setItem(KEY, filter); } catch (e) {}
+  function persist() {
+    try { sessionStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
 
-    group.querySelectorAll('.filter-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.filter === filter);
-      btn.setAttribute('aria-pressed', btn.dataset.filter === filter ? 'true' : 'false');
+  function syncButtons() {
+    document.querySelectorAll('.filter-btn').forEach(function (btn) {
+      var scope = btn.dataset.scope || '';
+      var active = state[scope] === btn.dataset.filter;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
+  }
+
+  function applyFilter() {
+    syncButtons();
+    persist();
 
     var blocks = document.querySelectorAll('.result-pane .report-block');
     blocks.forEach(function (el) { el.classList.remove('filter-hidden'); });
 
-    if (filter === 'all') return;
+    var specFilter = state.spec;
+    var scenarioFilter = state.scenario;
 
     document.querySelectorAll('.result-pane .report-block[data-kind="scenario"]').forEach(function (scn) {
-      if (scenarioMatchesFilter(scn, filter)) {
-        showScenarioSubtree(scn);
-      } else {
+      if (scenarioFilter !== 'all' && scn.dataset.verdict !== scenarioFilter) {
         scn.classList.add('filter-hidden');
+      } else {
+        showSubtree(scn);
       }
     });
 
-    var ancestors = Array.prototype.slice.call(document.querySelectorAll(
-      '.result-pane .report-block[data-kind="spec"],' +
+    var mid = Array.prototype.slice.call(document.querySelectorAll(
       '.result-pane .report-block[data-kind="datarow"],' +
       '.result-pane .report-block[data-kind="datadriven"]'
     ));
-    ancestors.sort(function (a, b) { return blockDepth(b) - blockDepth(a); });
-    ancestors.forEach(function (el) {
+    mid.sort(function (a, b) { return blockDepth(b) - blockDepth(a); });
+    mid.forEach(function (el) {
       var scns = el.querySelectorAll('.report-block[data-kind="scenario"]');
       var anyVisible = false;
       for (var i = 0; i < scns.length; i++) {
@@ -74,13 +71,31 @@
       }
       el.classList.toggle('filter-hidden', !anyVisible);
     });
+
+    document.querySelectorAll('.result-pane .report-block[data-kind="spec"]').forEach(function (spec) {
+      var scns = spec.querySelectorAll('.report-block[data-kind="scenario"]');
+      var anyVisibleScenario = false;
+      for (var j = 0; j < scns.length; j++) {
+        if (!scns[j].classList.contains('filter-hidden')) {
+          anyVisibleScenario = true;
+          break;
+        }
+      }
+      var specVerdictMatch = specFilter === 'all' || spec.dataset.verdict === specFilter;
+      spec.classList.toggle('filter-hidden', !anyVisibleScenario || !specVerdictMatch);
+    });
   }
 
-  group.addEventListener('click', function (ev) {
-    var btn = ev.target.closest('.filter-btn');
-    if (!btn) return;
-    applyFilter(btn.dataset.filter || 'all');
+  document.querySelectorAll('.filter-group').forEach(function (group) {
+    group.addEventListener('click', function (ev) {
+      var btn = ev.target.closest('.filter-btn');
+      if (!btn) return;
+      var scope = btn.dataset.scope;
+      if (!scope) return;
+      state[scope] = btn.dataset.filter || 'all';
+      applyFilter();
+    });
   });
 
-  applyFilter(filter);
+  applyFilter();
 })();
