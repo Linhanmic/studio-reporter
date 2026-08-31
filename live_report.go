@@ -34,7 +34,6 @@ type livePublisher struct {
 	htmlWritten   bool
 	currentSpecID string
 	currentScnID  string
-	conceptStack  []string
 	startedAt     int64
 }
 
@@ -122,7 +121,6 @@ func (p *livePublisher) onExecutionStarting(info *gauge_messages.ExecutionInfo, 
 	p.htmlWritten = false
 	p.currentSpecID = ""
 	p.currentScnID = ""
-	p.conceptStack = nil
 	if err := p.ensureDirLocked(); err != nil {
 		logLive("init report dir: %v", err)
 		return
@@ -140,7 +138,6 @@ func (p *livePublisher) onSpecStarting(info *gauge_messages.ExecutionInfo) {
 	id := specStableID(specInfo.GetFileName(), len(p.report.Specs))
 	p.currentSpecID = id
 	p.currentScnID = ""
-	p.conceptStack = nil
 	if idx := p.specIndex(id); idx >= 0 {
 		spec := &p.report.Specs[idx]
 		if specInfo.GetIsFailed() {
@@ -173,6 +170,7 @@ func (p *livePublisher) onSpecEnding(req *gauge_messages.SpecExecutionEndingRequ
 	if res := req.GetSpecResult(); res != nil && res.GetProtoSpec() != nil {
 		id := specStableID(res.GetProtoSpec().GetFileName(), len(p.report.Specs))
 		spec := toSpecReport(id, res)
+		liveSpecScenarioOnly(&spec)
 		if idx := p.specIndex(id); idx >= 0 {
 			p.report.Specs[idx] = spec
 		} else {
@@ -201,7 +199,6 @@ func (p *livePublisher) onScenarioStarting(info *gauge_messages.ExecutionInfo) {
 		return
 	}
 	heading := info.GetCurrentScenario().GetName()
-	p.conceptStack = nil
 	if id := p.inProgressScenarioID(idx, heading); id != "" {
 		p.currentScnID = id
 		p.publishLocked(false)
@@ -235,7 +232,6 @@ func (p *livePublisher) onScenarioEnding(req *gauge_messages.ScenarioExecutionEn
 		p.currentSpecID = specStableID(info.GetCurrentSpec().GetFileName(), len(p.report.Specs))
 		p.ensureSpecFromInfo(info.GetCurrentSpec())
 	}
-	p.conceptStack = nil
 	if res := req.GetScenarioResult(); res != nil && res.GetProtoItem() != nil {
 		specIdx := p.specIndex(p.currentSpecID)
 		if specIdx < 0 {
@@ -253,6 +249,7 @@ func (p *livePublisher) onScenarioEnding(req *gauge_messages.ScenarioExecutionEn
 		}
 		if converted := scenarioFromProtoItem(id, item); converted != nil {
 			converted.ID = id
+			liveScenarioOnly(converted)
 			if scnIndex < len(p.report.Specs[specIdx].Scenarios) {
 				p.report.Specs[specIdx].Scenarios[scnIndex] = *converted
 			} else {
@@ -264,142 +261,37 @@ func (p *livePublisher) onScenarioEnding(req *gauge_messages.ScenarioExecutionEn
 	p.publishLocked(true)
 }
 
+// Live snapshots only track Spec → Scenario. Step / Concept detail is omitted until
+// SuiteResult writes the final report (see onSuiteResult → toReport).
 func (p *livePublisher) onStepStarting(info *gauge_messages.ExecutionInfo) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if !p.readyLocked() || info == nil || info.GetCurrentStep() == nil {
-		return
-	}
-	p.syncCurrentFromInfo(info)
-	items := p.currentItems()
-	if items == nil {
-		return
-	}
-	text := ""
-	if step := info.GetCurrentStep().GetStep(); step != nil {
-		text = step.GetActualStepText()
-	}
-	scn := p.currentScenario()
-	id := fmt.Sprintf("%s-i-%d", scn.ID, len(*items))
-	verdict := verdictNone
-	if info.GetCurrentStep().GetIsFailed() {
-		verdict = verdictFail
-	}
-	item := ItemReport{
-		ID:       id,
-		Kind:     "step",
-		Duration: formatDuration(0),
-		Step: &StepReport{
-			ActualText:   text,
-			ParsedText:   text,
-			Verdict:      verdict,
-			Duration:     formatDuration(0),
-			ErrorMessage: info.GetCurrentStep().GetErrorMessage(),
-			StackTrace:   info.GetCurrentStep().GetStackTrace(),
-		},
-	}
-	fillOneItemDuration(&item)
-	*items = append(*items, item)
-	p.publishLocked(false)
+	_ = info
 }
 
 func (p *livePublisher) onConceptStarting(info *gauge_messages.ExecutionInfo) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if !p.readyLocked() || info == nil {
-		return
-	}
-	p.syncCurrentFromInfo(info)
-	items := p.currentItems()
-	scn := p.currentScenario()
-	if items == nil || scn == nil {
-		return
-	}
-	text := ""
-	if info.GetCurrentStep() != nil && info.GetCurrentStep().GetStep() != nil {
-		text = info.GetCurrentStep().GetStep().GetActualStepText()
-	}
-	id := fmt.Sprintf("%s-c-%d-%d", scn.ID, len(p.conceptStack), len(*items))
-	verdict := verdictNone
-	if info.GetCurrentStep() != nil && info.GetCurrentStep().GetIsFailed() {
-		verdict = verdictFail
-	}
-	item := ItemReport{
-		ID:       id,
-		Kind:     "concept",
-		Duration: formatDuration(0),
-		Concept: &ConceptReport{
-			Step: &StepReport{
-				ActualText: text,
-				ParsedText: text,
-				Verdict:    verdict,
-				Duration:   formatDuration(0),
-			},
-			Items:    []ItemReport{},
-			Duration: formatDuration(0),
-		},
-	}
-	fillOneItemDuration(&item)
-	*items = append(*items, item)
-	p.conceptStack = append(p.conceptStack, id)
-	p.publishLocked(false)
+	_ = info
 }
 
 func (p *livePublisher) onStepOrConceptEnding(res *gauge_messages.ProtoStepResult, info *gauge_messages.ExecutionInfo) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if !p.readyLocked() {
-		return
-	}
-	if info != nil {
-		p.syncCurrentFromInfo(info)
-	}
-	if res == nil || res.GetProtoItem() == nil {
-		return
-	}
-	if res.GetProtoItem().GetItemType() == gauge_messages.ProtoItem_Concept {
-		p.finishConceptLocked(res)
-	} else {
-		p.finishStepLocked(res)
-	}
-	p.publishLocked(false)
+	_, _ = res, info
 }
 
-func (p *livePublisher) finishStepLocked(res *gauge_messages.ProtoStepResult) {
-	items := p.currentItems()
-	scn := p.currentScenario()
-	if items == nil || scn == nil {
-		return
-	}
-	converted := toItemReports(fmt.Sprintf("%s-i", scn.ID), []*gauge_messages.ProtoItem{res.GetProtoItem()})
-	if len(converted) == 0 {
-		return
-	}
-	item := converted[0]
-	fillOneItemDuration(&item)
-	replaceOrAppendItem(items, item, scn.ID)
-}
-
-func (p *livePublisher) finishConceptLocked(res *gauge_messages.ProtoStepResult) {
-	scn := p.currentScenario()
+// liveScenarioOnly keeps scenario metadata for live report.json and drops step trees.
+func liveScenarioOnly(scn *ScenarioReport) {
 	if scn == nil {
 		return
 	}
-	parent := p.parentItems()
-	if parent == nil {
-		parent = &scn.Items
-	}
-	converted := toItemReports(fmt.Sprintf("%s-c", scn.ID), []*gauge_messages.ProtoItem{res.GetProtoItem()})
-	if len(converted) == 0 {
+	scn.Contexts = nil
+	scn.Items = nil
+	scn.Teardowns = nil
+}
+
+func liveSpecScenarioOnly(spec *SpecReport) {
+	if spec == nil {
 		return
 	}
-	item := converted[0]
-	fillOneItemDuration(&item)
-	if n := len(p.conceptStack); n > 0 {
-		item.ID = p.conceptStack[n-1]
-		p.conceptStack = p.conceptStack[:n-1]
+	for i := range spec.Scenarios {
+		liveScenarioOnly(&spec.Scenarios[i])
 	}
-	replaceOrAppendItem(parent, item, scn.ID)
 }
 
 func (p *livePublisher) onSuiteResult(suite *gauge_messages.ProtoSuiteResult) {
@@ -537,51 +429,6 @@ func (p *livePublisher) ensureSpecFromInfo(info *gauge_messages.SpecInfo) int {
 	return len(p.report.Specs) - 1
 }
 
-func (p *livePublisher) syncCurrentFromInfo(info *gauge_messages.ExecutionInfo) {
-	if info == nil {
-		return
-	}
-	if info.GetCurrentSpec() != nil {
-		p.currentSpecID = specStableID(info.GetCurrentSpec().GetFileName(), len(p.report.Specs))
-		p.ensureSpecFromInfo(info.GetCurrentSpec())
-	}
-	if info.GetCurrentScenario() != nil {
-		idx := p.specIndex(p.currentSpecID)
-		if idx < 0 {
-			return
-		}
-		heading := info.GetCurrentScenario().GetName()
-		if p.currentScnID != "" {
-			for i := range p.report.Specs[idx].Scenarios {
-				if p.report.Specs[idx].Scenarios[i].ID == p.currentScnID && p.report.Specs[idx].Scenarios[i].Heading == heading {
-					return
-				}
-			}
-		}
-		if id := p.inProgressScenarioID(idx, heading); id != "" {
-			p.currentScnID = id
-			return
-		}
-	}
-}
-
-func (p *livePublisher) currentScenario() *ScenarioReport {
-	idx := p.specIndex(p.currentSpecID)
-	if idx < 0 {
-		return nil
-	}
-	for i := range p.report.Specs[idx].Scenarios {
-		if p.report.Specs[idx].Scenarios[i].ID == p.currentScnID {
-			return &p.report.Specs[idx].Scenarios[i]
-		}
-	}
-	n := len(p.report.Specs[idx].Scenarios)
-	if n == 0 {
-		return nil
-	}
-	return &p.report.Specs[idx].Scenarios[n-1]
-}
-
 func (p *livePublisher) inProgressScenarioID(specIdx int, heading string) string {
 	if heading == "" || specIdx < 0 {
 		return ""
@@ -659,82 +506,6 @@ func tableRowIndexesOf(item *gauge_messages.ProtoItem) (specRow, scnRow int) {
 	return
 }
 
-func (p *livePublisher) currentItems() *[]ItemReport {
-	scn := p.currentScenario()
-	if scn == nil {
-		return nil
-	}
-	items := &scn.Items
-	for _, id := range p.conceptStack {
-		found := false
-		for i := range *items {
-			if (*items)[i].ID == id && (*items)[i].Concept != nil {
-				items = &(*items)[i].Concept.Items
-				found = true
-				break
-			}
-		}
-		if !found {
-			break
-		}
-	}
-	return items
-}
-
-func (p *livePublisher) parentItems() *[]ItemReport {
-	scn := p.currentScenario()
-	if scn == nil {
-		return nil
-	}
-	if len(p.conceptStack) == 0 {
-		return &scn.Items
-	}
-	items := &scn.Items
-	for _, id := range p.conceptStack[:len(p.conceptStack)-1] {
-		found := false
-		for i := range *items {
-			if (*items)[i].ID == id && (*items)[i].Concept != nil {
-				items = &(*items)[i].Concept.Items
-				found = true
-				break
-			}
-		}
-		if !found {
-			return &scn.Items
-		}
-	}
-	return items
-}
-
-func replaceOrAppendItem(items *[]ItemReport, item ItemReport, scnID string) {
-	if items == nil {
-		return
-	}
-	if item.ID != "" {
-		for i := range *items {
-			if (*items)[i].ID == item.ID {
-				(*items)[i] = item
-				return
-			}
-		}
-	}
-	want := itemTextOf(&item)
-	for i := range *items {
-		existing := &(*items)[i]
-		if existing.Kind == item.Kind && itemTextOf(existing) == want && (existing.Step == nil || existing.Step.Verdict == verdictNone || existing.Step.Verdict == verdictFail) {
-			if item.ID == "" {
-				item.ID = existing.ID
-			}
-			(*items)[i] = item
-			return
-		}
-	}
-	if item.ID == "" {
-		item.ID = fmt.Sprintf("%s-i-%d", scnID, len(*items))
-	}
-	*items = append(*items, item)
-}
-
 func (p *livePublisher) scenarioIndexByHeading(specIdx int, heading string) int {
 	if heading == "" {
 		return -1
@@ -779,22 +550,6 @@ func scenarioFromProtoItem(id string, item *gauge_messages.ProtoItem) *ScenarioR
 	default:
 		return nil
 	}
-}
-
-func itemTextOf(item *ItemReport) string {
-	if item == nil {
-		return ""
-	}
-	if item.Kind == "comment" {
-		return item.Comment
-	}
-	if item.Step != nil {
-		return item.Step.ActualText
-	}
-	if item.Concept != nil && item.Concept.Step != nil {
-		return item.Concept.Step.ActualText
-	}
-	return ""
 }
 
 func logLive(format string, args ...interface{}) {

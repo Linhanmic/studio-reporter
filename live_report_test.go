@@ -49,9 +49,16 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 	if len(snap.Report.Specs[0].Scenarios) != 1 || snap.Report.Specs[0].Scenarios[0].Heading != "Successful login" {
 		t.Fatalf("scenarios = %+v", snap.Report.Specs[0].Scenarios)
 	}
-	items := snap.Report.Specs[0].Scenarios[0].Items
-	if len(items) != 1 || items[0].Step == nil || items[0].Step.ActualText != "Open browser" {
-		t.Fatalf("items = %+v", items)
+	if len(snap.Report.Specs[0].Scenarios[0].Items) != 0 {
+		t.Fatalf("live snapshot should stop at scenario; got items %+v", snap.Report.Specs[0].Scenarios[0].Items)
+	}
+	p.onStepStarting(&gauge_messages.ExecutionInfo{
+		CurrentSpec:     &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"},
+		CurrentScenario: &gauge_messages.ScenarioInfo{Name: "Successful login"},
+		CurrentStep:     &gauge_messages.StepInfo{Step: &gauge_messages.ExecuteStepRequest{ActualStepText: "Open browser"}},
+	})
+	if len(p.report.Specs[0].Scenarios[0].Items) != 0 {
+		t.Fatal("step starting must not add items to the live report")
 	}
 
 	p.onSpecEnding(&gauge_messages.SpecExecutionEndingRequest{
@@ -108,7 +115,7 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 	}
 }
 
-func TestLiveConceptNestsSteps(t *testing.T) {
+func TestLiveSkipsStepAndConceptDetail(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv(reportsDirEnv, dir)
 	t.Setenv(overwriteReportsEnv, "true")
@@ -131,12 +138,8 @@ func TestLiveConceptNestsSteps(t *testing.T) {
 	})
 
 	got := p.report.Specs[0].Scenarios[0]
-	if len(got.Items) != 1 || got.Items[0].Kind != "concept" {
-		t.Fatalf("concept should be the only scenario item, got %+v", got.Items)
-	}
-	nested := got.Items[0].Concept.Items
-	if len(nested) != 1 || nested[0].Step == nil || nested[0].Step.ActualText != "Click submit" {
-		t.Fatalf("step should nest under concept, got %+v", nested)
+	if len(got.Items) != 0 || len(got.Contexts) != 0 || len(got.Teardowns) != 0 {
+		t.Fatalf("live report must stay at scenario level, got %+v", got)
 	}
 }
 
@@ -210,7 +213,7 @@ func tableDrivenSpecItem(row int32, heading string, status gauge_messages.Execut
 	}
 }
 
-func TestLiveStepMessagesAppearUnderStep(t *testing.T) {
+func TestLiveScenarioEndingDropsStepTree(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv(reportsDirEnv, dir)
 	t.Setenv(overwriteReportsEnv, "true")
@@ -218,38 +221,31 @@ func TestLiveStepMessagesAppearUnderStep(t *testing.T) {
 	p := newLivePublisher()
 	spec := &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"}
 	scn := &gauge_messages.ScenarioInfo{Name: "Successful login"}
-	info := &gauge_messages.ExecutionInfo{
-		CurrentSpec:     spec,
-		CurrentScenario: scn,
-		CurrentStep:     &gauge_messages.StepInfo{Step: &gauge_messages.ExecuteStepRequest{ActualStepText: "Enter username as \"admin\""}},
-	}
+	info := &gauge_messages.ExecutionInfo{CurrentSpec: spec, CurrentScenario: scn}
 	p.onExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
 	p.onSpecStarting(&gauge_messages.ExecutionInfo{CurrentSpec: spec})
-	p.onScenarioStarting(&gauge_messages.ExecutionInfo{CurrentSpec: spec, CurrentScenario: scn})
-	p.onStepStarting(info)
-	p.onStepOrConceptEnding(&gauge_messages.ProtoStepResult{
-		ProtoItem: &gauge_messages.ProtoItem{
-			ItemType: gauge_messages.ProtoItem_Step,
-			Step: &gauge_messages.ProtoStep{
-				ActualText: "Enter username as \"admin\"",
-				ParsedText: "Enter username as {}",
-				StepExecutionResult: &gauge_messages.ProtoStepExecutionResult{
-					ExecutionResult: &gauge_messages.ProtoExecutionResult{
-						Failed:        false,
-						ExecutionTime: 80,
-						Message:       []string{"typed admin", "login form ready"},
-					},
-				},
+	p.onScenarioStarting(info)
+	p.onScenarioEnding(&gauge_messages.ScenarioExecutionEndingRequest{
+		CurrentExecutionInfo: info,
+		ScenarioResult: &gauge_messages.ProtoScenarioResult{
+			ProtoItem: &gauge_messages.ProtoItem{
+				ItemType: gauge_messages.ProtoItem_Scenario,
+				Scenario: sampleSuite().SpecResults[0].ProtoSpec.Items[0].Scenario,
 			},
 		},
-	}, info)
+	})
 
-	items := p.report.Specs[0].Scenarios[0].Items
-	if len(items) != 1 || items[0].Step == nil {
-		t.Fatalf("items = %+v", items)
+	got := p.report.Specs[0].Scenarios[0]
+	if got.Heading != "Successful login" || got.Verdict != verdictPass {
+		t.Fatalf("scenario = %+v", got)
 	}
-	got := items[0].Step.Messages
-	if len(got) != 2 || got[0] != "typed admin" || got[1] != "login form ready" {
-		t.Fatalf("messages = %#v", got)
+	if len(got.Items) != 0 || len(got.Contexts) != 0 || len(got.Teardowns) != 0 {
+		t.Fatalf("live scenario ending must drop step trees, got %+v", got)
+	}
+
+	p.onSuiteResult(sampleSuite())
+	final := p.report.Specs[0].Scenarios[0]
+	if len(final.Items) == 0 && len(final.Contexts) == 0 {
+		t.Fatal("final suite report should restore full step detail")
 	}
 }
