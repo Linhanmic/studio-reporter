@@ -604,6 +604,42 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
       if (!rel || rel.charAt(0) === '/' || rel.indexOf('..') >= 0 || /^[a-zA-Z]:/.test(rel)) return '';
       return rel;
     }
+    function liveWebSocketURL() {
+      try {
+        const q = new URLSearchParams(window.location.search).get('ws');
+        if (q) return q;
+      } catch (e) {}
+      return window.__GAUGE_WS__ || '';
+    }
+    function applyLivePayload(store, payload, scroll) {
+      if (!payload || !payload.report) return;
+      if (payload.rev && store.rev && Number(payload.rev) <= store.rev) {
+        store.running = !!payload.running;
+        if (payload.currentSpecId) store.currentSpecId = payload.currentSpecId;
+        if (payload.currentScenarioId) store.currentScenarioId = payload.currentScenarioId;
+        return;
+      }
+      store.applyLive(payload, scroll);
+    }
+    function connectReportWebSocket(store) {
+      const url = liveWebSocketURL();
+      if (!url) return null;
+      let ws;
+      try { ws = new WebSocket(url); } catch (e) { return null; }
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch (e) { return; }
+        if (msg.type !== 'ReportSnapshot' || !msg.payload) return;
+        const payload = typeof msg.payload === 'string' ? JSON.parse(msg.payload) : msg.payload;
+        applyLivePayload(store, payload, captureScroll());
+      };
+      ws.onclose = () => {
+        if (!store.archiveDir && store.running) {
+          window.setTimeout(() => connectReportWebSocket(store), 1000);
+        }
+      };
+      return ws;
+    }
     async function fetchLive() {
       const base = runDir ? runDir + '/' : '';
       const json = await fetchJSON([base + 'report.json']);

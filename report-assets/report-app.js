@@ -604,6 +604,42 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
       if (!rel || rel.charAt(0) === '/' || rel.indexOf('..') >= 0 || /^[a-zA-Z]:/.test(rel)) return '';
       return rel;
     }
+    function liveWebSocketURL() {
+      try {
+        const q = new URLSearchParams(window.location.search).get('ws');
+        if (q) return q;
+      } catch (e) {}
+      return window.__GAUGE_WS__ || '';
+    }
+    function applyLivePayload(store, payload, scroll) {
+      if (!payload || !payload.report) return;
+      if (payload.rev && store.rev && Number(payload.rev) <= store.rev) {
+        store.running = !!payload.running;
+        if (payload.currentSpecId) store.currentSpecId = payload.currentSpecId;
+        if (payload.currentScenarioId) store.currentScenarioId = payload.currentScenarioId;
+        return;
+      }
+      store.applyLive(payload, scroll);
+    }
+    function connectReportWebSocket(store) {
+      const url = liveWebSocketURL();
+      if (!url) return null;
+      let ws;
+      try { ws = new WebSocket(url); } catch (e) { return null; }
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch (e) { return; }
+        if (msg.type !== 'ReportSnapshot' || !msg.payload) return;
+        const payload = typeof msg.payload === 'string' ? JSON.parse(msg.payload) : msg.payload;
+        applyLivePayload(store, payload, captureScroll());
+      };
+      ws.onclose = () => {
+        if (!store.archiveDir && store.running) {
+          window.setTimeout(() => connectReportWebSocket(store), 1000);
+        }
+      };
+      return ws;
+    }
     async function fetchLive() {
       const base = runDir ? runDir + '/' : '';
       const json = await fetchJSON([base + 'report.json']);
@@ -700,19 +736,12 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
         collapseAll() { this.store.collapseAll(); },
         printReport() { window.print(); },
         async pollLive() {
-          if (this._liveBusy) return;
+          if (this._liveBusy || this._wsConnected) return;
           this._liveBusy = true;
           try {
             const payload = await fetchLive();
             if (!payload || !payload.report) return;
-            if (payload.rev && this.store.rev && Number(payload.rev) <= this.store.rev) {
-              this.store.running = !!payload.running;
-              if (payload.currentSpecId) this.store.currentSpecId = payload.currentSpecId;
-              if (payload.currentScenarioId) this.store.currentScenarioId = payload.currentScenarioId;
-              return;
-            }
-            const scroll = captureScroll();
-            this.store.applyLive(payload, scroll);
+            applyLivePayload(this.store, payload, captureScroll());
           } finally {
             this._liveBusy = false;
           }
@@ -733,15 +762,25 @@ const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
         'store.filter'() { this.store.persistView(); }
       },
       mounted() {
-        this.pollLive();
+        const store = this.store;
+        this._ws = connectReportWebSocket(store);
+        this._wsConnected = !!this._ws;
+        if (!this._wsConnected) {
+          this.pollLive();
+        }
         if (!this.store.archiveDir) {
-          this._liveTimer = setInterval(() => this.pollLive(), 700);
+          if (!this._wsConnected) {
+            this._liveTimer = setInterval(() => this.pollLive(), 700);
+          }
           this._tickTimer = setInterval(() => { this.store.clock = Date.now(); }, 250);
         }
       },
       beforeUnmount() {
         if (this._liveTimer) clearInterval(this._liveTimer);
         if (this._tickTimer) clearInterval(this._tickTimer);
+        if (this._ws) {
+          try { this._ws.onclose = null; this._ws.close(); } catch (e) {}
+        }
       }
     });
     const pinia = createPinia();

@@ -2,8 +2,6 @@ package report
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -11,23 +9,23 @@ import (
 	"github.com/getgauge/gauge-proto/go/gauge_messages"
 )
 
-// LivePublisher streams scenario-level snapshots while a suite runs.
+// LivePublisher keeps the report tree in memory during a run and broadcasts updates.
+// Nothing is written to disk until FinalWriter runs on suite completion.
 type LivePublisher struct {
 	mu            sync.Mutex
 	dir           string
 	report        *Report
 	rev           int64
 	running       bool
-	htmlWritten   bool
 	currentSpecID string
 	currentScnID  string
 	startedAt     int64
-	onIndexHTML   IndexHTMLCallback
+	broadcast     SnapshotBroadcaster
 }
 
 // NewLivePublisher creates a live publisher.
-func NewLivePublisher(onIndexHTML IndexHTMLCallback) *LivePublisher {
-	return &LivePublisher{onIndexHTML: onIndexHTML}
+func NewLivePublisher(broadcast SnapshotBroadcaster) *LivePublisher {
+	return &LivePublisher{broadcast: broadcast}
 }
 
 // Dir returns the report hub directory (empty until the first publish).
@@ -62,14 +60,9 @@ func (p *LivePublisher) OnExecutionStarting(info *gauge_messages.ExecutionInfo, 
 	}
 	p.running = true
 	p.startedAt = time.Now().UnixMilli()
-	p.htmlWritten = false
 	p.currentSpecID = ""
 	p.currentScnID = ""
-	if err := p.ensureDirLocked(); err != nil {
-		logLive("init report dir: %v", err)
-		return
-	}
-	p.publishLocked(false)
+	p.publishLocked()
 }
 
 func (p *LivePublisher) OnSpecStarting(info *gauge_messages.ExecutionInfo) {
@@ -102,7 +95,7 @@ func (p *LivePublisher) OnSpecStarting(info *gauge_messages.ExecutionInfo) {
 			Verdict:  VerdictNone,
 		})
 	}
-	p.publishLocked(false)
+	p.publishLocked()
 }
 
 func (p *LivePublisher) OnSpecEnding(req *gauge_messages.SpecExecutionEndingRequest) {
@@ -127,7 +120,7 @@ func (p *LivePublisher) OnSpecEnding(req *gauge_messages.SpecExecutionEndingRequ
 			p.report.Specs[idx].Verdict = VerdictFail
 		}
 	}
-	p.publishLocked(true)
+	p.publishLocked()
 }
 
 func (p *LivePublisher) OnScenarioStarting(info *gauge_messages.ExecutionInfo) {
@@ -145,7 +138,7 @@ func (p *LivePublisher) OnScenarioStarting(info *gauge_messages.ExecutionInfo) {
 	heading := info.GetCurrentScenario().GetName()
 	if id := p.inProgressScenarioID(idx, heading); id != "" {
 		p.currentScnID = id
-		p.publishLocked(false)
+		p.publishLocked()
 		return
 	}
 	id := fmt.Sprintf("%s-scn-%d", specID, len(p.report.Specs[idx].Scenarios))
@@ -162,7 +155,7 @@ func (p *LivePublisher) OnScenarioStarting(info *gauge_messages.ExecutionInfo) {
 		TableRowIndex: -1,
 	})
 	p.currentScnID = id
-	p.publishLocked(false)
+	p.publishLocked()
 }
 
 func (p *LivePublisher) OnScenarioEnding(req *gauge_messages.ScenarioExecutionEndingRequest) {
@@ -179,7 +172,7 @@ func (p *LivePublisher) OnScenarioEnding(req *gauge_messages.ScenarioExecutionEn
 	if res := req.GetScenarioResult(); res != nil && res.GetProtoItem() != nil {
 		specIdx := p.specIndex(p.currentSpecID)
 		if specIdx < 0 {
-			p.publishLocked(true)
+			p.publishLocked()
 			return
 		}
 		item := res.GetProtoItem()
@@ -202,7 +195,7 @@ func (p *LivePublisher) OnScenarioEnding(req *gauge_messages.ScenarioExecutionEn
 			p.currentScnID = converted.ID
 		}
 	}
-	p.publishLocked(true)
+	p.publishLocked()
 }
 
 // Live snapshots only track Spec → Scenario. Step detail appears in the final report.
@@ -241,11 +234,25 @@ func (p *LivePublisher) FinishWithReport(r *Report) {
 		p.report = r
 	}
 	p.running = false
-	if err := p.ensureDirLocked(); err != nil {
-		logLive("finalize report dir: %v", err)
-		return
+	p.publishLocked()
+}
+
+// Snapshot returns the latest in-memory tree (for tests).
+func (p *LivePublisher) Snapshot() *LiveSnapshot {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.report == nil {
+		return nil
 	}
-	p.publishLocked(true)
+	return &LiveSnapshot{
+		FormatVersion:     FormatVersion,
+		Rev:               p.rev,
+		Running:           p.running,
+		Report:            p.report,
+		CurrentSpecID:     p.currentSpecID,
+		CurrentScenarioID: p.currentScnID,
+		StartedAt:         p.startedAt,
+	}
 }
 
 func (p *LivePublisher) readyLocked() bool {
@@ -255,35 +262,18 @@ func (p *LivePublisher) readyLocked() bool {
 	if p.report == nil {
 		p.report = &Report{ProjectName: "Gauge Suite", Duration: formatDuration(0), Verdict: VerdictNone, Timestamp: time.Now().Format("2006-01-02 15:04:05")}
 	}
-	if p.dir == "" {
-		if err := p.ensureDirLocked(); err != nil {
-			logLive("ensure report dir: %v", err)
-			return false
-		}
-	}
 	return true
 }
 
-func (p *LivePublisher) ensureDirLocked() error {
-	if p.dir != "" {
-		return nil
-	}
-	dir, err := ResolveDir()
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Join(dir, "images"), 0o755); err != nil {
-		return err
-	}
-	if err := WriteAssets(dir); err != nil {
-		return err
-	}
+// SetDir records the hub directory after a final write (tests / reuse checks).
+func (p *LivePublisher) SetDir(dir string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.dir = dir
-	return nil
 }
 
-func (p *LivePublisher) publishLocked(writeHTML bool) {
-	if p.dir == "" || p.report == nil {
+func (p *LivePublisher) publishLocked() {
+	if p.report == nil {
 		return
 	}
 	recountReport(p.report)
@@ -301,6 +291,7 @@ func (p *LivePublisher) publishLocked(writeHTML bool) {
 	}
 	p.rev = next
 	snap := &LiveSnapshot{
+		FormatVersion:     FormatVersion,
 		Rev:               p.rev,
 		Running:           p.running,
 		Report:            p.report,
@@ -308,15 +299,8 @@ func (p *LivePublisher) publishLocked(writeHTML bool) {
 		CurrentScenarioID: p.currentScnID,
 		StartedAt:         p.startedAt,
 	}
-	if writeHTML || !p.htmlWritten {
-		if err := WriteIndexHTML(p.dir, snap, p.onIndexHTML); err != nil {
-			logLive("write html: %v", err)
-		} else {
-			p.htmlWritten = true
-		}
-	}
-	if err := WriteLiveSnapshot(p.dir, snap); err != nil {
-		logLive("write live snapshot: %v", err)
+	if p.broadcast != nil {
+		p.broadcast(snap)
 	}
 }
 
@@ -462,8 +446,4 @@ func scenarioFromProtoItem(id string, item *gauge_messages.ProtoItem) *ScenarioR
 	default:
 		return nil
 	}
-}
-
-func logLive(format string, args ...interface{}) {
-	log.Printf("studio-reporter: "+format, args...)
 }

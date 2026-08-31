@@ -97,7 +97,7 @@ The report includes:
 - Vue 3 + Element Plus + Pinia UI
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
-- Live updates while the suite runs (`report.json`): seeded `running` flag, elapsed duration, current spec/scenario, success rate recount, no full-page reload. **Live snapshots stop at the scenario layer** (no step/concept tree until the suite finishes).
+- Live updates while the suite runs: the plugin keeps the report tree **in memory** and pushes `ReportSnapshot` over WebSocket; **no disk writes until the suite finishes**. The browser viewer connects via `?ws=ws://127.0.0.1:<port>` (or polls `report.json` after finalize / for archived runs).
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 - Filter by verdict and search across specs, scenarios, and steps
 - Step console / hook output merged into a single output card

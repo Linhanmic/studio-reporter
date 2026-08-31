@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -89,42 +88,31 @@ func TestLiveSnapshotTracksCurrentAndElapsed(t *testing.T) {
 	p := report.NewLivePublisher(nil)
 	p.OnExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
 	time.Sleep(15 * time.Millisecond)
-	p.OnSpecStarting(&gauge_messages.ExecutionInfo{
-		ProjectName: "demo-project",
-		CurrentSpec: &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"},
-	})
-	p.OnScenarioStarting(&gauge_messages.ExecutionInfo{
-		CurrentSpec:     &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"},
-		CurrentScenario: &gauge_messages.ScenarioInfo{Name: "Successful login"},
-	})
 
-	raw, err := os.ReadFile(filepath.Join(dir, report.FolderName, report.LiveReportJSONFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var snap report.LiveSnapshot
-	if err := json.Unmarshal(raw, &snap); err != nil {
-		t.Fatal(err)
-	}
-	if !snap.Running {
-		t.Fatal("expected running")
+	snap := p.Snapshot()
+	if snap == nil || !snap.Running {
+		t.Fatal("expected running in-memory snapshot")
 	}
 	if snap.StartedAt == 0 {
 		t.Fatal("startedAt missing")
 	}
-	if snap.CurrentSpecID != "spec:specs/auth/login.spec" {
+	p.OnSpecStarting(&gauge_messages.ExecutionInfo{
+		ProjectName: "demo-project",
+		CurrentSpec: &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"},
+	})
+	if snap := p.Snapshot(); snap.CurrentSpecID != "spec:specs/auth/login.spec" {
 		t.Fatalf("currentSpecId = %s", snap.CurrentSpecID)
 	}
+	p.OnScenarioStarting(&gauge_messages.ExecutionInfo{
+		CurrentSpec:     &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"},
+		CurrentScenario: &gauge_messages.ScenarioInfo{Name: "Successful login"},
+	})
+	snap = p.Snapshot()
 	if snap.CurrentScenarioID == "" {
 		t.Fatal("currentScenarioId empty")
 	}
 	if snap.Report == nil || snap.Report.ExecutionTime < 10 {
 		t.Fatalf("elapsed = %+v", snap.Report)
-	}
-
-	body := viewerSource(t, filepath.Join(dir, report.FolderName))
-	if !strings.Contains(body, `"running":true`) || !strings.Contains(body, "currentSpecId") {
-		t.Fatalf("live html seed missing running flag")
 	}
 }
 

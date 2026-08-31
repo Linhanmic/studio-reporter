@@ -100,7 +100,7 @@ func (h *reporterHandler) NotifySuiteResult(_ context.Context, req *gauge_messag
 
 func (h *reporterHandler) reportEngine() *report.Engine {
 	if h.engine == nil {
-		h.engine = newReportEngine()
+		h.engine = newReportEngine(h.forwarder)
 	}
 	return h.engine
 }

@@ -314,6 +314,31 @@ Fired when all tests complete with final results.
 }
 ```
 
+### ReportSnapshot
+
+Pushed while the suite runs whenever the in-memory report tree changes. **Nothing is written to `report.json` until the suite finishes.**
+
+- **Type**: `ReportSnapshot`
+- **Payload Type**: `LiveSnapshot` (same shape as `report.json`)
+
+```json
+{
+  "type": "ReportSnapshot",
+  "timestamp": "2026-07-29T14:30:05.123456789Z",
+  "payload": {
+    "formatVersion": 1,
+    "rev": 1725000005123,
+    "running": true,
+    "report": { "projectName": "demo", "specs": [] },
+    "currentSpecId": "spec:specs/login.spec",
+    "currentScenarioId": "spec:specs/login.spec-scn-0",
+    "startedAt": 1725000000000
+  }
+}
+```
+
+Connect the report viewer with `?ws=ws://127.0.0.1:<port>` (the URL printed at plugin startup).
+
 ### ReportGenerated
 
 Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` is set).

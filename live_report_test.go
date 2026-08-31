@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +9,15 @@ import (
 	"github.com/getgauge/gauge-proto/go/gauge_messages"
 	"github.com/gaugestudio/studio-reporter/internal/report"
 )
+
+func requireSnap(t *testing.T, p *report.LivePublisher) report.LiveSnapshot {
+	t.Helper()
+	snap := p.Snapshot()
+	if snap == nil || snap.Report == nil {
+		t.Fatal("expected in-memory snapshot")
+	}
+	return *snap
+}
 
 func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 	dir := t.TempDir()
@@ -33,15 +41,12 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 	})
 
 	out := filepath.Join(dir, report.FolderName)
-	raw, err := os.ReadFile(filepath.Join(out, report.LiveReportJSONFile))
-	if err != nil {
-		t.Fatal(err)
+	if _, err := os.Stat(filepath.Join(out, report.LiveReportJSONFile)); err == nil {
+		t.Fatal("report.json must not be written during live updates")
 	}
-	var snap report.LiveSnapshot
-	if err := json.Unmarshal(raw, &snap); err != nil {
-		t.Fatal(err)
-	}
-	if !snap.Running || snap.Report == nil || snap.Report.ProjectName != "demo-project" {
+
+	snap := requireSnap(t, p)
+	if !snap.Running || snap.Report.ProjectName != "demo-project" {
 		t.Fatalf("snapshot = %+v", snap)
 	}
 	if len(snap.Report.Specs) != 1 || snap.Report.Specs[0].ID != "spec:specs/auth/login.spec" {
@@ -68,13 +73,7 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 			},
 		},
 	})
-	raw, err = os.ReadFile(filepath.Join(out, report.LiveReportJSONFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := json.Unmarshal(raw, &snap); err != nil {
-		t.Fatal(err)
-	}
+	snap = requireSnap(t, p)
 	if snap.Report.Specs[0].ID != "spec:specs/auth/login.spec" {
 		t.Fatalf("spec id changed: %s", snap.Report.Specs[0].ID)
 	}
@@ -82,21 +81,8 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 		t.Fatalf("spec duration = %s", snap.Report.Specs[0].Duration)
 	}
 
-	body := viewerSource(t, out)
-	for _, want := range []string{"pinia", "dense-table", "row-pass", "row-fail", "accordion"} {
-		if !strings.Contains(body, want) {
-			t.Fatalf("live html missing %q", want)
-		}
-	}
-
 	p.FinishWithReport(report.FromSuite(sampleSuite()))
-	raw, err = os.ReadFile(filepath.Join(out, report.LiveReportJSONFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := json.Unmarshal(raw, &snap); err != nil {
-		t.Fatal(err)
-	}
+	snap = requireSnap(t, p)
 	if snap.Running {
 		t.Fatal("expected running=false after suite result")
 	}
@@ -109,10 +95,6 @@ func TestLivePublisherWritesSnapshotWithoutJumpingIDs(t *testing.T) {
 }
 
 func TestLiveSkipsStepAndConceptDetail(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv(report.ReportsDirEnv, dir)
-	t.Setenv(report.OverwriteReportsEnv, "true")
-
 	p := report.NewLivePublisher(nil)
 	spec := &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"}
 	scn := &gauge_messages.ScenarioInfo{Name: "Successful login"}
@@ -130,26 +112,13 @@ func TestLiveSkipsStepAndConceptDetail(t *testing.T) {
 		CurrentStep:     &gauge_messages.StepInfo{Step: &gauge_messages.ExecuteStepRequest{ActualStepText: "Click submit"}},
 	})
 
-	// Live publisher does not expose internal report; read snapshot instead.
-	raw, err := os.ReadFile(filepath.Join(dir, report.FolderName, report.LiveReportJSONFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var snap report.LiveSnapshot
-	if err := json.Unmarshal(raw, &snap); err != nil {
-		t.Fatal(err)
-	}
-	got := snap.Report.Specs[0].Scenarios[0]
+	got := requireSnap(t, p).Report.Specs[0].Scenarios[0]
 	if len(got.Items) != 0 || len(got.Contexts) != 0 || len(got.Teardowns) != 0 {
 		t.Fatalf("live report must stay at scenario level, got %+v", got)
 	}
 }
 
 func TestLiveTableDrivenScenariosKeepBothRows(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv(report.ReportsDirEnv, dir)
-	t.Setenv(report.OverwriteReportsEnv, "true")
-
 	p := report.NewLivePublisher(nil)
 	spec := &gauge_messages.SpecInfo{Name: "Checkout", FileName: "specs/checkout.spec"}
 	heading := &gauge_messages.ScenarioInfo{Name: "Pay with card"}
@@ -171,15 +140,7 @@ func TestLiveTableDrivenScenariosKeepBothRows(t *testing.T) {
 		},
 	})
 
-	raw, err := os.ReadFile(filepath.Join(dir, report.FolderName, report.LiveReportJSONFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var snap report.LiveSnapshot
-	if err := json.Unmarshal(raw, &snap); err != nil {
-		t.Fatal(err)
-	}
-	scns := snap.Report.Specs[0].Scenarios
+	scns := requireSnap(t, p).Report.Specs[0].Scenarios
 	if len(scns) != 2 {
 		t.Fatalf("scenarios = %+v", scns)
 	}
@@ -219,10 +180,6 @@ func tableDrivenSpecItem(row int32, heading string, status gauge_messages.Execut
 }
 
 func TestLiveScenarioEndingDropsStepTree(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv(report.ReportsDirEnv, dir)
-	t.Setenv(report.OverwriteReportsEnv, "true")
-
 	p := report.NewLivePublisher(nil)
 	spec := &gauge_messages.SpecInfo{Name: "Login", FileName: "specs/auth/login.spec"}
 	scn := &gauge_messages.ScenarioInfo{Name: "Successful login"}
@@ -240,15 +197,7 @@ func TestLiveScenarioEndingDropsStepTree(t *testing.T) {
 		},
 	})
 
-	raw, err := os.ReadFile(filepath.Join(dir, report.FolderName, report.LiveReportJSONFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var snap report.LiveSnapshot
-	if err := json.Unmarshal(raw, &snap); err != nil {
-		t.Fatal(err)
-	}
-	got := snap.Report.Specs[0].Scenarios[0]
+	got := requireSnap(t, p).Report.Specs[0].Scenarios[0]
 	if got.Heading != "Successful login" || got.Verdict != report.VerdictPass {
 		t.Fatalf("scenario = %+v", got)
 	}
@@ -257,15 +206,44 @@ func TestLiveScenarioEndingDropsStepTree(t *testing.T) {
 	}
 
 	p.FinishWithReport(report.FromSuite(sampleSuite()))
-	raw, err = os.ReadFile(filepath.Join(dir, report.FolderName, report.LiveReportJSONFile))
+	final := requireSnap(t, p).Report.Specs[0].Scenarios[0]
+	if len(final.Items) == 0 && len(final.Contexts) == 0 {
+		t.Fatal("final suite report should restore full step detail")
+	}
+}
+
+func TestLiveBroadcastsSnapshots(t *testing.T) {
+	var got []*report.LiveSnapshot
+	p := report.NewLivePublisher(func(snap *report.LiveSnapshot) {
+		got = append(got, snap)
+	})
+	p.OnExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
+	if len(got) != 1 || !got[0].Running {
+		t.Fatalf("broadcasts = %+v", got)
+	}
+}
+
+func TestLiveHTMLNotWrittenUntilFinalize(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(report.ReportsDirEnv, dir)
+	p := report.NewLivePublisher(nil)
+	p.OnExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
+	hub := filepath.Join(dir, report.FolderName)
+	if _, err := os.Stat(filepath.Join(hub, report.IndexFile)); err == nil {
+		t.Fatal("index.html should not exist during live run")
+	}
+	generated, err := (&report.FinalWriter{History: historyRecorder{}}).Write(hub, report.FromSuite(sampleSuite()), &gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := json.Unmarshal(raw, &snap); err != nil {
+	if _, err := os.Stat(generated.IndexPath); err != nil {
+		t.Fatalf("index.html missing after finalize: %v", err)
+	}
+	body, err := os.ReadFile(generated.IndexPath)
+	if err != nil {
 		t.Fatal(err)
 	}
-	final := snap.Report.Specs[0].Scenarios[0]
-	if len(final.Items) == 0 && len(final.Contexts) == 0 {
-		t.Fatal("final suite report should restore full step detail")
+	if !strings.Contains(string(body), "demo-project") {
+		t.Fatal("final html should embed report data")
 	}
 }

@@ -15,9 +15,9 @@ type Engine struct {
 }
 
 // NewEngine returns a report engine with a fresh live publisher.
-func NewEngine(writer *FinalWriter) *Engine {
+func NewEngine(writer *FinalWriter, broadcast SnapshotBroadcaster) *Engine {
 	return &Engine{
-		Live:   NewLivePublisher(writer.OnIndexHTMLWritten),
+		Live:   NewLivePublisher(broadcast),
 		Writer: writer,
 	}
 }
@@ -42,7 +42,12 @@ func (e *Engine) FinalizeSuite(req *gauge_messages.SuiteExecutionResult) (*Gener
 	if e.Writer == nil {
 		return nil, fmt.Errorf("final writer is not configured")
 	}
-	return e.Writer.Write(dir, r, req)
+	generated, err := e.Writer.Write(dir, r, req)
+	if err != nil {
+		return nil, err
+	}
+	e.Live.SetDir(dir)
+	return generated, nil
 }
 
 // GenerateFromJSON rebuilds a report from a .uhilreport file.

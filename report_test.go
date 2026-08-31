@@ -454,8 +454,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	t.Setenv(report.ReportsDirEnv, dir)
 	t.Setenv(report.OverwriteReportsEnv, "true")
 
-	suite := &gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()}
-	generated, err := newReportEngine().FinalizeSuite(suite)
+	generated, err := newReportEngine(nil).FinalizeSuite(&gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -680,26 +679,25 @@ func TestLiveAndFinalReportShareDirectoryWhenNotOverwriting(t *testing.T) {
 
 	p := report.NewLivePublisher(nil)
 	p.OnExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
-	liveDir := p.Dir()
-	if liveDir == "" {
-		t.Fatal("live dir empty")
-	}
-	if filepath.Base(liveDir) != report.FolderName {
-		t.Fatalf("live dir should be studio-report hub: %s", liveDir)
+	if p.Dir() != "" {
+		t.Fatalf("live run should not create hub dir yet, got %s", p.Dir())
 	}
 
-	generated, err := (&report.FinalWriter{History: historyRecorder{}}).Write(liveDir, report.FromSuite(sampleSuite()), &gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()})
+	generated, err := newReportEngine(nil).FinalizeSuite(&gauge_messages.SuiteExecutionResult{SuiteResult: sampleSuite()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if generated.Dir != liveDir {
-		t.Fatalf("final dir %s != live dir %s", generated.Dir, liveDir)
+	liveDir := generated.Dir
+	if filepath.Base(liveDir) != report.FolderName {
+		t.Fatalf("hub = %s", generated.Dir)
 	}
 
-	p2 := report.NewLivePublisher(nil)
-	p2.OnExecutionStarting(&gauge_messages.ExecutionInfo{ProjectName: "demo-project"}, nil)
-	if p2.Dir() != liveDir {
-		t.Fatal("second run should reuse the hub directory")
+	hub2, err := report.ResolveDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hub2 != generated.Dir {
+		t.Fatalf("hub should be stable: %s vs %s", hub2, generated.Dir)
 	}
 }
 
