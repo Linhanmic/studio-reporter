@@ -61,10 +61,12 @@ func writeStaticHeader(b *bytes.Buffer, r *Report) {
 	b.WriteString(html.EscapeString(fallback(r.Environment, "-")))
 	b.WriteString(" · ")
 	b.WriteString(html.EscapeString(r.Timestamp))
+	b.WriteString(" · 总耗时 ")
+	b.WriteString(html.EscapeString(r.Duration))
 	b.WriteString("</div>\n<div class=\"stat-row\">\n")
 	writeStatCard(b, "规格书", r.Summary.Specs)
 	writeStatCard(b, "场景", r.Summary.Scenarios)
-	b.WriteString("<div class=\"stat-card stat-duration\"><div class=\"label\">运行时间</div><div class=\"value\">")
+	b.WriteString("<div class=\"stat-card\"><div class=\"label\">运行时间</div><div class=\"value\">")
 	b.WriteString(html.EscapeString(r.Duration))
 	b.WriteString("</div><div class=\"sub\">成功率 ")
 	b.WriteString(html.EscapeString(fmt.Sprintf("%.0f", r.SuccessRate)))
@@ -118,8 +120,8 @@ func writeSpecBlock(b *bytes.Buffer, spec *SpecReport, open bool) {
 
 func writeBlockSummary(b *bytes.Buffer, name, typeLabel, verdict, duration string) {
 	b.WriteString("<summary><span class=\"summary-left\"><span class=\"name-cell\">")
-	b.WriteString(name) // name may contain HTML from stepTextHTML for steps
-	b.WriteString("</span><span class=\"summary-meta\"><span class=\"type-label\">")
+	b.WriteString(name)
+	b.WriteString("</span></span><span class=\"summary-meta\"><span class=\"type-label\">")
 	b.WriteString(html.EscapeString(typeLabel))
 	b.WriteString("</span><span class=\"badge ")
 	b.WriteString(html.EscapeString(verdict))

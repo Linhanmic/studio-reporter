@@ -30,14 +30,8 @@ html, body {
 }
 .app-header h1 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
 .app-header .meta { color: #cfe8f7; font-size: 11px; margin-bottom: 8px; }
-.stat-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 6px;
-}
+.stat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .stat-card { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 4px; padding: 4px 8px; }
-.stat-card.stat-duration { margin-left: auto; min-width: 120px; }
 .stat-card .label { font-size: 10px; color: #cfe8f7; text-transform: uppercase; }
 .stat-card .value { font-size: 15px; font-weight: 700; }
 .stat-card .sub { font-size: 11px; color: #d6eaf8; }
@@ -153,7 +147,6 @@ html, body {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  margin-left: auto;
 }
 .dur {
   font-family: ui-monospace, monospace;
@@ -161,7 +154,7 @@ html, body {
   color: #4a5568;
   white-space: nowrap;
   flex-shrink: 0;
-  margin-left: 12px;
+  margin-left: auto;
 }
 .type-label { color: #5a6a7a; white-space: nowrap; font-size: 11px; }
 .badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; color: #fff; white-space: nowrap; }
