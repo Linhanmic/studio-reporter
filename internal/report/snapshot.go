@@ -62,9 +62,9 @@ func WriteLiveSnapshot(dir string, snap *LiveSnapshot) error {
 	return nil
 }
 
-// WriteIndexHTML renders and atomically writes index.html.
-func WriteIndexHTML(dir string, snap *LiveSnapshot, onWritten IndexHTMLCallback) error {
-	html, err := RenderSnapshotHTML(snap)
+// WriteFinalHTML renders a static index.html and atomically writes it.
+func WriteFinalHTML(dir string, r *Report, onWritten IndexHTMLCallback) error {
+	html, err := RenderReportHTML(r)
 	if err != nil {
 		return err
 	}

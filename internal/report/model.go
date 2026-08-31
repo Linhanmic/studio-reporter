@@ -15,6 +15,7 @@ const (
 	DefaultReportsDir        = "reports"
 	FolderName               = "studio-report"
 	IndexFile                = "index.html"
+	ViewerFile               = "viewer.html"
 	ManageIndexFile          = "manage.html"
 	FormatVersion            = 1
 	UhilReportExt            = ".uhilreport"

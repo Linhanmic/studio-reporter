@@ -337,7 +337,7 @@ Pushed while the suite runs whenever the in-memory report tree changes. **Nothin
 }
 ```
 
-Connect the report viewer with `?ws=ws://127.0.0.1:<port>` (the URL printed at plugin startup).
+Connect the live report viewer with `viewer.html?ws=ws://127.0.0.1:<port>` (the URL printed at plugin startup).
 
 ### ReportGenerated
 
@@ -360,17 +360,17 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
 
 ## HTML Report
 
-On `SuiteResult`, the plugin generates a local HTML report with Vue 3, Element Plus, and Pinia:
+On `SuiteResult`, the plugin generates a **static HTML report** at `index.html` (fully rendered, no embedded JSON) plus `report.json` for debugging and live viewing:
 
-- Nested expandable tables: spec → data row / scenario → concept → step
-- Fold controls match Gauge html-report: plus/minus squares; expanded blocks use a 5px left color bar (pass / fail / skip)
-- Accordion mode: only one node at the same level is expanded; click a row or its fold control to expand/collapse
-- Step console / hook output is merged into a single output card
+- Nested expandable blocks: spec → data row / scenario → concept → step
+- Fold controls use `<details>` with color bars (pass / fail / skip)
+- Step console / hook output in output cards
 - Does not open a browser unless `GAUGE_STUDIO_OPEN_BROWSER` is set
 - Passed rows green, failed rows red
 - Runtime on every spec, scenario, concept, and step
-- Live `report.json` updates while the suite runs; the page is seeded with `running` / `currentSpecId` / elapsed duration and polls through Pinia without reload
-- The hub is always `reports/studio-report/` (`index.html`, `report.json`, Vue assets)
+- Live tree updates via WebSocket `ReportSnapshot` on `viewer.html` while the suite runs (no disk I/O until finalize)
+- After finalize, static `index.html` + `report.json` are written; archives include their own static `index.html`
+- The hub is always `reports/studio-report/` (`index.html`, `viewer.html`, `report.json`, Vue assets for live viewer)
 - Hook failures, screenshots, stack traces, and data tables
 
 Regenerate without re-running tests:

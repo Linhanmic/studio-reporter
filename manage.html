@@ -132,7 +132,7 @@
           openCurrent: function () { window.location.href = 'index.html'; },
           openRun: function (row) {
             if (row.relDir) {
-              window.location.href = 'index.html?run=' + encodeURIComponent(row.relDir);
+              window.location.href = row.relDir + '/index.html';
             } else {
               window.location.href = 'index.html';
             }

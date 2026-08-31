@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 )
 
-//go:embed report.html
-var htmlTemplate string
+//go:embed viewer.html
+var viewerHTMLPage []byte
 
 //go:embed manage.html
 var manageHTMLPage []byte
@@ -17,7 +17,7 @@ var manageHTMLPage []byte
 //go:embed report-assets
 var embeddedAssets embed.FS
 
-// WriteAssets copies viewer assets and manage.html into dir.
+// WriteAssets copies live viewer assets, viewer.html, and manage.html into dir.
 func WriteAssets(dir string) error {
 	destDir := filepath.Join(dir, "assets")
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
@@ -39,6 +39,9 @@ func WriteAssets(dir string) error {
 		if err := os.WriteFile(filepath.Join(destDir, name), data, 0o644); err != nil {
 			return fmt.Errorf("write asset %s: %w", name, err)
 		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, ViewerFile), viewerHTMLPage, 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", ViewerFile, err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, ManageIndexFile), manageHTMLPage, 0o644); err != nil {
 		return fmt.Errorf("write %s: %w", ManageIndexFile, err)

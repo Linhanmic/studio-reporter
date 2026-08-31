@@ -44,7 +44,7 @@ func (w *FinalWriter) Write(dir string, r *Report, src proto.Message) (*Generate
 	rewriteScreenshotPaths(r, copyScreenshots(collectScreenshotFiles(r), imagesDir))
 
 	snap := &LiveSnapshot{Rev: time.Now().UnixMilli(), Running: false, Report: r}
-	if err := WriteIndexHTML(dir, snap, w.OnIndexHTMLWritten); err != nil {
+	if err := WriteFinalHTML(dir, r, w.OnIndexHTMLWritten); err != nil {
 		return nil, err
 	}
 	indexPath := filepath.Join(dir, IndexFile)

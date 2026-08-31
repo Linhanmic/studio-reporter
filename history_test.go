@@ -58,11 +58,11 @@ func TestRecordAndDeleteHistory(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(archive, report.LiveReportJSONFile)); err != nil {
 		t.Fatalf("archive missing report.json: %v", err)
 	}
+	if _, err := os.Stat(filepath.Join(archive, report.IndexFile)); err != nil {
+		t.Fatalf("archive missing static index.html: %v", err)
+	}
 	if _, err := os.Stat(filepath.Join(archive, "assets")); err == nil {
 		t.Fatal("archive should not copy Vue assets")
-	}
-	if _, err := os.Stat(filepath.Join(archive, report.IndexFile)); err == nil {
-		t.Fatal("archive should not copy index.html")
 	}
 
 	if err := deleteHistoryRun(runDir, entry.ID); err != nil {

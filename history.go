@@ -82,7 +82,7 @@ func recordCompletedRun(runDir string, r *report.Report) error {
 		}
 		entry.ID = id
 		entry.RelDir = archivesFolderName + "/" + id
-		entry.Href = entry.RelDir + "/" + report.LiveReportJSONFile
+		entry.Href = entry.RelDir + "/" + report.IndexFile
 	} else {
 		base := filepath.Base(absRun)
 		entry.ID = base
@@ -232,7 +232,7 @@ func copyRunSnapshot(src, dest string) error {
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		return fmt.Errorf("create archive dir: %w", err)
 	}
-	names := []string{report.LiveReportJSONFile, report.LiveReportJSFile}
+	names := []string{report.IndexFile, report.LiveReportJSONFile, report.LiveReportJSFile}
 	for _, name := range names {
 		from := filepath.Join(src, name)
 		to := filepath.Join(dest, name)
@@ -307,7 +307,7 @@ func copyDir(src, dest string) error {
 func reservedHistoryName(id string) bool {
 	switch id {
 	case "", ".", "..", archivesFolderName, "assets", "images",
-		report.IndexFile, report.ManageIndexFile, historyFileName, historyJSFile, report.LiveReportJSONFile, report.LiveReportJSFile:
+		report.IndexFile, report.ViewerFile, report.ManageIndexFile, historyFileName, historyJSFile, report.LiveReportJSONFile, report.LiveReportJSFile:
 		return true
 	default:
 		return strings.ContainsAny(id, `/\`) || strings.HasSuffix(id, report.UhilReportExt)

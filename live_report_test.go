@@ -244,6 +244,9 @@ func TestLiveHTMLNotWrittenUntilFinalize(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(body), "demo-project") {
-		t.Fatal("final html should embed report data")
+		t.Fatal("final html should contain rendered report data")
+	}
+	if strings.Contains(string(body), `id="report-data"`) {
+		t.Fatal("final index.html must be static HTML without embedded JSON")
 	}
 }

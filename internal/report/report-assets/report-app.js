@@ -1,4 +1,5 @@
-const rawSeed = JSON.parse(document.getElementById('report-data').textContent);
+const reportDataEl = document.getElementById('report-data');
+    const rawSeed = reportDataEl ? JSON.parse(reportDataEl.textContent) : {};
     const seededEnvelope = rawSeed && rawSeed.report ? rawSeed : { rev: 0, running: false, report: rawSeed };
     const seeded = JSON.parse(JSON.stringify(seededEnvelope.report || {}));
     // ?run=archives/<id> opens an archived run from the report hub (see manage.html).

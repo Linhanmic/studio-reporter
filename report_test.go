@@ -442,11 +442,7 @@ func viewerSource(t *testing.T, dir string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	js, err := os.ReadFile(filepath.Join(dir, "assets", "report-app.js"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(html) + "\n" + string(js)
+	return string(html)
 }
 
 func TestWriteAndRegenerateReport(t *testing.T) {
@@ -461,46 +457,23 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	html := viewerSource(t, generated.Dir)
 	for _, want := range []string{
 		"Test Report Viewer",
-		"el-table",
 		"运行时间",
-		"pinia",
-		"dense-table",
-		"row-pass",
-		"row-fail",
-		"accordion",
-		"clickIsExpandControl",
-		"@row-click",
-		"specBodyRows",
-		"kind: 'datarow'",
+		"tone-pass",
+		"tone-fail",
+		"step-table",
 		"data-kv",
 		"out-card",
-		"out-stack",
-		"col-type",
-		`width="120"`,
-		"scenarioRowsFor",
-		"currentSpecId",
-		"followLive",
-		"safeRelDir",
-		"tone-pass",
-		"el-table__expand-icon--expanded::before",
-		`"formatVersion":1`,
-		"archiveDir",
-		"assetHref",
+		"report-block",
+		"<details",
 		"demo-project",
 		"Successful login",
 		"insufficient funds",
 		"Checkout",
-		"specs/auth",
+		"specs / auth",
 		"Context",
 		"Teardown",
-		`"folders":["specs","auth"]`,
-		`"folders":["specs","modules","payments","gateway"]`,
 		"Very long payment gateway specification covering nested directory wrapping",
-		`"verdict":"fail"`,
-		"assets/vue.global.prod.js",
-		"assets/element-plus.full.min.js",
-		"assets/pinia.iife.prod.js",
-		"assets/report-app.js",
+		`class="badge fail"`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("generated HTML missing %q", want)
@@ -510,6 +483,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"function buildItemNodes",
 		"id: 'suite'",
 		"el-tree",
+		"el-table",
+		"pinia",
+		"vue.global",
+		"report-data",
 		"script-pane",
 		">脚本<",
 		"row.fileName",
@@ -543,6 +520,9 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	if !strings.HasPrefix(reportFile, "demo-project-") || !strings.HasSuffix(reportFile, report.UhilReportExt) {
 		t.Fatalf("report file should be <project>-<timestamp>%s, got %s", report.UhilReportExt, reportFile)
 	}
+	if _, err := os.Stat(filepath.Join(generated.Dir, report.ViewerFile)); err != nil {
+		t.Fatalf("viewer.html missing: %v", err)
+	}
 	for _, asset := range []string{"vue.global.prod.js", "element-plus.full.min.js", "element-plus.css", "pinia.iife.prod.js", "report-app.js"} {
 		if _, err := os.Stat(filepath.Join(generated.Dir, "assets", asset)); err != nil {
 			t.Fatalf("asset %s missing: %v", asset, err)
@@ -562,7 +542,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("manage.html missing: %v", err)
 	}
-	for _, want := range []string{"报告管理", "api/history/", "index.html?run=", "__GAUGE_HISTORY__"} {
+	for _, want := range []string{"报告管理", "api/history/", "/index.html", "__GAUGE_HISTORY__"} {
 		if !strings.Contains(string(managePage), want) {
 			t.Fatalf("manage.html missing %q", want)
 		}
@@ -720,9 +700,11 @@ func TestRenderReportHTMLEscapesScript(t *testing.T) {
 	if strings.Contains(string(html), "</script>xss") {
 		t.Fatal("raw script break should be escaped")
 	}
-	start := strings.Index(string(html), `<script type="application/json" id="report-data">`)
-	if start < 0 {
-		t.Fatal("missing report data script")
+	if !strings.Contains(string(html), "&lt;/script&gt;xss") {
+		t.Fatal("project name should be HTML-escaped")
+	}
+	if strings.Contains(string(html), `id="report-data"`) {
+		t.Fatal("static report must not embed JSON")
 	}
 }
 
