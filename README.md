@@ -97,7 +97,7 @@ The report includes:
 - Vue 3 + Element Plus + Pinia UI
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
-- Live updates while the suite runs (`report.json`): seeded `running` flag, elapsed duration, current spec/scenario, success rate recount, no full-page reload
+- Live updates while the suite runs (`report.json`): seeded `running` flag, elapsed duration, current spec/scenario, success rate recount, no full-page reload. **Live snapshots stop at the scenario layer** (no step/concept tree until the suite finishes).
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 - Filter by verdict and search across specs, scenarios, and steps
 - Step console / hook output merged into a single output card
@@ -164,16 +164,16 @@ go tool cover -html=coverage.out
 studio-reporter/
 ├── main.go              # Entry point
 ├── reporter.go          # gRPC handler implementation
+├── report_bridge.go     # Wires history + browser into report.Engine
 ├── events.go            # Event types and structures
 ├── forwarder.go         # WebSocket forwarder
-├── report.go            # HTML report model and generation
-├── report.html          # Report viewer shell (CSS + Vue 3 app)
+├── internal/report/     # Report generation module (model, live, writer, orchestrate)
+├── report.html          # Report viewer shell (embedded into internal/report)
 ├── manage.html          # Standalone report management console
 ├── report-assets/       # Vue / Element Plus / report-app.js
 ├── history.go           # Historical run index and archives
 ├── serve.go             # Optional HTTP server for history management
 ├── REPORT_FORMAT.md     # Report file format specification
-├── report_html.go       # Embedded report template
 ├── go.mod               # Go module definition
 ├── go.sum               # Go module checksums
 ├── plugin.json          # Gauge plugin configuration

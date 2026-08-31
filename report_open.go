@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/gaugestudio/studio-reporter/internal/report"
 )
 
 const skipBrowserEnv = "GAUGE_STUDIO_SKIP_BROWSER"
@@ -37,7 +39,7 @@ func openBrowserEnvSet() bool {
 }
 
 func openReportPage(indexPath string) {
-	if indexPath == "" || shouldSkipReport() || shouldSkipBrowser() {
+	if indexPath == "" || report.ShouldSkipReport() || shouldSkipBrowser() {
 		return
 	}
 	abs, err := filepath.Abs(indexPath)

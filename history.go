@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gaugestudio/studio-reporter/internal/report"
 )
 
 var historyMu sync.Mutex
@@ -20,59 +22,29 @@ const (
 	archivesFolderName = "archives"
 )
 
-// HistoryFile is the on-disk index of completed runs.
-// FormatVersion is bumped on breaking changes; see REPORT_FORMAT.md.
 type HistoryFile struct {
 	FormatVersion int            `json:"formatVersion"`
 	Runs          []HistoryEntry `json:"runs"`
 }
 
-// HistoryEntry is one completed (or current) report the hub can open.
 type HistoryEntry struct {
-	ID           string        `json:"id"`
-	Href         string        `json:"href"`
-	RelDir       string        `json:"relDir"`
-	ProjectName  string        `json:"projectName"`
-	Timestamp    string        `json:"timestamp"`
-	TimestampISO string        `json:"timestampISO,omitempty"`
-	Duration     string        `json:"duration"`
-	Verdict      string        `json:"verdict"`
-	Failed       bool          `json:"failed"`
-	Summary      ReportSummary `json:"summary"`
-	Current      bool          `json:"current,omitempty"`
+	ID           string              `json:"id"`
+	Href         string              `json:"href"`
+	RelDir       string              `json:"relDir"`
+	ProjectName  string              `json:"projectName"`
+	Timestamp    string              `json:"timestamp"`
+	TimestampISO string              `json:"timestampISO,omitempty"`
+	Duration     string              `json:"duration"`
+	Verdict      string              `json:"verdict"`
+	Failed       bool                `json:"failed"`
+	Summary      report.ReportSummary `json:"summary"`
+	Current      bool                `json:"current,omitempty"`
 }
 
-func studioReportRoot() (string, error) {
-	base, err := reportsBaseDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(base, reportFolderName), nil
-}
-
-func historyRootFor(runDir string) (string, bool) {
-	abs, err := filepath.Abs(runDir)
-	if err != nil {
-		return "", false
-	}
-	cur := abs
-	for i := 0; i < 5; i++ {
-		if filepath.Base(cur) == reportFolderName {
-			return cur, true
-		}
-		parent := filepath.Dir(cur)
-		if parent == cur {
-			break
-		}
-		cur = parent
-	}
-	return "", false
-}
-
-func recordCompletedRun(runDir string, report *Report) error {
+func recordCompletedRun(runDir string, r *report.Report) error {
 	historyMu.Lock()
 	defer historyMu.Unlock()
-	if runDir == "" || report == nil {
+	if runDir == "" || r == nil {
 		return nil
 	}
 	root, ok := historyRootFor(runDir)
@@ -91,7 +63,7 @@ func recordCompletedRun(runDir string, report *Report) error {
 		return fmt.Errorf("resolve history root: %w", err)
 	}
 
-	entry := historyEntryFromReport(report)
+	entry := historyEntryFromReport(r)
 	rel, err := filepath.Rel(absRoot, absRun)
 	if err != nil {
 		rel = ""
@@ -102,7 +74,7 @@ func recordCompletedRun(runDir string, report *Report) error {
 	}
 
 	if rel == "." || rel == "" {
-		stamp := sanitizeFileName(report.ProjectName) + "-" + archiveStamp(report)
+		stamp := strings.TrimSuffix(report.UhilReportFileName(r), report.UhilReportExt)
 		id := uniqueDirName(filepath.Join(absRoot, archivesFolderName), stamp)
 		dest := filepath.Join(absRoot, archivesFolderName, id)
 		if err := copyRunSnapshot(absRun, dest); err != nil {
@@ -110,12 +82,12 @@ func recordCompletedRun(runDir string, report *Report) error {
 		}
 		entry.ID = id
 		entry.RelDir = archivesFolderName + "/" + id
-		entry.Href = entry.RelDir + "/" + liveReportJSONFile
+		entry.Href = entry.RelDir + "/" + report.LiveReportJSONFile
 	} else {
 		base := filepath.Base(absRun)
 		entry.ID = base
 		entry.RelDir = rel
-		entry.Href = rel + "/" + reportIndexFile
+		entry.Href = rel + "/" + report.IndexFile
 	}
 
 	hist, err := loadHistoryFile(absRoot)
@@ -127,57 +99,59 @@ func recordCompletedRun(runDir string, report *Report) error {
 		return err
 	}
 	if absRun != absRoot {
-		if err := writeReportAssets(absRoot); err != nil {
+		if err := report.WriteAssets(absRoot); err != nil {
 			return err
 		}
-		html, err := renderSnapshotHTML(&LiveSnapshot{Rev: time.Now().UnixMilli(), Running: false, Report: report})
+		snap := &report.LiveSnapshot{Rev: time.Now().UnixMilli(), Running: false, Report: r}
+		html, err := report.RenderSnapshotHTML(snap)
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(filepath.Join(absRoot, reportIndexFile), html, 0o644); err != nil {
+		if err := report.AtomicWriteFile(filepath.Join(absRoot, report.IndexFile), html); err != nil {
 			return fmt.Errorf("write hub index.html: %w", err)
 		}
 	}
 	return nil
 }
 
-func archiveStamp(report *Report) string {
-	if report == nil {
-		return time.Now().Format(reportTimeLayout)
+func historyRootFor(runDir string) (string, bool) {
+	abs, err := filepath.Abs(runDir)
+	if err != nil {
+		return "", false
 	}
-	stamp := strings.TrimSpace(report.Timestamp)
-	if report.TimestampISO != "" {
-		if t, err := time.Parse(time.RFC3339Nano, report.TimestampISO); err == nil {
-			stamp = t.Local().Format(reportTimeLayout)
-		} else if t, err := time.Parse(time.RFC3339, report.TimestampISO); err == nil {
-			stamp = t.Local().Format(reportTimeLayout)
+	cur := abs
+	for i := 0; i < 5; i++ {
+		if filepath.Base(cur) == report.FolderName {
+			return cur, true
 		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			break
+		}
+		cur = parent
 	}
-	if stamp == "" {
-		stamp = time.Now().Format(reportTimeLayout)
-	}
-	return strings.NewReplacer(":", ".", " ", "_", "/", "-").Replace(stamp)
+	return "", false
 }
 
 func uniqueDirName(parent, stamp string) string {
 	candidate := stamp
 	dest := filepath.Join(parent, candidate)
-	for i := 1; dirExists(dest); i++ {
+	for i := 1; report.DirExists(dest); i++ {
 		candidate = fmt.Sprintf("%s-%d", stamp, i)
 		dest = filepath.Join(parent, candidate)
 	}
 	return candidate
 }
 
-func historyEntryFromReport(report *Report) HistoryEntry {
+func historyEntryFromReport(r *report.Report) HistoryEntry {
 	return HistoryEntry{
-		ProjectName:  report.ProjectName,
-		Timestamp:    report.Timestamp,
-		TimestampISO: report.TimestampISO,
-		Duration:     report.Duration,
-		Verdict:      report.Verdict,
-		Failed:       report.Failed,
-		Summary:      report.Summary,
+		ProjectName:  r.ProjectName,
+		Timestamp:    r.Timestamp,
+		TimestampISO: r.TimestampISO,
+		Duration:     r.Duration,
+		Verdict:      r.Verdict,
+		Failed:       r.Failed,
+		Summary:      r.Summary,
 	}
 }
 
@@ -232,7 +206,7 @@ func writeHistoryFile(root string, hist *HistoryFile) error {
 		hist = &HistoryFile{}
 	}
 	if hist.FormatVersion == 0 {
-		hist.FormatVersion = reportFormatVersion
+		hist.FormatVersion = report.FormatVersion
 	}
 	var buf strings.Builder
 	enc := json.NewEncoder(&buf)
@@ -242,12 +216,12 @@ func writeHistoryFile(root string, hist *HistoryFile) error {
 		return fmt.Errorf("encode history: %w", err)
 	}
 	data := []byte(strings.TrimSpace(buf.String()) + "\n")
-	if err := atomicWriteFile(filepath.Join(root, historyFileName), data); err != nil {
+	if err := report.AtomicWriteFile(filepath.Join(root, historyFileName), data); err != nil {
 		return err
 	}
 	js := append([]byte("window.__GAUGE_HISTORY__="), bytesTrim(data)...)
 	js = append(js, ';')
-	return atomicWriteFile(filepath.Join(root, historyJSFile), js)
+	return report.AtomicWriteFile(filepath.Join(root, historyJSFile), js)
 }
 
 func bytesTrim(data []byte) []byte {
@@ -258,7 +232,7 @@ func copyRunSnapshot(src, dest string) error {
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		return fmt.Errorf("create archive dir: %w", err)
 	}
-	names := []string{liveReportJSONFile, liveReportJSFile}
+	names := []string{report.LiveReportJSONFile, report.LiveReportJSFile}
 	for _, name := range names {
 		from := filepath.Join(src, name)
 		to := filepath.Join(dest, name)
@@ -266,7 +240,7 @@ func copyRunSnapshot(src, dest string) error {
 			return err
 		}
 	}
-	if matches, err := filepath.Glob(filepath.Join(src, "*"+uhilReportExt)); err == nil {
+	if matches, err := filepath.Glob(filepath.Join(src, "*"+report.UhilReportExt)); err == nil {
 		for _, from := range matches {
 			if err := copyFileIfExists(from, filepath.Join(dest, filepath.Base(from))); err != nil {
 				return err
@@ -274,7 +248,7 @@ func copyRunSnapshot(src, dest string) error {
 		}
 	}
 	imgSrc := filepath.Join(src, "images")
-	if dirExists(imgSrc) {
+	if report.DirExists(imgSrc) {
 		if err := copyDir(imgSrc, filepath.Join(dest, "images")); err != nil {
 			return err
 		}
@@ -333,10 +307,10 @@ func copyDir(src, dest string) error {
 func reservedHistoryName(id string) bool {
 	switch id {
 	case "", ".", "..", archivesFolderName, "assets", "images",
-		reportIndexFile, manageIndexFile, historyFileName, historyJSFile, liveReportJSONFile, liveReportJSFile:
+		report.IndexFile, report.ManageIndexFile, historyFileName, historyJSFile, report.LiveReportJSONFile, report.LiveReportJSFile:
 		return true
 	default:
-		return strings.ContainsAny(id, `/\`) || strings.HasSuffix(id, uhilReportExt)
+		return strings.ContainsAny(id, `/\`) || strings.HasSuffix(id, report.UhilReportExt)
 	}
 }
 
@@ -345,7 +319,7 @@ func isHistoryRunDir(path string) bool {
 	if err != nil || !info.IsDir() {
 		return false
 	}
-	return fileExists(filepath.Join(path, reportIndexFile)) || fileExists(filepath.Join(path, liveReportJSONFile))
+	return fileExists(filepath.Join(path, report.IndexFile)) || fileExists(filepath.Join(path, report.LiveReportJSONFile))
 }
 
 func deleteHistoryRun(root, id string) error {

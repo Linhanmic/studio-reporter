@@ -7,24 +7,26 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/gaugestudio/studio-reporter/internal/report"
 )
 
 func TestHistoryDeleteAPIRequiresLoopbackAndRunDir(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv(reportsDirEnv, root)
-	t.Setenv(overwriteReportsEnv, "true")
-	hub := filepath.Join(root, reportFolderName)
+	t.Setenv(report.ReportsDirEnv, root)
+	t.Setenv(report.OverwriteReportsEnv, "true")
+	hub := filepath.Join(root, report.FolderName)
 	if err := os.MkdirAll(hub, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	report := toReport(sampleSuite())
-	if err := os.WriteFile(filepath.Join(hub, reportIndexFile), []byte("<html></html>"), 0o644); err != nil {
+	r := report.FromSuite(sampleSuite())
+	if err := os.WriteFile(filepath.Join(hub, report.IndexFile), []byte("<html></html>"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := writeLiveSnapshot(hub, &LiveSnapshot{Rev: 1, Running: false, Report: report}); err != nil {
+	if err := report.WriteLiveSnapshot(hub, &report.LiveSnapshot{Rev: 1, Running: false, Report: r}); err != nil {
 		t.Fatal(err)
 	}
-	if err := recordCompletedRun(hub, report); err != nil {
+	if err := recordCompletedRun(hub, r); err != nil {
 		t.Fatal(err)
 	}
 	raw, err := os.ReadFile(filepath.Join(hub, historyFileName))
@@ -56,7 +58,7 @@ func TestHistoryDeleteAPIRequiresLoopbackAndRunDir(t *testing.T) {
 		t.Fatalf("localhost delete status = %d", res.StatusCode)
 	}
 
-	req, err = http.NewRequest(http.MethodDelete, srv.URL+"/api/history/"+reportIndexFile, nil)
+	req, err = http.NewRequest(http.MethodDelete, srv.URL+"/api/history/"+report.IndexFile, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +70,7 @@ func TestHistoryDeleteAPIRequiresLoopbackAndRunDir(t *testing.T) {
 	if res.StatusCode == http.StatusOK {
 		t.Fatal("deleting index.html must fail")
 	}
-	if _, err := os.Stat(filepath.Join(hub, reportIndexFile)); err != nil {
+	if _, err := os.Stat(filepath.Join(hub, report.IndexFile)); err != nil {
 		t.Fatal("index.html removed")
 	}
 }
