@@ -19,6 +19,22 @@
     return d;
   }
 
+  function scenarioMatchesFilter(scn, f) {
+    if (scn.dataset.verdict === f) return true;
+    var inner = scn.querySelectorAll('.report-block[data-kind="step"], .report-block[data-kind="concept"]');
+    for (var i = 0; i < inner.length; i++) {
+      if (inner[i].dataset.verdict === f) return true;
+    }
+    return false;
+  }
+
+  function showScenarioSubtree(scn) {
+    scn.classList.remove('filter-hidden');
+    scn.querySelectorAll('.report-block').forEach(function (el) {
+      el.classList.remove('filter-hidden');
+    });
+  }
+
   function applyFilter(next) {
     filter = next || 'all';
     try { sessionStorage.setItem(KEY, filter); } catch (e) {}
@@ -28,24 +44,35 @@
       btn.setAttribute('aria-pressed', btn.dataset.filter === filter ? 'true' : 'false');
     });
 
-    var blocks = Array.prototype.slice.call(document.querySelectorAll('.result-pane .report-block'));
-    if (filter === 'all') {
-      blocks.forEach(function (el) { el.classList.remove('filter-hidden'); });
-      return;
-    }
+    var blocks = document.querySelectorAll('.result-pane .report-block');
+    blocks.forEach(function (el) { el.classList.remove('filter-hidden'); });
 
-    blocks.sort(function (a, b) { return blockDepth(b) - blockDepth(a); });
-    blocks.forEach(function (el) {
-      var match = el.dataset.verdict === filter;
-      var children = el.querySelectorAll(':scope > .block-body > .report-block');
+    if (filter === 'all') return;
+
+    document.querySelectorAll('.result-pane .report-block[data-kind="scenario"]').forEach(function (scn) {
+      if (scenarioMatchesFilter(scn, filter)) {
+        showScenarioSubtree(scn);
+      } else {
+        scn.classList.add('filter-hidden');
+      }
+    });
+
+    var ancestors = Array.prototype.slice.call(document.querySelectorAll(
+      '.result-pane .report-block[data-kind="spec"],' +
+      '.result-pane .report-block[data-kind="datarow"],' +
+      '.result-pane .report-block[data-kind="datadriven"]'
+    ));
+    ancestors.sort(function (a, b) { return blockDepth(b) - blockDepth(a); });
+    ancestors.forEach(function (el) {
+      var scns = el.querySelectorAll('.report-block[data-kind="scenario"]');
       var anyVisible = false;
-      for (var i = 0; i < children.length; i++) {
-        if (!children[i].classList.contains('filter-hidden')) {
+      for (var i = 0; i < scns.length; i++) {
+        if (!scns[i].classList.contains('filter-hidden')) {
           anyVisible = true;
           break;
         }
       }
-      el.classList.toggle('filter-hidden', !(match || anyVisible));
+      el.classList.toggle('filter-hidden', !anyVisible);
     });
   }
 

@@ -463,6 +463,7 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"summary-right",
 		"filter-group",
 		"data-verdict=",
+		"data-kind=\"scenario\"",
 		"data-filter=\"fail\"",
 		"filter-btn",
 		"data-kv",
