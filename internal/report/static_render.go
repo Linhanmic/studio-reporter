@@ -117,15 +117,8 @@ func writeSpecBlock(b *bytes.Buffer, spec *SpecReport, open bool) {
 	} else {
 		b.WriteString("\">\n")
 	}
-	b.WriteString("<summary><span class=\"name-cell\">")
-	b.WriteString(html.EscapeString(spec.Heading))
-	b.WriteString("</span><span class=\"type-label\">规格书</span><span class=\"badge ")
-	b.WriteString(html.EscapeString(spec.Verdict))
-	b.WriteString("\">")
-	b.WriteString(html.EscapeString(verdictLabel(spec.Verdict)))
-	b.WriteString("</span><span class=\"dur\">")
-	b.WriteString(html.EscapeString(spec.Duration))
-	b.WriteString("</span></summary>\n<div class=\"block-body\">\n")
+	writeBlockSummary(b, html.EscapeString(spec.Heading), "规格书", spec.Verdict, spec.Duration)
+	b.WriteString("<div class=\"block-body\">\n")
 	if len(spec.Folders) > 0 {
 		b.WriteString("<div class=\"msg\">")
 		b.WriteString(html.EscapeString(strings.Join(spec.Folders, " / ")))
@@ -137,121 +130,179 @@ func writeSpecBlock(b *bytes.Buffer, spec *SpecReport, open bool) {
 	b.WriteString("</div></details>\n")
 }
 
+func writeBlockSummary(b *bytes.Buffer, name, typeLabel, verdict, duration string) {
+	b.WriteString("<summary><span class=\"summary-left\"><span class=\"name-cell\">")
+	b.WriteString(name) // name may contain HTML from stepTextHTML for steps
+	b.WriteString("</span></span><span class=\"summary-right\"><span class=\"type-label\">")
+	b.WriteString(html.EscapeString(typeLabel))
+	b.WriteString("</span><span class=\"badge ")
+	b.WriteString(html.EscapeString(verdict))
+	b.WriteString("\">")
+	b.WriteString(html.EscapeString(verdictLabel(verdict)))
+	b.WriteString("</span><span class=\"dur\">")
+	b.WriteString(html.EscapeString(duration))
+	b.WriteString("</span></span></summary>\n")
+}
+
 func writeBodyRow(b *bytes.Buffer, row bodyRow) {
+	if row.kind == "scenario" && len(row.scenarios) == 1 {
+		writeScenarioBlock(b, row.scenarios[0], row.verdict == VerdictFail)
+		return
+	}
 	tone := toneClass(row.verdict)
 	b.WriteString("<details class=\"report-block ")
 	b.WriteString(tone)
-	b.WriteString("\"><summary><span class=\"name-cell\">")
-	b.WriteString(html.EscapeString(bodyName(row)))
-	b.WriteString("</span><span class=\"type-label\">")
-	b.WriteString(html.EscapeString(bodyTypeLabel(row)))
-	b.WriteString("</span><span class=\"badge ")
-	b.WriteString(html.EscapeString(row.verdict))
 	b.WriteString("\">")
-	b.WriteString(html.EscapeString(verdictLabel(row.verdict)))
-	b.WriteString("</span><span class=\"dur\">")
-	b.WriteString(html.EscapeString(row.duration))
-	b.WriteString("</span></summary>\n<div class=\"block-body\">\n")
+	writeBlockSummary(b, html.EscapeString(bodyName(row)), bodyTypeLabel(row), row.verdict, row.duration)
+	b.WriteString("<div class=\"block-body\">\n")
 	if row.kind == "datarow" && len(row.headers) > 0 {
 		writeDataKV(b, row.headers, row.cells)
 	}
 	for _, scn := range row.scenarios {
-		writeScenarioBlock(b, scn)
+		writeScenarioBlock(b, scn, scn.Verdict == VerdictFail)
 	}
 	b.WriteString("</div></details>\n")
 }
 
-func writeScenarioBlock(b *bytes.Buffer, scn ScenarioReport) {
+func writeScenarioBlock(b *bytes.Buffer, scn ScenarioReport, open bool) {
 	tone := toneClass(scn.Verdict)
 	b.WriteString("<details class=\"report-block ")
 	b.WriteString(tone)
-	b.WriteString("\"><summary><span class=\"name-cell\">")
-	b.WriteString(html.EscapeString(scn.Heading))
-	b.WriteString("</span><span class=\"type-label\">场景</span><span class=\"badge ")
-	b.WriteString(html.EscapeString(scn.Verdict))
-	b.WriteString("\">")
-	b.WriteString(html.EscapeString(verdictLabel(scn.Verdict)))
-	b.WriteString("</span><span class=\"dur\">")
-	b.WriteString(html.EscapeString(scn.Duration))
-	b.WriteString("</span></summary>\n<div class=\"block-body\">\n")
+	if open {
+		b.WriteString("\" open>\n")
+	} else {
+		b.WriteString("\">\n")
+	}
+	writeBlockSummary(b, html.EscapeString(scn.Heading), "场景", scn.Verdict, scn.Duration)
+	b.WriteString("<div class=\"block-body\">\n")
 	writeHookAlert(b, scn.PreHookFailure, "Before Scenario")
 	writeHookAlert(b, scn.PostHookFailure, "After Scenario")
 	if scn.ScenarioDataTable != nil {
 		writeDataTable(b, scn.ScenarioDataTable)
 	}
-	b.WriteString("<table class=\"step-table\"><thead><tr><th>阶段</th><th>名称</th><th>结果</th><th>运行时间</th></tr></thead><tbody>\n")
 	for _, row := range scenarioPhaseItems(scn) {
-		writeItemRow(b, row.phase, row.item)
-	}
-	b.WriteString("</tbody></table>\n")
-	for _, row := range scenarioPhaseItems(scn) {
-		writeItemDetail(b, row.item)
+		writeItemBlock(b, row.phase, row.item)
 	}
 	b.WriteString("</div></details>\n")
 }
 
-func writeItemRow(b *bytes.Buffer, phase string, item ItemReport) {
-	verdict := itemVerdict(item)
-	b.WriteString("<tr class=\"row-")
-	b.WriteString(html.EscapeString(verdict))
-	b.WriteString("\"><td>")
-	b.WriteString(html.EscapeString(phase))
-	b.WriteString("</td><td>")
-	b.WriteString(itemTextHTML(item))
-	b.WriteString("</td><td>")
-	b.WriteString(html.EscapeString(verdictLabel(verdict)))
-	b.WriteString("</td><td>")
-	b.WriteString(html.EscapeString(item.Duration))
-	b.WriteString("</td></tr>\n")
-	if item.Kind == "concept" && item.Concept != nil {
-		for _, child := range item.Concept.Items {
-			writeItemRow(b, "  ↳", child)
-		}
-	}
-}
-
-func writeItemDetail(b *bytes.Buffer, item ItemReport) {
-	if item.Kind == "concept" && item.Concept != nil {
-		for _, child := range item.Concept.Items {
-			writeItemDetail(b, child)
-		}
-		if item.Concept.Step != nil {
-			writeStepDetail(b, item.Concept.Step)
+func writeItemBlock(b *bytes.Buffer, phase string, item ItemReport) {
+	switch item.Kind {
+	case "comment":
+		if item.Comment != "" {
+			b.WriteString("<div class=\"comment\">")
+			b.WriteString(html.EscapeString(item.Comment))
+			b.WriteString("</div>\n")
 		}
 		return
-	}
-	if item.Step != nil {
-		writeStepDetail(b, item.Step)
+	case "concept":
+		writeConceptBlock(b, item)
+		return
+	case "step":
+		writeStepBlock(b, phase, item)
+		return
 	}
 }
 
-func writeStepDetail(b *bytes.Buffer, step *StepReport) {
+func itemTypeLabel(phase string, item ItemReport) string {
+	if item.Kind == "concept" {
+		return "概念"
+	}
+	switch phase {
+	case "Context":
+		return "前置"
+	case "Teardown":
+		return "清理"
+	default:
+		return "步骤"
+	}
+}
+
+func writeConceptBlock(b *bytes.Buffer, item ItemReport) {
+	concept := item.Concept
+	if concept == nil {
+		return
+	}
+	verdict := itemVerdict(item)
+	tone := toneClass(verdict)
+	name := itemTextHTML(item)
+	open := verdict == VerdictFail
+	b.WriteString("<details class=\"report-block ")
+	b.WriteString(tone)
+	if open {
+		b.WriteString("\" open>\n")
+	} else {
+		b.WriteString("\">\n")
+	}
+	writeBlockSummary(b, name, "概念", verdict, itemDurationStr(item))
+	b.WriteString("<div class=\"block-body\">\n")
+	for _, child := range concept.Items {
+		writeItemBlock(b, "", child)
+	}
+	if concept.Step != nil {
+		writeStepExtras(b, concept.Step)
+	}
+	b.WriteString("</div></details>\n")
+}
+
+func writeStepBlock(b *bytes.Buffer, phase string, item ItemReport) {
+	step := item.Step
 	if step == nil {
 		return
 	}
-	var parts []string
-	if step.ErrorMessage != "" {
-		parts = append(parts, "<div class=\"err\">"+html.EscapeString(step.ErrorMessage)+"</div>")
+	verdict := step.Verdict
+	tone := toneClass(verdict)
+	name := stepTextHTML(step)
+	open := verdict == VerdictFail
+	b.WriteString("<details class=\"report-block ")
+	b.WriteString(tone)
+	if open {
+		b.WriteString("\" open>\n")
+	} else {
+		b.WriteString("\">\n")
 	}
-	if step.StackTrace != "" {
-		parts = append(parts, "<pre class=\"stack\">"+html.EscapeString(step.StackTrace)+"</pre>")
-	}
-	if step.SkippedReason != "" {
-		parts = append(parts, "<div class=\"msg\">"+html.EscapeString(step.SkippedReason)+"</div>")
-	}
-	writeStepOutputs(b, step)
-	writeScreenshots(b, step.Screenshots, step.FailureScreenshot)
-	if len(parts) == 0 {
+	writeBlockSummary(b, name, itemTypeLabel(phase, item), verdict, itemDurationStr(item))
+	b.WriteString("<div class=\"block-body\">\n")
+	writeStepExtras(b, step)
+	b.WriteString("</div></details>\n")
+}
+
+func writeStepExtras(b *bytes.Buffer, step *StepReport) {
+	if step == nil {
 		return
 	}
-	b.WriteString("<div class=\"nested-block ")
-	b.WriteString(toneClass(step.Verdict))
-	b.WriteString("\">")
-	b.WriteString(itemTextHTML(ItemReport{Kind: "step", Step: step}))
-	for _, p := range parts {
-		b.WriteString(p)
+	if step.ErrorMessage != "" {
+		b.WriteString("<div class=\"err\">")
+		b.WriteString(html.EscapeString(step.ErrorMessage))
+		b.WriteString("</div>\n")
 	}
-	b.WriteString("</div>\n")
+	if step.StackTrace != "" {
+		b.WriteString("<pre class=\"stack\">")
+		b.WriteString(html.EscapeString(step.StackTrace))
+		b.WriteString("</pre>\n")
+	}
+	if step.SkippedReason != "" {
+		b.WriteString("<div class=\"msg\">")
+		b.WriteString(html.EscapeString(step.SkippedReason))
+		b.WriteString("</div>\n")
+	}
+	writeHookAlert(b, step.PreHookFailure, "Before Step")
+	writeHookAlert(b, step.PostHookFailure, "After Step")
+	writeStepOutputs(b, step)
+	writeScreenshots(b, step.Screenshots, step.FailureScreenshot)
+}
+
+func itemDurationStr(item ItemReport) string {
+	if item.Duration != "" {
+		return item.Duration
+	}
+	if item.Step != nil {
+		return item.Step.Duration
+	}
+	if item.Concept != nil {
+		return item.Concept.Duration
+	}
+	return "00:00:00.000"
 }
 
 func writeStepOutputs(b *bytes.Buffer, step *StepReport) {
