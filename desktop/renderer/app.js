@@ -520,6 +520,31 @@ function renderSessions(payload) {
   });
 }
 
+
+function prefersDarkScheme() {
+  return Boolean(window.matchMedia?.('(prefers-color-scheme: dark)')?.matches);
+}
+
+function applyTheme(preference) {
+  const pref = window.desktopAPI.normalizeTheme(preference ?? state.settings?.theme);
+  const effective = window.desktopAPI.resolveTheme(pref, prefersDarkScheme());
+  document.documentElement.dataset.theme = effective;
+  document.documentElement.style.colorScheme = effective;
+  const sel = $('settingTheme');
+  if (sel && sel.value !== pref) sel.value = pref;
+}
+
+let themeMediaBound = false;
+function watchSystemTheme() {
+  if (themeMediaBound || !window.matchMedia) return;
+  themeMediaBound = true;
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (window.desktopAPI.normalizeTheme(state.settings?.theme) === 'system') {
+      applyTheme('system');
+    }
+  });
+}
+
 function fillSettingsForm() {
   const s = state.settings || {};
   $('settingHubDir').value = s.reportHubDir || '';
@@ -527,6 +552,10 @@ function fillSettingsForm() {
   if ($('settingNotifySuiteEnd')) {
     $('settingNotifySuiteEnd').checked = s.notifyOnSuiteEnd !== false;
   }
+  if ($('settingTheme')) {
+    $('settingTheme').value = window.desktopAPI.normalizeTheme(s.theme);
+  }
+  applyTheme(s.theme);
   $('settingJumpSeconds').value = s.autoJumpSeconds ?? 5;
   $('settingGaugeBin').value = s.gaugeBin || 'gauge';
   $('settingAutoCheckUpdates').checked = Boolean(s.autoCheckUpdates);
@@ -651,6 +680,9 @@ async function saveSettings() {
     notifyOnSuiteEnd: $('settingNotifySuiteEnd')
       ? $('settingNotifySuiteEnd').checked
       : true,
+    theme: $('settingTheme')
+      ? window.desktopAPI.normalizeTheme($('settingTheme').value)
+      : 'system',
     autoJumpSeconds: Number($('settingJumpSeconds').value) || 0,
     gaugeBin: $('settingGaugeBin').value.trim() || 'gauge',
     gaugeProjectDir: $('gaugeProjectDir').value.trim(),
@@ -784,6 +816,8 @@ function wire() {
     const hub = await window.desktopAPI.pickHubDir();
     if (hub) {
       await loadSettings();
+  applyTheme(state.settings?.theme);
+  watchSystemTheme();
       refreshHistory();
     }
   });
@@ -795,6 +829,10 @@ function wire() {
     }
   });
   $('btnSaveSettings').addEventListener('click', saveSettings);
+  $('settingTheme')?.addEventListener('change', () => {
+    applyTheme($('settingTheme').value);
+  });
+  watchSystemTheme();
   $('btnRefreshPlugin')?.addEventListener('click', () => {
     refreshPluginDetect();
   });

@@ -13,6 +13,7 @@ const {
   nextTab,
   TAB_ORDER,
 } = require('./shortcuts.js');
+const { normalizeTheme, resolveTheme, THEMES } = require('./theme.js');
 
 contextBridge.exposeInMainWorld('desktopAPI', {
   info: () => ipcRenderer.invoke('desktop:info'),
@@ -39,6 +40,9 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   shouldIgnoreShortcutTarget,
   nextTab,
   TAB_ORDER,
+  normalizeTheme,
+  resolveTheme,
+  THEMES,
   pickGaugeProject: () => ipcRenderer.invoke('desktop:pick-gauge-project'),
   gaugeStatus: () => ipcRenderer.invoke('desktop:gauge-status'),
   startGauge: (opts) => ipcRenderer.invoke('desktop:start-gauge', opts),

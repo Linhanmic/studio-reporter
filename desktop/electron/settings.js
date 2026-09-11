@@ -14,6 +14,7 @@ const DEFAULTS = {
   recentProjects: [],
   autoCheckUpdates: false,
   notifyOnSuiteEnd: true,
+  theme: 'system',
 };
 
 function settingsPath(userDataDir) {

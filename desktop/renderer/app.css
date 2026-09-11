@@ -1,4 +1,6 @@
-:root {
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #0f1c28;
   --bg-2: #162636;
   --panel: #1a2f42;
@@ -10,6 +12,29 @@
   --ok: #3ecf8e;
   --warn: #e6b84d;
   --err: #e85d5d;
+  --surface-input: #0c1620;
+  --surface-btn: #20364a;
+  --hero-glow: #1e3a52;
+  --font: "IBM Plex Sans", "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #eef3f7;
+  --bg-2: #f7fafc;
+  --panel: #ffffff;
+  --line: #c9d7e3;
+  --text: #152533;
+  --muted: #5b7388;
+  --accent: #1f8fbf;
+  --accent-2: #17749c;
+  --ok: #1f9a64;
+  --warn: #b8860b;
+  --err: #c53d3d;
+  --surface-input: #ffffff;
+  --surface-btn: #e7eef4;
+  --hero-glow: #d5e6f3;
   --font: "IBM Plex Sans", "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 }
@@ -18,7 +43,7 @@
 html, body {
   margin: 0;
   height: 100%;
-  background: radial-gradient(1200px 600px at 10% -10%, #1e3a52 0%, var(--bg) 55%);
+  background: radial-gradient(1200px 600px at 10% -10%, var(--hero-glow) 0%, var(--bg) 55%);
   color: var(--text);
   font-family: var(--font);
   font-size: 13px;
@@ -69,13 +94,13 @@ html, body {
 .connect-label { color: var(--muted); font-size: 12px; }
 #wsInput {
   flex: 1; min-width: 0;
-  background: #0c1620; color: var(--text);
+  background: var(--surface-input); color: var(--text);
   border: 1px solid var(--line); border-radius: 6px;
   padding: 8px 10px; font-family: var(--mono); font-size: 12px;
 }
 #wsInput:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
 .btn {
-  appearance: none; border: 1px solid var(--line); background: #20364a;
+  appearance: none; border: 1px solid var(--line); background: var(--surface-btn);
   color: var(--text); border-radius: 6px; padding: 7px 12px; cursor: pointer; font: inherit;
 }
 .btn:hover { background: #274358; }
@@ -223,12 +248,12 @@ iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
 #gaugeProjectDir { flex: 1; min-width: 160px; }
 #gaugeSpecs, #gaugeEnv, #settingGaugeBin {
   width: 110px;
-  background: #0c1620; color: var(--text);
+  background: var(--surface-input); color: var(--text);
   border: 1px solid var(--line); border-radius: 6px;
   padding: 7px 10px; font-family: var(--mono); font-size: 12px;
 }
 #gaugeProjectDir {
-  background: #0c1620; color: var(--text);
+  background: var(--surface-input); color: var(--text);
   border: 1px solid var(--line); border-radius: 6px;
   padding: 7px 10px; font-family: var(--mono); font-size: 12px;
 }
@@ -321,7 +346,7 @@ iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
 .field { display: flex; flex-direction: column; gap: 6px; color: var(--muted); }
 .field input[type="text"],
 .field input[type="number"] {
-  background: #0c1620; color: var(--text);
+  background: var(--surface-input); color: var(--text);
   border: 1px solid var(--line); border-radius: 6px;
   padding: 8px 10px; font-family: var(--mono); font-size: 12px;
 }
@@ -352,3 +377,8 @@ iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
 .compare-grid .delta-down { color: var(--ok); }
 .compare-grid .delta-same { color: var(--muted); }
 
+
+[data-theme="light"] .tab:hover { background: rgba(15,40,60,.06); }
+[data-theme="light"] .tab.active { background: rgba(31,143,191,.14); }
+[data-theme="light"] .connect-bar { background: rgba(15,40,60,.04); }
+[data-theme="light"] .btn:hover { background: #d9e5ef; }
