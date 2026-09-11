@@ -472,6 +472,13 @@ html, body {
 .fail-steps-mode .result-pane .report-block[data-kind="spec"]:not(:has(.report-block[data-kind="scenario"][data-verdict="fail"])) {
   display: none !important;
 }
+/* Keep left nav aligned with fail-steps-only: hide pass/skip scenarios and empty specs. */
+.fail-steps-mode .nav-pane .nav-item.nav-scn:not(.tone-fail) {
+  display: none !important;
+}
+.fail-steps-mode .nav-pane .nav-spec:not(:has(.nav-item.nav-scn.tone-fail)) {
+  display: none !important;
+}
 .action-btn[data-action="fail-steps-only"][aria-pressed="true"] {
   border-color: var(--fail, #e85d5d);
   color: var(--fail, #e85d5d);

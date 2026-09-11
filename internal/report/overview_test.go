@@ -160,9 +160,11 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`.fail-steps-mode .result-pane .report-block[data-kind="scenario"]:not([data-verdict="fail"])`,
 		`data-kind="datarow"`,
 		`data-kind="datadriven"`,
+		`.fail-steps-mode .nav-pane .nav-item.nav-scn:not(.tone-fail)`,
+		`.fail-steps-mode .nav-pane .nav-spec:not(:has(.nav-item.nav-scn.tone-fail))`,
 	} {
 		if !strings.Contains(screenBlock, want) {
-			t.Fatalf("screen CSS missing scenario collapse %q", want)
+			t.Fatalf("screen CSS missing scenario/nav collapse %q", want)
 		}
 	}
 	js := staticReportJS
