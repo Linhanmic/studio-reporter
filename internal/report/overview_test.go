@@ -80,6 +80,7 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`overview-spec-row`,
 		`data-nav-scn-count`,
 		`nav-count`,
+		`data-scn-id=`,
 		`print-scope-banner`,
 		`data-spec-id=`,
 		`fail-reason-ref`,

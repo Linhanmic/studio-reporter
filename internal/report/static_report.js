@@ -197,11 +197,13 @@
       var specId = navSpec.getAttribute('data-spec-id') || '';
       var specEl = specId ? document.getElementById(specId) : null;
       var counts = emptyCounts();
-      if (specEl) {
-        specEl.querySelectorAll('.report-block[data-kind="scenario"]').forEach(function (scn) {
-          if (isNodeVisuallyCounted(scn)) bumpCounts(counts, scn.getAttribute('data-verdict') || '');
-        });
-      }
+      navSpec.querySelectorAll('.nav-scn[data-scn-id]').forEach(function (navScn) {
+        var scnId = navScn.getAttribute('data-scn-id') || '';
+        var scnEl = scnId && specEl ? document.getElementById(scnId) : null;
+        var keep = !!(scnEl && isNodeVisuallyCounted(scnEl));
+        navScn.classList.toggle('filter-hidden', !keep);
+        if (keep) bumpCounts(counts, (scnEl.getAttribute('data-verdict') || navScn.getAttribute('data-verdict') || ''));
+      });
       var el = navSpec.querySelector('[data-nav-scn-count]');
       if (el) el.textContent = formatCountsRatio(counts);
       navSpec.classList.toggle('filter-hidden', counts.total === 0);

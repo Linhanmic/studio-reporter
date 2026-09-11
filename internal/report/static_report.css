@@ -539,3 +539,5 @@ html, body {
 }
 
 .nav-pane .nav-spec.filter-hidden { display: none !important; }
+
+.nav-pane .nav-scn.filter-hidden { display: none !important; }

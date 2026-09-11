@@ -102,6 +102,7 @@
 - [x] 静态报告 Overview 规格书清单随过滤可见树同步（隐藏不可见规格书并刷新场景计数；`syncOverviewSpecList`）
 - [x] 静态报告导航树场景计数与过滤可见树对齐（规格书旁 `nav-count` 随过滤/仅失败步骤更新；`syncNavCounts`）
 - [x] 静态报告打印页眉标注可见过滤范围（`print-scope-banner` / `describePrintScope`；打印/PDF 标明当前过滤与仅失败步骤，避免误读为全量）
+- [x] 静态报告导航场景项随过滤隐藏（`syncNavCounts` 同步 `nav-scn.filter-hidden`；规格书旁计数仅含可见场景）
 
 ## 迭代日志
 
@@ -202,6 +203,7 @@
 
 | 2026-09-11 | 导航树场景计数对齐可见树 | `syncNavCounts` 更新规格书旁场景计数并隐藏无可见场景的导航节点 |
 
+| 2026-09-11 | 导航场景项随过滤隐藏 | `syncNavCounts` 同步隐藏不可见 `nav-scn`，规格书计数只含可见场景 |
 | 2026-09-11 | 打印页眉标注可见范围 | 打印前写入 `print-scope-banner`：过滤/搜索/仅失败步骤状态，避免 PDF 被当成全量报告 |
 
 ## 下一任务（选定）
