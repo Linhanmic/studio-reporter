@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -217,5 +218,41 @@ func TestCheckFailDigestSidecarFreshness(t *testing.T) {
 	code = runDigestCmd([]string{"--file", path, "--check", "--max-age", "1h"}, &stdout, &stderr)
 	if code != 1 {
 		t.Fatalf("stale cli check code=%d want 1; stderr=%s", code, stderr.String())
+	}
+}
+
+func TestOpenDeepLinkForRunEncodesSpecialHubPaths(t *testing.T) {
+	hubs := []string{
+		`/tmp/hub path/x`,
+		`/tmp/hub#frag/x`,
+		`/tmp/hub?a=1&b=2/x`,
+		`/tmp/中文 hub/x`,
+		`C:\Users\foo\bar hub`,
+	}
+	for _, hub := range hubs {
+		link := openDeepLinkForRun("run/1", hub)
+		if !strings.Contains(link, "studio-reporter://open?") {
+			t.Fatalf("protocol missing: %s", link)
+		}
+		if !strings.Contains(link, "failSteps=1") {
+			t.Fatalf("failSteps missing: %s", link)
+		}
+		// Raw hub must not appear unencoded when it contains reserved query chars.
+		if strings.ContainsAny(hub, " ?#&=") && strings.Contains(link, "hub="+hub) {
+			t.Fatalf("hub not query-encoded: link=%s hub=%q", link, hub)
+		}
+		u, err := url.Parse(link)
+		if err != nil {
+			t.Fatalf("parse %s: %v", link, err)
+		}
+		if got := u.Query().Get("hub"); got != hub {
+			t.Fatalf("hub round-trip: want %q got %q (link=%s)", hub, got, link)
+		}
+		if got := u.Query().Get("run"); got != "run/1" {
+			t.Fatalf("run=%q", got)
+		}
+		if got := u.Query().Get("failSteps"); got != "1" {
+			t.Fatalf("failSteps=%q", got)
+		}
 	}
 }

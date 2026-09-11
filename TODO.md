@@ -143,6 +143,7 @@
 - [x] 静态报告 failSteps 别名浏览器冒烟（Chrome dump-dom；`make smoke-failsteps-hash`；覆盖 TRUE/failsteps/fail_steps/FALSE）
 - [x] manage/serve 失败摘要旁路与深链联调抽检（`TestManageServeFailDigestDeepLinkSmoke`；`make smoke-manage-digest`；POST 旁路 + sidecar 深链 + manage 契约 + Chrome `#overview?failSteps=1`）
 - [x] 将 `smoke-manage-digest` / `smoke-failsteps-hash` 纳入 PR CI（`report-browser-smoke` job；安装 Chrome；`CI=true` 时缺 Chrome 失败而非跳过）
+- [x] digest 深链对含特殊字符 hub 路径的编码/打开抽检（Go/report-assets/Desktop 往返；空格/`#`/`?&=`/中文/Windows 路径）
 
 ## 迭代日志
 
@@ -304,6 +305,8 @@
 
 | 2026-09-11 | report-browser-smoke CI | PR CI 新增 Chrome 安装 job，显式跑 `smoke-failsteps-hash` + `smoke-manage-digest`；`CI=true` 时缺浏览器硬失败 |
 
+| 2026-09-11 | digest 深链特殊 hub 路径编码抽检 | Go `url.Values` / JS `URLSearchParams` / Desktop `parseDeepLink` 对空格、`#`、`?&=`、中文、Windows 路径往返一致；补齐三端单测 |
+
 ## 下一任务（选定）
 
-**digest 深链对含特殊字符 hub 路径的编码/打开抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告分享 hash 对 Unicode/空格查询串的编码往返抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

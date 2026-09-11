@@ -170,6 +170,7 @@ Gauge (gRPC)
 | 2026-09-11 | failSteps 解析跨端对齐 | 契约：键 failSteps/fail-steps/failsteps/fail_steps；真值 1/true/yes、假值 0/false/no（大小写不敏感）；空 hash 静态端仍用 null 保会话 |
 | 2026-09-11 | Desktop 打包 unsigned 闸门 | CI 增加 Win 交叉 pack smoke；pack-smoke/Release 强制 unsigned；文档写明 secrets 清单未注入 workflow |
 | 2026-09-11 | failSteps 别名浏览器冒烟 | headless dump-dom 门禁别名契约；与 Go/Desktop 解析表同源；CI 可通过 `make smoke-failsteps-hash` |
+| 2026-09-11 | digest 深链特殊 hub 路径编码抽检 | 深链 hub 必须经 query 编码；Go/JS/Desktop 往返覆盖空格与保留字符，避免 `?&#` 截断 |
 | 2026-09-11 | report-browser-smoke CI | PR CI 安装 Chrome 并显式跑 failSteps/manage-digest 浏览器冒烟；避免 go test 在无浏览器环境静默 Skip |
 | 2026-09-11 | manage/serve 旁路与深链联调抽检 | 对照「API 单测 ≠ 页面契约」：用真实 hub + HTTP serve 串起 POST 旁路、sidecar 深链、manage.html/JS 字符串契约与 Chrome 打开 hash；`make smoke-manage-digest` 作为可重复抽检入口 |
 | 2026-09-11 | 自动更新 feed 离线校验 | `update-feed.js` 校验 latest*.yml 与 publish owner/repo；签名 secrets 文档化，证书到位前保持 unsigned |

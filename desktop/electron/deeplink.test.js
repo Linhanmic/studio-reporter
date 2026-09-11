@@ -223,6 +223,29 @@ describe('deeplink', () => {
   });
 
 
+  it('buildOpenDeepLink encodes special hub paths for round-trip parse', () => {
+    const hubs = [
+      '/tmp/hub path/x',
+      '/tmp/hub#frag/x',
+      '/tmp/hub?a=1&b=2/x',
+      '/tmp/中文 hub/x',
+      'C:\\Users\\foo\\bar hub',
+    ];
+    for (const hub of hubs) {
+      const link = buildOpenDeepLink({ run: 'run/1', hub, failSteps: true });
+      assert.match(link, /^studio-reporter:\/\/open\?/);
+      assert.match(link, /failSteps=1/);
+      if (/[ ?#&=]/.test(hub)) {
+        assert.ok(!link.includes('hub=' + hub), `hub should be encoded: ${link}`);
+      }
+      const parsed = parseDeepLink(link);
+      assert.equal(parsed.ok, true);
+      assert.equal(parsed.run, 'run/1');
+      assert.equal(parsed.hub, hub);
+      assert.equal(parsed.failSteps, true);
+    }
+  });
+
   it('buildHistoryOpenDeepLinks joins runs and marks failSteps', () => {
     const text = buildHistoryOpenDeepLinks(
       [

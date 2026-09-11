@@ -61,4 +61,29 @@ describe('report-assets/history-digest', () => {
     assert.match(hubless, /failSteps=1/);
     assert.ok(!/hub=/.test(hubless));
   });
+
+  it('buildOpenDeepLinkForRun encodes special hub paths', () => {
+    const {
+      buildOpenDeepLinkForRun,
+    } = require('./history-digest.js');
+    const hubs = [
+      '/tmp/hub path/x',
+      '/tmp/hub#frag/x',
+      '/tmp/hub?a=1&b=2/x',
+      '/tmp/中文 hub/x',
+      'C:\\Users\\foo\\bar hub',
+    ];
+    for (const hub of hubs) {
+      const link = buildOpenDeepLinkForRun('run/1', hub);
+      assert.match(link, /^studio-reporter:\/\/open\?/);
+      assert.match(link, /failSteps=1/);
+      if (/[ ?#&=]/.test(hub)) {
+        assert.ok(!link.includes('hub=' + hub), `hub should be encoded: ${link}`);
+      }
+      const u = new URL(link);
+      assert.equal(u.searchParams.get('hub'), hub);
+      assert.equal(u.searchParams.get('run'), 'run/1');
+      assert.equal(u.searchParams.get('failSteps'), '1');
+    }
+  });
 });
