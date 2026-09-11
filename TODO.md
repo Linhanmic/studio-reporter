@@ -129,6 +129,7 @@
 - [x] Desktop 打开 manage 失败摘要深链联调（无 hub 时回退当前/最近 hub；failSteps 无 focus 时写 `#overview?failSteps=1`）
 - [x] CLI `digest --write` 旁路文件（hub 下写入 `fail-digest.md` / `fail-digest.json` 供 CI 工件）
 - [x] Desktop 导出刷新 fail-digest 旁路（导出 PDF/单文件后写入 hub `fail-digest.md`/`json`，失败不阻断导出）
+- [x] 插件 finalize 同步刷新 fail-digest（`recordCompletedRun` / 删除历史后 best-effort 写旁路，不阻断套件结束）
 
 ## 迭代日志
 
@@ -264,6 +265,8 @@
 
 | 2026-09-11 | Desktop 导出刷新 fail-digest 旁路 | 导出完成后写 hub fail-digest.*；与 CLI `--write` 契约一致；写失败仅告警 |
 
+| 2026-09-11 | 插件 finalize 同步刷新 fail-digest | 套件落盘/删除历史后刷新 fail-digest.*；失败不阻断 finalize |
+
 ## 下一任务（选定）
 
-**插件 finalize 同步刷新 fail-digest.***（每次落盘后写旁路，无需 Desktop 导出），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
+**manage.html 展示/下载 fail-digest 旁路**（hub 管理页一键打开或复制旁路摘要），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。

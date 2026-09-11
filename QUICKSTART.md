@@ -15,6 +15,7 @@ studio-reporter digest --dir reports/studio-report
 studio-reporter digest --dir reports/studio-report --format json
 studio-reporter digest --dir reports/studio-report --write
 # Desktop 导出 PDF/单文件后也会刷新 hub 下的 fail-digest.md/json
+# 套件结束后 hub 也会自动刷新（插件 finalize；删除历史同步）
 studio-reporter serve --dir reports/studio-report
 studio-reporter version
 ```

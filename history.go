@@ -99,6 +99,7 @@ func recordCompletedRun(runDir string, r *report.Report) error {
 	if err := writeHistoryFile(absRoot, hist); err != nil {
 		return err
 	}
+	refreshFailDigestSidecars(absRoot, hist.Runs)
 	if absRun != absRoot {
 		if err := report.WriteAssets(absRoot); err != nil {
 			return err
@@ -113,6 +114,14 @@ func recordCompletedRun(runDir string, r *report.Report) error {
 		}
 	}
 	return nil
+}
+
+// refreshFailDigestSidecars best-effort writes fail-digest.md/json for CI/manage.
+// Digest write failures must not fail the suite finalize path.
+func refreshFailDigestSidecars(hubDir string, runs []HistoryEntry) {
+	d := buildHistoryFailDigest(runs, 15)
+	d.HubDir = hubDir
+	_ = writeHistoryFailDigestSidecars(hubDir, d)
 }
 
 func historyRootFor(runDir string) (string, bool) {
@@ -391,7 +400,11 @@ func deleteHistoryRunLocked(absRoot, id string) error {
 		kept = append(kept, r)
 	}
 	hist.Runs = kept
-	return writeHistoryFile(absRoot, hist)
+	if err := writeHistoryFile(absRoot, hist); err != nil {
+		return err
+	}
+	refreshFailDigestSidecars(absRoot, hist.Runs)
+	return nil
 }
 
 func fileExists(path string) bool {
