@@ -52,13 +52,14 @@ xdg-open reports/studio-report/index.html
 
 # 运行中实时（把端口换成插件打印的端口）
 xdg-open "reports/studio-report/viewer.html?ws=ws://127.0.0.1:<port>"
+# Suite 结束后 viewer 会提示打开静态 index.html（可取消自动跳转）
 
 # 历史管理（删除归档需要 HTTP）
 studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 # 浏览器打开 http://127.0.0.1:8765/manage.html
 ```
 
-静态报告工具栏可按 **规格书 / 场景** 过滤通过、失败、跳过。
+静态报告工具栏可按 **规格书 / 场景** 过滤通过、失败、跳过；支持全部展开/折叠与名称搜索。
 
 ## 4. 从 `.uhilreport` 再生 HTML
 

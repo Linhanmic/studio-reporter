@@ -110,9 +110,9 @@ The report includes:
 - Runtime for every spec, scenario, concept, and step
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
 
-**Live viewing** while the suite runs uses `viewer.html` (Vue 3 + Element Plus): the plugin keeps the report tree **in memory** and pushes `ReportSnapshot` over WebSocket; **no disk writes until the suite finishes**. Connect via `viewer.html?ws=ws://127.0.0.1:<port>` (or poll `report.json` after finalize).
+**Live viewing** while the suite runs uses `viewer.html` (Vue 3 + Element Plus): the plugin keeps the report tree **in memory** and pushes `ReportSnapshot` over WebSocket; **no disk writes until the suite finishes**. Connect via `viewer.html?ws=ws://127.0.0.1:<port>` (or poll `report.json` after finalize). When the suite ends, the live viewer shows a banner with a CTA (and a cancellable countdown) to open the static `index.html` — the canonical final report with full step detail.
 
-The reporter does **not** open a browser. Open the file yourself:
+The reporter does **not** open a browser by default. Open the file yourself:
 
 ```bash
 # Linux — completed report

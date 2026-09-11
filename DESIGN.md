@@ -75,6 +75,7 @@ Gauge (gRPC)
 | 2026-09-11 | 前端真源在仓库根，`make sync-assets` → `internal/report` embed | 发现 `report-app.js` 已漂移且 embed 副本丢失 WS 连接；对齐 embed SSoT 实践 |
 | 2026-09-11 | 废弃根/`internal` 下无用的 `report.html` | 运行时只发布 `viewer.html`；死文件制造双名认知负担 |
 | 2026-09-11 | 引入 golangci-lint v2 显式规则集 + CI 钉版本 | README 已承诺 lint；按 v2 推荐避免 `enable-all` 噪音 |
+| 2026-09-11 | 实时 viewer 结束引导打开静态 `index.html`，不强切 SPA 终态 | Allure/Playwright 惯例是生成后再 open；`FinishWithReport` 早于落盘，故用 `ReportGenerated` + index 元数据变化探测；磁盘轮询见 `running=false` 时 index 已写完 |
 
 ## 前端资源布局（SSoT）
 

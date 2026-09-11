@@ -28,7 +28,7 @@
 
 ## P2 — 实时 viewer
 
-- [ ] 运行结束自动提示跳转静态 `index.html`（或内嵌终态视图）
+- [x] 运行结束自动提示跳转静态 `index.html`（横幅 + 可取消倒计时；不内嵌终态 SPA）
 - [ ] 根目录 `manage.html` / `report-assets` 与 embed 同步的开发体验文档（已有脚本；可加 pre-commit）
 - [ ] viewer 结束态与静态报告视觉一致性抽样对比
 
@@ -53,7 +53,8 @@
 | 2026-09-11 | 启动持续完善目标；盘点 v0.4.6 | 缺文档四件套；无 PR CI；assets 双源；demo UX 噪音 |
 | 2026-09-11 | 文档 + CI + leaf-row + 展开/搜索 + Makefile | PR #12 |
 | 2026-09-11 | 决策原则写入 DESIGN；assets SSoT；golangci v2 | 对照 Go embed / golangci v2 实践；修复 embed 丢失 WS 的漂移；lint 清零 |
+| 2026-09-11 | viewer 结束引导打开 `index.html` | 对照 Allure「生成后再 open」：横幅 CTA + 可取消倒计时；`ReportGenerated`/元数据探测避免旧 index 误判 |
 
 ## 下一任务（选定）
 
-**运行结束引导打开静态 `index.html`**（P2），或 **CI cover 摘要**（P3）。决策时继续按 DESIGN 原则做外部实践对照。
+**CI cover profile 摘要**（P3），或 **打印样式验收**（P1）。决策时继续按 DESIGN 原则做外部实践对照。
