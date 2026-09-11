@@ -329,6 +329,7 @@
     syncFilterBadges();
     syncOverviewSpecList();
     syncNavCounts();
+    if (!applyingHash) syncShareHash();
   }
 
   document.querySelectorAll('.filter-group').forEach(function (group) {
@@ -405,6 +406,7 @@
     syncFilterBadges();
     syncOverviewSpecList();
     syncNavCounts();
+    if (!opts.skipHash && !applyingHash) syncShareHash();
     if (opts.silent) return;
     if (typeof flashStatus === 'function') {
       flashStatus(failStepsOnly ? '已开启：仅显示失败场景与失败步骤' : '已关闭：仅失败步骤');
@@ -414,9 +416,7 @@
   function wantFailStepsFromURL() {
     try {
       var h = (location.hash || '').replace(/^#/, '');
-      if (h === 'fail-steps' || h.indexOf('fail-steps&') === 0 || h.indexOf('fail-steps/') === 0) {
-        return true;
-      }
+      if (parseShareHash(h).failSteps) return true;
       var q = new URLSearchParams(location.search || '');
       var v = q.get('failSteps') || q.get('fail-steps') || '';
       return v === '1' || v === 'true' || v === 'yes';
@@ -501,13 +501,91 @@
 
   window.addEventListener('beforeprint', prepareFailStepsForPrint);
 
-  function writeHash(id) {
+  
+  // Shareable URL fragment: #<focus>[?q=&spec=&scenario=&failSteps=1]
+  // Legacy: #fail-steps, #overview, #<nodeId>
+  var currentFocusId = 'overview';
+  var applyingHash = false;
+
+  function parseShareHash(raw) {
+    var input = String(raw || '').replace(/^#/, '');
+    var focus = '';
+    var query = '';
+    var spec = 'all';
+    var scenario = 'all';
+    var failSteps = false;
+    if (!input) {
+      return { focus: 'overview', query: '', spec: 'all', scenario: 'all', failSteps: false };
+    }
+    var qIdx = input.indexOf('?');
+    var head = qIdx >= 0 ? input.slice(0, qIdx) : input;
+    var qs = qIdx >= 0 ? input.slice(qIdx + 1) : '';
+    // Legacy: fail-steps as focus (optionally followed by & or / junk)
+    if (head === 'fail-steps' || head.indexOf('fail-steps&') === 0 || head.indexOf('fail-steps/') === 0) {
+      focus = 'overview';
+      failSteps = true;
+      if (head.indexOf('fail-steps&') === 0) {
+        qs = head.slice('fail-steps&'.length) + (qs ? '&' + qs : '');
+      }
+    } else {
+      focus = head || 'overview';
+    }
+    if (qs) {
+      try {
+        var params = new URLSearchParams(qs);
+        if (params.has('q')) query = String(params.get('q') || '');
+        if (params.has('query')) query = String(params.get('query') || query);
+        var sp = params.get('spec') || params.get('specVerdict') || '';
+        var sc = params.get('scenario') || params.get('scn') || params.get('scenarioVerdict') || '';
+        if (sp) spec = String(sp);
+        if (sc) scenario = String(sc);
+        var fs = params.get('failSteps') || params.get('fail-steps') || params.get('failsteps') || '';
+        if (fs === '1' || fs === 'true' || fs === 'yes') failSteps = true;
+        if (fs === '0' || fs === 'false' || fs === 'no') failSteps = false;
+      } catch (e) {}
+    }
+    if (spec !== 'all' && spec !== 'pass' && spec !== 'fail' && spec !== 'skip') spec = 'all';
+    if (scenario !== 'all' && scenario !== 'pass' && scenario !== 'fail' && scenario !== 'skip') scenario = 'all';
+    return { focus: focus || 'overview', query: query, spec: spec, scenario: scenario, failSteps: failSteps };
+  }
+
+  function buildShareHash(parts) {
+    parts = parts || {};
+    var focus = parts.focus || currentFocusId || 'overview';
+    if (!focus || focus === 'overview') focus = 'overview';
+    var params = new URLSearchParams();
+    var q = parts.query != null ? String(parts.query) : String(state.query || '');
+    q = q.trim();
+    if (q) params.set('q', q);
+    var spec = parts.spec != null ? String(parts.spec) : String(state.spec || 'all');
+    var scenario = parts.scenario != null ? String(parts.scenario) : String(state.scenario || 'all');
+    if (spec && spec !== 'all') params.set('spec', spec);
+    if (scenario && scenario !== 'all') params.set('scenario', scenario);
+    var fs = parts.failSteps != null ? !!parts.failSteps : !!failStepsOnly;
+    if (fs) params.set('failSteps', '1');
+    var qs = params.toString();
+    return qs ? (focus + '?' + qs) : focus;
+  }
+
+  function syncShareHash(opts) {
+    opts = opts || {};
     try {
-      var next = (!id || id === 'overview') ? '#overview' : ('#' + id);
+      var next = '#' + buildShareHash({
+        focus: opts.focus != null ? opts.focus : currentFocusId,
+        query: state.query,
+        spec: state.spec,
+        scenario: state.scenario,
+        failSteps: failStepsOnly,
+      });
       if (location.hash === next) return;
       if (history.replaceState) history.replaceState(null, '', next);
       else location.hash = next;
     } catch (e) {}
+  }
+
+function writeHash(id) {
+    currentFocusId = (!id || id === 'overview') ? 'overview' : String(id);
+    syncShareHash({ focus: currentFocusId });
   }
 
   function openAncestors(target) {
@@ -536,19 +614,44 @@
   }
 
   function applyHashFromLocation() {
-    var raw = '';
-    try { raw = (location.hash || '').replace(/^#/, ''); } catch (e) {}
-    if (raw === 'fail-steps') {
-      setFailStepsOnly(true, { silent: true });
-      showOverview(true, { updateHash: false });
-      return;
-    }
-    if (!raw || raw === 'overview') {
-      showOverview(true, { updateHash: false });
-      return;
-    }
-    if (!selectNode(raw, { updateHash: false })) {
-      showOverview(true, { updateHash: false });
+    applyingHash = true;
+    try {
+      var raw = '';
+      try { raw = (location.hash || '').replace(/^#/, ''); } catch (e) {}
+      var parsed = parseShareHash(raw);
+      var filterChanged = false;
+      if (typeof parsed.query === 'string' && parsed.query !== state.query) {
+        state.query = parsed.query;
+        if (searchInput) searchInput.value = state.query;
+        filterChanged = true;
+      }
+      if (parsed.spec && parsed.spec !== state.spec) {
+        state.spec = parsed.spec;
+        filterChanged = true;
+      }
+      if (parsed.scenario && parsed.scenario !== state.scenario) {
+        state.scenario = parsed.scenario;
+        filterChanged = true;
+      }
+      if (filterChanged) {
+        syncButtons();
+        applyFilter();
+      } else {
+        syncButtons();
+      }
+      if (parsed.failSteps !== failStepsOnly) {
+        setFailStepsOnly(parsed.failSteps, { silent: true, skipHash: true });
+      }
+      currentFocusId = parsed.focus || 'overview';
+      if (!currentFocusId || currentFocusId === 'overview') {
+        showOverview(true, { updateHash: false });
+      } else if (!selectNode(currentFocusId, { updateHash: false })) {
+        currentFocusId = 'overview';
+        showOverview(true, { updateHash: false });
+      }
+      syncShareHash({ focus: currentFocusId });
+    } finally {
+      applyingHash = false;
     }
   }
 

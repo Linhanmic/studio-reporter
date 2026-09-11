@@ -106,6 +106,7 @@
 - [x] Desktop 对比按场景差异类型过滤导出（面板勾选变差/修复/新增/消失/原因变化；展示与 HTML/Markdown/JSON 分享同源；`filterScenarioCompare` / `kindsFilter`）
 - [x] Desktop 对比场景类型过滤持久化（`compareScenarioKinds` 写入 settings；重启后恢复勾选）
 - [x] Desktop 对比深链携带场景类型过滤（`studio-reporter://compare?...&kinds=`；解析/复制/分享卡片同源；打开时恢复勾选）
+- [x] 静态报告过滤状态写入可分享 URL（`#focus?q=&spec=&scenario=&failSteps=1`；工具栏双向同步；Go `ParseShareHash`/`FormatShareHash`）
 
 ## 迭代日志
 
@@ -211,7 +212,8 @@
 | 2026-09-11 | Desktop 对比场景类型过滤 | 对比面板勾选场景 diff 种类；`filterScenarioCompare` 作用于面板与分享卡片/MD/JSON；JSON 写入 `kindsFilter` |
 | 2026-09-11 | Desktop 对比场景类型过滤持久化 | `compareScenarioKinds` 进 `desktop-settings.json`；全选/空 ⇒ null；面板勾选变更即保存 |
 | 2026-09-11 | Desktop 对比深链携带场景类型过滤 | `kinds=` 查询参数；`parseDeepLink`/`buildCompareDeepLink`/`resolveCompareShareDeepLink`；打开时写入 state 并持久化 |
+| 2026-09-11 | 静态报告过滤状态可分享 URL | fragment `#focus?q=&spec=&scenario=&failSteps=1`；兼容 `#fail-steps`；工具栏变更 `replaceState`；Go 镜像解析 |
 
 ## 下一任务（选定）
 
-**静态报告过滤状态写入可分享 URL**（`#q=` / `#verdict=` / `#fail-steps` 与工具栏双向同步，便于粘贴可见范围），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**静态报告「复制可见范围链接」工具栏按钮**（一键复制当前 share hash 完整 URL），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
