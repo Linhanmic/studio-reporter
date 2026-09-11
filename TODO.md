@@ -112,7 +112,7 @@
 - [x] 静态报告分享链接复制后展示可读过滤摘要（状态栏附带 q/scenario/failSteps/定位）
 - [x] Desktop 对比分享卡片场景 diff 一键打开报告定位
 - [x] Desktop 对比面板复制场景打开深链
-- [x] Desktop 历史列表右键打开定位（打开报告 / 复制 open 深链 / 显示文件夹 / 复制路径）（场景 diff「复制深链」→ `studio-reporter://open?run=&hub=&focus=`）（HTML/MD/JSON 写入 `studio-reporter://open?run=&hub=&focus=`；主进程按 run 打开历史并 hash 定位）
+- [x] Desktop 历史列表右键打开定位（打开报告 / 复制 open 深链 / 显示文件夹 / 复制路径）
 
 ## 迭代日志
 
