@@ -80,6 +80,7 @@
 - [x] Desktop 失败路径一键跳转（大纲「上一/下一失败」+ `j`/`k`；`listFailScenarioIds`/`nextFailScenarioId`；选中同步 iframe）
 - [x] Desktop 失败跳转可见性（`prepareFailJumpFilter`：清除遮挡 query / 切到 fail 过滤并重放 iframe filter）
 - [x] Desktop Discover 超时可配置（设置页秒级输入；`discoverTimeoutMs` 持久化；默认 20s）
+- [x] Desktop 历史对比导出模板可配置（`default`/`light`/`compact` + 标题；`compareCardTemplate`/`compareCardTitle` 持久化）
 
 ## 迭代日志
 
@@ -132,8 +133,9 @@
 | 2026-09-11 | Desktop 统一大纲搜索 | 大纲 query/verdict 持久化；切页与 iframe load 重放 `studio-reporter:filter`；`/` 聚焦搜索框 |
 | 2026-09-11 | Desktop 失败路径一键跳转 | 大纲「上一失败 / 下一失败」；主机层 `j`/`k`；`outlineFocusId` 高亮；必要时自动切到 fail 过滤并 `select-node` |
 | 2026-09-11 | Desktop 失败跳转可见性 | `prepareFailJumpFilter`：跳转前清除遮挡 query、必要时切 fail 过滤，并重放 iframe `filter` 后再 `select-node` |
+| 2026-09-11 | Desktop 历史对比导出模板 | 对比面板可选 default/light/compact + 自定义标题；`compareCardTemplate`/`compareCardTitle` 持久化；HTML `data-template` |
 | 2026-09-11 | Desktop Discover 超时可配置 | 设置页「Discover 超时（秒）」；`discoverTimeoutMs`（5–120s）持久化；启动 Gauge 使用该超时 |
 
 ## 下一任务（选定）
 
-**历史对比导出模板可配置**（light/compact + 标题），或安装包冒烟扩展到 Windows/mac 产物布局校验，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限）。
+**安装包冒烟扩展到 Windows/mac 产物布局校验**，或大纲虚拟列表（大报告性能），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限）。

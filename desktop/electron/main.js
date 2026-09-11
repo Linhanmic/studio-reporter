@@ -655,7 +655,8 @@ function registerIpc() {
       return { ok: false, canceled: true };
     }
     const html = buildCompareShareCardHtml(cmp, {
-      title: opts.title || 'Studio Reporter 运行对比',
+      title: opts.title,
+      template: opts.template,
       generatedAt: opts.generatedAt || new Date().toISOString(),
     });
     fs.writeFileSync(result.filePath, html, 'utf8');

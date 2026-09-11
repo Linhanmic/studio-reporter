@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, normalizeDiscoverTimeoutMs, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX, DISCOVER_TIMEOUT_MS_MIN, DISCOVER_TIMEOUT_MS_MAX, DISCOVER_TIMEOUT_MS_DEFAULT } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, normalizeDiscoverTimeoutMs, normalizeCompareCardTemplate, normalizeCompareCardTitle, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX, DISCOVER_TIMEOUT_MS_MIN, DISCOVER_TIMEOUT_MS_MAX, DISCOVER_TIMEOUT_MS_DEFAULT } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -219,3 +219,21 @@ describe('settings discover timeout', () => {
   });
 });
 
+describe('settings compare card prefs', () => {
+  it('normalizeCompareCardTemplate and title', () => {
+    assert.equal(normalizeCompareCardTemplate('light'), 'light');
+    assert.equal(normalizeCompareCardTemplate('x'), 'default');
+    assert.equal(normalizeCompareCardTitle('  Hello  '), 'Hello');
+  });
+
+  it('load/save round-trips compareCardTemplate/title', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-compare-card-'));
+    const saved = saveSettings(dir, { compareCardTemplate: 'compact', compareCardTitle: '  QA  ' });
+    assert.equal(saved.compareCardTemplate, 'compact');
+    assert.equal(saved.compareCardTitle, 'QA');
+    const loaded = loadSettings(dir);
+    assert.equal(loaded.compareCardTemplate, 'compact');
+    assert.equal(loaded.compareCardTitle, 'QA');
+    assert.equal(DEFAULTS.compareCardTemplate, 'default');
+  });
+});

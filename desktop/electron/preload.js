@@ -10,6 +10,9 @@ const {
   buildCompareShareCardHtml,
   buildCompareShareJson,
   suggestedCompareShareBasename,
+  COMPARE_CARD_TEMPLATES,
+  normalizeCompareCardTemplate,
+  normalizeCompareCardTitle,
 } = require('./compare.js');
 const { filterHistoryRuns } = require('./settings.js');
 const {
@@ -74,6 +77,9 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   buildCompareShareCardHtml,
   buildCompareShareJson,
   suggestedCompareShareBasename,
+  COMPARE_CARD_TEMPLATES,
+  normalizeCompareCardTemplate,
+  normalizeCompareCardTitle,
   listFailScenarioIds,
   nextFailScenarioId,
   prepareFailJumpFilter,

@@ -22,6 +22,8 @@ const DEFAULTS = {
   outlineQuery: '',
   outlineVerdict: 'all',
   discoverTimeoutMs: 20000,
+  compareCardTemplate: 'default',
+  compareCardTitle: '',
 };
 
 
@@ -54,6 +56,30 @@ function normalizeDiscoverTimeoutMs(ms, fallback = DISCOVER_TIMEOUT_MS_DEFAULT) 
   const base = Number.isFinite(Number(fallback)) ? Number(fallback) : DISCOVER_TIMEOUT_MS_DEFAULT;
   if (!Number.isFinite(n)) return Math.round(base);
   return Math.round(Math.min(DISCOVER_TIMEOUT_MS_MAX, Math.max(DISCOVER_TIMEOUT_MS_MIN, n)));
+}
+
+
+
+const COMPARE_CARD_TEMPLATES = new Set(['default', 'light', 'compact']);
+
+/**
+ * Normalize compare card template preference.
+ * @param {unknown} value
+ * @param {string} [fallback='default']
+ */
+function normalizeCompareCardTemplate(value, fallback = 'default') {
+  const v = String(value || '').trim().toLowerCase();
+  if (COMPARE_CARD_TEMPLATES.has(v)) return v;
+  const fb = String(fallback || 'default').trim().toLowerCase();
+  return COMPARE_CARD_TEMPLATES.has(fb) ? fb : 'default';
+}
+
+/**
+ * Normalize optional compare card title (empty allowed).
+ * @param {unknown} title
+ */
+function normalizeCompareCardTitle(title) {
+  return String(title ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
 }
 
 
@@ -109,6 +135,8 @@ function loadSettings(userDataDir) {
     merged.outlineQuery = normalizeOutlineQuery(merged.outlineQuery);
     merged.outlineVerdict = normalizeOutlineVerdict(merged.outlineVerdict);
     merged.discoverTimeoutMs = normalizeDiscoverTimeoutMs(merged.discoverTimeoutMs);
+    merged.compareCardTemplate = normalizeCompareCardTemplate(merged.compareCardTemplate);
+    merged.compareCardTitle = normalizeCompareCardTitle(merged.compareCardTitle);
     return merged;
   } catch {
     return { ...DEFAULTS };
@@ -135,6 +163,12 @@ function saveSettings(userDataDir, partial) {
   if (Object.prototype.hasOwnProperty.call(patch, 'discoverTimeoutMs')) {
     patch.discoverTimeoutMs = normalizeDiscoverTimeoutMs(patch.discoverTimeoutMs);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'compareCardTemplate')) {
+    patch.compareCardTemplate = normalizeCompareCardTemplate(patch.compareCardTemplate);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'compareCardTitle')) {
+    patch.compareCardTitle = normalizeCompareCardTitle(patch.compareCardTitle);
+  }
   const next = { ...loadSettings(userDataDir), ...patch };
   next.recentProjects = Array.isArray(next.recentProjects) ? next.recentProjects : [];
   next.recentHubs = Array.isArray(next.recentHubs) ? next.recentHubs : [];
@@ -143,6 +177,8 @@ function saveSettings(userDataDir, partial) {
   next.outlineQuery = normalizeOutlineQuery(next.outlineQuery);
   next.outlineVerdict = normalizeOutlineVerdict(next.outlineVerdict);
   next.discoverTimeoutMs = normalizeDiscoverTimeoutMs(next.discoverTimeoutMs);
+  next.compareCardTemplate = normalizeCompareCardTemplate(next.compareCardTemplate);
+  next.compareCardTitle = normalizeCompareCardTitle(next.compareCardTitle);
   fs.mkdirSync(userDataDir, { recursive: true });
   fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(next, null, 2));
   return next;
@@ -371,6 +407,9 @@ module.exports = {
   normalizeOutlineQuery,
   normalizeOutlineVerdict,
   normalizeDiscoverTimeoutMs,
+  normalizeCompareCardTemplate,
+  normalizeCompareCardTitle,
+  COMPARE_CARD_TEMPLATES,
   OUTLINE_VERDICTS,
   OUTLINE_PANE_WIDTH_MIN,
   OUTLINE_PANE_WIDTH_MAX,

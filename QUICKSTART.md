@@ -173,3 +173,5 @@ npm run pack       # 平台安装包（Linux → AppImage 等）
 
 
 Desktop 也可通过 **文件 → 打开 .uhilreport…**（`Cmd/Ctrl+Shift+O`）或深链 `studio-reporter://open?path=*.uhilreport` 离线打开便携包（需同级 `images/`）。
+
+历史页对比两次运行后，可导出 HTML 分享卡片（深色 / 浅色 / 紧凑模板，可自定义标题），并复制 Markdown 或 JSON。

@@ -12,6 +12,8 @@ const {
   buildCompareShareCardHtml,
   invertCompareResult,
   buildCompareShareJson,
+  normalizeCompareCardTemplate,
+  normalizeCompareCardTitle,
 } = require('./compare.js');
 
 function sampleEntries() {
@@ -119,3 +121,30 @@ describe('compare invert and json', () => {
   });
 });
 
+describe('compare card templates', () => {
+  it('normalizeCompareCardTemplate accepts default/light/compact', () => {
+    assert.equal(normalizeCompareCardTemplate('light'), 'light');
+    assert.equal(normalizeCompareCardTemplate('COMPACT'), 'compact');
+    assert.equal(normalizeCompareCardTemplate('nope'), 'default');
+    assert.equal(normalizeCompareCardTitle('  Nightly  '), 'Nightly');
+    assert.equal(normalizeCompareCardTitle(''), 'Studio Reporter 运行对比');
+  });
+
+  it('buildCompareShareCardHtml applies light and compact templates', () => {
+    const { base, target } = sampleEntries();
+    const cmp = compareHistoryRuns(base, target);
+    const light = buildCompareShareCardHtml(cmp, {
+      title: '浅色卡片',
+      template: 'light',
+      generatedAt: '2026-09-11T00:00:00.000Z',
+    });
+    assert.match(light, /data-template="light"/);
+    assert.match(light, /studio-reporter-compare-template" content="light"/);
+    assert.match(light, /浅色卡片/);
+    assert.match(light, /--bg:\s*#eef2f6/);
+
+    const compact = buildCompareShareCardHtml(cmp, { template: 'compact' });
+    assert.match(compact, /data-template="compact"/);
+    assert.match(compact, /--pad:\s*16px/);
+  });
+});

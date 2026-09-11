@@ -543,6 +543,8 @@ function renderCompare(cmp) {
         <button type="button" class="btn" id="btnRevealCompareCard">显示文件夹</button>
       </div>`
     : '';
+  const tpl = window.desktopAPI.normalizeCompareCardTemplate?.(state.settings?.compareCardTemplate) || state.settings?.compareCardTemplate || 'default';
+  const cardTitle = state.settings?.compareCardTitle || '';
   panel.innerHTML = `
     <div class="compare-panel-head">
       <h3>对比 ${escapeHtml(cmp.base.id || 'base')} → ${escapeHtml(cmp.target.id || 'target')}</h3>
@@ -552,6 +554,20 @@ function renderCompare(cmp) {
         <button type="button" class="btn" id="btnCopyCompareMd" title="复制 Markdown 摘要到剪贴板">复制 Markdown</button>
         <button type="button" class="btn" id="btnCopyCompareJson" title="复制结构化 JSON 到剪贴板">复制 JSON</button>
       </div>
+    </div>
+    <div class="compare-share-opts">
+      <label class="field inline">
+        <span>卡片模板</span>
+        <select id="compareCardTemplate" aria-label="对比卡片模板">
+          <option value="default"${tpl === 'default' ? ' selected' : ''}>深色（默认）</option>
+          <option value="light"${tpl === 'light' ? ' selected' : ''}>浅色</option>
+          <option value="compact"${tpl === 'compact' ? ' selected' : ''}>紧凑</option>
+        </select>
+      </label>
+      <label class="field inline grow">
+        <span>标题</span>
+        <input id="compareCardTitle" type="text" maxlength="120" placeholder="Studio Reporter 运行对比" value="${escapeHtml(cardTitle)}" aria-label="对比卡片标题">
+      </label>
     </div>
     <div class="compare-sides muted">
       <div><strong>基线</strong> ${escapeHtml(baseMeta)}</div>
@@ -572,6 +588,8 @@ function renderCompare(cmp) {
   $('btnCopyCompareJson')?.addEventListener('click', copyCompareJson);
   $('btnOpenCompareCard')?.addEventListener('click', openLastCompareCard);
   $('btnRevealCompareCard')?.addEventListener('click', revealLastCompareCard);
+  $('compareCardTemplate')?.addEventListener('change', persistCompareShareOpts);
+  $('compareCardTitle')?.addEventListener('change', persistCompareShareOpts);
 }
 
 function swapCompareDirection() {
@@ -597,6 +615,24 @@ function runCompare() {
   renderCompare(window.desktopAPI.compareHistoryRuns(base, target));
 }
 
+
+async function persistCompareShareOpts() {
+  const template = window.desktopAPI.normalizeCompareCardTemplate(
+    $('compareCardTemplate')?.value || state.settings?.compareCardTemplate || 'default'
+  );
+  const title = window.desktopAPI.normalizeCompareCardTitle(
+    $('compareCardTitle')?.value ?? state.settings?.compareCardTitle ?? ''
+  );
+  try {
+    state.settings = await window.desktopAPI.saveSettings({
+      compareCardTemplate: template,
+      compareCardTitle: title,
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
 async function exportCompareCard() {
   const cmp = state.lastCompare;
   if (!cmp) {
@@ -604,7 +640,11 @@ async function exportCompareCard() {
     return;
   }
   try {
-    const result = await window.desktopAPI.exportCompareCard(cmp);
+    await persistCompareShareOpts();
+    const result = await window.desktopAPI.exportCompareCard(cmp, {
+      template: state.settings?.compareCardTemplate || $('compareCardTemplate')?.value || 'default',
+      title: state.settings?.compareCardTitle || $('compareCardTitle')?.value || '',
+    });
     if (result?.canceled) {
       setStatus('已取消导出对比卡片', 'warn');
       return;

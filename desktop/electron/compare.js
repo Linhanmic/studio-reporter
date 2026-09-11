@@ -126,16 +126,41 @@ function buildCompareShareMarkdown(cmp, opts = {}) {
   return lines.join('\n');
 }
 
+const COMPARE_CARD_TEMPLATES = new Set(['default', 'light', 'compact']);
+
+/**
+ * Normalize compare-card visual template id.
+ * @param {unknown} value
+ * @param {string} [fallback='default']
+ */
+function normalizeCompareCardTemplate(value, fallback = 'default') {
+  const v = String(value || '').trim().toLowerCase();
+  if (COMPARE_CARD_TEMPLATES.has(v)) return v;
+  const fb = String(fallback || 'default').trim().toLowerCase();
+  return COMPARE_CARD_TEMPLATES.has(fb) ? fb : 'default';
+}
+
+/**
+ * Cap optional share-card title.
+ * @param {unknown} title
+ * @param {string} [fallback]
+ */
+function normalizeCompareCardTitle(title, fallback = 'Studio Reporter 运行对比') {
+  const t = String(title ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  return t || fallback;
+}
+
 /**
  * Self-contained HTML share card (offline-openable).
  * @param {ReturnType<typeof compareHistoryRuns>} cmp
- * @param {{ title?: string, generatedAt?: string }} [opts]
+ * @param {{ title?: string, generatedAt?: string, template?: string }} [opts]
  */
 function buildCompareShareCardHtml(cmp, opts = {}) {
   if (!cmp?.base || !cmp?.target) {
     throw new Error('对比结果无效');
   }
-  const title = opts.title || 'Studio Reporter 运行对比';
+  const title = normalizeCompareCardTitle(opts.title);
+  const template = normalizeCompareCardTemplate(opts.template);
   const generatedAt = opts.generatedAt || new Date().toISOString();
   const project = projectLabel(cmp);
   const verdictSame = Boolean(cmp.verdictSame);
@@ -157,11 +182,12 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
     </section>`;
 
   return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-template="${escapeHtml(template)}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="studio-reporter-desktop-compare-card">
+<meta name="studio-reporter-compare-template" content="${escapeHtml(template)}">
 <title>${escapeHtml(title)}</title>
 <style>
   :root {
@@ -174,28 +200,59 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
     --bad: #f07178;
     --skip: #e6c07b;
     --accent: #5b9fd4;
+    --pad: 28px;
+    --gap: 14px;
+    --radius: 12px;
+    --font-size: 15px;
+  }
+  html[data-template="light"] {
+    --bg: #eef2f6;
+    --panel: #ffffff;
+    --ink: #1a2430;
+    --muted: #5b6b7c;
+    --line: #d5dee8;
+    --ok: #1f8a55;
+    --bad: #c23b44;
+    --skip: #a67c1f;
+    --accent: #1f6fa8;
+  }
+  html[data-template="compact"] {
+    --pad: 16px;
+    --gap: 8px;
+    --radius: 8px;
+    --font-size: 13px;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
     min-height: 100vh;
-    font: 15px/1.5 "IBM Plex Sans", "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+    font: var(--font-size)/1.5 "IBM Plex Sans", "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
     color: var(--ink);
     background:
-      radial-gradient(1200px 600px at 10% -10%, #1c3a52 0%, transparent 55%),
-      radial-gradient(900px 500px at 100% 0%, #243028 0%, transparent 50%),
+      radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--accent) 28%, transparent) 0%, transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, color-mix(in srgb, var(--ok) 14%, transparent) 0%, transparent 50%),
       var(--bg);
     padding: 32px 20px 48px;
   }
+  html[data-template="compact"] body { padding: 16px 12px 28px; }
   .card {
     max-width: 720px;
     margin: 0 auto;
     background: color-mix(in srgb, var(--panel) 92%, black);
     border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 28px 28px 22px;
+    border-radius: var(--radius);
+    padding: var(--pad);
     box-shadow: 0 18px 50px rgba(0,0,0,.35);
   }
+  html[data-template="light"] .card {
+    background: var(--panel);
+    box-shadow: 0 12px 32px rgba(26, 36, 48, .12);
+  }
+  html[data-template="compact"] .card { max-width: 560px; }
+  html[data-template="compact"] h1 { font-size: 1.15rem; }
+  html[data-template="compact"] .run { padding: 10px; }
+  html[data-template="compact"] .delta { padding: 8px; }
+  html[data-template="compact"] .deltas { gap: var(--gap); }
   .brand {
     font-size: 12px;
     letter-spacing: 0.08em;
@@ -407,4 +464,7 @@ module.exports = {
   suggestedCompareShareBasename,
   buildCompareShareMarkdown,
   buildCompareShareCardHtml,
+  COMPARE_CARD_TEMPLATES,
+  normalizeCompareCardTemplate,
+  normalizeCompareCardTitle,
 };
