@@ -3,6 +3,7 @@
 /**
  * Desktop open-pipeline smoke: deep link → share hash → (optional) Chrome dump-dom.
  * Mirrors main.openReportDir: parseDeepLink → resolveReportOpenHash → appendShareHash.
+ * Also locks producer chains: history digest + compare share card → open → DOM.
  */
 
 const { describe, it } = require('node:test');
@@ -19,21 +20,39 @@ const {
   appendShareHash,
   parseShareHash,
 } = require('./share-hash.js');
+const {
+  buildHistoryFailDigest,
+  buildHistoryFailDigestOpenLinks,
+} = require('./history-digest.js');
+const { compareHistoryRuns, buildCompareShareJson } = require('./compare.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
+
+function deepLinkToReportURL(link, baseUrl) {
+  const parsed = parseDeepLink(link);
+  assert.equal(parsed.ok, true, `deep link parse failed: ${JSON.stringify(parsed)}`);
+  const hash = resolveReportOpenHash({
+    focus: parsed.focus,
+    failSteps: parsed.failSteps,
+  });
+  return {
+    parsed,
+    hash,
+    url: appendShareHash(baseUrl, hash),
+  };
+}
 
 function findChrome() {
   if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
     return process.env.CHROME_PATH;
   }
-  const candidates = [
+  for (const name of [
     'google-chrome',
     'google-chrome-stable',
     'chromium',
     'chromium-browser',
     'chrome',
-  ];
-  for (const name of candidates) {
+  ]) {
     const r = spawnSync('which', [name], { encoding: 'utf8' });
     if (r.status === 0) {
       const p = String(r.stdout || '').trim();
@@ -84,54 +103,16 @@ function detailsOpenForId(dom, id) {
   return { found: true, open, tag };
 }
 
-describe('open-focus-pipeline', () => {
-  it('deep link → resolveReportOpenHash keeps path slash for DOM id', () => {
-    const focus = 'spec:specs/auth/login.spec-scn-0';
-    const link = buildOpenDeepLink({
-      run: 'run-1',
-      hub: '/tmp/hub with space',
-      focus,
-      failSteps: true,
-    });
-    assert.ok(link.includes('%2F'), 'query encodes slash');
-    const parsed = parseDeepLink(link);
-    assert.equal(parsed.focus, focus);
-    assert.equal(parsed.failSteps, true);
-
-    const hash = resolveReportOpenHash({
-      focus: parsed.focus,
-      failSteps: parsed.failSteps,
-    });
-    assert.equal(hash, `${focus}?failSteps=1`);
-    assert.ok(!hash.includes('%2F'), 'hash keeps literal slash');
-
-    const url = appendShareHash('http://127.0.0.1:9/index.html', hash);
-    assert.equal(url, `http://127.0.0.1:9/index.html#${focus}?failSteps=1`);
-    assert.equal(parseShareHash(new URL(url).hash).focus, focus);
-  });
-
-  it('Chrome dump-dom: Desktop pipeline hash opens path-style details', () => {
-    const chrome = findChrome();
-    if (!chrome) {
-      // Desktop unit CI has no Chrome; Go report-browser-smoke already gates dump-dom.
-      // Set CHROME_PATH / REQUIRE_CHROME=1 to force this check locally or in a browser job.
-      if (process.env.REQUIRE_CHROME === '1') {
-        assert.fail('chrome required (REQUIRE_CHROME=1) for open-focus pipeline smoke');
-      }
-      return;
-    }
-
-    const focus = 'spec:specs/auth/login.spec';
-    const jsPath = path.join(REPO_ROOT, 'internal/report/static_report.js');
-    const cssPath = path.join(REPO_ROOT, 'internal/report/static_report.css');
-    assert.ok(fs.existsSync(jsPath), 'static_report.js missing');
-    assert.ok(fs.existsSync(cssPath), 'static_report.css missing');
-    const js = fs.readFileSync(jsPath, 'utf8');
-    const css = fs.readFileSync(cssPath, 'utf8');
-
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-open-focus-'));
-    const index = path.join(dir, 'index.html');
-    const html = `<!DOCTYPE html>
+function writePathFocusFixture(focus) {
+  const jsPath = path.join(REPO_ROOT, 'internal/report/static_report.js');
+  const cssPath = path.join(REPO_ROOT, 'internal/report/static_report.css');
+  assert.ok(fs.existsSync(jsPath), 'static_report.js missing');
+  assert.ok(fs.existsSync(cssPath), 'static_report.css missing');
+  const js = fs.readFileSync(jsPath, 'utf8');
+  const css = fs.readFileSync(cssPath, 'utf8');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-open-focus-'));
+  const index = path.join(dir, 'index.html');
+  const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="utf-8"><title>open-focus-pipeline</title>
 <style>${css}</style>
@@ -149,25 +130,59 @@ describe('open-focus-pipeline', () => {
 </div>
 <script>${js}</script>
 </body></html>`;
-    fs.writeFileSync(index, html, 'utf8');
+  fs.writeFileSync(index, html, 'utf8');
+  return { dir, index, fileURL: pathToFileURL(index).href };
+}
 
+function assertChromeOpensFocus(chrome, link, focus) {
+  const { dir, fileURL } = writePathFocusFixture(focus);
+  try {
+    const { url, hash, parsed } = deepLinkToReportURL(link, fileURL);
+    assert.equal(parsed.focus, focus);
+    assert.ok(!hash.includes('%2F'), 'hash keeps literal slash');
+    const dom = chromeDumpDOM(chrome, url);
+    const { found, open, tag } = detailsOpenForId(dom, focus);
+    assert.ok(found, `details for ${focus} missing in dump-dom`);
+    assert.ok(open, `expected details open; tag=${tag}`);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+describe('open-focus-pipeline', () => {
+  it('deep link → resolveReportOpenHash keeps path slash for DOM id', () => {
+    const focus = 'spec:specs/auth/login.spec-scn-0';
+    const link = buildOpenDeepLink({
+      run: 'run-1',
+      hub: '/tmp/hub with space',
+      focus,
+      failSteps: true,
+    });
+    assert.ok(link.includes('%2F'), 'query encodes slash');
+    const { parsed, hash, url } = deepLinkToReportURL(link, 'http://127.0.0.1:9/index.html');
+    assert.equal(parsed.focus, focus);
+    assert.equal(parsed.failSteps, true);
+    assert.equal(hash, `${focus}?failSteps=1`);
+    assert.ok(!hash.includes('%2F'), 'hash keeps literal slash');
+    assert.equal(url, `http://127.0.0.1:9/index.html#${focus}?failSteps=1`);
+    assert.equal(parseShareHash(new URL(url).hash).focus, focus);
+  });
+
+  it('Chrome dump-dom: Desktop pipeline hash opens path-style details', () => {
+    const chrome = findChrome();
+    if (!chrome) {
+      if (process.env.REQUIRE_CHROME === '1') {
+        assert.fail('chrome required (REQUIRE_CHROME=1) for open-focus pipeline smoke');
+      }
+      return;
+    }
+    const focus = 'spec:specs/auth/login.spec';
+    const link = buildOpenDeepLink({ run: 'r', focus, failSteps: true });
+    assertChromeOpensFocus(chrome, link, focus);
+
+    // Legacy %2F focus in the fragment still opens (decodeShareFocus).
+    const { dir, fileURL } = writePathFocusFixture(focus);
     try {
-      // Same path main.openReportDir uses after parseDeepLink.
-      const link = buildOpenDeepLink({ run: 'r', focus, failSteps: true });
-      const parsed = parseDeepLink(link);
-      const hash = resolveReportOpenHash({
-        focus: parsed.focus,
-        failSteps: parsed.failSteps,
-      });
-      const fileURL = pathToFileURL(index).href;
-      const url = appendShareHash(fileURL, hash);
-
-      const dom = chromeDumpDOM(chrome, url);
-      const { found, open, tag } = detailsOpenForId(dom, focus);
-      assert.ok(found, `details for ${focus} missing in dump-dom`);
-      assert.ok(open, `expected details open after pipeline hash; tag=${tag}`);
-
-      // Legacy %2F focus in the fragment still opens (decodeShareFocus).
       const legacyURL = `${fileURL}#spec:specs%2Fauth%2Flogin.spec`;
       const legacyDom = chromeDumpDOM(chrome, legacyURL);
       const legacy = detailsOpenForId(legacyDom, focus);
@@ -175,5 +190,101 @@ describe('open-focus-pipeline', () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it('history digest open link → Desktop pipeline opens path-style focus', () => {
+    const focus = 'spec:specs/auth/login.spec-scn-0';
+    const digest = buildHistoryFailDigest(
+      [
+        {
+          id: 'run-digest-1',
+          verdict: 'fail',
+          topFailReason: 'assert failed',
+          topFailFocus: focus,
+          timestampISO: '2026-09-11T12:00:00Z',
+        },
+      ],
+      { limit: 5 }
+    );
+    assert.equal(digest.groups[0].lastRunFocus, focus);
+    const links = buildHistoryFailDigestOpenLinks(digest, {
+      hubDir: '/tmp/hub',
+      mode: 'latest',
+    });
+    const link = links.trim().split('\n')[0];
+    assert.ok(link.includes('%2F'), 'digest link encodes slash');
+    const { parsed, hash } = deepLinkToReportURL(link, 'http://127.0.0.1:9/index.html');
+    assert.equal(parsed.focus, focus);
+    assert.equal(hash, `${focus}?failSteps=1`);
+
+    const chrome = findChrome();
+    if (!chrome) {
+      if (process.env.REQUIRE_CHROME === '1') {
+        assert.fail('chrome required (REQUIRE_CHROME=1) for digest→open focus smoke');
+      }
+      return;
+    }
+    assertChromeOpensFocus(chrome, link, focus);
+  });
+
+  it('compare share card open link → Desktop pipeline opens path-style focus', () => {
+    const focus = 'spec:specs/auth/login.spec-scn-0';
+    const base = {
+      id: 'base-1',
+      projectName: 'demo',
+      timestamp: 't1',
+      duration: '00:00:01.000',
+      verdict: 'pass',
+      summary: {
+        specs: { total: 1, passed: 1, failed: 0, skipped: 0 },
+        scenarios: { total: 1, passed: 1, failed: 0, skipped: 0 },
+        steps: { total: 1, passed: 1, failed: 0, skipped: 0 },
+      },
+    };
+    const target = {
+      id: 'target-1',
+      projectName: 'demo',
+      timestamp: 't2',
+      duration: '00:00:02.000',
+      verdict: 'fail',
+      summary: {
+        specs: { total: 1, passed: 0, failed: 1, skipped: 0 },
+        scenarios: { total: 1, passed: 0, failed: 1, skipped: 0 },
+        steps: { total: 1, passed: 0, failed: 1, skipped: 0 },
+      },
+    };
+    const cmp = compareHistoryRuns(base, target);
+    cmp.scenarioCompare = {
+      changed: [
+        {
+          kind: 'regressed',
+          specName: 'Login',
+          scnName: 'valid user',
+          baseScnId: focus,
+          targetScnId: focus,
+          baseVerdict: 'pass',
+          targetVerdict: 'fail',
+          targetReason: 'timeout',
+        },
+      ],
+      unchangedCount: 0,
+      baseCount: 1,
+      targetCount: 1,
+    };
+    const json = JSON.parse(buildCompareShareJson(cmp, { hub: '/tmp/hub' }));
+    const link = json.scenarioCompare.changed[0].openLinks.target;
+    assert.ok(link && link.includes('%2F'), 'compare link encodes slash');
+    const { parsed, hash } = deepLinkToReportURL(link, 'http://127.0.0.1:9/index.html');
+    assert.equal(parsed.focus, focus);
+    assert.ok(hash.startsWith(focus));
+
+    const chrome = findChrome();
+    if (!chrome) {
+      if (process.env.REQUIRE_CHROME === '1') {
+        assert.fail('chrome required (REQUIRE_CHROME=1) for compare→open focus smoke');
+      }
+      return;
+    }
+    assertChromeOpensFocus(chrome, link, focus);
   });
 });
