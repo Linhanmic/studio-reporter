@@ -299,8 +299,6 @@ func TestOpenDeepLinkPathStyleFocusEncodesSlashInQuery(t *testing.T) {
 	}
 }
 
-
-
 func TestHistoryFailDigestPathStyleFocusDeepLink(t *testing.T) {
 	rpt := report.FromSuite(sampleSuite())
 	entry := historyEntryFromReport(rpt)
