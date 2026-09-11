@@ -22,7 +22,7 @@ npm start
 
 1. **运行**：粘贴 `studio-reporter websocket: ws://127.0.0.1:<port>` → 连接 → 嵌入 live viewer。
 2. **报告**：收到 `ReportGenerated` 后跳转静态 `index.html`（可在设置中关闭自动跳转）。
-3. **历史**：设置报告根目录（含 `history.json`）后列出归档；点击打开。
+3. **历史**：设置报告根目录（含 `history.json`）后列出归档；点击打开；勾选两次运行可对比（verdict / 时长 / 计数）。
 4. **导出**：历史页「导出 PDF / 单文件 HTML」调用 CLI `generate --pdf|--single`。
 5. **设置**：报告根目录、自动跳转与倒计时秒数（持久化到 Electron `userData`）。
 
@@ -30,5 +30,5 @@ npm start
 
 ```bash
 cd desktop
-npm test   # discover + history.json 解析
+npm test   # discover + settings/history + compare
 ```

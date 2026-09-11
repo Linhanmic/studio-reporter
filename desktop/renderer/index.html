@@ -61,13 +61,15 @@
           <div class="panel-toolbar">
             <button type="button" id="btnRefreshHistory" class="btn">刷新</button>
             <button type="button" id="btnPickHub" class="btn">选择报告根目录…</button>
+            <button type="button" id="btnCompareRuns" class="btn primary" disabled>对比所选（0/2）</button>
             <button type="button" id="btnExportPdf" class="btn">导出 PDF</button>
             <button type="button" id="btnExportSingle" class="btn">导出单文件 HTML</button>
             <span id="historyMeta" class="muted"></span>
           </div>
+          <div id="comparePanel" class="compare-panel hidden"></div>
           <div id="historyList" class="history-list"></div>
           <div class="empty" id="historyEmpty">
-            <p>在「设置」中指定含 <code>history.json</code> 的报告根目录后，这里列出归档运行。</p>
+            <p>在「设置」中指定含 <code>history.json</code> 的报告根目录后，这里列出归档运行。勾选两次运行可对比。</p>
           </div>
         </div>
       </div>

@@ -1,6 +1,11 @@
 'use strict';
 
 const { contextBridge, ipcRenderer } = require('electron');
+const {
+  compareHistoryRuns,
+  formatDurationDelta,
+  formatCountsDelta,
+} = require('./compare.js');
 
 contextBridge.exposeInMainWorld('desktopAPI', {
   info: () => ipcRenderer.invoke('desktop:info'),
@@ -15,6 +20,9 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   listHistory: (hubDir) => ipcRenderer.invoke('desktop:list-history', hubDir),
   openHistoryRun: (entry) => ipcRenderer.invoke('desktop:open-history-run', entry),
   exportReport: (kind) => ipcRenderer.invoke('desktop:export-report', kind),
+  compareHistoryRuns,
+  formatDurationDelta,
+  formatCountsDelta,
   onBridgeStatus: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('bridge-status', handler);

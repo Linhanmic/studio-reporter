@@ -6,7 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test electron/discover.test.js electron/settings.test.js",
+    "test": "node --test electron/discover.test.js electron/settings.test.js electron/compare.test.js",
     "pack": "echo \"Packaging not configured yet; use npm start for P0/P1\""
   },
   "engines": {

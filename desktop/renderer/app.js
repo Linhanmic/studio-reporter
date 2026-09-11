@@ -8,6 +8,8 @@ const state = {
   settings: null,
   jumpSeconds: 5,
   autoJump: true,
+  historyRuns: [],
+  selectedIds: [],
 };
 
 function setTab(name) {
@@ -105,46 +107,123 @@ async function disconnect() {
   setStatus('未连接');
 }
 
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function verdictClass(v) {
   if (v === 'pass') return 'ok';
   if (v === 'fail') return 'warn';
   return '';
 }
 
+function deltaClass(ms) {
+  if (ms > 0) return 'delta-up';
+  if (ms < 0) return 'delta-down';
+  return 'delta-same';
+}
+
+function updateCompareButton() {
+  const n = state.selectedIds.length;
+  const btn = $('btnCompareRuns');
+  btn.disabled = n !== 2;
+  btn.textContent = `对比所选（${n}/2）`;
+}
+
+function toggleSelect(id, checked) {
+  if (checked) {
+    if (!state.selectedIds.includes(id)) state.selectedIds.push(id);
+    while (state.selectedIds.length > 2) {
+      const dropped = state.selectedIds.shift();
+      const box = document.querySelector(`input.pick[data-id="${CSS.escape(dropped)}"]`);
+      if (box) box.checked = false;
+    }
+  } else {
+    state.selectedIds = state.selectedIds.filter((x) => x !== id);
+  }
+  updateCompareButton();
+}
+
+function renderCompare(cmp) {
+  const panel = $('comparePanel');
+  panel.classList.remove('hidden');
+  const vText = cmp.verdictSame
+    ? `结论相同（${cmp.base.verdict || '—'}）`
+    : `结论变化：${cmp.base.verdict || '—'} → ${cmp.target.verdict || '—'}`;
+  panel.innerHTML = `
+    <h3>对比 ${escapeHtml(cmp.base.id || 'base')} → ${escapeHtml(cmp.target.id || 'target')}</h3>
+    <div class="compare-grid">
+      <div>${escapeHtml(vText)}</div>
+      <div class="${deltaClass(cmp.durationMs.delta)}">时长 ${escapeHtml(window.desktopAPI.formatDurationDelta(cmp.durationMs.delta))}</div>
+      <div>规格书 ${escapeHtml(window.desktopAPI.formatCountsDelta(cmp.specs))}</div>
+      <div>场景 ${escapeHtml(window.desktopAPI.formatCountsDelta(cmp.scenarios))}</div>
+      <div>步骤 ${escapeHtml(window.desktopAPI.formatCountsDelta(cmp.steps))}</div>
+    </div>
+  `;
+}
+
+function runCompare() {
+  if (state.selectedIds.length !== 2) return;
+  const [baseId, targetId] = state.selectedIds;
+  const base = state.historyRuns.find((r) => r.id === baseId);
+  const target = state.historyRuns.find((r) => r.id === targetId);
+  if (!base || !target) {
+    setStatus('所选运行已不存在，请刷新历史', 'warn');
+    return;
+  }
+  renderCompare(window.desktopAPI.compareHistoryRuns(base, target));
+}
+
 async function refreshHistory() {
   const list = $('historyList');
   const empty = $('historyEmpty');
   list.innerHTML = '';
+  state.selectedIds = [];
+  updateCompareButton();
+  $('comparePanel').classList.add('hidden');
   try {
     const hist = await window.desktopAPI.listHistory();
+    state.historyRuns = hist.runs || [];
     $('historyMeta').textContent = hist.hubDir
-      ? `${hist.hubDir} · ${hist.runs.length} 次运行`
+      ? `${hist.hubDir} · ${state.historyRuns.length} 次运行`
       : '未设置报告根目录';
-    if (!hist.runs.length) {
+    if (!state.historyRuns.length) {
       empty.classList.remove('hidden');
       empty.querySelector('p').textContent = hist.error || '暂无历史运行';
       return;
     }
     empty.classList.add('hidden');
-    hist.runs.forEach((run) => {
-      const row = document.createElement('button');
-      row.type = 'button';
+    state.historyRuns.forEach((run, idx) => {
+      const id = run.id || run.href || run.relDir || `run-${idx}`;
+      run.id = id;
+      const row = document.createElement('div');
       row.className = 'history-row';
       row.innerHTML = `
-        <span class="verdict ${verdictClass(run.verdict)}">${run.verdict || '—'}</span>
+        <input class="pick" type="checkbox" data-id="${escapeHtml(id)}" title="勾选以对比">
+        <span class="verdict ${verdictClass(run.verdict)}">${escapeHtml(run.verdict || '—')}</span>
         <span class="hist-main">
-          <strong>${run.projectName || run.id || 'run'}</strong>
-          <span class="muted">${run.timestamp || run.timestampISO || ''}</span>
+          <strong>${escapeHtml(run.projectName || id)}</strong>
+          <span class="muted">${escapeHtml(run.timestamp || run.timestampISO || '')}</span>
         </span>
-        <span class="muted">${run.duration || ''}</span>
+        <span class="muted">${escapeHtml(run.duration || '')}</span>
       `;
-      row.addEventListener('click', async () => {
+      const open = async () => {
         try {
           await window.desktopAPI.openHistoryRun(run);
           setTab('report');
         } catch (err) {
           setStatus(String(err.message || err), 'warn');
         }
+      };
+      row.querySelector('.hist-main').addEventListener('click', open);
+      row.querySelector('.verdict').addEventListener('click', open);
+      row.querySelector('.pick').addEventListener('change', (e) => {
+        toggleSelect(id, e.target.checked);
       });
       list.appendChild(row);
     });
@@ -202,6 +281,7 @@ function wire() {
     if (e.key === 'Enter') connect();
   });
   $('btnRefreshHistory').addEventListener('click', refreshHistory);
+  $('btnCompareRuns').addEventListener('click', runCompare);
   $('btnPickHub').addEventListener('click', async () => {
     const hub = await window.desktopAPI.pickHubDir();
     if (hub) {

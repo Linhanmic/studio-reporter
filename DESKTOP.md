@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0 已落地（v0.5.2）；P1+ 仍为路线图  
+状态：P0 已落地；P1 工作台（历史 / 设置 / 导出 / 对比）已落地（v0.5.2）；P2+ 仍为路线图   
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -239,12 +239,12 @@ studio-reporter/
 
 验收：一次 `gauge run` → Desktop 实时树 → 结束后 CANoe 终态报告。
 
-### P1 — 工作台 — **进行中（0.5.2）**
+### P1 — 工作台 — **已完成（0.5.2）**
 
 1. ~~历史页（读 `history.json`）+ 打开归档~~（Desktop 已落地）。
 2. ~~导出：触发 PDF / single HTML（调 CLI）~~（历史页按钮）。
 3. ~~设置：报告根目录、自动跳转~~（Electron `userData`）。
-4. 对比两次运行（可移植 `CompareHistoryRuns`）— 下一步。
+4. ~~对比两次运行~~（`desktop/electron/compare.js` 移植 `CompareHistoryRuns`；历史页勾选）。
 5. （已提前）控制消息 — 见 P0。
 
 ### P2 — 体验
@@ -293,4 +293,4 @@ studio-reporter/
 2. ~~`ClientHello` / `RequestSnapshot`~~（插件 0.5.2）。
 3. ~~Hub 跨进程写入锁~~（0.5.2：`WithHubLock`）。
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
-5. Desktop 历史对比（移植 `CompareHistoryRuns`）；可选安装器。
+5. ~~Desktop 历史对比~~；下一步：安装器 / 打包，或 P2「运行」封装 gauge。

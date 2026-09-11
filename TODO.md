@@ -54,7 +54,7 @@
 - [x] Desktop App P0 壳（`desktop/` Electron + WS discover + 嵌入 live/终态）；详见 DESKTOP.md
 - [x] 插件控制通道（`ClientHello` / `ServerHello` / `Ping`/`Pong` / `RequestSnapshot`）
 - [x] Desktop P1 工作台骨架（历史 / 设置 / 导出入口）
-- [ ] Desktop 历史对比（移植 `CompareHistoryRuns`）
+- [x] Desktop 历史对比（移植 `CompareHistoryRuns` → `desktop/electron/compare.js`）
 
 ## 迭代日志
 
@@ -80,7 +80,8 @@
 | 2026-09-11 | Desktop P0 + 控制通道 | `desktop/` Electron 壳：discover、loopback 托管 viewer/index、ReportGenerated 跳转；插件侧 Hello/Ping/RequestSnapshot |
 | 2026-09-11 | Hub 写入竞态 hardening | 跨进程 `WithHubLock`（flock）；uhilreport 先原子写再清旧文件；archives 排他 `Mkdir`；Engine finalize 互斥 |
 | 2026-09-11 | Desktop P1 工作台骨架 | 历史页读 `history.json`、设置持久化、导出 PDF/单文件入口（调 CLI） |
+| 2026-09-11 | Desktop 历史对比 | 历史页勾选两次运行；`compare.js` 对齐 Go `CompareHistoryRuns`（verdict / 时长 / 计数 delta） |
 
 ## 下一任务（选定）
 
-**Desktop 历史对比**（移植 `CompareHistoryRuns`）或安装器/打包。
+**Desktop 安装器 / 打包**（electron-builder 等），或 P2「运行」按钮封装 gauge。
