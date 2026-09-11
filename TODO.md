@@ -29,15 +29,15 @@
 ## P2 — 实时 viewer
 
 - [x] 运行结束自动提示跳转静态 `index.html`（横幅 + 可取消倒计时；不内嵌终态 SPA）
-- [ ] 根目录 `manage.html` / `report-assets` 与 embed 同步的开发体验文档（已有脚本；可加 pre-commit）
+- [x] 根目录 `manage.html` / `report-assets` 与 embed 同步的开发体验（`make sync-assets` / `check-assets` / `.githooks`）
 - [ ] viewer 结束态与静态报告视觉一致性抽样对比
 
 ## P3 — 工程化与质量
 
-- [x] Makefile / `make test|vet|build|ci|lint|sync-assets|cover`
+- [x] Makefile / `make test|vet|build|ci|lint|sync-assets|cover|hooks`
 - [x] CI 输出 cover profile 摘要（`scripts/cover-summary.sh` + artifact）
 - [ ] `--input` 再生路径端到端 smoke（含截图相对路径）
-- [ ] pre-commit / make 钩子：提交前强制 `check-assets`
+- [x] pre-commit / make 钩子：提交前强制 `check-assets`（`.githooks` + `make hooks`）
 
 ## P4 — 产品演进（可改架构）
 
@@ -55,7 +55,8 @@
 | 2026-09-11 | 决策原则写入 DESIGN；assets SSoT；golangci v2 | 对照 Go embed / golangci v2 实践；修复 embed 丢失 WS 的漂移；lint 清零 |
 | 2026-09-11 | viewer 结束引导打开 `index.html` | 对照 Allure「生成后再 open」：横幅 CTA + 可取消倒计时；`ReportGenerated`/元数据探测避免旧 index 误判 |
 | 2026-09-11 | CI cover profile 摘要 | 对照常见 Go Actions：coverprofile + `go tool cover -func` 日志摘要 + artifact；暂不强阈值 / 不打扰 PR 评论权限 |
+| 2026-09-11 | `.githooks/pre-commit` + `make hooks` | 对照 Makefile-first / core.hooksPath 实践；仅在前端 SSoT 路径变更时跑 `check-assets`；CI 仍是最终闸门 |
 
 ## 下一任务（选定）
 
-**打印样式验收**（P1），或 **`--input` e2e smoke**（P3），或 **pre-commit check-assets**（P3）。
+**打印样式验收**（P1），或 **`--input` e2e smoke**（P3）。

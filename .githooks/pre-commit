@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Fail the commit when frontend SSoT changes without a matching embed sync.
+# Activate once per clone: make hooks   # → git config core.hooksPath .githooks
+# Bypass when needed: git commit --no-verify (CI check-assets remains the backstop)
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR || true)"
+if [[ -z "$staged" ]]; then
+  exit 0
+fi
+
+if ! echo "$staged" | grep -qE '^(viewer\.html|manage\.html|report-assets/|internal/report/viewer\.html|internal/report/manage\.html|internal/report/report-assets/)'; then
+  exit 0
+fi
+
+echo "pre-commit: frontend assets touched — running make check-assets"
+if ! make check-assets; then
+  echo ""
+  echo "pre-commit: embed copies drifted from repo-root SSoT."
+  echo "pre-commit: run: make sync-assets && git add internal/report/"
+  exit 1
+fi

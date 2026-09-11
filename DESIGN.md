@@ -77,6 +77,7 @@ Gauge (gRPC)
 | 2026-09-11 | 引入 golangci-lint v2 显式规则集 + CI 钉版本 | README 已承诺 lint；按 v2 推荐避免 `enable-all` 噪音 |
 | 2026-09-11 | 实时 viewer 结束引导打开静态 `index.html`，不强切 SPA 终态 | Allure/Playwright 惯例是生成后再 open；`FinishWithReport` 早于落盘，故用 `ReportGenerated` + index 元数据变化探测；磁盘轮询见 `running=false` 时 index 已写完 |
 | 2026-09-11 | CI 输出 cover profile 摘要，不强阈值、不写 PR 评论 | 对照 Go Actions 常见做法先可见再治理；阈值与 sticky comment 待覆盖率基线稳定后再加 |
+| 2026-09-11 | 仓库内 `.githooks` + `make hooks`（`core.hooksPath`） | 前端变更时本地强制 `check-assets`；不引入 pre-commit.com 框架依赖；CI 仍校验漂移 |
 
 ## 前端资源布局（SSoT）
 
@@ -103,7 +104,7 @@ scripts/check-assets.sh   # CI：漂移则失败
 - 发布：打 tag → `.github/workflows/release.yml` 构建多平台 zip
 - PR：`cursor/<name>-a6c3`；合并后按需发版
 - 文档四件套：`README` / `DESIGN` / `TODO` / `QUICKSTART` 必须反映真实状态
-- 本地/CI：`make ci`（含 assets 校验、vet、test、build）；`make cover` / CI `cover-summary.sh` 输出覆盖率摘要；`make lint` 跑 golangci-lint
+- 本地/CI：`make ci`（含 assets 校验、vet、test、build）；`make cover` / CI `cover-summary.sh` 输出覆盖率摘要；`make lint` 跑 golangci-lint；`make hooks` 启用 `.githooks`
 - 测试：`GOTOOLCHAIN=go1.27.0 go test ./...`
 
 ## 演进方向

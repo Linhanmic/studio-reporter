@@ -167,10 +167,10 @@ make ci      # check-assets + vet + test + build
 make cover   # go test -coverprofile + function/package summary
 make lint    # golangci-lint v2 (install matching CI pin locally)
 make sync-assets
+make hooks   # once per clone: core.hooksPath=.githooks (pre-commit check-assets)
 ```
 
 CI runs `./scripts/cover-summary.sh` and uploads `cover.out` as an artifact (no hard threshold yet).
-
 ### Project Structure
 
 ```

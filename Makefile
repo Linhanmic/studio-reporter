@@ -1,4 +1,4 @@
-.PHONY: test vet build lint sync-assets check-assets cover ci all
+.PHONY: test vet build lint sync-assets check-assets cover hooks ci all
 
 GO ?= go
 GOTOOLCHAIN ?= go1.27.0
@@ -11,6 +11,10 @@ sync-assets:
 
 check-assets:
 	./scripts/check-assets.sh
+
+hooks:
+	git config core.hooksPath .githooks
+	@echo "core.hooksPath=.githooks (pre-commit runs check-assets on frontend changes)"
 
 test:
 	$(GO) test ./...
