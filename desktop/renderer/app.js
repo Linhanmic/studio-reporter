@@ -815,6 +815,14 @@ function wire() {
     else if (data && data.connected === false) setStatus('已断开', 'warn');
   });
   window.desktopAPI.onReportGenerated((payload) => showEndBanner(payload));
+  window.desktopAPI.onSettingsUpdated?.((settings) => {
+    state.settings = settings || state.settings;
+    fillSettingsForm();
+    refreshHistory?.();
+  });
+  window.desktopAPI.onNavigateTab?.((data) => {
+    if (data?.tab) setTab(data.tab);
+  });
   window.desktopAPI.onNavigateLive((data) => {
     if (data?.url) {
       showLive(data.url);

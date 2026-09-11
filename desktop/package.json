@@ -2,12 +2,12 @@
   "name": "studio-reporter-desktop",
   "version": "0.5.2",
   "private": true,
-  "description": "Studio Reporter Desktop — Electron workbench for live + final reports",
+  "description": "Studio Reporter Desktop \u2014 Electron workbench for live + final reports",
   "author": "Studio Reporter",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test electron/discover.test.js electron/compat.test.js electron/plugin-detect.test.js electron/updater.test.js electron/outline.test.js electron/settings.test.js electron/hublock.test.js electron/notify.test.js electron/compare.test.js electron/paths.test.js electron/gauge-run.test.js electron/sessions.test.js",
+    "test": "node --test electron/discover.test.js electron/compat.test.js electron/plugin-detect.test.js electron/updater.test.js electron/outline.test.js electron/settings.test.js electron/hublock.test.js electron/notify.test.js electron/deeplink.test.js electron/compare.test.js electron/paths.test.js electron/gauge-run.test.js electron/sessions.test.js",
     "pack:check": "node scripts/prepare-pack-resources.js",
     "pack:dir": "npm run pack:check && electron-builder --dir --publish never",
     "pack": "npm run pack:check && electron-builder --publish never",
@@ -27,7 +27,7 @@
   "build": {
     "appId": "com.gaugestudio.studio-reporter",
     "productName": "Studio Reporter",
-    "copyright": "Copyright © Studio Reporter contributors",
+    "copyright": "Copyright \u00a9 Studio Reporter contributors",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -60,22 +60,37 @@
       }
     ],
     "linux": {
-      "target": ["AppImage", "dir"],
+      "target": [
+        "AppImage",
+        "dir"
+      ],
       "category": "Development",
       "artifactName": "studio-reporter-desktop-${version}-${arch}.${ext}"
     },
     "mac": {
-      "target": ["dmg", "dir"],
+      "target": [
+        "dmg",
+        "dir"
+      ],
       "category": "public.app-category.developer-tools",
       "artifactName": "studio-reporter-desktop-${version}-${arch}.${ext}"
     },
     "win": {
-      "target": ["nsis", "dir"],
+      "target": [
+        "nsis",
+        "dir"
+      ],
       "artifactName": "studio-reporter-desktop-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "protocols": {
+      "name": "Studio Reporter",
+      "schemes": [
+        "studio-reporter"
+      ]
     }
   }
 }

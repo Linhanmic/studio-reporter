@@ -33,6 +33,11 @@ const {
   formatSuiteEndNotification,
 } = require('./notify.js');
 const {
+  PROTOCOL,
+  parseDeepLink,
+  extractDeepLinkFromArgv,
+} = require('./deeplink.js');
+const {
   resolveBundleRoot,
   resolveStudioReporterBin,
   missingBundleResources,
@@ -694,6 +699,106 @@ function registerIpc() {
 
 }
 
+
+/** @type {string[]} */
+let pendingDeepLinks = [];
+let deepLinksReady = false;
+
+function focusMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow();
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+async function handleDeepLinkAction(action) {
+  if (!action || !action.ok) return { ok: false, error: action?.error || 'invalid' };
+  focusMainWindow();
+  if (action.action === 'open') {
+    let dir = action.dir || '';
+    if (action.path) {
+      const abs = path.resolve(action.path);
+      dir = abs.toLowerCase().endsWith('.html') ? path.dirname(abs) : abs;
+    }
+    dir = path.resolve(dir);
+    await openReportDir(dir);
+    return { ok: true, action: 'open', dir };
+  }
+  if (action.action === 'connect') {
+    await connectLiveWs(action.url);
+    return { ok: true, action: 'connect', url: action.url };
+  }
+  if (action.action === 'hub') {
+    const dir = path.resolve(action.dir);
+    saveSettings(app.getPath('userData'), { reportHubDir: dir });
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('settings-updated', loadSettings(app.getPath('userData')));
+      mainWindow.webContents.send('navigate-tab', { tab: 'history' });
+    }
+    return { ok: true, action: 'hub', dir };
+  }
+  return { ok: false, error: `unhandled action ${action.action}` };
+}
+
+async function enqueueDeepLink(raw) {
+  const parsed = parseDeepLink(raw);
+  if (!parsed.ok) {
+    console.warn('[desktop] deep link ignored:', parsed.error, raw);
+    return parsed;
+  }
+  if (!deepLinksReady) {
+    pendingDeepLinks.push(raw);
+    return { ok: true, queued: true };
+  }
+  try {
+    return await handleDeepLinkAction(parsed);
+  } catch (err) {
+    console.warn('[desktop] deep link failed:', err);
+    return { ok: false, error: String(err.message || err) };
+  }
+}
+
+async function flushPendingDeepLinks() {
+  deepLinksReady = true;
+  const queued = pendingDeepLinks.splice(0, pendingDeepLinks.length);
+  for (const raw of queued) {
+    await enqueueDeepLink(raw);
+  }
+}
+
+
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_evt, argv) => {
+    const link = extractDeepLinkFromArgv(argv);
+    focusMainWindow();
+    if (link) enqueueDeepLink(link);
+  });
+}
+
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  app.setAsDefaultProtocolClient(PROTOCOL);
+}
+
+app.on('open-url', (evt, url) => {
+  evt.preventDefault();
+  enqueueDeepLink(url);
+});
+
+// Cold-start deep link (Windows/Linux)
+{
+  const cold = extractDeepLinkFromArgv(process.argv);
+  if (cold) pendingDeepLinks.push(cold);
+}
+
 app.whenReady().then(async () => {
   const missing = missingBundleResources(BUNDLE_ROOT);
   if (missing.length && !app.isPackaged) {
@@ -703,6 +808,7 @@ app.whenReady().then(async () => {
   buildMenu();
   await startAssetServer(BUNDLE_ROOT);
   createWindow();
+  await flushPendingDeepLinks();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

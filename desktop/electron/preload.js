@@ -58,6 +58,16 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     ipcRenderer.on('navigate-report', handler);
     return () => ipcRenderer.removeListener('navigate-report', handler);
   },
+  onSettingsUpdated: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('settings-updated', handler);
+    return () => ipcRenderer.removeListener('settings-updated', handler);
+  },
+  onNavigateTab: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('navigate-tab', handler);
+    return () => ipcRenderer.removeListener('navigate-tab', handler);
+  },
   onSnapshotMeta: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('report-snapshot-meta', handler);
