@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	EventClientHello      = "ClientHello"
-	EventServerHello      = "ServerHello"
-	EventPing             = "Ping"
-	EventPong             = "Pong"
-	EventRequestSnapshot  = "RequestSnapshot"
+	EventClientHello     = "ClientHello"
+	EventServerHello     = "ServerHello"
+	EventPing            = "Ping"
+	EventPong            = "Pong"
+	EventRequestSnapshot = "RequestSnapshot"
 )
 
 // controlHandler receives optional Desktop → Plugin control messages.
