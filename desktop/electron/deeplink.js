@@ -129,9 +129,76 @@ function buildCompareDeepLink(opts = {}) {
   return `${PROTOCOL}://compare?${params.toString()}`;
 }
 
+/**
+ * Queue deep links until the renderer is ready (cold start / early open-url).
+ * Dedupes consecutive identical raw URLs while queued.
+ *
+ * @param {{
+ *   parse?: (raw: string) => {ok: boolean, error?: string, [k: string]: unknown},
+ *   handle: (parsed: object) => (object|Promise<object>),
+ *   onIgnored?: (parsed: object, raw: string) => void,
+ * }} options
+ */
+function createDeepLinkQueue(options = {}) {
+  const parse = typeof options.parse === 'function' ? options.parse : parseDeepLink;
+  const handle = options.handle;
+  if (typeof handle !== 'function') {
+    throw new Error('createDeepLinkQueue requires handle(parsed)');
+  }
+  const onIgnored = typeof options.onIgnored === 'function' ? options.onIgnored : null;
+  let ready = false;
+  /** @type {string[]} */
+  const pending = [];
+
+  return {
+    get ready() {
+      return ready;
+    },
+    get pendingCount() {
+      return pending.length;
+    },
+    peekPending() {
+      return pending.slice();
+    },
+    /**
+     * @param {string} raw
+     * @returns {Promise<{ok: boolean, queued?: boolean, error?: string, [k: string]: unknown}>}
+     */
+    async enqueue(raw) {
+      const parsed = parse(raw);
+      if (!parsed || !parsed.ok) {
+        if (onIgnored) onIgnored(parsed || { ok: false, error: 'invalid' }, raw);
+        return parsed && typeof parsed === 'object'
+          ? parsed
+          : { ok: false, error: 'invalid deep link' };
+      }
+      if (!ready) {
+        const text = String(raw || '');
+        if (pending[pending.length - 1] !== text) pending.push(text);
+        return { ok: true, queued: true, action: parsed.action };
+      }
+      return handle(parsed);
+    },
+    /**
+     * Mark ready and drain the queue in order.
+     * @returns {Promise<object[]>}
+     */
+    async flush() {
+      ready = true;
+      const queued = pending.splice(0, pending.length);
+      const results = [];
+      for (const raw of queued) {
+        results.push(await this.enqueue(raw));
+      }
+      return results;
+    },
+  };
+}
+
 module.exports = {
   PROTOCOL,
   parseDeepLink,
   extractDeepLinkFromArgv,
   buildCompareDeepLink,
+  createDeepLinkQueue,
 };

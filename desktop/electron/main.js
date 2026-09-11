@@ -37,6 +37,7 @@ const {
   parseDeepLink,
   extractDeepLinkFromArgv,
   buildCompareDeepLink,
+  createDeepLinkQueue,
 } = require('./deeplink.js');
 const {
   buildCompareShareCardHtml,
@@ -567,7 +568,11 @@ function createWindow() {
     if (windowState.isMaximized) mainWindow.maximize();
     mainWindow.show();
   });
+  const loaded = new Promise((resolve) => {
+    mainWindow.webContents.once('did-finish-load', () => resolve());
+  });
   mainWindow.loadFile(RENDERER);
+  return loaded;
 }
 
 function registerIpc() {
@@ -1000,9 +1005,14 @@ function registerIpc() {
 }
 
 
-/** @type {string[]} */
-let pendingDeepLinks = [];
-let deepLinksReady = false;
+/** Deep-link queue: hold cold-start / early open-url until renderer finished loading. */
+const deepLinkQueue = createDeepLinkQueue({
+  parse: parseDeepLink,
+  handle: (parsed) => handleDeepLinkAction(parsed),
+  onIgnored: (parsed, raw) => {
+    console.warn('[desktop] deep link ignored:', parsed?.error || 'invalid', raw);
+  },
+});
 
 function focusMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
@@ -1068,17 +1078,8 @@ async function handleDeepLinkAction(action) {
 }
 
 async function enqueueDeepLink(raw) {
-  const parsed = parseDeepLink(raw);
-  if (!parsed.ok) {
-    console.warn('[desktop] deep link ignored:', parsed.error, raw);
-    return parsed;
-  }
-  if (!deepLinksReady) {
-    pendingDeepLinks.push(raw);
-    return { ok: true, queued: true };
-  }
   try {
-    return await handleDeepLinkAction(parsed);
+    return await deepLinkQueue.enqueue(raw);
   } catch (err) {
     console.warn('[desktop] deep link failed:', err);
     return { ok: false, error: String(err.message || err) };
@@ -1086,11 +1087,7 @@ async function enqueueDeepLink(raw) {
 }
 
 async function flushPendingDeepLinks() {
-  deepLinksReady = true;
-  const queued = pendingDeepLinks.splice(0, pendingDeepLinks.length);
-  for (const raw of queued) {
-    await enqueueDeepLink(raw);
-  }
+  return deepLinkQueue.flush();
 }
 
 
@@ -1118,10 +1115,10 @@ app.on('open-url', (evt, url) => {
   enqueueDeepLink(url);
 });
 
-// Cold-start deep link (Windows/Linux)
+// Cold-start deep link (Windows/Linux): queue until renderer did-finish-load.
 {
   const cold = extractDeepLinkFromArgv(process.argv);
-  if (cold) pendingDeepLinks.push(cold);
+  if (cold) enqueueDeepLink(cold);
 }
 
 app.whenReady().then(async () => {
@@ -1132,7 +1129,7 @@ app.whenReady().then(async () => {
   registerIpc();
   buildMenu();
   await startAssetServer(BUNDLE_ROOT);
-  createWindow();
+  await createWindow();
   await flushPendingDeepLinks();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

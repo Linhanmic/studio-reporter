@@ -6,6 +6,8 @@ const {
   PROTOCOL,
   parseDeepLink,
   extractDeepLinkFromArgv,
+  buildCompareDeepLink,
+  createDeepLinkQueue,
 } = require('./deeplink.js');
 
 describe('deeplink', () => {
@@ -95,7 +97,6 @@ describe('deeplink', () => {
   });
 
   it('buildCompareDeepLink encodes base/target/hub', () => {
-    const { buildCompareDeepLink, parseDeepLink } = require('./deeplink.js');
     const url = buildCompareDeepLink({
       base: 'run a',
       target: 'run/b',
@@ -113,4 +114,34 @@ describe('deeplink', () => {
     assert.throws(() => buildCompareDeepLink({ base: 'x', target: 'x' }), /differ/);
     assert.throws(() => buildCompareDeepLink({ base: 'x' }), /requires/);
   });
+
+  it('createDeepLinkQueue queues until flush and dedupes', async () => {
+    const handled = [];
+    const q = createDeepLinkQueue({
+      handle: async (parsed) => {
+        handled.push(parsed.action);
+        return { ok: true, action: parsed.action };
+      },
+    });
+    const first = await q.enqueue('studio-reporter://compare?base=a&target=b');
+    assert.equal(first.queued, true);
+    await q.enqueue('studio-reporter://compare?base=a&target=b'); // consecutive dedupe
+    assert.equal(q.pendingCount, 1);
+    assert.equal(q.ready, false);
+    const bad = await q.enqueue('https://example.com');
+    assert.equal(bad.ok, false);
+    const results = await q.flush();
+    assert.equal(q.ready, true);
+    assert.equal(q.pendingCount, 0);
+    assert.equal(results.length, 1);
+    assert.deepEqual(handled, ['compare']);
+    const live = await q.enqueue('studio-reporter://hub?dir=/tmp/hub');
+    assert.equal(live.ok, true);
+    assert.deepEqual(handled, ['compare', 'hub']);
+  });
+
+  it('createDeepLinkQueue requires handle', () => {
+    assert.throws(() => createDeepLinkQueue({}), /handle/);
+  });
+
 });

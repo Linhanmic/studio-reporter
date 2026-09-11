@@ -95,6 +95,7 @@
 - [x] Desktop 深链直达两侧历史对比（`studio-reporter://compare?base=&target=`；可选 `hub`；`navigate-compare` → `openCompareByIds`）
 - [x] Desktop 对比面板一键复制 compare 深链（`buildCompareDeepLink` +「复制深链」；剪贴板含可选 hub）
 - [x] Desktop 对比分享卡片附带 compare 深链（Markdown/HTML/JSON；`resolveCompareShareDeepLink`）
+- [x] Desktop 深链冷启动队列加固（`createDeepLinkQueue` + `did-finish-load` 后再 flush；连续重复去重；单测覆盖）
 
 ## 迭代日志
 
@@ -179,10 +180,12 @@
 
 | 2026-09-11 | 对比分享卡片附带 compare 深链 | Markdown/HTML footer/JSON `deepLink` 写入 `studio-reporter://compare`；导出/复制自动带当前 hub |
 
+| 2026-09-11 | 深链冷启动队列加固 | `createDeepLinkQueue` 统一冷启动/早到 open-url；窗口 `did-finish-load` 后 flush，避免 compare 导航丢失；连续相同 URL 去重 |
+
 | 2026-09-11 | 仅失败步骤场景级折叠 | fail-steps-mode 额外隐藏非 fail 场景，以及无 fail 子场景的 spec/datarow/datadriven（`:has()`）；屏显与打印一致 |
 
 | 2026-09-11 | 导航树同步 fail-steps | 左侧导航隐藏非 fail 场景与无 fail 子项的 spec；避免点击空壳 |
 
 ## 下一任务（选定）
 
-**Desktop 从分享卡片/Markdown 点击深链时若应用未运行则冷启动打开对比**（完善协议注册与冷启动队列的端到端验证），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**静态报告失败步骤模式下 Overview 失败摘要与可见树一致**（fail-steps-mode 开启时复制失败摘要/Overview 聚合仅统计可见失败场景），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。

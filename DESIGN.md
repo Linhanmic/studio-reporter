@@ -108,6 +108,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 深链直达历史对比 | `compare?base=&target=` 打开历史页并运行对比；可选 `hub` 先切报告根；与 UI「对比」共用 `openCompareByIds`/`runCompare` |
 | 2026-09-11 | Desktop 对比面板复制深链 | 分享入口与打开入口对称：`buildCompareDeepLink` 生成 URL，「复制深链」写入剪贴板；含 hub 以便跨机/重开可定位 |
 | 2026-09-11 | 对比分享卡片附带 compare 深链 | 离线卡片/Markdown/JSON 携带同一深链，聊天粘贴后可一键回到 Desktop 对比面板 |
+| 2026-09-11 | 深链冷启动队列加固 | 协议 URL 可能在 BrowserWindow 就绪前到达；用队列 + did-finish-load flush，保证 compare 导航送达渲染进程 |
 | 2026-09-11 | Desktop 键盘快捷键 | Cmd/Ctrl+1–4 切页；Enter 连接；Shift+H/F5 刷新历史；tablist 方向键 |
 | 2026-09-11 | Desktop 明暗主题 | 设置 `theme=system|light|dark`；CSS `[data-theme]` token；跟随系统可监听 |
 | 2026-09-11 | Desktop 打开 .uhilreport | 离线入口：菜单/IPC/深链 → CLI generate → 报告页；不改 uhileport schema |
