@@ -116,6 +116,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 会话恢复 / 最近 hub | `recentHubs` 与 `recentProjects` 同模式；`lastTab`/`restoreSession` 持久化；选 hub、保存设置、深链 `hub` 均写入最近列表 |
 | 2026-09-11 | Desktop 窗口布局记忆 | `window-state.js` 持久化 bounds/最大化；离屏校正；独立 `window-state.json` 与设置解耦 |
 | 2026-09-11 | Desktop 大纲分栏宽度记忆 | 拖拽分隔条调整大纲宽度；`outlinePaneWidth` 持久化；键盘左右键微调 |
+| 2026-09-11 | Desktop 安装包冒烟 Win/mac | 校验器理解 `mac/*.app` 与 `win-unpacked`；跨平台 fixture；CI 仍在 Linux 上用夹具覆盖 |
 | 2026-09-11 | Desktop 安装包冒烟 | `verify-pack-dir` 校验 unpacked app + extraResources；CI 独立 job，失败上传 dist |
 | 2026-09-11 | Desktop 历史对比 UX 深化 | `invertCompareResult` + `buildCompareShareJson`；导出后 openPath/revealPath；面板交换方向 |
 | 2026-09-11 | Desktop 统一大纲搜索 | host `studio-reporter:filter` 在切页/iframe load 重放；`outlineQuery`/`outlineVerdict` 持久化；`/` 聚焦 |

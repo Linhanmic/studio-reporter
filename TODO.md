@@ -75,6 +75,7 @@
 - [x] Desktop 窗口布局记忆（位置/尺寸/最大化；离屏校正；`window-state.json`）
 - [x] Desktop 大纲分栏宽度记忆（可拖拽分隔条；`outlinePaneWidth` 持久化）
 - [x] Desktop 安装包冒烟（`pack:dir` + 解包布局校验；CI `desktop-pack-smoke`）
+- [x] Desktop 安装包冒烟扩展 Win/mac 布局（`mac/*.app` 嵌套解析、`win-unpacked` + `.exe` bin；跨平台 fixture 单测）
 - [x] Desktop 历史对比 UX 深化（交换方向 / 复制 JSON / 导出后打开与显示文件夹）
 - [x] Desktop 统一大纲搜索（live/终态同步过滤、`/` 聚焦、查询/结论过滤持久化）
 - [x] Desktop 失败路径一键跳转（大纲「上一/下一失败」+ `j`/`k`；`listFailScenarioIds`/`nextFailScenarioId`；选中同步 iframe）
@@ -128,6 +129,7 @@
 | 2026-09-11 | Desktop 会话恢复 / 最近 hub | `recentHubs`（选 hub / 保存 / 深链 `hub` 写入）；`lastTab` 切页持久化；`restoreSession` 启动恢复；设置与历史页下拉切换 |
 | 2026-09-11 | Desktop 窗口布局记忆 | `window-state.js`：bounds + 最大化写入 `window-state.json`；多显示器离屏校正；resize/move/close 防抖持久化 |
 | 2026-09-11 | Desktop 大纲分栏宽度记忆 | 可拖拽/键盘调整大纲宽度；`outlinePaneWidth` 写入 settings（180–480px）；与窗口 bounds 解耦 |
+| 2026-09-11 | Desktop 安装包冒烟扩展 Win/mac | `findUnpackedAppDir` 解析 `mac`/`mac-arm64`→`*.app`；win 校验应用 exe；`.exe` CLI 不强制 Unix +x；fixture 覆盖三平台 |
 | 2026-09-11 | Desktop 安装包冒烟 | `verify-pack-dir.js` 校验 electron-builder `--dir` 产物（app + extraResources）；`make desktop-pack-smoke`；CI job `desktop-pack-smoke` |
 | 2026-09-11 | Desktop 历史对比 UX 深化 | 对比面板：交换基线/目标、复制 JSON（`studio-reporter.compare/v1`）、导出后打开卡片/显示文件夹 |
 | 2026-09-11 | Desktop 统一大纲搜索 | 大纲 query/verdict 持久化；切页与 iframe load 重放 `studio-reporter:filter`；`/` 聚焦搜索框 |
@@ -138,4 +140,4 @@
 
 ## 下一任务（选定）
 
-**安装包冒烟扩展到 Windows/mac 产物布局校验**，或大纲虚拟列表（大报告性能），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限）。
+**大纲虚拟列表（大报告性能）**，或 Windows 打包资源补齐 `studio-reporter.exe`，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限）。

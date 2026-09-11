@@ -50,7 +50,7 @@ npm run pack               # 平台安装包（Linux → AppImage 等）
 make build
 cd desktop && npm ci
 npm run pack:dir          # electron-builder 解包目录
-npm run pack:verify       # 校验 app + viewer/report-assets/bin
+npm run pack:verify       # 校验 app + viewer/report-assets/bin（linux / mac.app / win-unpacked）
 # 或一键：
 make desktop-pack-smoke
 ```

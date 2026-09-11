@@ -146,7 +146,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 设置可开启「启动时恢复上次标签页」；报告根目录保留最近 hub 列表，历史页与设置页可一键切换。
 窗口位置、尺寸与最大化状态会自动记住（换显示器时若窗口完全离屏会回正到主屏）。
 运行/报告页左侧大纲宽度可拖拽调整，并会记住上次宽度。
-打包冒烟：`make desktop-pack-smoke`（构建 CLI → `electron-builder --dir` → 校验解包布局）。
+打包冒烟：`make desktop-pack-smoke`（构建 CLI → `electron-builder --dir` → 校验解包布局；校验器覆盖 linux / `mac/*.app` / `win-unpacked`）。
 历史对比支持交换基线/目标、复制 JSON，导出卡片后可直接打开或在文件夹中显示。
 大纲搜索与结论过滤会同步到 live/终态页面，按 `/` 可快速聚焦搜索框，并在重启后恢复。
 
