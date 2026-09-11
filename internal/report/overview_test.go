@@ -188,6 +188,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`wantFailStepsFromURL`,
 		`fail-steps`,
 		`syncFailReasonOverview`,
+		`firstVisibleFailReasonTarget`,
+		`jumpFailReasonRow`,
 		`syncOverviewCounts`,
 		`syncFilterBadges`,
 		`syncOverviewSpecList`,

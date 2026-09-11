@@ -241,18 +241,18 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 		return
 	}
 	b.WriteString("<h3 class=\"overview-subtitle\">失败原因聚合</h3>\n")
-	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击场景名跳转到结果树。过滤或「仅失败步骤」开启时，上方汇总计数、失败原因聚合与复制摘要均仅统计结果树中当前可见的节点。</p>\n")
+	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击次数或原因跳到该类首个可见失败场景；点击场景名直接定位。过滤或「仅失败步骤」开启时，上方汇总计数、失败原因聚合与复制摘要均仅统计结果树中当前可见的节点。</p>\n")
 	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th></tr></thead><tbody>\n")
 	for _, g := range groups {
 		b.WriteString("<tr class=\"fail-reason-row\" data-fail-reason=\"")
 		b.WriteString(html.EscapeString(g.Reason))
 		b.WriteString("\" data-fail-count-total=\"")
 		b.WriteString(strconv.Itoa(g.Count))
-		b.WriteString("\"><td><span class=\"fail-reason-count\">")
+		b.WriteString("\"><td><span class=\"fail-reason-count\" title=\"跳到该类首个可见失败场景\">")
 		b.WriteString(strconv.Itoa(g.Count))
 		b.WriteString("</span></td><td><code class=\"fail-reason-text\" title=\"")
 		b.WriteString(html.EscapeString(g.Reason))
-		b.WriteString("\">")
+		b.WriteString(" — 点击跳到该类首个可见失败场景\">")
 		b.WriteString(html.EscapeString(g.Reason))
 		b.WriteString("</code></td><td class=\"fail-reason-refs\">")
 		for _, ref := range g.Refs {

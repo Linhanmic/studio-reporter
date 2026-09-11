@@ -102,6 +102,42 @@
     });
   }
 
+  // First visible jump target for an Overview fail-reason row (filter / fail-steps aware).
+  // Prefer scenario refs; fall back to a visible hook's spec id.
+  function firstVisibleFailReasonTarget(row) {
+    if (!row || row.classList.contains('filter-hidden')) return '';
+    var refs = row.querySelectorAll('.fail-reason-ref:not(.ref-hidden)');
+    var i;
+    var scn = '';
+    var hook = '';
+    for (i = 0; i < refs.length; i++) {
+      var ref = refs[i];
+      var scnId = (ref.getAttribute('data-scn-id') || '').trim();
+      if (scnId) {
+        scn = scnId;
+        break;
+      }
+      if (!hook) {
+        var specId = (ref.getAttribute('data-spec-id') || '').trim();
+        var nav = ref.querySelector('[data-nav-target]');
+        if (specId) hook = specId;
+        else if (nav && nav.getAttribute('data-nav-target')) {
+          hook = nav.getAttribute('data-nav-target').trim();
+        }
+      }
+    }
+    return scn || hook || '';
+  }
+
+  function jumpFailReasonRow(row) {
+    var id = firstVisibleFailReasonTarget(row);
+    if (!id) {
+      flashStatus('当前过滤下该失败原因无可跳转场景');
+      return false;
+    }
+    return selectNode(id);
+  }
+
 
   function emptyCounts() {
     return { total: 0, passed: 0, failed: 0, skipped: 0 };
@@ -910,6 +946,21 @@ function copyFailSummary() {
     if (nav) {
       selectNode(nav.dataset.navTarget);
       return;
+    }
+    // Click count/reason (not a scenario link) → jump to first visible matching fail.
+    var failJump = ev.target.closest('.fail-reason-count, .fail-reason-text, .fail-reason-row');
+    if (failJump) {
+      var row = failJump.classList.contains('fail-reason-row')
+        ? failJump
+        : failJump.closest('.fail-reason-row');
+      // Ignore clicks that originated on a scenario/hook link (handled above).
+      if (row && !ev.target.closest('a[data-nav-target]')) {
+        // Only treat count/text as the intentional row jump affordance.
+        if (ev.target.closest('.fail-reason-count, .fail-reason-text')) {
+          jumpFailReasonRow(row);
+          return;
+        }
+      }
     }
     var thumb = ev.target.closest('[data-shot-src]');
     if (thumb) {

@@ -424,6 +424,7 @@ html, body {
   color: #a11;
   font-weight: 600;
   text-align: center;
+  cursor: pointer;
 }
 .fail-reason-table .fail-reason-text {
   display: inline-block;
@@ -433,6 +434,11 @@ html, body {
   white-space: nowrap;
   vertical-align: bottom;
   font-size: 11px;
+  cursor: pointer;
+}
+.fail-reason-table .fail-reason-count:hover,
+.fail-reason-table .fail-reason-text:hover {
+  color: #0b5cab;
 }
 .fail-reason-table .fail-reason-refs a { color: #0b5cab; text-decoration: none; }
 .fail-reason-table .fail-reason-refs a:hover { text-decoration: underline; }
