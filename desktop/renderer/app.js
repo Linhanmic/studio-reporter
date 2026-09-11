@@ -915,6 +915,7 @@ async function exportCompareCard() {
     const result = await window.desktopAPI.exportCompareCard(cmp, {
       template: state.settings?.compareCardTemplate || $('compareCardTemplate')?.value || 'default',
       title: state.settings?.compareCardTitle || $('compareCardTitle')?.value || '',
+      hub: state.settings?.reportHubDir || '',
     });
     if (result?.canceled) {
       setStatus('已取消导出对比卡片', 'warn');
@@ -935,7 +936,9 @@ async function copyCompareMarkdown() {
     return;
   }
   try {
-    await window.desktopAPI.copyCompareMarkdown(cmp);
+    await window.desktopAPI.copyCompareMarkdown(cmp, {
+      hub: state.settings?.reportHubDir || '',
+    });
     setStatus('已复制对比 Markdown 到剪贴板', 'ok');
   } catch (err) {
     setStatus(String(err.message || err), 'warn');
@@ -949,7 +952,9 @@ async function copyCompareJson() {
     return;
   }
   try {
-    await window.desktopAPI.copyCompareJson(cmp);
+    await window.desktopAPI.copyCompareJson(cmp, {
+      hub: state.settings?.reportHubDir || '',
+    });
     setStatus('已复制对比 JSON 到剪贴板', 'ok');
   } catch (err) {
     setStatus(String(err.message || err), 'warn');

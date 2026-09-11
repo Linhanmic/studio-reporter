@@ -94,6 +94,7 @@
 - [x] 静态报告导航树与仅失败步骤模式同步（隐藏非 fail 场景与空壳 spec；与结果树一致）
 - [x] Desktop 深链直达两侧历史对比（`studio-reporter://compare?base=&target=`；可选 `hub`；`navigate-compare` → `openCompareByIds`）
 - [x] Desktop 对比面板一键复制 compare 深链（`buildCompareDeepLink` +「复制深链」；剪贴板含可选 hub）
+- [x] Desktop 对比分享卡片附带 compare 深链（Markdown/HTML/JSON；`resolveCompareShareDeepLink`）
 
 ## 迭代日志
 
@@ -176,10 +177,12 @@
 
 | 2026-09-11 | Desktop 对比面板一键复制 compare 深链 | `buildCompareDeepLink` + 面板「复制深链」；IPC 写剪贴板；可选附带当前 `reportHubDir` |
 
+| 2026-09-11 | 对比分享卡片附带 compare 深链 | Markdown/HTML footer/JSON `deepLink` 写入 `studio-reporter://compare`；导出/复制自动带当前 hub |
+
 | 2026-09-11 | 仅失败步骤场景级折叠 | fail-steps-mode 额外隐藏非 fail 场景，以及无 fail 子场景的 spec/datarow/datadriven（`:has()`）；屏显与打印一致 |
 
 | 2026-09-11 | 导航树同步 fail-steps | 左侧导航隐藏非 fail 场景与无 fail 子项的 spec；避免点击空壳 |
 
 ## 下一任务（选定）
 
-**Desktop 历史对比深链在分享卡片 Markdown/HTML 中附带**（导出卡片含 `studio-reporter://compare` 链接，便于从聊天一键回跳），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**Desktop 从分享卡片/Markdown 点击深链时若应用未运行则冷启动打开对比**（完善协议注册与冷启动队列的端到端验证），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。

@@ -10,6 +10,7 @@ const {
   suggestedCompareShareBasename,
   buildCompareShareMarkdown,
   buildCompareShareCardHtml,
+  resolveCompareShareDeepLink,
   invertCompareResult,
   buildCompareShareJson,
   normalizeCompareCardTemplate,
@@ -89,6 +90,30 @@ describe('compare share card', () => {
     assert.doesNotMatch(html, /<script/i);
 
     assert.equal(suggestedCompareShareBasename(cmp), 'compare-a_run-1-vs-b_run-2');
+  });
+
+
+  it('includes compare deep link in markdown, HTML, and JSON', () => {
+    const { base, target } = sampleEntries();
+    const cmp = compareHistoryRuns(base, target);
+    const hub = '/tmp/demo-hub';
+    const md = buildCompareShareMarkdown(cmp, { hub });
+    assert.match(md, /studio-reporter:\/\/compare\?base=/);
+    assert.match(md, /hub=/);
+    assert.match(md, /打开对比/);
+
+    const html = buildCompareShareCardHtml(cmp, { hub });
+    assert.match(html, /class="deep-link"/);
+    assert.match(html, /studio-reporter:\/\/compare\?/);
+    assert.match(html, /href="studio-reporter:\/\/compare\?/);
+
+    const json = JSON.parse(buildCompareShareJson(cmp, { hub }));
+    assert.match(json.deepLink, /^studio-reporter:\/\/compare\?/);
+    assert.ok(json.deepLink.includes('hub='));
+    assert.equal(
+      resolveCompareShareDeepLink(cmp, { hub }),
+      json.deepLink
+    );
   });
 
   it('rejects empty compare payloads', () => {

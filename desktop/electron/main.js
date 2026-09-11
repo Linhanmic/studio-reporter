@@ -673,23 +673,33 @@ function registerIpc() {
     if (result.canceled || !result.filePath) {
       return { ok: false, canceled: true };
     }
+    const settings = loadSettings(app.getPath('userData'));
     const html = buildCompareShareCardHtml(cmp, {
       title: opts.title,
       template: opts.template,
       generatedAt: opts.generatedAt || new Date().toISOString(),
+      hub: opts.hub != null ? opts.hub : settings.reportHubDir,
     });
     fs.writeFileSync(result.filePath, html, 'utf8');
     return { ok: true, path: result.filePath };
   });
 
   ipcMain.handle('desktop:copy-compare-markdown', async (_evt, cmp, opts = {}) => {
-    const md = buildCompareShareMarkdown(cmp, opts);
+    const settings = loadSettings(app.getPath('userData'));
+    const md = buildCompareShareMarkdown(cmp, {
+      ...opts,
+      hub: opts.hub != null ? opts.hub : settings.reportHubDir,
+    });
     clipboard.writeText(md);
     return { ok: true, bytes: Buffer.byteLength(md, 'utf8') };
   });
 
   ipcMain.handle('desktop:copy-compare-json', async (_evt, cmp, opts = {}) => {
-    const json = buildCompareShareJson(cmp, opts);
+    const settings = loadSettings(app.getPath('userData'));
+    const json = buildCompareShareJson(cmp, {
+      ...opts,
+      hub: opts.hub != null ? opts.hub : settings.reportHubDir,
+    });
     clipboard.writeText(json);
     return { ok: true, bytes: Buffer.byteLength(json, 'utf8') };
   });

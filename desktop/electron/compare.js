@@ -5,6 +5,29 @@
  * Duration format: HH:MM:SS.mmm
  */
 
+const { buildCompareDeepLink } = require('./deeplink.js');
+
+/**
+ * Best-effort compare deep link for share payloads (empty string if ids missing).
+ * @param {object} cmp
+ * @param {{ hub?: string }} [opts]
+ * @returns {string}
+ */
+function resolveCompareShareDeepLink(cmp, opts = {}) {
+  const base = String(cmp?.base?.id || '').trim();
+  const target = String(cmp?.target?.id || '').trim();
+  if (!base || !target || base === target) return '';
+  try {
+    return buildCompareDeepLink({
+      base,
+      target,
+      hub: opts.hub != null ? opts.hub : '',
+    });
+  } catch {
+    return '';
+  }
+}
+
 function parseReportDuration(s) {
   const raw = String(s || '').trim();
   if (!raw) return 0;
@@ -219,6 +242,10 @@ function buildCompareShareMarkdown(cmp, opts = {}) {
     lines.push(scMd, '');
   } else if (cmp.scenarioCompareWarning) {
     lines.push('## 场景级差异', '', `_${cmp.scenarioCompareWarning}_`, '');
+  }
+  const deepLink = resolveCompareShareDeepLink(cmp, opts);
+  if (deepLink) {
+    lines.push(`打开对比：\`${deepLink}\``, '');
   }
   lines.push('_由 Studio Reporter Desktop 生成_');
   return lines.filter((x) => x != null).join('\n');
@@ -456,6 +483,15 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
     color: var(--muted);
     font-size: 12px;
   }
+  footer .deep-link {
+    margin-top: 8px;
+    word-break: break-all;
+  }
+  footer .deep-link a {
+    color: var(--accent, #5b9fd4);
+    text-decoration: none;
+  }
+  footer .deep-link a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -477,7 +513,13 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
     ${formatScenarioCompareHtml(cmp.scenarioCompare) || (cmp.scenarioCompareWarning
       ? `<section class="scenario-diff"><h2>场景级差异</h2><p class="muted">${escapeHtml(cmp.scenarioCompareWarning)}</p></section>`
       : '')}
-    <footer>可离线打开的对比分享卡片 · 非完整报告真源</footer>
+    <footer>${(() => {
+      const deepLink = resolveCompareShareDeepLink(cmp, opts);
+      const linkHtml = deepLink
+        ? `<div class="deep-link"><a href="${escapeHtml(deepLink)}">${escapeHtml(deepLink)}</a></div>`
+        : '';
+      return `可离线打开的对比分享卡片 · 非完整报告真源${linkHtml}`;
+    })()}</footer>
   </article>
 </body>
 </html>
@@ -611,6 +653,8 @@ function buildCompareShareJson(cmp, opts = {}) {
   } else if (cmp.scenarioCompareWarning) {
     payload.scenarioCompareWarning = String(cmp.scenarioCompareWarning);
   }
+  const deepLink = resolveCompareShareDeepLink(cmp, opts);
+  if (deepLink) payload.deepLink = deepLink;
   return JSON.stringify(payload, null, opts.pretty === false ? 0 : 2);
 }
 
@@ -631,6 +675,7 @@ module.exports = {
   suggestedCompareShareBasename,
   buildCompareShareMarkdown,
   buildCompareShareCardHtml,
+  resolveCompareShareDeepLink,
   COMPARE_CARD_TEMPLATES,
   normalizeCompareCardTemplate,
   normalizeCompareCardTitle,
