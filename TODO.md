@@ -103,6 +103,7 @@
 - [x] 静态报告导航树场景计数与过滤可见树对齐（规格书旁 `nav-count` 随过滤/仅失败步骤更新；`syncNavCounts`）
 - [x] 静态报告打印页眉标注可见过滤范围（`print-scope-banner` / `describePrintScope`；打印/PDF 标明当前过滤与仅失败步骤，避免误读为全量）
 - [x] 静态报告导航场景项随过滤隐藏（`syncNavCounts` 同步 `nav-scn.filter-hidden`；规格书旁计数仅含可见场景）
+- [x] Desktop 对比面板「在报告中查看」跳转并定位差异场景（基线/目标按钮；scnId + hash）
 - [x] Desktop 对比按场景差异类型过滤导出（面板勾选变差/修复/新增/消失/原因变化；展示与 HTML/Markdown/JSON 分享同源；`filterScenarioCompare` / `kindsFilter`）
 - [x] Desktop 对比场景类型过滤持久化（`compareScenarioKinds` 写入 settings；重启后恢复勾选）
 - [x] Desktop 对比深链携带场景类型过滤（`studio-reporter://compare?...&kinds=`；解析/复制/分享卡片同源；打开时恢复勾选）
