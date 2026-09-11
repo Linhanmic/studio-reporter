@@ -18,6 +18,8 @@ const (
 	ViewerFile               = "viewer.html"
 	ManageIndexFile          = "manage.html"
 	FormatVersion            = 1
+	PluginVersion            = "0.4.9"
+	WritePDFEnv              = "GAUGE_STUDIO_WRITE_PDF"
 	UhilReportExt            = ".uhilreport"
 	LiveReportJSONFile       = "report.json"
 	LiveReportJSFile         = "report-live.js"
@@ -43,6 +45,7 @@ type Report struct {
 	PostHookMessages    []string      `json:"postHookMessages,omitempty"`
 	PreHookScreenshots  []string      `json:"preHookScreenshots,omitempty"`
 	PostHookScreenshots []string      `json:"postHookScreenshots,omitempty"`
+	Meta                ReportMeta    `json:"meta,omitempty"`
 }
 
 type ReportSummary struct {
@@ -185,6 +188,7 @@ type GeneratedReport struct {
 	Dir       string
 	IndexPath string
 	JSONPath  string
+	PDFPath   string // set when PDF export succeeds
 }
 
 // HistoryRecorder archives completed runs (implemented by main/history).

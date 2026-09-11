@@ -16,7 +16,8 @@ The report hub is always `<gauge_reports_dir>/studio-report/` (default `reports/
 
 ```
 reports/studio-report/
-├── index.html            # Static HTML report (fully rendered, no embedded JSON)
+├── index.html            # Static HTML report (CANoe-like: Overview + left nav + results; no embedded JSON)
+├── report.pdf            # Optional structured PDF twin (Chrome print; enable via --pdf / GAUGE_STUDIO_WRITE_PDF)
 ├── viewer.html           # Live Vue viewer (WebSocket / poll report.json)
 ├── manage.html           # Report management console (history list / open / delete)
 ├── assets/               # Live viewer assets (vue, element-plus, pinia, report-app.js)
@@ -66,6 +67,7 @@ Top-level fields:
 | `summary` | object | `{specs, scenarios, steps}`, each `{total, passed, failed, skipped}` |
 | `specs` | array | Spec reports |
 | `preHookFailure`, `postHookFailure` | object | Suite hook failures (optional) |
+| `meta` | object | Additive Overview metadata (`pluginVersion`, `hostName`, `goos`/`goarch`, `numCPU`, `projectRoot`, `generatedAt`/`generatedAtISO`, `extra`); does **not** bump `formatVersion` |
 
 Each spec contains `scenarios`; each scenario contains `contexts` / `items` / `teardowns`; items are steps, nested concepts (`concept.items`), or comments. Screenshot fields hold paths **relative to the folder containing that `report.json`** (e.g. `images/foo.png`). The authoritative field list is the Go structs in `internal/report/model.go` (`Report`, `SpecReport`, `ScenarioReport`, `ItemReport`, `StepReport`, `HookFailure`).
 

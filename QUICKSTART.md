@@ -1,21 +1,21 @@
 # Studio Reporter — Quick Start
 
-面向首次接入与本地验证。对应插件版本 **0.4.7**。
+面向首次接入与本地验证。对应插件版本 **0.4.9**。
 
 ## 1. 安装插件
 
 从 [Releases](https://github.com/Linhanmic/studio-reporter/releases) 下载对应平台 zip，例如：
 
 ```bash
-gauge install studio-reporter --file studio-reporter-0.4.7-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.4.9-linux.x86_64.zip
 ```
 
 或解压到 Gauge 插件目录：
 
 ```bash
 # Linux 示例
-mkdir -p ~/.gauge/plugins/studio-reporter/0.4.7
-unzip studio-reporter-0.4.7-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.4.7
+mkdir -p ~/.gauge/plugins/studio-reporter/0.4.9
+unzip studio-reporter-0.4.9-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.4.9
 ```
 
 确认 `plugin.json` 中 `version` 与目录名一致。
@@ -59,17 +59,19 @@ studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 # 浏览器打开 http://127.0.0.1:8765/manage.html
 ```
 
-静态报告工具栏可按 **规格书 / 场景** 过滤通过、失败、跳过；支持全部展开/折叠与名称搜索。
+静态报告为 **CANoe 风格左右分栏**：左侧导航树跳转规格书/场景，右侧先看 **Overview**（环境 / 主机 / 插件 / 统计），再看结果树。工具栏可按 **规格书 / 场景** 过滤；支持展开/折叠与搜索。截图在步骤与 hook 层级以缩略图展示，点击放大。
 
-## 4. 从 `.uhilreport` 再生 HTML
+## 4. 从 `.uhilreport` 再生 HTML / PDF
 
 `.uhilreport` 内截图路径为相对 `images/...`；请与同目录的 `images/` 一起拷贝后再再生：
 
 ```bash
 studio-reporter \
   --input reports/studio-report/demo-project-2026-08-28_10.30.00.uhilreport \
-  --out /tmp/studio-report
+  --out /tmp/studio-report \
+  --pdf
 xdg-open /tmp/studio-report/index.html
+# PDF（可选）：/tmp/studio-report/report.pdf
 ```
 
 `make smoke-input` 会断言删除原始绝对路径截图后仍可从 hub 的 `images/` 再生。
@@ -98,6 +100,9 @@ GOTOOLCHAIN=go1.27.0 go build -o bin/studio-reporter .
 | `gauge_reports_dir` | 报告根目录（默认 `reports`） |
 | `GAUGE_STUDIO_SKIP_REPORT` | `true` 时不写 HTML |
 | `GAUGE_STUDIO_OPEN_BROWSER` | `true` 时结束后打开 `index.html` |
+| `GAUGE_STUDIO_WRITE_PDF` | `true` 时额外写 `report.pdf`（需 Chrome/Chromium） |
+| `GAUGE_STUDIO_REPORT_META` | Overview 额外 KV：`k=v,k2=v2` |
+| `CHROME_PATH` | 指定 headless Chrome 可执行文件 |
 | `GAUGE_STUDIO_WS` | 额外再推一份事件的 WebSocket URL（可选） |
 
 ## 6. 下一步阅读

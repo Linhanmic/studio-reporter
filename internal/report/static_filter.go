@@ -54,13 +54,17 @@ func writeFilterBtn(b *bytes.Buffer, scope, filter, label string, count int, act
 	b.WriteString("</span></button>\n")
 }
 
-func writeReportBlockOpen(b *bytes.Buffer, tone, verdict, kind string, open bool) {
+func writeReportBlockOpen(b *bytes.Buffer, tone, verdict, kind, id string, open bool) {
 	b.WriteString("<details class=\"report-block ")
 	b.WriteString(tone)
 	b.WriteString("\" data-verdict=\"")
 	b.WriteString(html.EscapeString(verdict))
 	b.WriteString("\" data-kind=\"")
 	b.WriteString(html.EscapeString(kind))
+	if id != "" {
+		b.WriteString("\" id=\"")
+		b.WriteString(html.EscapeString(id))
+	}
 	if open {
 		b.WriteString("\" open>\n")
 	} else {

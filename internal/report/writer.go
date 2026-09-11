@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -24,6 +25,19 @@ type FinalWriter struct {
 	// ScreenshotBaseDirs are searched when resolving relative (or missing absolute)
 	// screenshot paths — typically the directory that contains the .uhilreport.
 	ScreenshotBaseDirs []string
+	// WritePDF, when true, also prints index.html to report.pdf via headless Chrome.
+	// Defaults to env GAUGE_STUDIO_WRITE_PDF=true when unset on the struct (see wantPDF).
+	WritePDF *bool
+	// PDFPath overrides the default <dir>/report.pdf when writing PDF.
+	PDFPath string
+}
+
+func (w *FinalWriter) wantPDF() bool {
+	if w != nil && w.WritePDF != nil {
+		return *w.WritePDF
+	}
+	v := strings.TrimSpace(strings.ToLower(os.Getenv(WritePDFEnv)))
+	return v == "1" || v == "true" || v == "yes"
 }
 
 func (w *FinalWriter) logf(format string, args ...any) {
@@ -74,10 +88,23 @@ func (w *FinalWriter) Write(dir string, r *Report, src proto.Message) (*Generate
 	}
 
 	w.logf("HTML report written to %s", indexPath)
+	out := &GeneratedReport{Dir: dir, IndexPath: indexPath, JSONPath: jsonPath}
+	if w.wantPDF() {
+		pdfPath := w.PDFPath
+		if pdfPath == "" {
+			pdfPath = filepath.Join(dir, "report.pdf")
+		}
+		if err := WritePDF(indexPath, pdfPath); err != nil {
+			w.logf("pdf: %v", err)
+		} else {
+			out.PDFPath = pdfPath
+			w.logf("PDF report written to %s", pdfPath)
+		}
+	}
 	if w.History != nil {
 		if err := w.History.RecordCompletedRun(dir, r); err != nil {
 			w.logf("history: %v", err)
 		}
 	}
-	return &GeneratedReport{Dir: dir, IndexPath: indexPath, JSONPath: jsonPath}, nil
+	return out, nil
 }

@@ -55,6 +55,8 @@ func main() {
 	start := flag.Bool("start", false, "Start the reporter gRPC server for Gauge execution")
 	input := flag.String("input", "", "Regenerate an HTML report from a .uhilreport file")
 	out := flag.String("out", "", "Output directory for regenerated HTML report")
+	pdf := flag.Bool("pdf", false, "Also export report.pdf via headless Chrome (structured print, not a screenshot collage)")
+	pdfOut := flag.String("pdf-out", "", "PDF output path (default: <out>/report.pdf)")
 	serve := flag.Bool("serve", false, "Serve the studio-report directory over HTTP for history management")
 	serveDir := flag.String("dir", "", "Directory for --serve (default: reports/studio-report)")
 	serveAddr := flag.String("addr", "127.0.0.1:8765", "Listen address for --serve")
@@ -68,14 +70,20 @@ func main() {
 	}
 
 	if *input != "" {
+		writePDF := *pdf
 		generated, err := report.GenerateFromJSON(*input, *out, &report.FinalWriter{
 			OnIndexHTMLWritten: openReportPage,
 			History:            historyRecorder{},
+			WritePDF:           &writePDF,
+			PDFPath:            *pdfOut,
 		})
 		if err != nil {
 			log.Fatalf("studio-reporter: %v", err)
 		}
 		fmt.Printf("HTML report written to %s\n", generated.IndexPath)
+		if generated.PDFPath != "" {
+			fmt.Printf("PDF report written to %s\n", generated.PDFPath)
+		}
 		return
 	}
 

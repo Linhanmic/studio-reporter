@@ -1,6 +1,6 @@
 # Studio Reporter — Design
 
-本文描述 **v0.4.7** 起的真实架构与关键决策。实现以仓库代码为准；文档随迭代更新。
+本文描述 **v0.4.9** 起的真实架构与关键决策。实现以仓库代码为准；文档随迭代更新。
 
 ## 产品目标
 
@@ -13,7 +13,8 @@ Gauge 执行期：
 
 | 场景 | 入口 | 技术 |
 |------|------|------|
-| 终态阅读 / 分享 / 归档 | `index.html` | Go 端预渲染静态 HTML（无内嵌 JSON、无 Vue） |
+| 终态阅读 / 分享 / 归档 | `index.html` | Go 端预渲染静态 HTML（CANoe 风：左导航 + Overview + 结果树；无内嵌 JSON、无 Vue） |
+| 可打印/分享 PDF | `report.pdf`（可选） | Chrome headless `--print-to-pdf`；与 HTML 同源结构化文档，非截图拼贴 |
 | 运行中实时查看 | `viewer.html?ws=...` | Vue 3 + Element Plus + Pinia，WebSocket `ReportSnapshot` |
 | 历史管理 | `manage.html` | 列表 / 打开归档 / 删除（删除需 `--serve`） |
 | 调试 / 扩展 / 轮询回退 | `report.json` | 快照信封（`formatVersion` / `rev` / `running` / `report`） |
@@ -44,6 +45,8 @@ Gauge (gRPC)
 | `broadcast.go` | 快照广播接口 |
 | `writer.go` / `snapshot.go` | 终态落盘 |
 | `static_*.go` / `static_report.*` | 静态 HTML 渲染与过滤 |
+| `overview.go` / `meta.go` | Overview 页、导航树、截图画廊、环境元数据 |
+| `pdf.go` | 可选 headless Chrome PDF |
 | `orchestrate.go` | Suite 结束单路径 |
 | `assets.go` | embed `viewer.html` / `manage.html` / assets |
 
@@ -84,6 +87,8 @@ Gauge (gRPC)
 | 2026-09-11 | viewer 与静态报告视觉对齐 | 终态跳转后色板/密度一致优先于完全同构 DOM；静态补 frag/行底色/步骤卡；live tag 用品牌 token |
 | 2026-09-11 | manage 历史对比 | 对比信息已在 history.json；客户端勾选两次即可，无需新 API；时长变慢标红、变快标绿 |
 | 2026-09-11 | 复杂夹具双轨：Gauge 工程文件 + Go 合成器 | CI 不能依赖本机 Gauge/语言插件；`.spec` 作可读真源，`complexsuite.Suite` 作可重复输入 |
+| 2026-09-11 | 交互主体验 = HTML；PDF = 同源打印 | 「可交互 PDF」在业界多为 HTML Viewer + 打印；真正交互保留左导航/Overview/lightbox；PDF 用 Chrome print 保留文字链接图片，避免栅格拼贴 |
+| 2026-09-11 | Overview + 左右分栏 + 截图策略 | 对齐 CANoe Test Report Viewer：首页环境配置、左树跳转；步骤全量截图 + 失败标注 + hook 截图 + dialog 放大 |
 
 ## 前端资源布局（SSoT）
 

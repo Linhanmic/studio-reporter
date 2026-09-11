@@ -14,6 +14,9 @@ The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https
 - **Static HTML report** at suite end (`index.html`, Go-rendered — no embedded JSON / no Vue required to read)
 - **Live viewer** (`viewer.html`) via WebSocket `ReportSnapshot` while the suite runs (disk writes only on finalize)
 - Spec / scenario filter toolbar on the static report (pass / fail / skip)
+- **CANoe-style layout**: left navigation tree + right content, with an **Overview** page (env / host / plugin / stats)
+- Screenshot galleries at suite / spec / scenario / step (hook + failure shots; click-to-enlarge lightbox)
+- Optional **structured PDF** export via headless Chrome (`--pdf` / `GAUGE_STUDIO_WRITE_PDF`) — text + links + images, not a screenshot collage
 - Versioned report file format (see [REPORT_FORMAT.md](REPORT_FORMAT.md))
 - Standalone report management console (`manage.html`): list, open, and delete archived runs
 - Cross-platform (Windows, Linux, macOS)
@@ -64,16 +67,19 @@ go build -o bin/studio-reporter ./...
 | `GAUGE_STUDIO_SKIP_REPORT` | No | - | Set to `true` to disable HTML report generation |
 | `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Kept for compatibility; the reporter no longer opens a browser by default |
 | `GAUGE_STUDIO_OPEN_BROWSER` | No | - | Set to `true` to restore opening `index.html` in the default browser |
+| `GAUGE_STUDIO_WRITE_PDF` | No | - | Set to `true` to also write `report.pdf` (requires Chrome/Chromium; or set `CHROME_PATH`) |
+| `GAUGE_STUDIO_REPORT_META` | No | - | Extra Overview KV pairs: `k=v,k2=v2` |
+| `CHROME_PATH` | No | - | Absolute path to Chrome/Chromium for PDF export |
 
 ### Gauge Plugin Installation
 
 ```bash
 # Install the plugin (match the release version)
-gauge install studio-reporter --file studio-reporter-0.4.7-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.4.9-linux.x86_64.zip
 
 # Or unzip into the Gauge plugin directory
-mkdir -p ~/.gauge/plugins/studio-reporter/0.4.7
-unzip studio-reporter-0.4.7-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.4.7
+mkdir -p ~/.gauge/plugins/studio-reporter/0.4.9
+unzip studio-reporter-0.4.9-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.4.9
 ```
 
 ## Usage
@@ -104,11 +110,14 @@ When a suite finishes, the plugin writes a **static HTML report** to `reports/st
 
 The report includes:
 
+- **Overview** home page: project / host / OS / plugin / format / custom meta + counts + spec list
+- Left **navigation tree** (spec → scenario) with jump links; right content pane (CANoe-like)
 - Nested expandable result blocks (spec → scenario → concept → step)
 - Overall verdict, duration, environment, and success rate
 - Passed rows in green and failed rows in red
 - Runtime for every spec, scenario, concept, and step
 - Nested concepts, hook failures, screenshots, stack traces, and data tables
+- Screenshot logic: all step `screenshots` + failure shot highlighted; Suite/Spec/Scenario/Step before/after hook shots; lightbox enlarge; paths stay portable as `images/…`
 
 **Live viewing** while the suite runs uses `viewer.html` (Vue 3 + Element Plus): the plugin keeps the report tree **in memory** and pushes `ReportSnapshot` over WebSocket; **no disk writes until the suite finishes**. Connect via `viewer.html?ws=ws://127.0.0.1:<port>` (or poll `report.json` after finalize). When the suite ends, the live viewer shows a banner with a CTA (and a cancellable countdown) to open the static `index.html` — the canonical final report with full step detail.
 
@@ -141,7 +150,13 @@ The plugin also writes the portable report file `<project>-<timestamp>.uhilrepor
 
 ```bash
 ./bin/studio-reporter --input reports/studio-report/demo-project-2026-08-28_10.30.00.uhilreport --out /tmp/studio-report
+
+# Optional: structured PDF twin (Chrome headless print — not a raster collage)
+./bin/studio-reporter --input …/run.uhilreport --out /tmp/studio-report --pdf
+# or: --pdf-out /tmp/studio-report/custom.pdf
 ```
+
+In the HTML report, **导出 PDF** uses the browser print dialog (Overview included; nav hidden). Interactive navigation remains HTML-first; PDF is the shareable/printable twin.
 
 `make smoke-input` verifies regeneration still copies screenshots after the original absolute Gauge paths are deleted.
 

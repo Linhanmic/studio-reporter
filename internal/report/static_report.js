@@ -154,4 +154,66 @@
       if (btn.dataset.action === 'collapse-all') setDetailsOpen(false);
     });
   });
+
+  var overview = document.getElementById('overview');
+  var results = document.getElementById('results');
+  function showOverview(show) {
+    if (!overview || !results) return;
+    overview.classList.toggle('is-hidden', !show);
+    if (show) {
+      overview.scrollIntoView({ block: 'start' });
+    }
+    document.querySelectorAll('.nav-item').forEach(function (el) {
+      el.classList.toggle('is-active', show ? el.dataset.navTarget === 'overview' : false);
+    });
+  }
+  function activateNav(id) {
+    document.querySelectorAll('.nav-item').forEach(function (el) {
+      el.classList.toggle('is-active', el.dataset.navTarget === id);
+    });
+  }
+  document.addEventListener('click', function (ev) {
+    var actionBtn = ev.target.closest('[data-action]');
+    if (actionBtn) {
+      if (actionBtn.dataset.action === 'show-overview') {
+        showOverview(true);
+        return;
+      }
+      if (actionBtn.dataset.action === 'export-pdf') {
+        // Structured print → PDF (text/links/images). Not a raster collage.
+        showOverview(true);
+        window.print();
+        return;
+      }
+    }
+    var nav = ev.target.closest('[data-nav-target]');
+    if (nav) {
+      var targetId = nav.dataset.navTarget;
+      if (targetId === 'overview') {
+        showOverview(true);
+        return;
+      }
+      showOverview(false);
+      activateNav(targetId);
+      var target = document.getElementById(targetId);
+      if (target) {
+        if (target.tagName === 'DETAILS') target.open = true;
+        target.scrollIntoView({ block: 'start' });
+      }
+    }
+    var thumb = ev.target.closest('[data-shot-src]');
+    if (thumb) {
+      var dlg = document.getElementById('shot-lightbox');
+      var img = document.getElementById('shot-lightbox-img');
+      var cap = document.getElementById('shot-lightbox-cap');
+      if (dlg && img) {
+        img.src = thumb.dataset.shotSrc;
+        if (cap) cap.textContent = thumb.dataset.shotCaption || '截图';
+        if (typeof dlg.showModal === 'function') dlg.showModal();
+      }
+    }
+  });
+
+  // Default: show overview first (CANoe-style home), keep results below.
+  showOverview(true);
 })();
