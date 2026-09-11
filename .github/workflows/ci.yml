@@ -77,6 +77,11 @@ jobs:
         env:
           CI: "true"
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Desktop open-focus pipeline smoke
+        run: REQUIRE_CHROME=1 node --test desktop/electron/open-focus-pipeline.test.js
+        env:
+          CI: "true"
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
 
   desktop-pack-smoke:
     runs-on: ubuntu-latest

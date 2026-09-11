@@ -173,6 +173,7 @@ Gauge (gRPC)
 | 2026-09-11 | 分享 hash Unicode/空格往返抽检 | focus 必须 percent-encode（保留 `:`）；否则 URL.hash 往返后 DOM id 失配；query 走 URLSearchParams/url.Values |
 | 2026-09-11 | focus PathEscape 保留 `/` | DOM id 为 `spec:`+filepath，含 `/`；`encodeShareFocus` 在 PathEscape 后恢复 `%2F`→`/`，使 `#` fragment 与 `getElementById` 对齐；legacy `%2F` 仍由 decode 兼容 |
 | 2026-09-11 | 深链 focus 双轨编码 | `open?focus=` 走 query：`/`→`%2F`（防截断）；报告内 `#focus` 走 fragment：保持字面 `/`；Desktop buildOpenDeepLink / Go openDeepLink / compare 分享卡同源 |
+| 2026-09-11 | Desktop 深链打开定位冒烟 | 不依赖完整 Electron：用与 `openReportDir` 相同的 hash 管道 + Chrome dump-dom 断言 path-style `<details open>`；browser CI 强制 Chrome |
 | 2026-09-11 | digest 深链特殊 hub 路径编码抽检 | 深链 hub 必须经 query 编码；Go/JS/Desktop 往返覆盖空格与保留字符，避免 `?&#` 截断 |
 | 2026-09-11 | report-browser-smoke CI | PR CI 安装 Chrome 并显式跑 failSteps/manage-digest 浏览器冒烟；避免 go test 在无浏览器环境静默 Skip |
 | 2026-09-11 | manage/serve 旁路与深链联调抽检 | 对照「API 单测 ≠ 页面契约」：用真实 hub + HTTP serve 串起 POST 旁路、sidecar 深链、manage.html/JS 字符串契约与 Chrome 打开 hash；`make smoke-manage-digest` 作为可重复抽检入口 |
