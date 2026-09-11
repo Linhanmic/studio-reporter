@@ -743,14 +743,26 @@ function writeHash(id) {
     }
   }
 
-  function copyShareLink() {
+  
+  function describeShareScope() {
+    var bits = [];
+    var q = (state.query || '').trim();
+    if (q) bits.push('搜索="' + q + '"');
+    if (state.spec && state.spec !== 'all') bits.push('规格书=' + state.spec);
+    if (state.scenario && state.scenario !== 'all') bits.push('场景=' + state.scenario);
+    if (failStepsOnly) bits.push('仅失败步骤');
+    if (currentFocusId && currentFocusId !== 'overview') bits.push('定位=' + currentFocusId);
+    return bits.length ? bits.join(' · ') : '完整报告（无过滤）';
+  }
+
+function copyShareLink() {
     var url = currentShareURL();
     if (!url) {
       flashStatus('无法生成分享链接');
       return;
     }
     copyText(url).then(function () {
-      flashStatus('已复制可见范围链接');
+      flashStatus('已复制可见范围链接（' + describeShareScope() + '）');
     }).catch(function () {
       flashStatus('复制失败，请检查剪贴板权限');
     });

@@ -108,6 +108,7 @@
 - [x] Desktop 对比深链携带场景类型过滤（`studio-reporter://compare?...&kinds=`；解析/复制/分享卡片同源；打开时恢复勾选）
 - [x] 静态报告过滤状态写入可分享 URL（`#focus?q=&spec=&scenario=&failSteps=1`；工具栏双向同步；Go `ParseShareHash`/`FormatShareHash`）
 - [x] 静态报告「复制可见范围链接」工具栏按钮（`copy-share-link`；复制当前 share hash 完整 URL）
+- [x] 静态报告分享链接复制后展示可读过滤摘要（状态栏附带 q/scenario/failSteps/定位）
 
 ## 迭代日志
 
@@ -217,4 +218,5 @@
 
 ## 下一任务（选定）
 
-**静态报告「复制可见范围链接」工具栏按钮**（一键复制当前 share hash 完整 URL），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。（一键复制当前 share hash 完整 URL），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**Desktop 历史对比结果内嵌静态报告可见范围深链**（对比卡片/面板一键打开目标运行并带上当前过滤 hash），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+
