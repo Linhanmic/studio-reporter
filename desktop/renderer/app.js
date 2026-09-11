@@ -27,6 +27,7 @@ const state = {
   unsubExportProgress: null,
   lastCompare: null,
   lastHistoryTrend: null,
+  failDigestSidecar: null,
   compareScenarioKinds: null, // null = all kinds; string[] = export/view filter
   lastExportedComparePath: null,
   discoverTimer: null,
@@ -1471,9 +1472,11 @@ async function refreshHistory(opts = {}) {
       }
     }
     renderHistoryList(hist);
+    refreshFailDigestSidecarUi(hist);
     updateHistoryActionButtons();
   } catch (err) {
     empty.classList.remove('hidden');
+    refreshFailDigestSidecarUi();
     setStatus(String(err.message || err), 'warn');
   }
 }
@@ -1660,6 +1663,73 @@ async function copyHistoryFailDigest() {
         : '已复制失败摘要（窗口内无失败）',
       'ok',
     );
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+function currentHistoryHubDir(histMeta) {
+  return String(histMeta?.hubDir || state.settings?.reportHubDir || '').trim();
+}
+
+function refreshFailDigestSidecarUi(histMeta) {
+  const hub = currentHistoryHubDir(histMeta);
+  const mdBtn = $('btnOpenFailDigestMd');
+  const jsonBtn = $('btnOpenFailDigestJson');
+  const revealBtn = $('btnRevealFailDigest');
+  const hint = $('failDigestSidecarHint');
+  const probe =
+    hub && typeof window.desktopAPI.probeHistoryFailDigestSidecars === 'function'
+      ? window.desktopAPI.probeHistoryFailDigestSidecars(hub)
+      : { hubDir: hub, md: false, json: false, mdPath: '', jsonPath: '' };
+  state.failDigestSidecar = probe;
+  if (mdBtn) mdBtn.disabled = !probe.md;
+  if (jsonBtn) jsonBtn.disabled = !probe.json;
+  if (revealBtn) revealBtn.disabled = !(probe.md || probe.json);
+  if (hint) {
+    if (!hub) {
+      hint.textContent = '选择 hub 后可打开 fail-digest 旁路';
+    } else if (probe.md || probe.json) {
+      hint.textContent = `旁路：${probe.md ? 'md' : ''}${probe.md && probe.json ? '+' : ''}${probe.json ? 'json' : ''}`;
+    } else {
+      hint.textContent = '尚无 fail-digest 旁路（导出或 digest --write 后生成）';
+    }
+  }
+  return probe;
+}
+
+async function openFailDigestSidecar(kind) {
+  const probe =
+    state.failDigestSidecar ||
+    refreshFailDigestSidecarUi({ hubDir: currentHistoryHubDir() });
+  const target = kind === 'json' ? probe.jsonPath : probe.mdPath;
+  const ok = kind === 'json' ? probe.json : probe.md;
+  if (!ok || !target) {
+    setStatus('旁路文件尚不存在', 'warn');
+    refreshFailDigestSidecarUi({ hubDir: currentHistoryHubDir() });
+    return;
+  }
+  try {
+    await window.desktopAPI.openPath(target);
+    setStatus(`已打开 ${kind === 'json' ? 'fail-digest.json' : 'fail-digest.md'}`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+async function revealFailDigestSidecar() {
+  const probe =
+    state.failDigestSidecar ||
+    refreshFailDigestSidecarUi({ hubDir: currentHistoryHubDir() });
+  const target = probe.mdPath || probe.jsonPath;
+  if (!(probe.md || probe.json) || !target) {
+    setStatus('旁路文件尚不存在', 'warn');
+    refreshFailDigestSidecarUi({ hubDir: currentHistoryHubDir() });
+    return;
+  }
+  try {
+    await window.desktopAPI.revealPath(target);
+    setStatus('已在文件管理器中显示 fail-digest 旁路', 'ok');
   } catch (err) {
     setStatus(String(err.message || err), 'warn');
   }
@@ -1929,6 +1999,7 @@ async function exportSelectedOrLatest(kind) {
       : result?.digestError
         ? `；失败摘要旁路未写入：${result.digestError}`
         : '';
+    if (result?.digest) refreshFailDigestSidecarUi();
     setStatus(
       entries.length <= 1
         ? `已导出${entries.length === 1 ? '所选' : '最新'}运行的 ${label}${digestNote}`
@@ -2510,6 +2581,9 @@ function wire() {
   $('btnCompareRuns').addEventListener('click', runCompare);
   $('btnCopyFailDigest')?.addEventListener('click', copyHistoryFailDigest);
   $('btnCopyFailDigestLinks')?.addEventListener('click', copyHistoryFailDigestOpenLinks);
+  $('btnOpenFailDigestMd')?.addEventListener('click', () => openFailDigestSidecar('md'));
+  $('btnOpenFailDigestJson')?.addEventListener('click', () => openFailDigestSidecar('json'));
+  $('btnRevealFailDigest')?.addEventListener('click', revealFailDigestSidecar);
   $('btnHistoryTrend')?.addEventListener('click', showHistoryTrend);
   $('btnPickHub').addEventListener('click', async () => {
     const hub = await window.desktopAPI.pickHubDir();

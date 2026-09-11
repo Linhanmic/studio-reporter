@@ -160,6 +160,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 导出刷新 fail-digest 旁路 | 导出 PDF/单文件后写 hub fail-digest.*；与 CLI 契约一致 |
 | 2026-09-11 | 插件 finalize 同步刷新 fail-digest | 套件落盘与删除历史后 best-effort 写 fail-digest.*，CI 无需再手动 digest --write |
 | 2026-09-11 | manage.html 打开 fail-digest 旁路 | 管理页探测并链到 hub fail-digest.md/json；与 CLI/插件旁路同源 |
+| 2026-09-11 | Desktop 历史页打开 fail-digest 旁路 | 历史工具栏旁路 MD/JSON/位置；与 manage/CLI 旁路契约对齐 |
 | 2026-09-11 | 自动更新 feed 离线校验 | `update-feed.js` 校验 latest*.yml 与 publish owner/repo；签名 secrets 文档化，证书到位前保持 unsigned |
 | 2026-09-11 | Release 无签名可发 | tag Release 分 plugin/linux/win；SHA256SUMS；`CSC_IDENTITY_AUTO_DISCOVERY=false`；签名 secrets 仍为可选 |
 | 2026-09-11 | Desktop 历史趋势 / 不稳定场景 | 过滤窗口 suite 趋势（history.json）+ report.json 场景翻转检测；与 pairwise compare 共用 scenarioKey |

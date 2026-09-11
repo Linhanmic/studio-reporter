@@ -76,7 +76,7 @@ xdg-open "reports/studio-report/viewer.html?ws=ws://127.0.0.1:<port>"
 # Suite 结束后 viewer 会提示打开静态 index.html（可取消自动跳转）
 
 # 历史管理（删除归档需要 HTTP；勾选两次运行可对比；可展开失败摘要并复制 Markdown/打开深链；
-# 若 hub 已有 fail-digest.md/json，工具栏「旁路 MD/JSON」可直接打开）
+# 若 hub 已有 fail-digest.md/json，manage 与 Desktop 历史工具栏「旁路 MD/JSON」可直接打开）
 studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 # 浏览器打开 http://127.0.0.1:8765/manage.html
 ```

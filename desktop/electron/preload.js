@@ -41,6 +41,7 @@ const {
   formatHistoryFailDigestMarkdown,
   formatHistoryFailDigestJson,
   buildHistoryFailDigestOpenLinks,
+  probeHistoryFailDigestSidecars,
 } = require('./history-digest.js');
 const { buildCompareDeepLink, buildOpenDeepLink, buildHistoryOpenDeepLinks } = require('./deeplink.js');
 const {
@@ -161,6 +162,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   formatHistoryFailDigestMarkdown,
   formatHistoryFailDigestJson,
   buildHistoryFailDigestOpenLinks,
+  probeHistoryFailDigestSidecars,
   loadHistoryTrendBundle: (opts) => ipcRenderer.invoke('desktop:history-trend-bundle', opts || {}),
   compareScenariosForRuns: (base, target) =>
     ipcRenderer.invoke('desktop:compare-scenarios', base, target),

@@ -83,8 +83,12 @@ describe('history-digest', () => {
     const path = require('node:path');
     const {
       writeHistoryFailDigestSidecars,
+      probeHistoryFailDigestSidecars,
     } = require('./history-digest.js');
     const hub = fs.mkdtempSync(path.join(os.tmpdir(), 'fail-digest-'));
+    const before = probeHistoryFailDigestSidecars(hub);
+    assert.equal(before.md, false);
+    assert.equal(before.json, false);
     const runs = [
       { id: 'r1', verdict: 'fail', topFailReason: 'timeout', timestampISO: '2026-09-02T10:00:00Z' },
       { id: 'r2', verdict: 'pass' },
@@ -97,6 +101,18 @@ describe('history-digest', () => {
     const json = JSON.parse(fs.readFileSync(written.jsonPath, 'utf8'));
     assert.equal(json.format, 'studio-reporter.historyFailDigest/v1');
     assert.equal(json.groups[0].reason, 'timeout');
+    const after = probeHistoryFailDigestSidecars(hub);
+    assert.equal(after.md, true);
+    assert.equal(after.json, true);
+    assert.equal(after.mdPath, written.mdPath);
+    assert.equal(after.jsonPath, written.jsonPath);
+    assert.deepEqual(probeHistoryFailDigestSidecars(''), {
+      hubDir: '',
+      md: false,
+      json: false,
+      mdPath: '',
+      jsonPath: '',
+    });
     fs.rmSync(hub, { recursive: true, force: true });
   });
 

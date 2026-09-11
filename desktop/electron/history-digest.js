@@ -251,6 +251,34 @@ function writeHistoryFailDigestSidecars(hubDir, runs, opts = {}) {
   return { mdPath, jsonPath, digest };
 }
 
+/**
+ * Probe hub for fail-digest.md / fail-digest.json sidecars (CLI/plugin/export contract).
+ * @param {string} hubDir
+ * @returns {{ hubDir: string, md: boolean, json: boolean, mdPath: string, jsonPath: string }}
+ */
+function probeHistoryFailDigestSidecars(hubDir) {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const hub = String(hubDir || '').trim() ? path.resolve(String(hubDir).trim()) : '';
+  const mdPath = hub ? path.join(hub, 'fail-digest.md') : '';
+  const jsonPath = hub ? path.join(hub, 'fail-digest.json') : '';
+  let md = false;
+  let json = false;
+  if (hub) {
+    try {
+      md = fs.existsSync(mdPath) && fs.statSync(mdPath).isFile();
+    } catch {
+      md = false;
+    }
+    try {
+      json = fs.existsSync(jsonPath) && fs.statSync(jsonPath).isFile();
+    } catch {
+      json = false;
+    }
+  }
+  return { hubDir: hub, md, json, mdPath, jsonPath };
+}
+
 module.exports = {
   DEFAULT_DIGEST_LIMIT,
   normalizeFailReason,
@@ -260,4 +288,5 @@ module.exports = {
   buildHistoryFailDigestOpenLinks,
   buildOpenDeepLinkForRun,
   writeHistoryFailDigestSidecars,
+  probeHistoryFailDigestSidecars,
 };
