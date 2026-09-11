@@ -373,7 +373,7 @@ Desktop P0 sends `ClientHello` + `RequestSnapshot` on connect. On `ServerHello`,
 
 Stdout discover helpers are shared as `@studio-reporter/discover` (`packages/studio-reporter-discover`) for Desktop and GaugeStudio.
 
-While connected, each `ReportSnapshot` is reduced to a native outline (`desktop/electron/outline.js`) for the Desktop sidebar. Opening a final report directory also loads sibling `report.json` into the same outline. Clicking a node posts `{type:'studio-reporter:select-node', id}` into the active iframe (live viewer or static `index.html`).
+While connected, each `ReportSnapshot` is reduced to a native outline (`desktop/electron/outline.js`) for the Desktop sidebar. Opening a final report directory also loads sibling `report.json` into the same outline. Clicking a node posts `{type:'studio-reporter:select-node', id}` into the active iframe (live viewer or static `index.html`). Sidebar search / verdict chips post `{type:'studio-reporter:filter', query, verdict}` so the iframe filter stays in sync.
 
 ## HTML Report
 

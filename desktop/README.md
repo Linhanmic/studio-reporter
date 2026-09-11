@@ -36,7 +36,7 @@ npm run pack               # 平台安装包（Linux → AppImage 等）
 
 ## 用法
 
-1. **运行 Gauge**：在运行栏选择 Gauge 项目（支持最近项目下拉）、specs、可选 env →「运行 Gauge」。可并行多个会话，会话条切换 live viewer；Desktop 解析 stdout discover 并自动连接。左侧共享大纲（规格书→场景）在 live / 终态均可点击定位。
+1. **运行 Gauge**：在运行栏选择 Gauge 项目（支持最近项目下拉）、specs、可选 env →「运行 Gauge」。可并行多个会话，会话条切换 live viewer；Desktop 解析 stdout discover 并自动连接。左侧共享大纲（规格书→场景）支持搜索与 pass/fail/skip 过滤，在 live / 终态均可点击定位。
 2. **手动连接**：也可粘贴 `studio-reporter websocket: ws://127.0.0.1:<port>` → 连接 → 嵌入 live viewer。
 3. **报告**：收到 `ReportGenerated` 后跳转静态 `index.html`（可在设置中关闭自动跳转）；打开报告目录时从 `report.json` 填充大纲。
 4. **历史**：设置报告根目录（含 `history.json`）后列出归档；点击打开；勾选两次运行可对比（verdict / 时长 / 计数）。
