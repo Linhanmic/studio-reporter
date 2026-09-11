@@ -21,11 +21,16 @@
     return d;
   }
 
-  function showSubtree(el) {
+  // Only structural nodes participate in filter toggles. Step/concept leaves stay
+  // visible under an unhidden parent via CSS, so we avoid O(steps) class churn.
+  var STRUCTURAL_SELECTOR =
+    '.result-pane .report-block[data-kind="spec"],' +
+    '.result-pane .report-block[data-kind="scenario"],' +
+    '.result-pane .report-block[data-kind="datarow"],' +
+    '.result-pane .report-block[data-kind="datadriven"]';
+
+  function showStructural(el) {
     el.classList.remove('filter-hidden');
-    el.querySelectorAll('.report-block').forEach(function (inner) {
-      inner.classList.remove('filter-hidden');
-    });
   }
 
   function persist() {
@@ -42,6 +47,9 @@
   }
 
   function blockName(el) {
+    if (el && el.dataset && typeof el.dataset.name === 'string' && el.dataset.name) {
+      return el.dataset.name.toLowerCase();
+    }
     var cell = el.querySelector(':scope > summary .name-cell, :scope > .leaf-summary .name-cell');
     return cell ? (cell.textContent || '').toLowerCase() : '';
   }
@@ -60,8 +68,9 @@
     syncButtons();
     persist();
 
-    var blocks = document.querySelectorAll('.result-pane .report-block');
-    blocks.forEach(function (el) { el.classList.remove('filter-hidden'); });
+    document.querySelectorAll(STRUCTURAL_SELECTOR).forEach(function (el) {
+      el.classList.remove('filter-hidden');
+    });
 
     var specFilter = state.spec;
     var scenarioFilter = state.scenario;
@@ -71,7 +80,7 @@
       var verdictOK = scenarioFilter === 'all' || scn.dataset.verdict === scenarioFilter;
       var queryOK = !q || blockName(scn).indexOf(q) >= 0;
       if (verdictOK && queryOK) {
-        showSubtree(scn);
+        showStructural(scn);
       } else {
         scn.classList.add('filter-hidden');
       }
@@ -110,7 +119,7 @@
       if (q && blockName(spec).indexOf(q) >= 0) {
         scns.forEach(function (scn) {
           if (scenarioFilter === 'all' || scn.dataset.verdict === scenarioFilter) {
-            showSubtree(scn);
+            showStructural(scn);
             anyVisibleScenario = true;
           }
         });
@@ -130,17 +139,26 @@
     });
   });
 
+  var searchTimer = null;
   if (searchInput) {
     searchInput.addEventListener('input', function () {
       state.query = searchInput.value || '';
-      applyFilter();
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () { applyFilter(); }, 120);
     });
   }
 
   applyFilter();
 
   function setDetailsOpen(open) {
-    document.querySelectorAll('.result-pane details.report-block').forEach(function (el) {
+    // Structural details only — avoids forcing open every step/concept <details>
+    // (keeps lazy screenshots lazy and cuts expand-all layout cost).
+    document.querySelectorAll(
+      '.result-pane details.report-block[data-kind="spec"],' +
+      '.result-pane details.report-block[data-kind="scenario"],' +
+      '.result-pane details.report-block[data-kind="datarow"],' +
+      '.result-pane details.report-block[data-kind="datadriven"]'
+    ).forEach(function (el) {
       if (el.classList.contains('filter-hidden')) return;
       el.open = open;
     });

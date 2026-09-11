@@ -129,7 +129,7 @@ func writeHookAlert(b *bytes.Buffer, h *HookFailure, name string) {
 
 func writeSpecBlock(b *bytes.Buffer, spec *SpecReport, open bool) {
 	tone := toneClass(spec.Verdict)
-	writeReportBlockOpen(b, tone, spec.Verdict, "spec", spec.ID, open)
+	writeReportBlockOpen(b, tone, spec.Verdict, "spec", spec.ID, spec.Heading, open)
 	writeBlockSummary(b, html.EscapeString(spec.Heading), "规格书", spec.Verdict, spec.Duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	if len(spec.Folders) > 0 {
@@ -169,7 +169,7 @@ func writeBodyRow(b *bytes.Buffer, row bodyRow) {
 		kind = "scenario"
 	}
 	tone := toneClass(row.verdict)
-	writeReportBlockOpen(b, tone, row.verdict, kind, "", row.verdict == VerdictFail)
+	writeReportBlockOpen(b, tone, row.verdict, kind, "", bodyName(row), row.verdict == VerdictFail)
 	writeBlockSummary(b, html.EscapeString(bodyName(row)), bodyTypeLabel(row), row.verdict, row.duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	if row.kind == "datarow" && len(row.headers) > 0 {
@@ -183,7 +183,7 @@ func writeBodyRow(b *bytes.Buffer, row bodyRow) {
 
 func writeScenarioBlock(b *bytes.Buffer, scn ScenarioReport, open bool) {
 	tone := toneClass(scn.Verdict)
-	writeReportBlockOpen(b, tone, scn.Verdict, "scenario", scn.ID, open)
+	writeReportBlockOpen(b, tone, scn.Verdict, "scenario", scn.ID, scn.Heading, open)
 	writeBlockSummary(b, html.EscapeString(scn.Heading), "场景", scn.Verdict, scn.Duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	writeHookAlert(b, scn.PreHookFailure, "Before Scenario")
@@ -240,7 +240,7 @@ func writeConceptBlock(b *bytes.Buffer, item ItemReport) {
 	tone := toneClass(verdict)
 	name := itemTextHTML(item)
 	open := verdict == VerdictFail
-	writeReportBlockOpen(b, tone, verdict, "concept", "", open)
+	writeReportBlockOpen(b, tone, verdict, "concept", "", "", open)
 	writeBlockSummary(b, name, "概念", verdict, itemDurationStr(item))
 	b.WriteString("<div class=\"block-body\">\n")
 	for _, child := range concept.Items {
@@ -267,7 +267,7 @@ func writeStepBlock(b *bytes.Buffer, phase string, item ItemReport) {
 		return
 	}
 	open := verdict == VerdictFail
-	writeReportBlockOpen(b, tone, verdict, "step", "", open)
+	writeReportBlockOpen(b, tone, verdict, "step", "", "", open)
 	writeBlockSummary(b, name, label, verdict, dur)
 	b.WriteString("<div class=\"block-body\">\n")
 	writeStepExtras(b, step)

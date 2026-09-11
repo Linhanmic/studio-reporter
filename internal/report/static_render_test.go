@@ -39,6 +39,8 @@ func TestRenderReportHTMLStaticShape(t *testing.T) {
 		`data-scope="scenario"`,
 		`data-kind="spec"`,
 		`data-kind="scenario"`,
+		`data-name="Login"`,
+		`data-name="Fail path"`,
 		`leaf-row`,
 		`expand-all`,
 		`copy-fail-summary`,
@@ -50,6 +52,10 @@ func TestRenderReportHTMLStaticShape(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q", want)
 		}
+	}
+	// Step/concept leaves should not carry data-name (filter only touches structural nodes).
+	if strings.Contains(body, `data-kind="step" data-name=`) || strings.Contains(body, `data-kind="concept" data-name=`) {
+		t.Fatal("step/concept blocks must not emit data-name")
 	}
 	if strings.Contains(body, `id="report-data"`) {
 		t.Fatal("must not embed JSON")

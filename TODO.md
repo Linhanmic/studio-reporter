@@ -146,6 +146,8 @@
 
 | 2026-09-11 | Desktop 历史列表虚拟化 | `#historyList` 复用 `computeVirtualWindow`；固定行高 56；过滤输入 120ms 防抖 |
 
+| 2026-09-11 | 静态报告过滤性能 | `applyFilter` 仅切换 structural 节点；`data-name`；搜索 120ms 防抖；展开/折叠不强制 step/concept |
+
 ## 下一任务（选定）
 
-**大纲/报告性能 profiling**（终态报告页长列表与交互），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限）。
+**导出进度条 UI 细化 / 失败原因聚合视图**，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限），或终态报告截图灯箱键盘可达性。
