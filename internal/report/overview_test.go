@@ -16,10 +16,10 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		Environment: "ci",
 		Timestamp:   "2026-09-11 12:00:00",
 		Specs: []SpecReport{{
-			ID:       "spec:login",
-			Heading:  "Login",
-			Verdict:  VerdictFail,
-			Duration: "00:00:02.000",
+			ID:                 "spec:login",
+			Heading:            "Login",
+			Verdict:            VerdictFail,
+			Duration:           "00:00:02.000",
 			PreHookScreenshots: []string{"images/spec-before.png"},
 			Scenarios: []ScenarioReport{{
 				ID:       "scn:fail",
