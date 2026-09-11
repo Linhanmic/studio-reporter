@@ -24,6 +24,7 @@ const DEFAULTS = {
   discoverTimeoutMs: 20000,
   compareCardTemplate: 'default',
   compareCardTitle: '',
+  compareScenarioKinds: null,
 };
 
 
@@ -82,6 +83,20 @@ function normalizeCompareCardTitle(title) {
   return String(title ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
 }
 
+/**
+ * Persistable scenario-diff kind allow-list for Desktop compare panel/export.
+ * null / empty / all known kinds ⇒ null (no filter).
+ * @param {unknown} kinds
+ * @returns {string[]|null}
+ */
+function normalizeCompareScenarioKindsPref(kinds) {
+  const { normalizeScenarioCompareKinds, SCENARIO_COMPARE_KIND_FILTERS } = require('./compare.js');
+  const list = normalizeScenarioCompareKinds(kinds);
+  if (!list) return null;
+  if (list.length >= SCENARIO_COMPARE_KIND_FILTERS.length) return null;
+  return list;
+}
+
 
 const OUTLINE_VERDICTS = new Set(['all', 'pass', 'fail', 'skip']);
 
@@ -137,6 +152,7 @@ function loadSettings(userDataDir) {
     merged.discoverTimeoutMs = normalizeDiscoverTimeoutMs(merged.discoverTimeoutMs);
     merged.compareCardTemplate = normalizeCompareCardTemplate(merged.compareCardTemplate);
     merged.compareCardTitle = normalizeCompareCardTitle(merged.compareCardTitle);
+    merged.compareScenarioKinds = normalizeCompareScenarioKindsPref(merged.compareScenarioKinds);
     return merged;
   } catch {
     return { ...DEFAULTS };
@@ -169,6 +185,9 @@ function saveSettings(userDataDir, partial) {
   if (Object.prototype.hasOwnProperty.call(patch, 'compareCardTitle')) {
     patch.compareCardTitle = normalizeCompareCardTitle(patch.compareCardTitle);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'compareScenarioKinds')) {
+    patch.compareScenarioKinds = normalizeCompareScenarioKindsPref(patch.compareScenarioKinds);
+  }
   const next = { ...loadSettings(userDataDir), ...patch };
   next.recentProjects = Array.isArray(next.recentProjects) ? next.recentProjects : [];
   next.recentHubs = Array.isArray(next.recentHubs) ? next.recentHubs : [];
@@ -179,6 +198,7 @@ function saveSettings(userDataDir, partial) {
   next.discoverTimeoutMs = normalizeDiscoverTimeoutMs(next.discoverTimeoutMs);
   next.compareCardTemplate = normalizeCompareCardTemplate(next.compareCardTemplate);
   next.compareCardTitle = normalizeCompareCardTitle(next.compareCardTitle);
+  next.compareScenarioKinds = normalizeCompareScenarioKindsPref(next.compareScenarioKinds);
   fs.mkdirSync(userDataDir, { recursive: true });
   fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(next, null, 2));
   return next;
@@ -409,6 +429,7 @@ module.exports = {
   normalizeDiscoverTimeoutMs,
   normalizeCompareCardTemplate,
   normalizeCompareCardTitle,
+  normalizeCompareScenarioKindsPref,
   COMPARE_CARD_TEMPLATES,
   OUTLINE_VERDICTS,
   OUTLINE_PANE_WIDTH_MIN,

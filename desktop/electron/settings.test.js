@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, normalizeDiscoverTimeoutMs, normalizeCompareCardTemplate, normalizeCompareCardTitle, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX, DISCOVER_TIMEOUT_MS_MIN, DISCOVER_TIMEOUT_MS_MAX, DISCOVER_TIMEOUT_MS_DEFAULT } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, normalizeDiscoverTimeoutMs, normalizeCompareCardTemplate, normalizeCompareCardTitle, normalizeCompareScenarioKindsPref, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX, DISCOVER_TIMEOUT_MS_MIN, DISCOVER_TIMEOUT_MS_MAX, DISCOVER_TIMEOUT_MS_DEFAULT } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -235,5 +235,28 @@ describe('settings compare card prefs', () => {
     assert.equal(loaded.compareCardTemplate, 'compact');
     assert.equal(loaded.compareCardTitle, 'QA');
     assert.equal(DEFAULTS.compareCardTemplate, 'default');
+  });
+});
+
+
+describe('settings compare scenario kinds', () => {
+  it('normalizeCompareScenarioKindsPref collapses all/empty to null', () => {
+    assert.equal(normalizeCompareScenarioKindsPref(null), null);
+    assert.equal(normalizeCompareScenarioKindsPref([]), null);
+    assert.deepEqual(normalizeCompareScenarioKindsPref(['regressed', 'fixed']), ['regressed', 'fixed']);
+    assert.equal(
+      normalizeCompareScenarioKindsPref(['regressed', 'fixed', 'added', 'removed', 'reason_changed']),
+      null
+    );
+  });
+
+  it('load/save round-trips compareScenarioKinds', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-compare-kinds-'));
+    const saved = saveSettings(dir, { compareScenarioKinds: ['added', 'bogus', 'removed'] });
+    assert.deepEqual(saved.compareScenarioKinds, ['added', 'removed']);
+    const loaded = loadSettings(dir);
+    assert.deepEqual(loaded.compareScenarioKinds, ['added', 'removed']);
+    assert.equal(DEFAULTS.compareScenarioKinds, null);
+    assert.equal(saveSettings(dir, { compareScenarioKinds: null }).compareScenarioKinds, null);
   });
 });

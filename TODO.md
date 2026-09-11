@@ -104,6 +104,7 @@
 - [x] 静态报告打印页眉标注可见过滤范围（`print-scope-banner` / `describePrintScope`；打印/PDF 标明当前过滤与仅失败步骤，避免误读为全量）
 - [x] 静态报告导航场景项随过滤隐藏（`syncNavCounts` 同步 `nav-scn.filter-hidden`；规格书旁计数仅含可见场景）
 - [x] Desktop 对比按场景差异类型过滤导出（面板勾选变差/修复/新增/消失/原因变化；展示与 HTML/Markdown/JSON 分享同源；`filterScenarioCompare` / `kindsFilter`）
+- [x] Desktop 对比场景类型过滤持久化（`compareScenarioKinds` 写入 settings；重启后恢复勾选）
 
 ## 迭代日志
 
@@ -207,7 +208,8 @@
 | 2026-09-11 | 导航场景项随过滤隐藏 | `syncNavCounts` 同步隐藏不可见 `nav-scn`，规格书计数只含可见场景 |
 | 2026-09-11 | 打印页眉标注可见范围 | 打印前写入 `print-scope-banner`：过滤/搜索/仅失败步骤状态，避免 PDF 被当成全量报告 |
 | 2026-09-11 | Desktop 对比场景类型过滤 | 对比面板勾选场景 diff 种类；`filterScenarioCompare` 作用于面板与分享卡片/MD/JSON；JSON 写入 `kindsFilter` |
+| 2026-09-11 | Desktop 对比场景类型过滤持久化 | `compareScenarioKinds` 进 `desktop-settings.json`；全选/空 ⇒ null；面板勾选变更即保存 |
 
 ## 下一任务（选定）
 
-**Desktop 对比场景类型过滤持久化**（`compareScenarioKinds` 写入 settings，重启后恢复勾选），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**Desktop 对比深链携带场景类型过滤**（`studio-reporter://compare?...&kinds=` 打开时恢复勾选），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。

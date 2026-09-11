@@ -871,11 +871,13 @@ function renderCompare(cmp) {
         el.getAttribute('data-compare-kind')
       );
       state.compareScenarioKinds = picked;
+      void persistCompareScenarioKinds();
       if (state.lastCompare) renderCompare(state.lastCompare);
     });
   });
   $('btnCompareKindsAll')?.addEventListener('click', () => {
     state.compareScenarioKinds = null;
+    void persistCompareScenarioKinds();
     if (state.lastCompare) renderCompare(state.lastCompare);
   });
 }
@@ -954,6 +956,19 @@ async function openCompareByIds(baseId, targetId) {
   await runCompare();
   setStatus(`已打开对比：${base} → ${target}`, 'ok');
   return true;
+}
+
+async function persistCompareScenarioKinds() {
+  const kinds = activeCompareScenarioKinds();
+  try {
+    state.settings = await window.desktopAPI.saveSettings({
+      compareScenarioKinds: kinds,
+    });
+    const saved = state.settings?.compareScenarioKinds;
+    state.compareScenarioKinds = Array.isArray(saved) && saved.length ? saved : null;
+  } catch {
+    /* ignore */
+  }
 }
 
 async function persistCompareShareOpts() {
@@ -1583,6 +1598,11 @@ async function loadSettings() {
   state.settings = await window.desktopAPI.getSettings();
   state.autoJump = state.settings.autoJumpToReport !== false;
   state.jumpSeconds = Number(state.settings.autoJumpSeconds ?? 5);
+  const pref =
+    typeof window.desktopAPI.normalizeScenarioCompareKinds === 'function'
+      ? window.desktopAPI.normalizeScenarioCompareKinds(state.settings.compareScenarioKinds)
+      : state.settings.compareScenarioKinds;
+  state.compareScenarioKinds = Array.isArray(pref) && pref.length ? pref : null;
   fillSettingsForm();
 }
 
