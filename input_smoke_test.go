@@ -93,6 +93,23 @@ func TestInputRegenSmokeCopiesScreenshots(t *testing.T) {
 		t.Fatalf("screenshot not copied into hub images/: %v", err)
 	}
 
+	uhilRaw, err := os.ReadFile(generated.JSONPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	uhil := string(uhilRaw)
+	if strings.Contains(uhil, filepath.ToSlash(shot)) || strings.Contains(uhil, filepath.ToSlash(dir)) {
+		t.Fatal(".uhilreport still embeds absolute screenshot path; expected portable images/ paths")
+	}
+	if !strings.Contains(uhil, `images/fail-shot.png`) {
+		t.Fatal(".uhilreport missing portable images/fail-shot.png path")
+	}
+
+	// Portability: original Gauge absolute screenshot is gone; regen must use hub images/.
+	if err := os.Remove(shot); err != nil {
+		t.Fatal(err)
+	}
+
 	out := filepath.Join(dir, "regen")
 	again, err := report.GenerateFromJSON(generated.JSONPath, out, &report.FinalWriter{})
 	if err != nil {

@@ -21,6 +21,9 @@ type FinalWriter struct {
 	OnIndexHTMLWritten IndexHTMLCallback
 	History            HistoryRecorder
 	Logf               func(format string, args ...any)
+	// ScreenshotBaseDirs are searched when resolving relative (or missing absolute)
+	// screenshot paths — typically the directory that contains the .uhilreport.
+	ScreenshotBaseDirs []string
 }
 
 func (w *FinalWriter) logf(format string, args ...any) {
@@ -41,7 +44,11 @@ func (w *FinalWriter) Write(dir string, r *Report, src proto.Message) (*Generate
 	if err := WriteAssets(dir); err != nil {
 		return nil, err
 	}
-	rewriteScreenshotPaths(r, copyScreenshots(collectScreenshotFiles(r), imagesDir))
+	mapping := copyScreenshots(collectScreenshotFiles(r), imagesDir, w.ScreenshotBaseDirs...)
+	rewriteScreenshotPaths(r, mapping)
+	// Persist portable relative paths (images/...) into the .uhilreport proto so
+	// --input can rebuild without the original Gauge absolute screenshot files.
+	rewriteProtoScreenshotPaths(src, mapping)
 
 	snap := &LiveSnapshot{Rev: time.Now().UnixMilli(), Running: false, Report: r}
 	if err := WriteFinalHTML(dir, r, w.OnIndexHTMLWritten); err != nil {

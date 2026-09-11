@@ -137,11 +137,13 @@ Every completed run is archived under `reports/studio-report/archives/<id>/` (in
 
 ### Regenerate a report
 
-The plugin also writes the portable report file `<project>-<timestamp>.uhilreport` next to `index.html` (and into every `archives/<project>-<timestamp>/`). You can rebuild the HTML without re-running tests:
+The plugin also writes the portable report file `<project>-<timestamp>.uhilreport` next to `index.html` (and into every `archives/<project>-<timestamp>/`). Screenshot paths inside that file are rewritten to hub-relative `images/...` (keep the sibling `images/` folder with the `.uhilreport`). You can rebuild the HTML without re-running tests:
 
 ```bash
 ./bin/studio-reporter --input reports/studio-report/demo-project-2026-08-28_10.30.00.uhilreport --out /tmp/studio-report
 ```
+
+`make smoke-input` verifies regeneration still copies screenshots after the original absolute Gauge paths are deleted.
 
 ## Development
 

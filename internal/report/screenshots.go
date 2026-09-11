@@ -91,31 +91,114 @@ func collectStepScreenshots(step *StepReport, add func(...string)) {
 	}
 }
 
-func copyScreenshots(files []string, destDir string) map[string]string {
+func copyScreenshots(files []string, destDir string, baseDirs ...string) map[string]string {
 	mapping := make(map[string]string, len(files))
 	used := map[string]int{}
 	for _, src := range files {
-		info, err := os.Stat(src)
-		if err != nil || info.IsDir() {
+		resolved := resolveScreenshotSource(src, baseDirs)
+		if resolved == "" {
 			continue
 		}
-		name := filepath.Base(src)
+		name := filepath.Base(resolved)
 		if n := used[name]; n > 0 {
 			ext := filepath.Ext(name)
 			name = fmt.Sprintf("%s-%d%s", strings.TrimSuffix(name, ext), n, ext)
 		}
-		used[filepath.Base(src)]++
+		used[filepath.Base(resolved)]++
 		dest := filepath.Join(destDir, name)
-		if err := copyFile(src, dest); err != nil {
+		if err := copyFile(resolved, dest); err != nil {
 			log.Printf("studio-reporter: skip screenshot %s: %v", src, err)
 			continue
 		}
-		mapping[src] = filepath.ToSlash(filepath.Join("images", name))
+		rel := filepath.ToSlash(filepath.Join("images", name))
+		mapping[src] = rel
+		// Also map the resolved absolute path so rewrites cover both forms.
+		if abs, err := filepath.Abs(resolved); err == nil {
+			mapping[abs] = rel
+			mapping[filepath.ToSlash(abs)] = rel
+		}
+		if resolved != src {
+			mapping[resolved] = rel
+		}
 	}
 	return mapping
 }
 
+// resolveScreenshotSource locates a screenshot file. Absolute paths are tried
+// first; relative paths (and missing absolutes) are resolved against baseDirs
+// and baseDirs/images/<basename> for portable .uhilreport regeneration.
+func resolveScreenshotSource(path string, baseDirs []string) string {
+	if path == "" {
+		return ""
+	}
+	try := func(p string) string {
+		if p == "" {
+			return ""
+		}
+		info, err := os.Stat(p)
+		if err != nil || info.IsDir() {
+			return ""
+		}
+		return p
+	}
+	if filepath.IsAbs(path) {
+		if hit := try(path); hit != "" {
+			return hit
+		}
+	} else if hit := try(path); hit != "" {
+		return hit
+	}
+	baseName := filepath.Base(path)
+	for _, base := range baseDirs {
+		if base == "" {
+			continue
+		}
+		candidates := []string{
+			filepath.Join(base, path),
+			filepath.Join(base, "images", baseName),
+			filepath.Join(base, baseName),
+		}
+		for _, c := range candidates {
+			if hit := try(c); hit != "" {
+				return hit
+			}
+		}
+	}
+	return ""
+}
+
+func appendUniqueDirs(dirs []string, extra ...string) []string {
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(dirs)+len(extra))
+	add := func(d string) {
+		if d == "" {
+			return
+		}
+		abs, err := filepath.Abs(d)
+		if err != nil {
+			abs = d
+		}
+		if _, ok := seen[abs]; ok {
+			return
+		}
+		seen[abs] = struct{}{}
+		out = append(out, abs)
+	}
+	for _, d := range dirs {
+		add(d)
+	}
+	for _, d := range extra {
+		add(d)
+	}
+	return out
+}
+
 func copyFile(src, dest string) error {
+	absSrc, errSrc := filepath.Abs(src)
+	absDest, errDest := filepath.Abs(dest)
+	if errSrc == nil && errDest == nil && absSrc == absDest {
+		return nil
+	}
 	in, err := os.Open(src)
 	if err != nil {
 		return err

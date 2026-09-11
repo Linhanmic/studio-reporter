@@ -63,6 +63,8 @@ studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 
 ## 4. 从 `.uhilreport` 再生 HTML
 
+`.uhilreport` 内截图路径为相对 `images/...`；请与同目录的 `images/` 一起拷贝后再再生：
+
 ```bash
 studio-reporter \
   --input reports/studio-report/demo-project-2026-08-28_10.30.00.uhilreport \
@@ -70,6 +72,7 @@ studio-reporter \
 xdg-open /tmp/studio-report/index.html
 ```
 
+`make smoke-input` 会断言删除原始绝对路径截图后仍可从 hub 的 `images/` 再生。
 ## 5. 本地开发
 
 ```bash

@@ -79,11 +79,13 @@ The report file uses the **`.uhilreport`** extension and is named after the run:
 
 The project name is sanitized for filesystem safety (path separators, `:*?"<>|` and spaces are replaced) and the timestamp is the suite execution time in local time. The report hub keeps only the latest run's file (stale `*.uhilreport` files are removed on each write); every archived run keeps its own copy under `archives/<project>-<timestamp>/`.
 
-Its content is the unmodified Gauge `SuiteExecutionResult` in protojson encoding (UTF-8 JSON text). It is the portable interchange format: the full HTML report can be rebuilt from this single file on any machine:
+Its content is the Gauge `SuiteExecutionResult` in protojson encoding (UTF-8 JSON text). On write, studio-reporter **rewrites screenshot file fields** from Gauge’s absolute paths to hub-relative `images/<name>` paths (matching the copied files next to the `.uhilreport`). The portable unit is therefore **`<run>.uhilreport` + sibling `images/`** (hub root or an `archives/<id>/` folder):
 
 ```bash
 studio-reporter --input demo-project-2026-08-28_10.30.00.uhilreport --out /path/to/output
 ```
+
+`--input` resolves relative `images/...` paths against the directory that contains the `.uhilreport`. Older files that still store absolute paths also fall back to `<uhilreport-dir>/images/<basename>` when the absolute source is gone.
 
 Its schema is owned by Gauge (`gauge_messages.SuiteExecutionResult`), so it carries no `formatVersion` of its own. `--input` is content-based and also accepts files written by older plugin versions (`report.uhilreport` from 0.3.1, `last_run_result.json` before that — same content, older names).
 
