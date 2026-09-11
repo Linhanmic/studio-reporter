@@ -107,6 +107,14 @@
             <span>Gauge 可执行文件（默认 PATH 中的 gauge）</span>
             <input id="settingGaugeBin" type="text" spellcheck="false" placeholder="gauge">
           </label>
+          <div class="field">
+            <span>本机 Gauge 插件（studio-reporter）</span>
+            <div class="field-row">
+              <span id="pluginDetectStatus" class="plugin-status muted">检测中…</span>
+              <button type="button" id="btnRefreshPlugin" class="btn">重新检测</button>
+            </div>
+            <p id="pluginDetectHint" class="hint muted"></p>
+          </div>
           <div class="field-row">
             <button type="button" id="btnSaveSettings" class="btn primary">保存设置</button>
             <span id="settingsStatus" class="muted"></span>

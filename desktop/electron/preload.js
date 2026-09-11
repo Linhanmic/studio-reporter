@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   showInFolder: (p) => ipcRenderer.invoke('desktop:show-in-folder', p),
   getSettings: () => ipcRenderer.invoke('desktop:get-settings'),
   saveSettings: (partial) => ipcRenderer.invoke('desktop:save-settings', partial),
+  detectPlugin: () => ipcRenderer.invoke('desktop:detect-plugin'),
   pickHubDir: () => ipcRenderer.invoke('desktop:pick-hub-dir'),
   listHistory: (hubDir) => ipcRenderer.invoke('desktop:list-history', hubDir),
   openHistoryRun: (entry) => ipcRenderer.invoke('desktop:open-history-run', entry),

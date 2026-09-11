@@ -10,6 +10,8 @@ const state = {
   autoJump: true,
   historyRuns: [],
   selectedIds: [],
+  discoverTimer: null,
+  pluginInstall: null,
 };
 
 function setTab(name) {
@@ -29,7 +31,10 @@ function setTab(name) {
     $('sessionBar').classList.add('hidden');
   }
   if (name === 'history') refreshHistory();
-  if (name === 'settings') fillSettingsForm();
+  if (name === 'settings') {
+    fillSettingsForm();
+    refreshPluginDetect();
+  }
 }
 
 function setStatus(text, kind) {
@@ -294,6 +299,73 @@ function fillSettingsForm() {
   fillRecentProjects(s.recentProjects || []);
 }
 
+function renderPluginDetect(info) {
+  state.pluginInstall = info || null;
+  const el = $('pluginDetectStatus');
+  const hint = $('pluginDetectHint');
+  if (!el || !hint) return;
+  el.classList.remove('ok', 'warn', 'error', 'muted');
+  if (!info) {
+    el.textContent = '未检测';
+    el.classList.add('muted');
+    hint.textContent = '';
+    return;
+  }
+  el.textContent = info.message || (info.found ? `v${info.version}` : '未安装');
+  el.classList.add(info.level || (info.ok ? 'ok' : 'error'));
+  if (info.path) {
+    hint.textContent = info.path;
+  } else if (!info.found) {
+    hint.textContent = '请执行 gauge install studio-reporter --file <zip>，或解压到 ~/.gauge/plugins/studio-reporter/<version>/';
+  } else {
+    hint.textContent = '';
+  }
+}
+
+async function refreshPluginDetect() {
+  const el = $('pluginDetectStatus');
+  if (el) {
+    el.classList.remove('ok', 'warn', 'error');
+    el.classList.add('muted');
+    el.textContent = '检测中…';
+  }
+  try {
+    const info = await window.desktopAPI.detectPlugin();
+    renderPluginDetect(info);
+    return info;
+  } catch (err) {
+    renderPluginDetect({
+      found: false,
+      ok: false,
+      level: 'error',
+      message: String(err.message || err),
+    });
+    return null;
+  }
+}
+
+function clearDiscoverWatch() {
+  if (state.discoverTimer) {
+    clearTimeout(state.discoverTimer);
+    state.discoverTimer = null;
+  }
+}
+
+function watchDiscoverTimeout(ms = 20000) {
+  clearDiscoverWatch();
+  state.discoverTimer = setTimeout(async () => {
+    state.discoverTimer = null;
+    const info = state.pluginInstall || await refreshPluginDetect();
+    if (!info?.found) {
+      setStatus('超时未发现 websocket：请检查是否已安装 studio-reporter 插件（见设置）', 'warn');
+    } else if (!info.ok) {
+      setStatus(`超时未发现 websocket：本机插件 ${info.version} 可能过旧`, 'warn');
+    } else {
+      setStatus('超时未发现 websocket：确认项目已启用 studio-reporter 报告插件', 'warn');
+    }
+  }, ms);
+}
+
 async function loadSettings() {
   state.settings = await window.desktopAPI.getSettings();
   state.autoJump = state.settings.autoJumpToReport !== false;
@@ -355,15 +427,18 @@ async function startGauge() {
       gaugeBin: $('settingGaugeBin').value.trim() || state.settings?.gaugeBin || 'gauge',
     });
     setStatus('Gauge 已启动，等待 discover…', 'ok');
+    watchDiscoverTimeout(20000);
     setTab('run');
   } catch (err) {
     setGaugeRunning(false);
+    clearDiscoverWatch();
     setStatus(String(err.message || err), 'warn');
   }
 }
 
 async function stopGauge() {
   try {
+    clearDiscoverWatch();
     await window.desktopAPI.stopGauge();
     setStatus('正在停止 Gauge…', 'warn');
   } catch (err) {
@@ -408,6 +483,9 @@ function wire() {
     }
   });
   $('btnSaveSettings').addEventListener('click', saveSettings);
+  $('btnRefreshPlugin')?.addEventListener('click', () => {
+    refreshPluginDetect();
+  });
   $('btnExportPdf').addEventListener('click', async () => {
     try {
       await window.desktopAPI.exportReport('pdf');
@@ -469,6 +547,7 @@ function wire() {
   });
   window.desktopAPI.onGaugeDiscover((data) => {
     if (data?.url) {
+      clearDiscoverWatch();
       $('wsInput').value = data.url;
       setStatus(`已发现 ${data.url}，正在连接…`, 'ok');
     }
@@ -479,12 +558,14 @@ function wire() {
     const runningN = (data.sessions || []).filter((s) => s.status === 'running').length;
     setGaugeRunning(runningN > 0 || Boolean(data.running));
     if (data.autoConnected && data.liveUrl) {
+      clearDiscoverWatch();
       showLive(data.liveUrl);
       setTab('run');
       setStatus(`已自动连接 ${data.discoveredUrl || ''}`.trim(), 'ok');
       $('btnDisconnect').disabled = false;
       fillRecentProjects(state.settings?.recentProjects || []);
     } else if (data.running === false) {
+      clearDiscoverWatch();
       const code = data.code != null ? ` code=${data.code}` : '';
       setStatus(`Gauge 已退出${code}`, data.code ? 'warn' : 'ok');
     } else if (data.error) {
@@ -508,6 +589,11 @@ function wire() {
   }
   try {
     await loadSettings();
+  } catch {
+    /* ignore */
+  }
+  try {
+    await refreshPluginDetect();
   } catch {
     /* ignore */
   }

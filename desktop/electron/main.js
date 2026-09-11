@@ -15,6 +15,7 @@ const {
 } = require('electron');
 const { normalizeWsInput } = require('./discover.js');
 const { checkPluginHello } = require('./compat.js');
+const { detectInstalledPlugin } = require('./plugin-detect.js');
 const {
   loadSettings,
   saveSettings,
@@ -319,6 +320,8 @@ function registerIpc() {
     packaged: app.isPackaged,
     assetPort,
   }));
+
+  ipcMain.handle('desktop:detect-plugin', async () => detectInstalledPlugin());
 
   ipcMain.handle('desktop:connect-ws', async (_evt, input) => connectLiveWs(input));
 

@@ -60,6 +60,7 @@
 - [x] Desktop 多项目 / 多会话（recentProjects + GaugeSessionManager；会话条切换；CI 跑 desktop npm test）
 - [x] 共享 discover 包（`packages/studio-reporter-discover` / `@studio-reporter/discover`）
 - [x] Desktop 插件版本门闸（ServerHello ≥ 0.5.0 + 必需 capabilities）
+- [x] Desktop 本机插件安装检测（扫描 `~/.gauge/plugins/studio-reporter`；设置页 + discover 超时提示）
 
 ## 迭代日志
 
@@ -89,6 +90,7 @@
 | 2026-09-11 | Desktop P2 运行 Gauge | `gauge-run.js` 封装 `gauge run`；扫描 stdout discover；自动 `connect-ws`；运行栏 + 日志 |
 | 2026-09-11 | Desktop 多项目/多会话 | `sessions.js`：最近项目列表 + 最多 3 路并行 Gauge；会话条切换 live；CI 增加 desktop unit tests |
 | 2026-09-11 | 共享 discover + 版本门闸 | `@studio-reporter/discover`；Desktop `compat.js` 校验 ServerHello；CI 跑共享包测试 |
+| 2026-09-11 | 本机插件安装检测 | `plugin-detect.js` 扫描 `GAUGE_HOME`/`~/.gauge`/`%APPDATA%/Gauge`；设置页 + discover 20s 超时引导 |
 
 ## 下一任务（选定）
 

@@ -184,6 +184,10 @@ iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
 .field-row { display: flex; gap: 8px; align-items: center; }
 .field-row input[type="text"] { flex: 1; min-width: 0; }
 .field.check { flex-direction: row; align-items: center; gap: 8px; color: var(--text); }
+.plugin-status.ok { color: var(--ok); }
+.plugin-status.warn { color: var(--warn); }
+.plugin-status.error { color: var(--err); }
+.hint { margin: 0; font-size: 11px; line-height: 1.4; }
 .compare-panel {
   margin-bottom: 12px;
   padding: 12px 14px;

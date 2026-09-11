@@ -41,16 +41,16 @@ npm run pack               # 平台安装包（Linux → AppImage 等）
 3. **报告**：收到 `ReportGenerated` 后跳转静态 `index.html`（可在设置中关闭自动跳转）。
 4. **历史**：设置报告根目录（含 `history.json`）后列出归档；点击打开；勾选两次运行可对比（verdict / 时长 / 计数）。
 5. **导出**：历史页「导出 PDF / 单文件 HTML」调用 CLI `generate --pdf|--single`。
-6. **设置**：报告根目录、自动跳转、倒计时、Gauge 可执行文件路径（持久化到 Electron `userData`）。
+6. **设置**：报告根目录、自动跳转、倒计时、Gauge 可执行文件路径（持久化到 Electron `userData`）；设置页检测本机 `studio-reporter` 插件安装版本。
 
 ## 测试（无需 Electron 二进制）
 
 ```bash
 cd packages/studio-reporter-discover && npm test
 cd desktop
-npm test   # discover (re-export) + compat + settings/history + compare + paths + gauge-run + sessions
+npm test   # discover + compat + plugin-detect + settings/history + compare + paths + gauge-run + sessions
 ```
 
 Discover 真源：`packages/studio-reporter-discover`（`@studio-reporter/discover`）。Desktop 经 `file:` 依赖引用；打包时打入 `node_modules/@studio-reporter/discover`。
 
-连接后 Desktop 根据 `ServerHello` 做版本门闸（≥ 0.5.0 + 必需 capabilities）。
+连接后 Desktop 根据 `ServerHello` 做版本门闸（≥ 0.5.0 + 必需 capabilities）。启动 Gauge 后若约 20s 未见 discover，会结合本机插件安装检测给出安装/启用提示。

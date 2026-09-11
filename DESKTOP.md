@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件版本门闸已落地；签名/自动更新仍为路线图   
+状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件版本门闸 + 本机插件安装检测已落地；签名/自动更新仍为路线图   
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -257,7 +257,7 @@ studio-reporter/
 
 1. 原生报告树（若 WebView 不足）。
 2. ~~插件侧能力协商、版本门闸~~（`desktop/electron/compat.js` 校验 ServerHello ≥ 0.5.0 + 必需 capabilities）。
-3. 安装体验：Desktop 安装器检测/提示 Gauge 插件版本；签名 / 自动更新。
+3. ~~安装体验：Desktop 检测/提示 Gauge 插件版本~~（`plugin-detect.js` 扫描 `~/.gauge/plugins`；设置页展示；discover 超时引导）；签名 / 自动更新仍待做。
 
 ## 9. 插件侧改动清单（相对现状）
 
@@ -295,4 +295,4 @@ studio-reporter/
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
 5. ~~Desktop 历史对比~~。
 6. ~~安装器 / 打包骨架~~（`desktop/` + electron-builder；`npm run pack:dir` / `pack`；bundle root 区分 dev/packaged）。
-7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；下一步：安装包签名 / 自动更新，或原生报告树。
+7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；下一步：安装包签名 / 自动更新，或原生报告树。
