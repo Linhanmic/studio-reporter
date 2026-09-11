@@ -80,6 +80,7 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`overview-spec-row`,
 		`data-nav-scn-count`,
 		`nav-count`,
+		`print-scope-banner`,
 		`data-spec-id=`,
 		`fail-reason-ref`,
 		`data-fail-ref-kind="scenario"`,
@@ -161,6 +162,7 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`data-kind="spec"`,
 		`:has(`,
 		`filter-hidden`,
+		`print-scope-banner`,
 	} {
 		if !strings.Contains(printBlock, want) {
 			t.Fatalf("print CSS missing %q", want)
@@ -189,6 +191,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`syncFilterBadges`,
 		`syncOverviewSpecList`,
 		`syncNavCounts`,
+		`updatePrintScopeBanner`,
+		`describePrintScope`,
 		`updateFilterGroupCounts`,
 		`isNodeVisuallyCounted`,
 		`visibleFailScenarioIdSet`,

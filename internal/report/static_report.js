@@ -423,7 +423,28 @@
     }
   }
 
+
+  function describePrintScope() {
+    var bits = [];
+    if (state.spec && state.spec !== 'all') bits.push('规格书=' + state.spec);
+    if (state.scenario && state.scenario !== 'all') bits.push('场景=' + state.scenario);
+    var q = (state.query || '').trim();
+    if (q) bits.push('搜索="' + q + '"');
+    if (document.documentElement.classList.contains('fail-steps-mode')) bits.push('仅失败步骤');
+    if (!bits.length) return '打印范围：完整报告（无过滤）';
+    return '打印范围：当前可见树（' + bits.join(' · ') + '）— 非全量报告';
+  }
+
+  function updatePrintScopeBanner() {
+    var el = document.getElementById('print-scope-banner');
+    if (!el) return;
+    el.textContent = describePrintScope();
+    el.hidden = false;
+    el.setAttribute('aria-hidden', 'false');
+  }
+
   function prepareFailStepsForPrint() {
+    updatePrintScopeBanner();
     if (!failStepsOnly) return;
     openFailStepsAncestors();
     // Closed <details> omit body content from print in Chromium; keep fail path open.

@@ -493,7 +493,18 @@ html, body {
   background: rgba(232, 93, 93, 0.12);
 }
 
+.print-scope-banner { display: none; }
 @media print {
+  .print-scope-banner {
+    display: block !important;
+    border: 1px solid #c5d0dc;
+    background: #f4f8fb;
+    color: #1f4668;
+    font-size: 11px;
+    padding: 6px 10px;
+    margin: 0 0 10px;
+  }
+
   html, body { overflow: visible !important; height: auto !important; background: #fff; }
   .app-shell { height: auto !important; max-width: none; }
   .toolbar, .status, .header-actions, .nav-pane, .shot-lightbox { display: none !important; }

@@ -101,6 +101,7 @@
 - [x] 静态报告工具栏过滤徽标与可见树实时对齐（规格书/场景过滤器数量徽标随搜索与仅失败步骤更新；`syncFilterBadges`）
 - [x] 静态报告 Overview 规格书清单随过滤可见树同步（隐藏不可见规格书并刷新场景计数；`syncOverviewSpecList`）
 - [x] 静态报告导航树场景计数与过滤可见树对齐（规格书旁 `nav-count` 随过滤/仅失败步骤更新；`syncNavCounts`）
+- [x] 静态报告打印页眉标注可见过滤范围（`print-scope-banner` / `describePrintScope`；打印/PDF 标明当前过滤与仅失败步骤，避免误读为全量）
 
 ## 迭代日志
 
@@ -200,6 +201,8 @@
 | 2026-09-11 | Overview 规格书清单对齐可见树 | `syncOverviewSpecList` 隐藏不可见规格书行并刷新场景 passed/total |
 
 | 2026-09-11 | 导航树场景计数对齐可见树 | `syncNavCounts` 更新规格书旁场景计数并隐藏无可见场景的导航节点 |
+
+| 2026-09-11 | 打印页眉标注可见范围 | 打印前写入 `print-scope-banner`：过滤/搜索/仅失败步骤状态，避免 PDF 被当成全量报告 |
 
 ## 下一任务（选定）
 

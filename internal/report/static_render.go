@@ -32,6 +32,7 @@ func RenderReportHTML(r *Report) ([]byte, error) {
 	b.WriteString(staticReportCSS)
 	b.WriteString("</style>\n</head>\n<body>\n<div class=\"app-shell\">\n")
 	writeStaticHeader(&b, r)
+	writePrintScopeBanner(&b)
 	writeFilterToolbar(&b, r.Summary.Specs, r.Summary.Scenarios)
 	b.WriteString("<div class=\"workspace\">\n")
 	writeNavPane(&b, r)
@@ -61,6 +62,11 @@ func RenderSnapshotHTML(snap *LiveSnapshot) ([]byte, error) {
 		return RenderReportHTML(nil)
 	}
 	return RenderReportHTML(snap.Report)
+}
+
+
+func writePrintScopeBanner(b *bytes.Buffer) {
+	b.WriteString("<div class=\"print-scope-banner\" id=\"print-scope-banner\" hidden aria-hidden=\"true\"></div>\n")
 }
 
 func writeStaticHeader(b *bytes.Buffer, r *Report) {
