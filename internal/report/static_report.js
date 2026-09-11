@@ -143,6 +143,53 @@
   }
 
   // Keep header stat cards + Overview count table aligned with the visible tree.
+
+  function updateFilterGroupCounts(scope, c) {
+    document.querySelectorAll('.filter-group[data-scope="' + scope + '"] .filter-btn').forEach(function (btn) {
+      var f = btn.dataset.filter || 'all';
+      var n = 0;
+      if (f === 'all') n = c.total;
+      else if (f === 'pass') n = c.passed;
+      else if (f === 'fail') n = c.failed;
+      else if (f === 'skip') n = c.skipped;
+      var span = btn.querySelector('.filter-count');
+      if (span) span.textContent = String(n);
+      btn.setAttribute('data-filter-count', String(n));
+    });
+  }
+
+  // Toolbar filter badges reflect what each chip would show under the *other*
+  // active constraints (search, opposite scope filter, fail-steps-mode).
+  function syncFilterBadges() {
+    var q = (state.query || '').trim().toLowerCase();
+    var failSteps = document.documentElement.classList.contains('fail-steps-mode');
+    var scCounts = emptyCounts();
+    document.querySelectorAll('.result-pane .report-block[data-kind="scenario"]').forEach(function (scn) {
+      var spec = scn.closest('.report-block[data-kind="spec"]');
+      if (spec && state.spec !== 'all' && spec.dataset.verdict !== state.spec) return;
+      var queryOK = !q || blockName(scn).indexOf(q) >= 0 || (spec && blockName(spec).indexOf(q) >= 0);
+      if (!queryOK) return;
+      if (failSteps && scn.dataset.verdict !== 'fail') return;
+      bumpCounts(scCounts, scn.dataset.verdict || '');
+    });
+    var spCounts = emptyCounts();
+    document.querySelectorAll('.result-pane .report-block[data-kind="spec"]').forEach(function (spec) {
+      var scns = spec.querySelectorAll('.report-block[data-kind="scenario"]');
+      var any = false;
+      for (var i = 0; i < scns.length; i++) {
+        var scn = scns[i];
+        var verdictOK = state.scenario === 'all' || scn.dataset.verdict === state.scenario;
+        var queryOK = !q || blockName(scn).indexOf(q) >= 0 || blockName(spec).indexOf(q) >= 0;
+        if (failSteps && scn.dataset.verdict !== 'fail') continue;
+        if (verdictOK && queryOK) { any = true; break; }
+      }
+      if (!any) return;
+      bumpCounts(spCounts, spec.dataset.verdict || '');
+    });
+    updateFilterGroupCounts('scenario', scCounts);
+    updateFilterGroupCounts('spec', spCounts);
+  }
+
   function syncOverviewCounts() {
     var specs = emptyCounts();
     var scenarios = emptyCounts();
@@ -239,6 +286,7 @@
     });
     syncFailReasonOverview();
     syncOverviewCounts();
+    syncFilterBadges();
   }
 
   document.querySelectorAll('.filter-group').forEach(function (group) {
@@ -312,6 +360,7 @@
     try { sessionStorage.setItem(FAIL_STEPS_KEY, failStepsOnly ? '1' : '0'); } catch (e) {}
     syncFailReasonOverview();
     syncOverviewCounts();
+    syncFilterBadges();
     if (opts.silent) return;
     if (typeof flashStatus === 'function') {
       flashStatus(failStepsOnly ? '已开启：仅显示失败场景与失败步骤' : '已关闭：仅失败步骤');

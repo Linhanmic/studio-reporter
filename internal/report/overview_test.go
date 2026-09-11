@@ -182,6 +182,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`fail-steps`,
 		`syncFailReasonOverview`,
 		`syncOverviewCounts`,
+		`syncFilterBadges`,
+		`updateFilterGroupCounts`,
 		`isNodeVisuallyCounted`,
 		`visibleFailScenarioIdSet`,
 		`FilterFailReasonGroups`,
