@@ -219,7 +219,23 @@
 
   window.addEventListener('message', function (ev) {
     var data = ev && ev.data;
-    if (!data || data.type !== 'studio-reporter:select-node') return;
+    if (!data) return;
+    if (data.type === 'studio-reporter:filter') {
+      state.query = data.query != null ? String(data.query) : state.query;
+      if (data.verdict && data.verdict !== 'all') {
+        state.scenario = String(data.verdict);
+        state.spec = String(data.verdict);
+      } else if (data.verdict === 'all') {
+        state.scenario = 'all';
+        state.spec = 'all';
+      }
+      if (searchInput) searchInput.value = state.query || '';
+      syncButtons();
+      applyFilter();
+      persist();
+      return;
+    }
+    if (data.type !== 'studio-reporter:select-node') return;
     var id = data.id ? String(data.id) : '';
     if (!id) return;
     if (id === 'overview') {

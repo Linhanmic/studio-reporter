@@ -13,6 +13,8 @@ const state = {
   discoverTimer: null,
   pluginInstall: null,
   outline: null,
+  outlineQuery: '',
+  outlineVerdict: 'all',
   activeTab: 'run',
 };
 
@@ -75,26 +77,97 @@ function verdictChip(verdict) {
   return `<span class="outline-verdict ${cls}">${escapeHtml(v)}</span>`;
 }
 
+function postFilterToFrames() {
+  const payload = {
+    type: 'studio-reporter:filter',
+    query: state.outlineQuery || '',
+    verdict: state.outlineVerdict || 'all',
+  };
+  for (const id of ['liveFrame', 'reportFrame']) {
+    const frame = $(id);
+    if (!frame?.contentWindow) continue;
+    try {
+      frame.contentWindow.postMessage(payload, '*');
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function visibleOutline() {
+  const raw = state.outline;
+  if (!raw) return null;
+  // filterOutline is pure; duplicate minimal client-side filter to avoid bundling.
+  const query = String(state.outlineQuery || '')
+    .trim()
+    .toLowerCase();
+  const verdict = String(state.outlineVerdict || 'all')
+    .trim()
+    .toLowerCase();
+  const wantVerdict = verdict && verdict !== 'all';
+  const matchText = (text) =>
+    !query ||
+    String(text || '')
+      .toLowerCase()
+      .includes(query);
+  const matchVerdict = (v) => !wantVerdict || String(v || '').toLowerCase() === verdict;
+
+  const specs = (raw.specs || [])
+    .map((spec) => {
+      const scenarios = (spec.scenarios || []).filter(
+        (scn) =>
+          matchVerdict(scn.verdict) &&
+          (matchText(scn.heading) || matchText(scn.id) || matchText(spec.heading) || matchText(spec.fileName))
+      );
+      const specSelf =
+        matchVerdict(spec.verdict) &&
+        (matchText(spec.heading) || matchText(spec.fileName) || matchText(spec.id));
+      if (!specSelf && scenarios.length === 0) return null;
+      const keepScenarios =
+        query && specSelf && !scenarios.length
+          ? (spec.scenarios || []).filter((scn) => matchVerdict(scn.verdict))
+          : scenarios.length
+            ? scenarios
+            : query
+              ? scenarios
+              : (spec.scenarios || []).filter((scn) => matchVerdict(scn.verdict));
+      return { ...spec, scenarios: keepScenarios };
+    })
+    .filter(Boolean);
+  return { ...raw, specs };
+}
+
 function renderOutline(outline) {
-  state.outline = outline || null;
+  if (outline) state.outline = outline;
+  const view = visibleOutline();
   const meta = $('outlineMeta');
   const tree = $('outlineTree');
   if (!meta || !tree) return;
-  if (!outline || !outline.specs?.length) {
-    meta.textContent = outline?.running ? '运行中…' : '等待快照…';
+  if (!state.outline || !state.outline.specs?.length) {
+    meta.textContent = state.outline?.running ? '运行中…' : '等待快照…';
     tree.innerHTML = '<div class="outline-empty">连接并运行后显示规格书 / 场景大纲</div>';
     return;
   }
+  if (!view?.specs?.length) {
+    meta.textContent = '无匹配';
+    tree.innerHTML = '<div class="outline-empty">没有匹配当前搜索 / 过滤的节点</div>';
+    return;
+  }
   const parts = [];
-  if (outline.projectName) parts.push(outline.projectName);
-  if (outline.source === 'final') parts.push('终态');
-  else if (outline.running) parts.push('live');
-  if (outline.rev != null) parts.push(`rev ${outline.rev}`);
+  if (view.projectName) parts.push(view.projectName);
+  if (view.source === 'final') parts.push('终态');
+  else if (view.running) parts.push('live');
+  if (view.rev != null) parts.push(`rev ${view.rev}`);
+  const totalScn = (state.outline.specs || []).reduce((n, s) => n + (s.scenarios?.length || 0), 0);
+  const shownScn = view.specs.reduce((n, s) => n + (s.scenarios?.length || 0), 0);
+  if (state.outlineQuery || (state.outlineVerdict && state.outlineVerdict !== 'all')) {
+    parts.push(`${shownScn}/${totalScn}`);
+  }
   meta.textContent = parts.join(' · ') || '大纲';
-  tree.innerHTML = outline.specs.map((spec) => {
-    const specCurrent = spec.id && spec.id === outline.currentSpecId ? ' current' : '';
+  tree.innerHTML = view.specs.map((spec) => {
+    const specCurrent = spec.id && spec.id === view.currentSpecId ? ' current' : '';
     const scnHtml = (spec.scenarios || []).map((scn) => {
-      const scnCurrent = scn.id && scn.id === outline.currentScenarioId ? ' current' : '';
+      const scnCurrent = scn.id && scn.id === view.currentScenarioId ? ' current' : '';
       return `<button type="button" class="outline-scn${scnCurrent}" data-node-id="${escapeHtml(scn.id)}">${verdictChip(scn.verdict)}${escapeHtml(scn.heading || scn.id)}</button>`;
     }).join('');
     return `<button type="button" class="outline-spec${specCurrent}" data-node-id="${escapeHtml(spec.id)}">${verdictChip(spec.verdict)}${escapeHtml(spec.heading || spec.fileName || spec.id)}</button>${scnHtml}`;
@@ -642,11 +715,27 @@ function wire() {
   });
   window.desktopAPI.onReportOutline((outline) => {
     renderOutline(outline);
+    postFilterToFrames();
   });
   $('outlineTree')?.addEventListener('click', (ev) => {
     const btn = ev.target.closest('[data-node-id]');
     if (!btn) return;
     postSelectNode(btn.getAttribute('data-node-id'));
+  });
+  $('outlineQuery')?.addEventListener('input', () => {
+    state.outlineQuery = $('outlineQuery').value || '';
+    renderOutline();
+    postFilterToFrames();
+  });
+  document.querySelectorAll('.outline-filter-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.outlineVerdict = btn.dataset.verdict || 'all';
+      document.querySelectorAll('.outline-filter-btn').forEach((b) => {
+        b.classList.toggle('active', b === btn);
+      });
+      renderOutline();
+      postFilterToFrames();
+    });
   });
   window.desktopAPI.onGaugeLog((data) => {
     if (data?.text) appendGaugeLog(data.text);

@@ -933,7 +933,15 @@ const reportDataEl = document.getElementById('report-data');
         }
         this._onHostMessage = (ev) => {
           const data = ev && ev.data;
-          if (!data || data.type !== 'studio-reporter:select-node') return;
+          if (!data) return;
+          if (data.type === 'studio-reporter:filter') {
+            if (data.query != null) this.store.query = String(data.query);
+            if (data.verdict && data.verdict !== 'all') this.store.filter = String(data.verdict);
+            else if (data.verdict === 'all') this.store.filter = 'all';
+            this.store.persistView();
+            return;
+          }
+          if (data.type !== 'studio-reporter:select-node') return;
           if (data.id) this.store.selectNode(String(data.id));
         };
         window.addEventListener('message', this._onHostMessage);

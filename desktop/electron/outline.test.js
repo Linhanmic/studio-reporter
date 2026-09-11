@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { buildReportOutline, loadOutlineFromReportDir } = require('./outline.js');
+const { buildReportOutline, loadOutlineFromReportDir, filterOutline } = require('./outline.js');
 
 describe('outline', () => {
   it('builds slim spec→scenario tree', () => {
@@ -68,5 +68,43 @@ describe('outline', () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it('filterOutline filters by query and verdict', () => {
+    const base = buildReportOutline({
+      report: {
+        projectName: 'demo',
+        specs: [
+          {
+            id: 'login',
+            heading: 'Login',
+            fileName: 'specs/login.spec',
+            verdict: 'fail',
+            scenarios: [
+              { id: 'ok', heading: 'happy path', verdict: 'pass' },
+              { id: 'bad', heading: 'bad password', verdict: 'fail' },
+            ],
+          },
+          {
+            id: 'logout',
+            heading: 'Logout',
+            fileName: 'specs/logout.spec',
+            verdict: 'pass',
+            scenarios: [{ id: 'bye', heading: 'sign out', verdict: 'pass' }],
+          },
+        ],
+      },
+    });
+    const byQuery = filterOutline(base, { query: 'password' });
+    assert.equal(byQuery.specs.length, 1);
+    assert.equal(byQuery.specs[0].scenarios.length, 1);
+    assert.equal(byQuery.specs[0].scenarios[0].id, 'bad');
+
+    const fails = filterOutline(base, { verdict: 'fail' });
+    assert.equal(fails.specs.length, 1);
+    assert.equal(fails.specs[0].id, 'login');
+    assert.ok(fails.specs[0].scenarios.every((s) => s.verdict === 'fail'));
+
+    assert.equal(filterOutline(null, { query: 'x' }), null);
   });
 });

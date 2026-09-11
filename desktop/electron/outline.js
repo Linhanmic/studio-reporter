@@ -65,7 +65,64 @@ function loadOutlineFromReportDir(reportDir) {
   }
 }
 
+/**
+ * Filter an outline by text query and/or verdict.
+ * Specs stay visible if they match or any child scenario matches.
+ *
+ * @param {ReturnType<typeof buildReportOutline>|null|undefined} outline
+ * @param {{query?: string, verdict?: string}} [opts]
+ * @returns {ReturnType<typeof buildReportOutline>|null}
+ */
+function filterOutline(outline, opts = {}) {
+  if (!outline) return null;
+  const query = String(opts.query || '')
+    .trim()
+    .toLowerCase();
+  const verdict = String(opts.verdict || 'all')
+    .trim()
+    .toLowerCase();
+  const wantVerdict = verdict && verdict !== 'all';
+
+  const matchText = (text) => {
+    if (!query) return true;
+    return String(text || '')
+      .toLowerCase()
+      .includes(query);
+  };
+  const matchVerdict = (v) => {
+    if (!wantVerdict) return true;
+    return String(v || '').toLowerCase() === verdict;
+  };
+
+  const specs = (outline.specs || [])
+    .map((spec) => {
+      const scenarios = (spec.scenarios || []).filter(
+        (scn) =>
+          matchVerdict(scn.verdict) &&
+          (matchText(scn.heading) || matchText(scn.id) || matchText(spec.heading) || matchText(spec.fileName))
+      );
+      const specSelf =
+        matchVerdict(spec.verdict) &&
+        (matchText(spec.heading) || matchText(spec.fileName) || matchText(spec.id));
+      if (!specSelf && scenarios.length === 0) return null;
+      // If query matched the spec itself, keep all verdict-matching scenarios.
+      const keepScenarios =
+        query && specSelf && !scenarios.length
+          ? (spec.scenarios || []).filter((scn) => matchVerdict(scn.verdict))
+          : scenarios.length
+            ? scenarios
+            : query
+              ? scenarios
+              : (spec.scenarios || []).filter((scn) => matchVerdict(scn.verdict));
+      return { ...spec, scenarios: keepScenarios };
+    })
+    .filter(Boolean);
+
+  return { ...outline, specs };
+}
+
 module.exports = {
   buildReportOutline,
   loadOutlineFromReportDir,
+  filterOutline,
 };
