@@ -32,7 +32,7 @@ const {
   GaugeSessionManager,
 } = require('./sessions.js');
 const { createUpdater } = require('./updater.js');
-const { buildReportOutline } = require('./outline.js');
+const { buildReportOutline, loadOutlineFromReportDir } = require('./outline.js');
 
 const DESKTOP_VERSION = '0.5.2';
 /** Dev: repo root. Packaged: Electron extraResources (viewer + report-assets + bin). */
@@ -318,6 +318,10 @@ async function openReportDir(dir) {
   const url = `http://127.0.0.1:${assetPort}/index.html`;
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('navigate-report', { url, dir });
+    const outline = loadOutlineFromReportDir(dir);
+    if (outline) {
+      mainWindow.webContents.send('report-outline', outline);
+    }
   }
 }
 

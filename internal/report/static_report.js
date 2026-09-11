@@ -216,4 +216,28 @@
 
   // Default: show overview first (CANoe-style home), keep results below.
   showOverview(true);
+
+  window.addEventListener('message', function (ev) {
+    var data = ev && ev.data;
+    if (!data || data.type !== 'studio-reporter:select-node') return;
+    var id = data.id ? String(data.id) : '';
+    if (!id) return;
+    if (id === 'overview') {
+      showOverview(true);
+      return;
+    }
+    showOverview(false);
+    activateNav(id);
+    var target = document.getElementById(id);
+    if (target) {
+      if (target.tagName === 'DETAILS') target.open = true;
+      // Open ancestor details so nested scenarios are visible.
+      var parent = target.parentElement;
+      while (parent) {
+        if (parent.tagName === 'DETAILS') parent.open = true;
+        parent = parent.parentElement;
+      }
+      target.scrollIntoView({ block: 'start' });
+    }
+  });
 })();

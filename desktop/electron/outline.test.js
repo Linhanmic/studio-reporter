@@ -2,7 +2,10 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { buildReportOutline } = require('./outline.js');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { buildReportOutline, loadOutlineFromReportDir } = require('./outline.js');
 
 describe('outline', () => {
   it('builds slim spec→scenario tree', () => {
@@ -29,6 +32,7 @@ describe('outline', () => {
     });
     assert.equal(outline.projectName, 'demo');
     assert.equal(outline.running, true);
+    assert.equal(outline.source, 'live');
     assert.equal(outline.specs.length, 1);
     assert.equal(outline.specs[0].scenarios.length, 2);
     assert.equal(outline.specs[0].scenarios[0].heading, 'ok path');
@@ -41,5 +45,28 @@ describe('outline', () => {
     assert.deepEqual(empty.specs, []);
     assert.equal(empty.running, false);
     assert.equal(empty.projectName, '');
+  });
+
+  it('loadOutlineFromReportDir reads report.json', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-outline-'));
+    try {
+      fs.writeFileSync(
+        path.join(dir, 'report.json'),
+        JSON.stringify({
+          running: false,
+          report: {
+            projectName: 'final-demo',
+            specs: [{ id: 's1', heading: 'Spec', verdict: 'pass', scenarios: [] }],
+          },
+        })
+      );
+      const outline = loadOutlineFromReportDir(dir);
+      assert.equal(outline.source, 'final');
+      assert.equal(outline.projectName, 'final-demo');
+      assert.equal(outline.specs[0].id, 's1');
+      assert.equal(loadOutlineFromReportDir(path.join(dir, 'missing')), null);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

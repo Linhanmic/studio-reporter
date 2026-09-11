@@ -13,6 +13,7 @@ const state = {
   discoverTimer: null,
   pluginInstall: null,
   outline: null,
+  activeTab: 'run',
 };
 
 function setTab(name) {
@@ -27,10 +28,12 @@ function setTab(name) {
   const hideChrome = name === 'history' || name === 'settings';
   $('connectBar').classList.toggle('hidden', hideChrome);
   $('runBar').classList.toggle('hidden', hideChrome);
+  $('workspace')?.classList.toggle('outline-hidden', hideChrome);
   if (hideChrome) {
     $('gaugeLog').classList.add('hidden');
     $('sessionBar').classList.add('hidden');
   }
+  state.activeTab = name;
   if (name === 'history') refreshHistory();
   if (name === 'settings') {
     fillSettingsForm();
@@ -50,16 +53,18 @@ function showLive(url) {
   $('liveEmpty').classList.add('hidden');
 }
 
-function postSelectToLive(id) {
+function postSelectNode(id) {
   if (!id) return;
-  const frame = $('liveFrame');
+  const tab = state.activeTab || 'run';
+  const frame = tab === 'report' ? $('reportFrame') : $('liveFrame');
+  if (!frame || !frame.contentWindow) return;
   try {
-    frame.contentWindow?.postMessage(
+    frame.contentWindow.postMessage(
       { type: 'studio-reporter:select-node', id },
       '*'
     );
   } catch {
-    /* cross-origin or not ready */
+    /* not ready */
   }
 }
 
@@ -82,7 +87,8 @@ function renderOutline(outline) {
   }
   const parts = [];
   if (outline.projectName) parts.push(outline.projectName);
-  if (outline.running) parts.push('live');
+  if (outline.source === 'final') parts.push('终态');
+  else if (outline.running) parts.push('live');
   if (outline.rev != null) parts.push(`rev ${outline.rev}`);
   meta.textContent = parts.join(' · ') || '大纲';
   tree.innerHTML = outline.specs.map((spec) => {
@@ -640,7 +646,7 @@ function wire() {
   $('outlineTree')?.addEventListener('click', (ev) => {
     const btn = ev.target.closest('[data-node-id]');
     if (!btn) return;
-    postSelectToLive(btn.getAttribute('data-node-id'));
+    postSelectNode(btn.getAttribute('data-node-id'));
   });
   window.desktopAPI.onGaugeLog((data) => {
     if (data?.text) appendGaugeLog(data.text);
