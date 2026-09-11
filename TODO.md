@@ -222,5 +222,5 @@
 
 ## 下一任务（选定）
 
-**代码签名 secrets / 发布管道加固**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限时改做：对比面板「复制场景打开深链」/ 历史列表右键打开定位）。
+**历史列表右键打开定位**（打开报告 / 复制 open 深链 + focus），或 **代码签名 secrets / 发布管道加固** / **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限）。
 
