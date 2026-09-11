@@ -12,6 +12,7 @@ const state = {
   selectedIds: [],
   discoverTimer: null,
   pluginInstall: null,
+  outline: null,
 };
 
 function setTab(name) {
@@ -47,6 +48,51 @@ function setStatus(text, kind) {
 function showLive(url) {
   $('liveFrame').src = url;
   $('liveEmpty').classList.add('hidden');
+}
+
+function postSelectToLive(id) {
+  if (!id) return;
+  const frame = $('liveFrame');
+  try {
+    frame.contentWindow?.postMessage(
+      { type: 'studio-reporter:select-node', id },
+      '*'
+    );
+  } catch {
+    /* cross-origin or not ready */
+  }
+}
+
+function verdictChip(verdict) {
+  const v = String(verdict || '').toLowerCase();
+  if (!v) return '';
+  const cls = v === 'pass' || v === 'fail' || v === 'skip' ? v : '';
+  return `<span class="outline-verdict ${cls}">${escapeHtml(v)}</span>`;
+}
+
+function renderOutline(outline) {
+  state.outline = outline || null;
+  const meta = $('outlineMeta');
+  const tree = $('outlineTree');
+  if (!meta || !tree) return;
+  if (!outline || !outline.specs?.length) {
+    meta.textContent = outline?.running ? '运行中…' : '等待快照…';
+    tree.innerHTML = '<div class="outline-empty">连接并运行后显示规格书 / 场景大纲</div>';
+    return;
+  }
+  const parts = [];
+  if (outline.projectName) parts.push(outline.projectName);
+  if (outline.running) parts.push('live');
+  if (outline.rev != null) parts.push(`rev ${outline.rev}`);
+  meta.textContent = parts.join(' · ') || '大纲';
+  tree.innerHTML = outline.specs.map((spec) => {
+    const specCurrent = spec.id && spec.id === outline.currentSpecId ? ' current' : '';
+    const scnHtml = (spec.scenarios || []).map((scn) => {
+      const scnCurrent = scn.id && scn.id === outline.currentScenarioId ? ' current' : '';
+      return `<button type="button" class="outline-scn${scnCurrent}" data-node-id="${escapeHtml(scn.id)}">${verdictChip(scn.verdict)}${escapeHtml(scn.heading || scn.id)}</button>`;
+    }).join('');
+    return `<button type="button" class="outline-spec${specCurrent}" data-node-id="${escapeHtml(spec.id)}">${verdictChip(spec.verdict)}${escapeHtml(spec.heading || spec.fileName || spec.id)}</button>${scnHtml}`;
+  }).join('');
 }
 
 function showReport(url) {
@@ -587,6 +633,14 @@ function wire() {
     if (!meta) return;
     if (meta.running === false) setStatus('运行结束（等待落盘）', 'warn');
     else if (meta.projectName) setStatus(`运行中 · ${meta.projectName}`, 'ok');
+  });
+  window.desktopAPI.onReportOutline((outline) => {
+    renderOutline(outline);
+  });
+  $('outlineTree')?.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('[data-node-id]');
+    if (!btn) return;
+    postSelectToLive(btn.getAttribute('data-node-id'));
   });
   window.desktopAPI.onGaugeLog((data) => {
     if (data?.text) appendGaugeLog(data.text);

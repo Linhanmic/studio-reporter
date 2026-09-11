@@ -36,7 +36,7 @@ npm run pack               # 平台安装包（Linux → AppImage 等）
 
 ## 用法
 
-1. **运行 Gauge**：在运行栏选择 Gauge 项目（支持最近项目下拉）、specs、可选 env →「运行 Gauge」。可并行多个会话，会话条切换 live viewer；Desktop 解析 stdout discover 并自动连接。
+1. **运行 Gauge**：在运行栏选择 Gauge 项目（支持最近项目下拉）、specs、可选 env →「运行 Gauge」。可并行多个会话，会话条切换 live viewer；Desktop 解析 stdout discover 并自动连接。运行页左侧显示原生大纲（规格书→场景），点击可定位 live viewer。
 2. **手动连接**：也可粘贴 `studio-reporter websocket: ws://127.0.0.1:<port>` → 连接 → 嵌入 live viewer。
 3. **报告**：收到 `ReportGenerated` 后跳转静态 `index.html`（可在设置中关闭自动跳转）。
 4. **历史**：设置报告根目录（含 `history.json`）后列出归档；点击打开；勾选两次运行可对比（verdict / 时长 / 计数）。
@@ -49,11 +49,11 @@ npm run pack               # 平台安装包（Linux → AppImage 等）
 ```bash
 cd packages/studio-reporter-discover && npm test
 cd desktop
-npm test   # discover + compat + plugin-detect + updater + settings/history + compare + paths + gauge-run + sessions
+npm test   # discover + compat + plugin-detect + updater + outline + settings/history + compare + paths + gauge-run + sessions
 ```
 
 Discover 真源：`packages/studio-reporter-discover`（`@studio-reporter/discover`）。Desktop 经 `file:` 依赖引用。
 
-连接后 Desktop 根据 `ServerHello` 做版本门闸（≥ 0.5.0 + 必需 capabilities）。启动 Gauge 后若约 20s 未见 discover，会结合本机插件安装检测给出安装/启用提示。
+连接后 Desktop 根据 `ServerHello` 做版本门闸（≥ 0.5.0 + 必需 capabilities）。启动 Gauge 后若约 20s 未见 discover，会结合本机插件安装检测给出安装/启用提示。Live `ReportSnapshot` 同时驱动原生大纲侧栏。
 
 代码签名：当前 Release 以 `CSC_IDENTITY_AUTO_DISCOVERY=false` 产出未签名 Linux 包；macOS/Windows 签名需配置仓库 secrets 后再开矩阵构建。

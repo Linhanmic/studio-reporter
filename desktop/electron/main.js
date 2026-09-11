@@ -32,6 +32,7 @@ const {
   GaugeSessionManager,
 } = require('./sessions.js');
 const { createUpdater } = require('./updater.js');
+const { buildReportOutline } = require('./outline.js');
 
 const DESKTOP_VERSION = '0.5.2';
 /** Dev: repo root. Packaged: Electron extraResources (viewer + report-assets + bin). */
@@ -188,11 +189,13 @@ class ReporterBridge {
           }
         }
         if (msg.type === 'ReportSnapshot' && mainWindow && !mainWindow.isDestroyed()) {
+          const payload = msg.payload || {};
           mainWindow.webContents.send('report-snapshot-meta', {
-            running: msg.payload?.running,
-            rev: msg.payload?.rev,
-            projectName: msg.payload?.report?.projectName,
+            running: payload.running,
+            rev: payload.rev,
+            projectName: payload.report?.projectName,
           });
+          mainWindow.webContents.send('report-outline', buildReportOutline(payload));
         }
       });
       ws.addEventListener('close', () => {

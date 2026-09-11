@@ -107,6 +107,7 @@ Gauge (gRPC)
 | 2026-09-11 | 插件版本门闸 | Desktop 对 ServerHello 校验 semver ≥ 0.5.0 与必需 capabilities；状态栏提示 ok/warn/error |
 | 2026-09-11 | 本机插件检测 | 扫描 Gauge plugins 目录；设置页展示安装版本；discover 超时结合安装态提示 |
 | 2026-09-11 | Desktop 自动更新 | electron-updater + GitHub Releases；开发态跳过；打包后可检查/下载；Release workflow 产出 AppImage + latest-linux.yml；代码签名依赖仓库 secrets |
+| 2026-09-11 | Desktop 原生大纲 | 主进程转发精简 ReportSnapshot 大纲；运行页侧栏；viewer 监听 `studio-reporter:select-node` postMessage |
 | 2026-09-11 | 复杂夹具双轨：Gauge 工程文件 + Go 合成器 | CI 不能依赖本机 Gauge/语言插件；`.spec` 作可读真源，`complexsuite.Suite` 作可重复输入 |
 | 2026-09-11 | 交互主体验 = HTML；PDF = 同源打印 | 「可交互 PDF」在业界多为 HTML Viewer + 打印；真正交互保留左导航/Overview/lightbox；PDF 用 Chrome print 保留文字链接图片，避免栅格拼贴 |
 | 2026-09-11 | Overview + 左右分栏 + 截图策略 | 对齐 CANoe Test Report Viewer：首页环境配置、左树跳转；步骤全量截图 + 失败标注 + hook 截图 + dialog 放大 |

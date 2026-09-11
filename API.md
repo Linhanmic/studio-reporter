@@ -373,6 +373,8 @@ Desktop P0 sends `ClientHello` + `RequestSnapshot` on connect. On `ServerHello`,
 
 Stdout discover helpers are shared as `@studio-reporter/discover` (`packages/studio-reporter-discover`) for Desktop and GaugeStudio.
 
+While connected, each `ReportSnapshot` is reduced to a native outline (`desktop/electron/outline.js`) for the Desktop run sidebar. Clicking a node posts `{type:'studio-reporter:select-node', id}` into the live viewer iframe.
+
 ## HTML Report
 
 On `SuiteResult`, the plugin generates a **static HTML report** at `index.html` (fully rendered, no embedded JSON) plus `report.json` for debugging and live viewing:

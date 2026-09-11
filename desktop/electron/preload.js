@@ -58,6 +58,11 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     ipcRenderer.on('report-snapshot-meta', handler);
     return () => ipcRenderer.removeListener('report-snapshot-meta', handler);
   },
+  onReportOutline: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('report-outline', handler);
+    return () => ipcRenderer.removeListener('report-outline', handler);
+  },
   onGaugeLog: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('gauge-log', handler);

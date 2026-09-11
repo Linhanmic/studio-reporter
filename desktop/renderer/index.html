@@ -56,10 +56,21 @@
 
     <main class="panes">
       <div class="pane active" id="pane-run" role="tabpanel">
-        <iframe id="liveFrame" title="Live viewer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-        <div class="empty" id="liveEmpty">
-          <p>连接插件 WebSocket 后，此处嵌入 <code>viewer.html</code> 实时树。</p>
-          <p class="muted">Gauge 运行时 stdout 会打印 <code>studio-reporter websocket: ws://127.0.0.1:&lt;port&gt;</code></p>
+        <div class="run-split">
+          <aside class="outline-pane" id="outlinePane" aria-label="报告大纲">
+            <div class="outline-head">
+              <strong>大纲</strong>
+              <span id="outlineMeta" class="muted">等待快照…</span>
+            </div>
+            <div id="outlineTree" class="outline-tree"></div>
+          </aside>
+          <div class="run-main">
+            <iframe id="liveFrame" title="Live viewer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+            <div class="empty" id="liveEmpty">
+              <p>连接插件 WebSocket 后，此处嵌入 <code>viewer.html</code> 实时树。</p>
+              <p class="muted">Gauge 运行时 stdout 会打印 <code>studio-reporter websocket: ws://127.0.0.1:&lt;port&gt;</code></p>
+            </div>
+          </div>
         </div>
       </div>
       <div class="pane" id="pane-report" role="tabpanel">

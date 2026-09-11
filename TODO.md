@@ -62,6 +62,7 @@
 - [x] Desktop 插件版本门闸（ServerHello ≥ 0.5.0 + 必需 capabilities）
 - [x] Desktop 本机插件安装检测（扫描 `~/.gauge/plugins/studio-reporter`；设置页 + discover 超时提示）
 - [x] Desktop 自动更新骨架（electron-updater → GitHub Releases；设置/菜单；Release workflow 上传 AppImage）
+- [x] Desktop 原生大纲侧栏（live）：`outline.js` 从 ReportSnapshot 抽 spec→scenario；点击 postMessage 选中 viewer 节点
 
 ## 迭代日志
 
@@ -93,7 +94,8 @@
 | 2026-09-11 | 共享 discover + 版本门闸 | `@studio-reporter/discover`；Desktop `compat.js` 校验 ServerHello；CI 跑共享包测试 |
 | 2026-09-11 | 本机插件安装检测 | `plugin-detect.js` 扫描 `GAUGE_HOME`/`~/.gauge`/`%APPDATA%/Gauge`；设置页 + discover 20s 超时引导 |
 | 2026-09-11 | Desktop 自动更新骨架 | `electron-updater` + GitHub publish；设置/菜单检查更新；Release 增加 Desktop AppImage 上传；签名 secrets 仍缺 |
+| 2026-09-11 | Desktop 原生大纲侧栏 | live `ReportSnapshot` → 精简大纲；侧栏高亮 current；点击 postMessage 选中 viewer；终态仍用内嵌导航 |
 
 ## 下一任务（选定）
 
-**代码签名（macOS/Windows secrets）**，或原生报告树，或 GaugeStudio 真正消费 `@studio-reporter/discover`。
+**代码签名（macOS/Windows secrets）**，或终态报告原生大纲深化，或 GaugeStudio 真正消费 `@studio-reporter/discover`。
