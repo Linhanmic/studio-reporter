@@ -15,6 +15,7 @@ const {
   normalizeCompareCardTitle,
 } = require('./compare.js');
 const { filterHistoryRuns } = require('./settings.js');
+const { buildCompareDeepLink } = require('./deeplink.js');
 const {
   listFailScenarioIds,
   nextFailScenarioId,
@@ -81,6 +82,8 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   exportCompareCard: (cmp, opts) => ipcRenderer.invoke('desktop:export-compare-card', cmp, opts),
   copyCompareMarkdown: (cmp, opts) => ipcRenderer.invoke('desktop:copy-compare-markdown', cmp, opts),
   copyCompareJson: (cmp, opts) => ipcRenderer.invoke('desktop:copy-compare-json', cmp, opts),
+  copyCompareDeepLink: (payload) => ipcRenderer.invoke('desktop:copy-compare-deeplink', payload),
+  buildCompareDeepLink,
   openPath: (p) => ipcRenderer.invoke('desktop:open-path', p),
   revealPath: (p) => ipcRenderer.invoke('desktop:reveal-path', p),
   filterHistoryRuns,

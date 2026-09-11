@@ -91,6 +91,7 @@
 - [x] 对比分享卡片纳入场景级 diff（Markdown/HTML/JSON；`formatScenarioCompareMarkdown/Html`）
 - [x] 静态报告打印/PDF 尊重仅失败步骤（`@media print` 重申隐藏；`beforeprint` 展开失败路径；`#fail-steps` / `GAUGE_STUDIO_PDF_FAIL_STEPS`）
 - [x] Desktop 深链直达两侧历史对比（`studio-reporter://compare?base=&target=`；可选 `hub`；`navigate-compare` → `openCompareByIds`）
+- [x] Desktop 对比面板一键复制 compare 深链（`buildCompareDeepLink` +「复制深链」；剪贴板含可选 hub）
 
 ## 迭代日志
 
@@ -171,6 +172,8 @@
 
 | 2026-09-11 | Desktop 深链直达两侧对比 | `studio-reporter://compare?base=&target=`（`a`/`b`、`from`/`to`；可选 `hub`）；主进程 `navigate-compare`；渲染层 `openCompareByIds` 复用 `runCompare` |
 
+| 2026-09-11 | Desktop 对比面板一键复制 compare 深链 | `buildCompareDeepLink` + 面板「复制深链」；IPC 写剪贴板；可选附带当前 `reportHubDir` |
+
 ## 下一任务（选定）
 
-**代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）**，或 Desktop 历史对比深链分享入口（从对比面板一键复制 `studio-reporter://compare` URL），或静态报告失败步骤模式下的场景级折叠精简。
+**静态报告仅失败步骤模式下的场景级折叠精简**（隐藏无失败步骤的通过场景，使打印/阅读更干净），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。

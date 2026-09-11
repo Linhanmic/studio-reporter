@@ -381,7 +381,7 @@ Desktop theme preference (`desktop/electron/theme.js`, setting `theme`: `system`
 
 Desktop keyboard shortcuts (`desktop/electron/shortcuts.js`): Ctrl/Cmd+1–4 switch tabs, Ctrl/Cmd+Enter connects WS, Ctrl/Cmd+Shift+H or F5 refreshes history; tablist supports arrow/Home/End. Shortcuts are ignored while typing in text fields.
 
-Desktop also registers the `studio-reporter://` protocol (`desktop/electron/deeplink.js`): `open?path|dir=…` opens a report folder, `connect?url=ws://…` connects live WS, `hub?dir=…` sets the report hub and switches to History, `compare?base=&target=` (aliases `a`/`b`, `from`/`to`; optional `hub`/`dir`) opens the History compare panel for two runs. A single-instance lock forwards links from a second process.
+Desktop also registers the `studio-reporter://` protocol (`desktop/electron/deeplink.js`): `open?path|dir=…` opens a report folder, `connect?url=ws://…` connects live WS, `hub?dir=…` sets the report hub and switches to History, `compare?base=&target=` (aliases `a`/`b`, `from`/`to`; optional `hub`/`dir`) opens the History compare panel for two runs. The History compare panel can copy a shareable `studio-reporter://compare` URL via `buildCompareDeepLink` / `copyCompareDeepLink`. A single-instance lock forwards links from a second process.
 
 ## HTML Report
 

@@ -107,8 +107,31 @@ function extractDeepLinkFromArgv(argv) {
   return null;
 }
 
+/**
+ * Build a shareable compare deep link for two history run ids.
+ * @param {{ base: string, target: string, hub?: string }} opts
+ * @returns {string}
+ */
+function buildCompareDeepLink(opts = {}) {
+  const base = String(opts.base || '').trim();
+  const target = String(opts.target || '').trim();
+  if (!base || !target) {
+    throw new Error('compare deep link requires base and target');
+  }
+  if (base === target) {
+    throw new Error('compare deep link base and target must differ');
+  }
+  const params = new URLSearchParams();
+  params.set('base', base);
+  params.set('target', target);
+  const hub = String(opts.hub || '').trim();
+  if (hub) params.set('hub', hub);
+  return `${PROTOCOL}://compare?${params.toString()}`;
+}
+
 module.exports = {
   PROTOCOL,
   parseDeepLink,
   extractDeepLinkFromArgv,
+  buildCompareDeepLink,
 };

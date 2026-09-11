@@ -769,6 +769,7 @@ function renderCompare(cmp) {
         <button type="button" class="btn" id="btnExportCompareCard" title="导出可离线打开的 HTML 分享卡片">导出对比卡片</button>
         <button type="button" class="btn" id="btnCopyCompareMd" title="复制 Markdown 摘要到剪贴板">复制 Markdown</button>
         <button type="button" class="btn" id="btnCopyCompareJson" title="复制结构化 JSON 到剪贴板">复制 JSON</button>
+        <button type="button" class="btn" id="btnCopyCompareLink" title="复制 studio-reporter://compare 深链（含当前 hub）">复制深链</button>
       </div>
     </div>
     <div class="compare-share-opts">
@@ -803,6 +804,7 @@ function renderCompare(cmp) {
   $('btnExportCompareCard')?.addEventListener('click', exportCompareCard);
   $('btnCopyCompareMd')?.addEventListener('click', copyCompareMarkdown);
   $('btnCopyCompareJson')?.addEventListener('click', copyCompareJson);
+  $('btnCopyCompareLink')?.addEventListener('click', copyCompareDeepLink);
   $('btnOpenCompareCard')?.addEventListener('click', openLastCompareCard);
   $('btnRevealCompareCard')?.addEventListener('click', revealLastCompareCard);
   $('compareCardTemplate')?.addEventListener('change', persistCompareShareOpts);
@@ -953,6 +955,26 @@ async function copyCompareJson() {
     setStatus(String(err.message || err), 'warn');
   }
 }
+
+
+async function copyCompareDeepLink() {
+  const cmp = state.lastCompare;
+  if (!cmp?.base?.id || !cmp?.target?.id) {
+    setStatus('请先对比两次运行', 'warn');
+    return;
+  }
+  try {
+    const result = await window.desktopAPI.copyCompareDeepLink({
+      base: cmp.base.id,
+      target: cmp.target.id,
+      hub: state.settings?.reportHubDir || '',
+    });
+    setStatus(`已复制深链：${result?.url || 'studio-reporter://compare…'}`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
 
 async function openLastCompareCard() {
   const filePath = state.lastExportedComparePath;

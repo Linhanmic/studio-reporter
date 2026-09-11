@@ -93,4 +93,24 @@ describe('deeplink', () => {
     );
     assert.equal(extractDeepLinkFromArgv(['electron', '.']), null);
   });
+
+  it('buildCompareDeepLink encodes base/target/hub', () => {
+    const { buildCompareDeepLink, parseDeepLink } = require('./deeplink.js');
+    const url = buildCompareDeepLink({
+      base: 'run a',
+      target: 'run/b',
+      hub: '/tmp/hub path',
+    });
+    assert.match(url, /^studio-reporter:\/\/compare\?/);
+    const parsed = parseDeepLink(url);
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.base, 'run a');
+    assert.equal(parsed.target, 'run/b');
+    assert.equal(parsed.hub, '/tmp/hub path');
+
+    const bare = buildCompareDeepLink({ base: 'a', target: 'b' });
+    assert.equal(bare, 'studio-reporter://compare?base=a&target=b');
+    assert.throws(() => buildCompareDeepLink({ base: 'x', target: 'x' }), /differ/);
+    assert.throws(() => buildCompareDeepLink({ base: 'x' }), /requires/);
+  });
 });

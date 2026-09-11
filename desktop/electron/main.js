@@ -36,6 +36,7 @@ const {
   PROTOCOL,
   parseDeepLink,
   extractDeepLinkFromArgv,
+  buildCompareDeepLink,
 } = require('./deeplink.js');
 const {
   buildCompareShareCardHtml,
@@ -691,6 +692,16 @@ function registerIpc() {
     const json = buildCompareShareJson(cmp, opts);
     clipboard.writeText(json);
     return { ok: true, bytes: Buffer.byteLength(json, 'utf8') };
+  });
+
+  ipcMain.handle('desktop:copy-compare-deeplink', async (_evt, payload = {}) => {
+    const url = buildCompareDeepLink({
+      base: payload.base,
+      target: payload.target,
+      hub: payload.hub,
+    });
+    clipboard.writeText(url);
+    return { ok: true, url };
   });
 
   ipcMain.handle('desktop:open-path', async (_evt, absPath) => {
