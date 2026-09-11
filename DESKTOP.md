@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件门闸/本机检测/自动更新骨架/原生大纲（live+终态）/大纲搜索过滤/历史搜索过滤 / 勾选导出 / 原生删除与批量导出 / 打开文件夹与复制路径 / 删除 hub 锁 / 套件结束系统通知 / 自定义协议深链 / 键盘快捷键与 tablist a11y / 明暗主题 / 对比分享卡片（HTML+Markdown）/ 静态报告极轻量交互 / 打开 `.uhilreport` 离线再生 / 会话恢复与最近 hub / 窗口布局记忆 / 大纲分栏宽度记忆已落地；代码签名仍为路线图   
+状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件门闸/本机检测/自动更新骨架/原生大纲（live+终态）/大纲搜索过滤/历史搜索过滤 / 勾选导出 / 原生删除与批量导出 / 打开文件夹与复制路径 / 删除 hub 锁 / 套件结束系统通知 / 自定义协议深链 / 键盘快捷键与 tablist a11y / 明暗主题 / 对比分享卡片（HTML+Markdown）/ 静态报告极轻量交互 / 打开 `.uhilreport` 离线再生 / 会话恢复与最近 hub / 窗口布局记忆 / 大纲分栏宽度记忆 / 安装包冒烟已落地；代码签名仍为路线图   
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -250,7 +250,7 @@ studio-reporter/
 ### P2 — 体验 — **部分完成（0.5.2）**
 
 1. ~~Desktop「运行」按钮封装 gauge（选规格、环境）~~（`gauge-run.js` + 运行栏；discover 自动连接）。
-2. ~~多项目 / 多会话~~（`recentProjects` + `GaugeSessionManager`；会话条切换）；~~会话恢复 / 最近 hub~~（`recentHubs` + `lastTab` + `restoreSession`）；~~窗口布局记忆~~（`window-state.json`）；~~大纲分栏宽度记忆~~（`outlinePaneWidth`）。
+2. ~~多项目 / 多会话~~（`recentProjects` + `GaugeSessionManager`；会话条切换）；~~会话恢复 / 最近 hub~~（`recentHubs` + `lastTab` + `restoreSession`）；~~窗口布局记忆~~（`window-state.json`）；~~大纲分栏宽度记忆~~（`outlinePaneWidth`）；~~安装包冒烟~~（`desktop-pack-smoke`）。
 3. ~~与 GaugeStudio 模块边界清晰化（共享 discover 包）~~（`packages/studio-reporter-discover` → `@studio-reporter/discover`）。
 
 ### P3 — 体验 — **部分完成（0.5.2）**
@@ -295,4 +295,4 @@ studio-reporter/
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
 5. ~~Desktop 历史对比~~。
 6. ~~安装器 / 打包骨架~~（`desktop/` + electron-builder；`npm run pack:dir` / `pack`；bundle root 区分 dev/packaged）。
-7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态 + 搜索过滤）~~；~~历史搜索过滤与勾选导出~~；~~历史原生删除 / 批量导出~~；~~打开所在文件夹 / 复制路径 / 删除 hub 锁~~；~~套件结束系统通知~~；~~自定义协议深链（`studio-reporter://`）~~；~~键盘快捷键 / tablist 无障碍~~；~~明暗主题（system/light/dark）~~；~~对比分享卡片（HTML + Markdown）~~；~~静态报告极轻量交互（hash/复制失败摘要/键盘）~~；~~打开 `.uhilreport` 离线入口~~；~~会话恢复 / 最近 hub~~；~~窗口布局记忆（bounds/最大化）~~；~~大纲分栏宽度记忆~~；下一步：代码签名 secrets，或 GaugeStudio 消费 `@studio-reporter/discover`，或安装包冒烟自动化。
+7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态 + 搜索过滤）~~；~~历史搜索过滤与勾选导出~~；~~历史原生删除 / 批量导出~~；~~打开所在文件夹 / 复制路径 / 删除 hub 锁~~；~~套件结束系统通知~~；~~自定义协议深链（`studio-reporter://`）~~；~~键盘快捷键 / tablist 无障碍~~；~~明暗主题（system/light/dark）~~；~~对比分享卡片（HTML + Markdown）~~；~~静态报告极轻量交互（hash/复制失败摘要/键盘）~~；~~打开 `.uhilreport` 离线入口~~；~~会话恢复 / 最近 hub~~；~~窗口布局记忆（bounds/最大化）~~；~~大纲分栏宽度记忆~~；~~安装包冒烟（pack:dir 布局校验）~~；下一步：代码签名 secrets，或 GaugeStudio 消费 `@studio-reporter/discover`。

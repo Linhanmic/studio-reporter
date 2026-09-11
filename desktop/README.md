@@ -44,12 +44,25 @@ npm run pack               # 平台安装包（Linux → AppImage 等）
 6. **设置**：报告根目录与最近 hub、启动恢复上次标签、自动跳转、倒计时、Gauge 可执行文件路径（持久化到 Electron `userData`）；本机插件检测；可选启动时检查 Desktop 更新；大纲宽度随拖拽写入同一设置文件。
 7. **更新**：帮助菜单 / 设置页「检查更新」（`electron-updater` → GitHub Releases）；开发态跳过。
 
+## 打包冒烟
+
+```bash
+make build
+cd desktop && npm ci
+npm run pack:dir          # electron-builder 解包目录
+npm run pack:verify       # 校验 app + viewer/report-assets/bin
+# 或一键：
+make desktop-pack-smoke
+```
+
+CI 在 PR 上跑独立 job `desktop-pack-smoke`。
+
 ## 测试（无需 Electron 二进制）
 
 ```bash
 cd packages/studio-reporter-discover && npm test
 cd desktop
-npm test   # discover + compat + plugin-detect + updater + outline + settings/history + compare + paths + gauge-run + sessions
+npm test   # discover + compat + plugin-detect + updater + outline + settings/history + compare + paths + gauge-run + sessions + window-state + verify-pack-dir
 ```
 
 Discover 真源：`packages/studio-reporter-discover`（`@studio-reporter/discover`）。Desktop 经 `file:` 依赖引用。

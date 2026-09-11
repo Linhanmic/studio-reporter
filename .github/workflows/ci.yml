@@ -52,3 +52,37 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.13.2
+
+  desktop-pack-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Build CLI
+        run: make build
+      - name: Install Desktop deps
+        run: |
+          cd desktop
+          npm ci
+      - name: Pack unpacked dir
+        run: |
+          cd desktop
+          npm run pack:dir
+      - name: Verify pack layout
+        run: |
+          cd desktop
+          npm run pack:verify
+      - name: Upload unpacked smoke logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-pack-dist
+          path: desktop/dist
+          if-no-files-found: ignore

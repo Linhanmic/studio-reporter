@@ -74,6 +74,7 @@
 - [x] Desktop 会话恢复 / 最近 hub（`recentHubs` + `lastTab` + `restoreSession`；设置/历史页快捷切换）
 - [x] Desktop 窗口布局记忆（位置/尺寸/最大化；离屏校正；`window-state.json`）
 - [x] Desktop 大纲分栏宽度记忆（可拖拽分隔条；`outlinePaneWidth` 持久化）
+- [x] Desktop 安装包冒烟（`pack:dir` + 解包布局校验；CI `desktop-pack-smoke`）
 
 ## 迭代日志
 
@@ -121,7 +122,8 @@
 | 2026-09-11 | Desktop 会话恢复 / 最近 hub | `recentHubs`（选 hub / 保存 / 深链 `hub` 写入）；`lastTab` 切页持久化；`restoreSession` 启动恢复；设置与历史页下拉切换 |
 | 2026-09-11 | Desktop 窗口布局记忆 | `window-state.js`：bounds + 最大化写入 `window-state.json`；多显示器离屏校正；resize/move/close 防抖持久化 |
 | 2026-09-11 | Desktop 大纲分栏宽度记忆 | 可拖拽/键盘调整大纲宽度；`outlinePaneWidth` 写入 settings（180–480px）；与窗口 bounds 解耦 |
+| 2026-09-11 | Desktop 安装包冒烟 | `verify-pack-dir.js` 校验 electron-builder `--dir` 产物（app + extraResources）；`make desktop-pack-smoke`；CI job `desktop-pack-smoke` |
 
 ## 下一任务（选定）
 
-**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或安装包冒烟清单自动化。
+**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或历史对比分栏/导出 UX 深化。

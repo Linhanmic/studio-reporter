@@ -1,4 +1,4 @@
-.PHONY: test vet build lint sync-assets check-assets cover hooks smoke-input smoke-complex demo-complex desktop-test desktop-pack ci all
+.PHONY: test vet build lint sync-assets check-assets cover hooks smoke-input smoke-complex demo-complex desktop-test desktop-pack desktop-pack-smoke ci all
 
 GO ?= go
 GOTOOLCHAIN ?= go1.27.0
@@ -46,6 +46,10 @@ desktop-test:
 # Unpacked dir build (smoke). Requires: make build && cd desktop && npm install
 desktop-pack: build
 	cd desktop && npm run pack:dir
+
+# Full unpacked Desktop smoke: CLI build + electron-builder --dir + layout verify
+desktop-pack-smoke:
+	bash desktop/scripts/pack-smoke.sh
 
 ci: check-assets vet test build
 

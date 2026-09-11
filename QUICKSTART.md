@@ -144,6 +144,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 设置可开启「启动时恢复上次标签页」；报告根目录保留最近 hub 列表，历史页与设置页可一键切换。
 窗口位置、尺寸与最大化状态会自动记住（换显示器时若窗口完全离屏会回正到主屏）。
 运行/报告页左侧大纲宽度可拖拽调整，并会记住上次宽度。
+打包冒烟：`make desktop-pack-smoke`（构建 CLI → `electron-builder --dir` → 校验解包布局）。
 
 共享 discover 辅助包：`packages/studio-reporter-discover`（`@studio-reporter/discover`），供 Desktop / GaugeStudio 复用同一 stdout 契约。
 
