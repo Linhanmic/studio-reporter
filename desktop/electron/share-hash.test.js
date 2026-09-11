@@ -84,4 +84,27 @@ describe('share-hash', () => {
       'http://127.0.0.1:9/index.html#overview?failSteps=1'
     );
   });
+
+  it('round-trips Unicode/spaces in query and focus via URL.hash', () => {
+    const cases = [
+      { focus: 'overview', query: '登录 用例', scenario: 'fail', failSteps: true },
+      { focus: 'overview', query: 'a+b = c', failSteps: true },
+      { focus: 'scn:登录 失败', failSteps: true },
+      { focus: 'overview', query: 'emoji 🧪 test' },
+    ];
+    for (const c of cases) {
+      const h = formatShareHash(c);
+      if (c.focus && c.focus !== 'overview' && /[\s\u0080-\uffff]/.test(c.focus)) {
+        assert.ok(h.includes('%'), `focus should be encoded: ${h}`);
+        assert.ok(!h.startsWith(c.focus + '?') && h !== c.focus, `raw focus leaked: ${h}`);
+      }
+      const url = appendShareHash('http://127.0.0.1:9/index.html', h);
+      const parsed = parseShareHash(new URL(url).hash);
+      assert.equal(parsed.focus, c.focus || 'overview');
+      assert.equal(parsed.query, c.query || '');
+      assert.equal(!!parsed.failSteps, !!c.failSteps);
+      if (c.scenario) assert.equal(parsed.scenario, c.scenario);
+    }
+  });
+
 });

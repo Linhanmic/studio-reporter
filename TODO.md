@@ -144,6 +144,7 @@
 - [x] manage/serve 失败摘要旁路与深链联调抽检（`TestManageServeFailDigestDeepLinkSmoke`；`make smoke-manage-digest`；POST 旁路 + sidecar 深链 + manage 契约 + Chrome `#overview?failSteps=1`）
 - [x] 将 `smoke-manage-digest` / `smoke-failsteps-hash` 纳入 PR CI（`report-browser-smoke` job；安装 Chrome；`CI=true` 时缺 Chrome 失败而非跳过）
 - [x] digest 深链对含特殊字符 hub 路径的编码/打开抽检（Go/report-assets/Desktop 往返；空格/`#`/`?&=`/中文/Windows 路径）
+- [x] 静态报告分享 hash 对 Unicode/空格查询串的编码往返抽检（Go/static/Desktop；focus 百分号编码 + URL.hash 往返；锁定 `encodeShareFocus`）
 
 ## 迭代日志
 
@@ -307,6 +308,8 @@
 
 | 2026-09-11 | digest 深链特殊 hub 路径编码抽检 | Go `url.Values` / JS `URLSearchParams` / Desktop `parseDeepLink` 对空格、`#`、`?&=`、中文、Windows 路径往返一致；补齐三端单测 |
 
+| 2026-09-11 | 分享 hash Unicode/空格往返抽检 | 锁定 focus/query 百分号编码与 URL.hash 往返（中文/空格/emoji/`+`）；Go + Desktop 单测；与 static_report.js `encodeShareFocus` 对齐 |
+
 ## 下一任务（选定）
 
-**静态报告分享 hash 对 Unicode/空格查询串的编码往返抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告 focus 含 `/` 的 PathEscape 与 DOM id 对齐抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

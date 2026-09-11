@@ -1,6 +1,9 @@
 package report
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseFormatShareHash(t *testing.T) {
 	cases := []struct {
@@ -42,5 +45,52 @@ func TestParseFormatShareHash(t *testing.T) {
 	legacy := FormatShareHash(ParseShareHash("fail-steps"))
 	if legacy != "overview?failSteps=1" {
 		t.Fatalf("legacy format %q", legacy)
+	}
+}
+
+func TestShareHashUnicodeAndSpacesRoundTrip(t *testing.T) {
+	cases := []ShareHash{
+		{Focus: "overview", Query: "登录 用例", Scenario: "fail", FailSteps: true},
+		{Focus: "overview", Query: "a+b = c", FailSteps: true},
+		{Focus: "scn:登录 失败", FailSteps: true},
+		{Focus: "overview", Query: "emoji 🧪 test"},
+		{Focus: "scn:tab\there", Query: "x y", FailSteps: true},
+	}
+	for _, want := range cases {
+		formatted := FormatShareHash(want)
+		if want.Focus != "overview" && want.Focus != "" {
+			// Focus with spaces / non-ASCII must be percent-encoded in the fragment.
+			if formatted == want.Focus || formatted == want.Focus+"?failSteps=1" {
+				t.Fatalf("focus not encoded: %q from %+v", formatted, want)
+			}
+			if !strings.Contains(formatted, "%") && strings.ContainsAny(want.Focus, " \t测试失败") {
+				t.Fatalf("expected percent-encoding in %q for focus %q", formatted, want.Focus)
+			}
+		}
+		if strings.ContainsAny(want.Query, " +=") && strings.Contains(formatted, "q=") {
+			if strings.Contains(formatted, "q="+want.Query) {
+				t.Fatalf("query not encoded: %q", formatted)
+			}
+		}
+		got := ParseShareHash(formatted)
+		if got.Focus != want.Focus {
+			t.Fatalf("focus: got %q want %q (fmt=%q)", got.Focus, want.Focus, formatted)
+		}
+		if got.Query != want.Query {
+			t.Fatalf("query: got %q want %q (fmt=%q)", got.Query, want.Query, formatted)
+		}
+		if got.FailSteps != want.FailSteps {
+			t.Fatalf("failSteps: got %v want %v (fmt=%q)", got.FailSteps, want.FailSteps, formatted)
+		}
+		if got.Scenario != normalizeShareVerdict(want.Scenario) {
+			t.Fatalf("scenario: got %q want %q", got.Scenario, want.Scenario)
+		}
+	}
+
+	// Encoded focus left by URL.hash must still parse back to the DOM id.
+	encodedFocus := encodeShareFocus("scn:登录 失败")
+	got := ParseShareHash(encodedFocus + "?failSteps=1")
+	if got.Focus != "scn:登录 失败" || !got.FailSteps {
+		t.Fatalf("encoded focus parse %+v", got)
 	}
 }

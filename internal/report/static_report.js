@@ -565,6 +565,24 @@
   var currentFocusId = 'overview';
   // applyingHash starts true (see top of IIFE) until first applyHashFromLocation.
 
+  function encodeShareFocus(focus) {
+    try {
+      return encodeURIComponent(String(focus || '')).replace(/%3A/gi, ':');
+    } catch (e) {
+      return String(focus || '');
+    }
+  }
+
+  function decodeShareFocus(focus) {
+    var raw = String(focus || '');
+    if (!raw) return raw;
+    try {
+      return decodeURIComponent(raw);
+    } catch (e) {
+      return raw;
+    }
+  }
+
   function parseShareHash(raw) {
     var input = String(raw || '').replace(/^#/, '');
     var focus = '';
@@ -587,7 +605,7 @@
         qs = head.slice('fail-steps&'.length) + (qs ? '&' + qs : '');
       }
     } else {
-      focus = head || 'overview';
+      focus = decodeShareFocus(head) || 'overview';
     }
     if (qs) {
       try {
@@ -611,6 +629,7 @@
     parts = parts || {};
     var focus = parts.focus || currentFocusId || 'overview';
     if (!focus || focus === 'overview') focus = 'overview';
+    focus = encodeShareFocus(focus);
     var params = new URLSearchParams();
     var q = parts.query != null ? String(parts.query) : String(state.query || '');
     q = q.trim();

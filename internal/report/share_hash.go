@@ -50,6 +50,26 @@ func failStepsQueryValue(params url.Values) string {
 	return ""
 }
 
+// encodeShareFocus percent-encodes focus for safe URL fragments while keeping ':'
+// (e.g. scn:/spec: prefixes) readable. Spaces and non-ASCII must be encoded so
+// URL.hash round-trips do not leave a percent-encoded focus that no longer matches DOM ids.
+func encodeShareFocus(focus string) string {
+	enc := url.PathEscape(focus)
+	enc = strings.ReplaceAll(enc, "%3A", ":")
+	enc = strings.ReplaceAll(enc, "%3a", ":")
+	return enc
+}
+
+func decodeShareFocus(focus string) string {
+	if focus == "" {
+		return focus
+	}
+	if dec, err := url.PathUnescape(focus); err == nil {
+		return dec
+	}
+	return focus
+}
+
 // ParseShareHash parses a location.hash (with or without leading #).
 func ParseShareHash(raw string) ShareHash {
 	out := ShareHash{Focus: "overview", Spec: "all", Scenario: "all"}
@@ -73,6 +93,7 @@ func ParseShareHash(raw string) ShareHash {
 			}
 		}
 	}
+	focus = decodeShareFocus(focus)
 	if focus == "" {
 		focus = "overview"
 	}
@@ -113,6 +134,7 @@ func FormatShareHash(h ShareHash) string {
 	if focus == "" || focus == "overview" {
 		focus = "overview"
 	}
+	focus = encodeShareFocus(focus)
 	params := url.Values{}
 	q := strings.TrimSpace(h.Query)
 	if q != "" {

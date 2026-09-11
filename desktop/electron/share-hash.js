@@ -10,6 +10,22 @@ function normalizeVerdict(v) {
   return s === 'pass' || s === 'fail' || s === 'skip' ? s : 'all';
 }
 
+/** Encode focus for URL fragments; keep ':' (scn:/spec: prefixes). */
+function encodeShareFocus(focus) {
+  return encodeURIComponent(String(focus || ''))
+    .replace(/%3A/gi, ':');
+}
+
+function decodeShareFocus(focus) {
+  const raw = String(focus || '');
+  if (!raw) return raw;
+  try {
+    return decodeURIComponent(raw);
+  } catch (_) {
+    return raw;
+  }
+}
+
 function parseShareHash(raw) {
   const out = { focus: 'overview', query: '', spec: 'all', scenario: 'all', failSteps: false };
   let input = String(raw || '').trim().replace(/^#/, '');
@@ -31,7 +47,7 @@ function parseShareHash(raw) {
       qs = qs ? `${extra}&${qs}` : extra;
     }
   }
-  out.focus = focus || 'overview';
+  out.focus = decodeShareFocus(focus) || 'overview';
   out.failSteps = failSteps;
   if (qs) {
     const params = new URLSearchParams(qs);
@@ -60,6 +76,7 @@ function parseShareHash(raw) {
 function formatShareHash(h = {}) {
   let focus = String(h.focus || 'overview').trim() || 'overview';
   if (focus === 'overview') focus = 'overview';
+  focus = encodeShareFocus(focus);
   const params = new URLSearchParams();
   const q = String(h.query || '').trim();
   if (q) params.set('q', q);
@@ -132,6 +149,8 @@ function resolveReportOpenHash(opts = {}) {
 module.exports = {
   parseShareHash,
   formatShareHash,
+  encodeShareFocus,
+  decodeShareFocus,
   reportOpenHashFromOutline,
   reportFocusHash,
   resolveReportOpenHash,
