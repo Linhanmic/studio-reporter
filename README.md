@@ -20,7 +20,7 @@ Studio Reporter ships today as a [Gauge](https://gauge.org/) reporter plugin (WS
 - Optional **structured PDF** export via headless Chrome (`--pdf` / `GAUGE_STUDIO_WRITE_PDF`) — text + links + images, not a screenshot collage
 - Optional **single-file HTML** (`--single` / `GAUGE_STUDIO_WRITE_SINGLE` → `report.single.html`) with screenshots inlined as data URIs; directory `index.html` remains the default source of truth
 - Versioned report file format (see [REPORT_FORMAT.md](REPORT_FORMAT.md))
-- Standalone report management console (`manage.html`): list, open, and delete archived runs
+- Standalone report management console (`manage.html`): list, open, compare, fail digest, and open hub `fail-digest.md`/`json` sidecars when present
 - Cross-platform (Windows, Linux, macOS)
 - Configurable message size limits
 
@@ -175,7 +175,7 @@ Set `GAUGE_STUDIO_OPEN_BROWSER=true` if you want the old auto-open behavior.
 
 The on-disk format (`report.json`, `<project>-<timestamp>.uhilreport`, `history.json`, `archives/`) is versioned and documented in [REPORT_FORMAT.md](REPORT_FORMAT.md).
 
-Every completed run is archived under `reports/studio-report/archives/<id>/` (including a static `index.html`). The management console `reports/studio-report/manage.html` lists archived runs and opens them directly. Deleting archives from the console requires serving the hub:
+Every completed run is archived under `reports/studio-report/archives/<id>/` (including a static `index.html`). The management console `reports/studio-report/manage.html` lists archived runs and opens them directly. When the hub has `fail-digest.md` / `fail-digest.json` (from suite finalize, Desktop export, or `digest --write`), the console probes and links those sidecars. Deleting archives from the console requires serving the hub:
 
 ```bash
 ./bin/studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765

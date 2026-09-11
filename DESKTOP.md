@@ -326,7 +326,7 @@ Desktop 通过 `electron-updater` 读取 GitHub Releases 上的 `latest-linux.ym
 
 静态报告 Overview「失败原因聚合」支持点击次数/原因跳到该类首个可见失败场景（过滤与仅失败步骤感知）。
 
-浏览器侧 `manage.html` 使用同源 `report-assets/history-digest.js`：可展开失败摘要面板、复制 Markdown/深链，并在历史表展示 `topFailReason`（无绝对 hub 时深链仅带 `run` + `failSteps`）。 Desktop 打开无 hub 的 `open?run=&failSteps=1` 时使用当前报告根（或最近 hub），并以 `#overview?failSteps=1` 进入仅失败步骤视图。
+浏览器侧 `manage.html` 使用同源 `report-assets/history-digest.js`：可展开失败摘要面板、复制 Markdown/深链，并在历史表展示 `topFailReason`（无绝对 hub 时深链仅带 `run` + `failSteps`）。管理页还会探测 hub 旁路 `fail-digest.md` / `fail-digest.json`（工具栏「旁路 MD/JSON」与摘要面板链接；缺失时提示；刷新时重探测）。Desktop 打开无 hub 的 `open?run=&failSteps=1` 时使用当前报告根（或最近 hub），并以 `#overview?failSteps=1` 进入仅失败步骤视图。
 
 ### 历史趋势与过滤偏好
 

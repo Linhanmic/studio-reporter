@@ -14,6 +14,9 @@ func TestManageEmbedsHistoryFailDigest(t *testing.T) {
 		`copyFailDigest`,
 		`copyFailDigestLinks`,
 		`showDigest`,
+		`fail-digest.md`,
+		`fail-digest.json`,
+		`probeFailDigestSidecars`,
 		`topFailReason`,
 	} {
 		if !strings.Contains(html, want) {

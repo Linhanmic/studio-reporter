@@ -93,11 +93,22 @@
         <el-button size="small" :disabled="!runs.length" @click="toggleDigest" :type="showDigest ? 'primary' : 'default'">{{ showDigest ? '隐藏失败摘要' : '失败摘要' }}</el-button>
         <el-button size="small" :disabled="!failDigest.groups.length" @click="copyFailDigest">复制失败摘要</el-button>
         <el-button size="small" :disabled="!failDigest.groups.length" @click="copyFailDigestLinks">复制摘要深链</el-button>
+        <el-button size="small" :disabled="!sidecar.md" tag="a" :href="sidecar.md ? 'fail-digest.md' : undefined" target="_blank" @click="onSidecarClick($event, 'md')">旁路 MD</el-button>
+        <el-button size="small" :disabled="!sidecar.json" tag="a" :href="sidecar.json ? 'fail-digest.json' : undefined" target="_blank" @click="onSidecarClick($event, 'json')">旁路 JSON</el-button>
+        <span v-if="sidecar.checked && !sidecar.md && !sidecar.json" class="hint">尚无 fail-digest 旁路（跑完套件或 digest --write 后生成）</span>
+        <span v-else-if="sidecar.md || sidecar.json" class="hint">旁路：{{ sidecar.md ? 'md' : '' }}{{ sidecar.md && sidecar.json ? '+' : '' }}{{ sidecar.json ? 'json' : '' }}</span>
         <span v-if="!canDelete" class="hint">删除操作需要通过 studio-reporter --serve 打开本页</span>
         <span v-else-if="selected.length < 2" class="hint">再选 {{ 2 - selected.length }} 次运行以对比</span>
       </div>
       <section v-if="showDigest" class="digest-pane">
         <h2>历史失败摘要（{{ failDigest.failRunCount }} 次失败 / {{ failDigest.groups.length }} 类原因）</h2>
+        <p v-if="sidecar.md || sidecar.json" class="muted">
+          磁盘旁路：
+          <a v-if="sidecar.md" href="fail-digest.md" target="_blank" rel="noopener">fail-digest.md</a>
+          <template v-if="sidecar.md && sidecar.json"> · </template>
+          <a v-if="sidecar.json" href="fail-digest.json" target="_blank" rel="noopener">fail-digest.json</a>
+          （与上方实时聚合同源契约；CI 可直接收集）
+        </p>
         <p v-if="!failDigest.groups.length" class="muted">{{ failDigest.failRunCount ? '失败运行未写入 topFailReason。' : '窗口内无失败运行。' }}</p>
         <table v-else>
           <thead>
@@ -246,6 +257,7 @@
             selected: [],
             formatVersion: '-',
             showDigest: false,
+            sidecar: { checked: false, md: false, json: false },
             canDelete: window.location.protocol === 'http:' || window.location.protocol === 'https:'
           };
         },
@@ -268,6 +280,35 @@
           }
         },
         methods: {
+          probeFailDigestSidecars: async function () {
+            var self = this;
+            async function exists(name) {
+              try {
+                var res = await fetch(name + '?ts=' + Date.now(), { method: 'GET', cache: 'no-store' });
+                if (!res.ok) return false;
+                var ct = String(res.headers.get('content-type') || '');
+                // Static servers / file:// may serve HTML fallback for missing files.
+                if (ct.indexOf('text/html') !== -1) return false;
+                if (name.indexOf('.json') !== -1) {
+                  var body = await res.clone().text();
+                  try { JSON.parse(body); } catch (e) { return false; }
+                }
+                return true;
+              } catch (e) {
+                return false;
+              }
+            }
+            var md = await exists('fail-digest.md');
+            var json = await exists('fail-digest.json');
+            self.sidecar = { checked: true, md: md, json: json };
+          },
+          onSidecarClick: function (ev, kind) {
+            var ok = kind === 'json' ? this.sidecar.json : this.sidecar.md;
+            if (!ok) {
+              ev.preventDefault();
+              ElementPlus.ElMessage.warning('旁路文件尚不存在');
+            }
+          },
           openLinkFor: function (runId) {
             var api = window.StudioReporterHistoryDigest;
             if (!api || !runId) return '';
@@ -275,6 +316,7 @@
           },
           toggleDigest: function () {
             this.showDigest = !this.showDigest;
+            if (this.showDigest) this.probeFailDigestSidecars();
           },
           copyText: async function (text, okMsg) {
             try {
@@ -370,6 +412,7 @@
             this.runs = (data && data.runs) || [];
             this.formatVersion = (data && data.formatVersion) || '-';
             this.selected = [];
+            await this.probeFailDigestSidecars();
           },
           removeRun: async function (row) {
             try {
