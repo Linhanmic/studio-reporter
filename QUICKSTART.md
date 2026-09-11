@@ -79,6 +79,7 @@ cd studio-reporter
 # 测试 / 编译（推荐显式 toolchain）
 make ci
 make cover   # 覆盖率摘要（CI 同脚本）
+make smoke-input  # --input 再生 + 截图相对路径
 make hooks   # 可选：启用 .githooks（前端提交前 check-assets）
 GOTOOLCHAIN=go1.27.0 go build -o bin/studio-reporter .
 

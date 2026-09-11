@@ -24,7 +24,7 @@
 - [x] 工具栏「全部展开 / 全部折叠」
 - [x] 静态报告搜索（规格书 / 场景名）
 - [x] 失败默认展开路径
-- [ ] 打印样式：过滤隐藏块打印时的表现再验收
+- [x] 打印样式：过滤隐藏块打印时「所见即所打」（不再强制展开被过滤块）
 
 ## P2 — 实时 viewer
 
@@ -36,7 +36,7 @@
 
 - [x] Makefile / `make test|vet|build|ci|lint|sync-assets|cover|hooks`
 - [x] CI 输出 cover profile 摘要（`scripts/cover-summary.sh` + artifact）
-- [ ] `--input` 再生路径端到端 smoke（含截图相对路径）
+- [x] `--input` 再生路径端到端 smoke（含截图相对路径；`make smoke-input`）
 - [x] pre-commit / make 钩子：提交前强制 `check-assets`（`.githooks` + `make hooks`）
 
 ## P4 — 产品演进（可改架构）
@@ -57,7 +57,8 @@
 | 2026-09-11 | CI cover profile 摘要 | 对照常见 Go Actions：coverprofile + `go tool cover -func` 日志摘要 + artifact；暂不强阈值 / 不打扰 PR 评论权限 |
 | 2026-09-11 | `.githooks/pre-commit` + `make hooks` | 对照 Makefile-first / core.hooksPath 实践；仅在前端 SSoT 路径变更时跑 `check-assets`；CI 仍是最终闸门 |
 | 2026-09-11 | 与 GaugeStudio 同步：插件监听 + Studio discover 客户端 | Studio 0.1.1 默认解析 stdout 连接本插件；`GAUGE_STUDIO_WS` 仅作可选 outbound / Studio 兼容注入 |
+| 2026-09-11 | 打印 CSS + `--input` smoke | 打印尊重 `filter-hidden`（所见即所打）；再生路径断言 `images/` 相对路径与 CLI `--input` |
 
 ## 下一任务（选定）
 
-**打印样式验收**（P1），或 **`--input` e2e smoke**（P3）；并与 [GaugeStudio](https://github.com/Linhanmic/GaugeStudio) 联调 discover 路径。
+**viewer / 静态报告视觉一致性抽样**（P2），或 **历史对比**（P4），或提升覆盖率（reporter.go 等 0% 热点）。

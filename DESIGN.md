@@ -79,6 +79,7 @@ Gauge (gRPC)
 | 2026-09-11 | CI 输出 cover profile 摘要，不强阈值、不写 PR 评论 | 对照 Go Actions 常见做法先可见再治理；阈值与 sticky comment 待覆盖率基线稳定后再加 |
 | 2026-09-11 | 仓库内 `.githooks` + `make hooks`（`core.hooksPath`） | 前端变更时本地强制 `check-assets`；不引入 pre-commit.com 框架依赖；CI 仍校验漂移 |
 | 2026-09-11 | GaugeStudio 改为主动连接本插件监听口 | 单一发现契约：stdout `studio-reporter websocket:`；`GAUGE_STUDIO_WS` 降级为可选 outbound / Studio 兼容模式 |
+| 2026-09-11 | 静态报告打印尊重过滤器；`--input` 再生含截图 smoke | 打印「所见即所打」优于强制打出全部；uhilreport 再生仍依赖源截图路径可读（当前契约） |
 
 ## 前端资源布局（SSoT）
 

@@ -165,12 +165,15 @@ The plugin also writes the portable report file `<project>-<timestamp>.uhilrepor
 ```bash
 make ci      # check-assets + vet + test + build
 make cover   # go test -coverprofile + function/package summary
+make smoke-input  # --input regeneration + screenshot relative paths
 make lint    # golangci-lint v2 (install matching CI pin locally)
 make sync-assets
 make hooks   # once per clone: core.hooksPath=.githooks (pre-commit check-assets)
 ```
 
 CI runs `./scripts/cover-summary.sh` and uploads `cover.out` as an artifact (no hard threshold yet).
+
+Static `index.html` print CSS respects the current filter/search (`filter-hidden` stays hidden — print what you see).
 ### Project Structure
 
 ```
