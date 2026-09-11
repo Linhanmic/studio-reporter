@@ -152,12 +152,14 @@
       if (!btn) return;
       if (btn.dataset.action === 'expand-all') setDetailsOpen(true);
       if (btn.dataset.action === 'collapse-all') setDetailsOpen(false);
+      if (btn.dataset.action === 'copy-fail-summary') copyFailSummary();
     });
   });
 
   var overview = document.getElementById('overview');
   var results = document.getElementById('results');
-  function showOverview(show) {
+  function showOverview(show, opts) {
+    opts = opts || {};
     if (!overview || !results) return;
     overview.classList.toggle('is-hidden', !show);
     if (show) {
@@ -166,17 +168,184 @@
     document.querySelectorAll('.nav-item').forEach(function (el) {
       el.classList.toggle('is-active', show ? el.dataset.navTarget === 'overview' : false);
     });
+    if (opts.updateHash !== false) writeHash(show ? 'overview' : (opts.hashId || ''));
   }
   function activateNav(id) {
     document.querySelectorAll('.nav-item').forEach(function (el) {
       el.classList.toggle('is-active', el.dataset.navTarget === id);
     });
   }
+
+  function flashStatus(msg) {
+    var el = document.querySelector('.status-msg');
+    if (!el) return;
+    el.textContent = msg || '';
+    if (flashStatus._t) clearTimeout(flashStatus._t);
+    if (msg) {
+      flashStatus._t = setTimeout(function () { el.textContent = ''; }, 2400);
+    }
+  }
+
+  function writeHash(id) {
+    try {
+      var next = (!id || id === 'overview') ? '#overview' : ('#' + id);
+      if (location.hash === next) return;
+      if (history.replaceState) history.replaceState(null, '', next);
+      else location.hash = next;
+    } catch (e) {}
+  }
+
+  function openAncestors(target) {
+    var parent = target.parentElement;
+    while (parent) {
+      if (parent.tagName === 'DETAILS') parent.open = true;
+      parent = parent.parentElement;
+    }
+  }
+
+  function selectNode(id, opts) {
+    opts = opts || {};
+    if (!id || id === 'overview') {
+      showOverview(true, opts);
+      return true;
+    }
+    var target = document.getElementById(id);
+    if (!target) return false;
+    showOverview(false, { updateHash: false });
+    activateNav(id);
+    if (target.tagName === 'DETAILS') target.open = true;
+    openAncestors(target);
+    target.scrollIntoView({ block: 'start' });
+    if (opts.updateHash !== false) writeHash(id);
+    return true;
+  }
+
+  function applyHashFromLocation() {
+    var raw = '';
+    try { raw = (location.hash || '').replace(/^#/, ''); } catch (e) {}
+    if (!raw || raw === 'overview') {
+      showOverview(true, { updateHash: false });
+      return;
+    }
+    if (!selectNode(raw, { updateHash: false })) {
+      showOverview(true, { updateHash: false });
+    }
+  }
+
+  function visibleFailScenarios() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll('.result-pane .report-block[data-kind="scenario"][data-verdict="fail"]')
+    ).filter(function (el) { return !el.classList.contains('filter-hidden'); });
+  }
+
+  function blockLabel(el) {
+    var cell = el.querySelector(':scope > summary .name-cell, :scope > .leaf-summary .name-cell');
+    return cell ? (cell.textContent || '').trim() : (el.id || '');
+  }
+
+  function collectFailSummary() {
+    var fails = visibleFailScenarios();
+    if (!fails.length) return '';
+    var lines = ['# Studio Reporter — 失败摘要', ''];
+    fails.forEach(function (scn, idx) {
+      lines.push((idx + 1) + '. ' + blockLabel(scn) + (scn.id ? ' (`' + scn.id + '`)' : ''));
+      var bits = [];
+      scn.querySelectorAll('.err, .stack, .hook-alert').forEach(function (node) {
+        var text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+        if (text) bits.push(text);
+      });
+      if (bits.length) lines.push('   - ' + bits.slice(0, 4).join(' | '));
+    });
+    lines.push('');
+    lines.push('_由静态报告轻交互复制 · 非完整报告真源_');
+    return lines.join('\n');
+  }
+
+  function copyText(text) {
+    if (!text) return Promise.reject(new Error('empty'));
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        if (!document.execCommand('copy')) throw new Error('copy failed');
+        resolve();
+      } catch (err) {
+        reject(err);
+      } finally {
+        document.body.removeChild(ta);
+      }
+    });
+  }
+
+  function copyFailSummary() {
+    var text = collectFailSummary();
+    if (!text) {
+      // If fails are filtered out, briefly switch scenario filter to fail.
+      var prev = state.scenario;
+      if (prev !== 'fail') {
+        state.scenario = 'fail';
+        applyFilter();
+        text = collectFailSummary();
+        state.scenario = prev;
+        applyFilter();
+      }
+    }
+    if (!text) {
+      flashStatus('当前没有失败场景可复制');
+      return;
+    }
+    copyText(text).then(function () {
+      flashStatus('已复制失败摘要');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
+  function closeLightbox() {
+    var dlg = document.getElementById('shot-lightbox');
+    if (dlg && typeof dlg.close === 'function' && dlg.open) dlg.close();
+  }
+
+  function isTypingTarget(el) {
+    if (!el) return false;
+    var tag = (el.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || !!el.isContentEditable;
+  }
+
+  function jumpFail(delta) {
+    var fails = visibleFailScenarios();
+    if (!fails.length) {
+      flashStatus('没有可见的失败场景（可先过滤「失败」）');
+      return;
+    }
+    var activeId = '';
+    document.querySelectorAll('.nav-item.is-active').forEach(function (el) {
+      activeId = el.dataset.navTarget || activeId;
+    });
+    var current = -1;
+    if (activeId) {
+      for (var i = 0; i < fails.length; i++) {
+        if (fails[i].id === activeId) { current = i; break; }
+      }
+    }
+    var next = current < 0 ? (delta > 0 ? 0 : fails.length - 1)
+      : (current + delta + fails.length) % fails.length;
+    selectNode(fails[next].id);
+  }
+
   document.addEventListener('click', function (ev) {
     var actionBtn = ev.target.closest('[data-action]');
     if (actionBtn) {
       if (actionBtn.dataset.action === 'show-overview') {
-        showOverview(true);
+        selectNode('overview');
         return;
       }
       if (actionBtn.dataset.action === 'export-pdf') {
@@ -185,21 +354,15 @@
         window.print();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-fail-summary') {
+        copyFailSummary();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
-      var targetId = nav.dataset.navTarget;
-      if (targetId === 'overview') {
-        showOverview(true);
-        return;
-      }
-      showOverview(false);
-      activateNav(targetId);
-      var target = document.getElementById(targetId);
-      if (target) {
-        if (target.tagName === 'DETAILS') target.open = true;
-        target.scrollIntoView({ block: 'start' });
-      }
+      selectNode(nav.dataset.navTarget);
+      return;
     }
     var thumb = ev.target.closest('[data-shot-src]');
     if (thumb) {
@@ -214,8 +377,38 @@
     }
   });
 
-  // Default: show overview first (CANoe-style home), keep results below.
-  showOverview(true);
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') {
+      closeLightbox();
+      return;
+    }
+    if (isTypingTarget(ev.target)) return;
+    if (ev.key === '/' && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      if (searchInput) {
+        ev.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+      return;
+    }
+    if (ev.key === 'j' || ev.key === 'J') {
+      ev.preventDefault();
+      jumpFail(1);
+      return;
+    }
+    if (ev.key === 'k' || ev.key === 'K') {
+      ev.preventDefault();
+      jumpFail(-1);
+    }
+  });
+
+  window.addEventListener('hashchange', function () {
+    applyHashFromLocation();
+  });
+
+  // Default: overview first; URL hash can override for deep links.
+  showOverview(true, { updateHash: false });
+  applyHashFromLocation();
 
   window.addEventListener('message', function (ev) {
     var data = ev && ev.data;
@@ -236,24 +429,6 @@
       return;
     }
     if (data.type !== 'studio-reporter:select-node') return;
-    var id = data.id ? String(data.id) : '';
-    if (!id) return;
-    if (id === 'overview') {
-      showOverview(true);
-      return;
-    }
-    showOverview(false);
-    activateNav(id);
-    var target = document.getElementById(id);
-    if (target) {
-      if (target.tagName === 'DETAILS') target.open = true;
-      // Open ancestor details so nested scenarios are visible.
-      var parent = target.parentElement;
-      while (parent) {
-        if (parent.tagName === 'DETAILS') parent.open = true;
-        parent = parent.parentElement;
-      }
-      target.scrollIntoView({ block: 'start' });
-    }
+    selectNode(data.id ? String(data.id) : '');
   });
 })();

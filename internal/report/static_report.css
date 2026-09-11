@@ -65,6 +65,9 @@ html, body {
 .stat-card .sub { font-size: 11px; color: #d6eaf8; }
 .toolbar {
   flex: 0 0 auto;
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -72,6 +75,13 @@ html, body {
   padding: 4px 8px;
   background: #eef3f8;
   border-bottom: 1px solid #c5d0dc;
+  box-shadow: 0 1px 0 rgba(15, 40, 60, 0.06);
+}
+.status-msg {
+  margin-left: 8px;
+  color: #1f4668;
+  font-size: 11px;
+  font-weight: 600;
 }
 .filter-group {
   display: flex;

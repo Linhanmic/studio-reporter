@@ -43,7 +43,7 @@
 
 ## P4 — 产品演进（可改架构）
 
-- [ ] 评估静态报告是否引入极轻量客户端交互（不过度 SPA 化）
+- [x] 评估静态报告是否引入极轻量客户端交互（不过度 SPA 化）— 已落地：URL hash 深链、复制失败摘要、粘性工具栏、`/`/`j`/`k`/`Esc` 键盘
 - [x] 历史对比（两次归档的 verdict / 时长 / 计数 diff；`manage.html` 勾选 + `CompareHistoryRuns`）
 - [x] 复杂 Gauge 测试夹具（`testdata/complex-gauge` + `internal/complexsuite`；`make demo-complex` / `smoke-complex`）
 - [x] 多 suite / 并行执行下的 hub 写入竞态审计（`WithHubLock` + 原子 uhilreport + 排他 archive mkdir）
@@ -110,8 +110,9 @@
 | 2026-09-11 | Desktop 自定义协议深链 | `deeplink.js`：`open`/`connect`/`hub`；单实例 + protocol client；builder schemes |
 | 2026-09-11 | Desktop 键盘快捷键 | 菜单加速键 + 渲染进程监听；tablist 方向键；输入框内忽略 |
 | 2026-09-11 | Desktop 明暗主题 | `theme.js` resolve system/light/dark；CSS tokens；设置下拉即时预览 |
+| 2026-09-11 | 静态报告极轻量交互 | hash 深链 `#scn:`/`#spec:`/`#overview`；工具栏「复制失败摘要」；sticky toolbar；`/`/`j`/`k`/`Esc`；决策：轻交互不 SPA |
 | 2026-09-11 | Desktop 对比分享卡片 | `compare.js` 生成离线 HTML 卡片 + Markdown；历史对比面板「导出对比卡片 / 复制 Markdown」；Save Dialog 落盘 |
 
 ## 下一任务（选定）
 
-**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或静态报告极轻量交互评估。
+**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`。

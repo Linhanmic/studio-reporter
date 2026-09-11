@@ -15,6 +15,8 @@ func writeFilterToolbar(b *bytes.Buffer, specs, scenarios Counts) {
 	b.WriteString("<div class=\"toolbar-actions\">")
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"expand-all\">全部展开</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"collapse-all\">全部折叠</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"copy-fail-summary\" title=\"复制当前可见失败场景的摘要到剪贴板\">复制失败摘要</button>")
+	b.WriteString("<span class=\"status-msg\" role=\"status\" aria-live=\"polite\"></span>")
 	b.WriteString("</div></div>\n")
 }
 
