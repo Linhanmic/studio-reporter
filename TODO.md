@@ -141,6 +141,8 @@
 - [x] 静态报告 failSteps 解析大小写/别名与 Go/Desktop 对齐（`TRUE`/`failsteps`/`fail_steps`）
 - [x] Desktop 打包冒烟扩展：CI Win 交叉 `pack:dir:win` + unsigned 闸门文档对齐（`CSC_IDENTITY_AUTO_DISCOVERY=false`）
 - [x] 静态报告 failSteps 别名浏览器冒烟（Chrome dump-dom；`make smoke-failsteps-hash`；覆盖 TRUE/failsteps/fail_steps/FALSE）
+- [x] manage/serve 失败摘要旁路与深链联调抽检（`TestManageServeFailDigestDeepLinkSmoke`；`make smoke-manage-digest`；POST 旁路 + sidecar 深链 + manage 契约 + Chrome `#overview?failSteps=1`）
+- [x] 将 `smoke-manage-digest` / `smoke-failsteps-hash` 纳入 PR CI（`report-browser-smoke` job；安装 Chrome；`CI=true` 时缺 Chrome 失败而非跳过）
 
 ## 迭代日志
 
@@ -298,6 +300,10 @@
 
 | 2026-09-11 | Desktop 打包 unsigned 闸门 | CI/Release/pack-smoke 显式 `CSC_IDENTITY_AUTO_DISCOVERY=false`；新增 Win 交叉 pack smoke；DESKTOP 标明 secrets 未接线；verify 打印 signing=unsigned |
 
+| 2026-09-11 | manage/serve 旁路与深链联调抽检 | 端到端：真实失败 hub → serve → POST `/api/fail-digest` → md/json 含 `studio-reporter://open?…&failSteps=1` → manage/JS 契约 → Chrome dump-dom 断言 `#overview?failSteps=1` 进入 `fail-steps-mode`；`make smoke-manage-digest` |
+
+| 2026-09-11 | report-browser-smoke CI | PR CI 新增 Chrome 安装 job，显式跑 `smoke-failsteps-hash` + `smoke-manage-digest`；`CI=true` 时缺浏览器硬失败 |
+
 ## 下一任务（选定）
 
-**manage/serve 失败摘要旁路与深链联调抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**digest 深链对含特殊字符 hub 路径的编码/打开抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

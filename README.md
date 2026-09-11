@@ -227,6 +227,8 @@ make cover   # go test -coverprofile + function/package summary
 make smoke-input  # --input regeneration + screenshot relative paths
 make smoke-complex  # dense fixture (nested concepts / shots / CJK / skip)
 make smoke-failsteps-hash  # failSteps hash aliases via Chrome dump-dom
+make smoke-manage-digest   # manage/serve fail-digest sidecar + deep-link E2E
+# PR CI job report-browser-smoke installs Chrome and runs both browser smokes
 make demo-complex   # write .demo/complex-hub for manual browsing
 make lint    # golangci-lint v2 (install matching CI pin locally)
 make sync-assets

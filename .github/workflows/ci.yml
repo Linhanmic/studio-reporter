@@ -53,6 +53,31 @@ jobs:
         with:
           version: v2.13.2
 
+  # Explicit Chrome dump-dom gates (also covered by go test when Chrome is present;
+  # this job installs Chrome so CI cannot silently skip).
+  report-browser-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+      - name: failSteps hash smoke
+        run: make smoke-failsteps-hash
+        env:
+          CI: "true"
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: manage/serve fail-digest deep-link smoke
+        run: make smoke-manage-digest
+        env:
+          CI: "true"
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+
   desktop-pack-smoke:
     runs-on: ubuntu-latest
     steps:

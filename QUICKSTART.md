@@ -114,6 +114,7 @@ make cover   # 覆盖率摘要（CI 同脚本）
 make smoke-input  # --input 再生 + 截图相对路径
 make smoke-complex  # 复杂夹具结构断言（嵌套概念 / 截图 / CJK / skip）
 make smoke-failsteps-hash  # failSteps hash 别名（Chrome dump-dom）
+make smoke-manage-digest   # manage/serve 旁路刷新 + 深链 + failSteps 打开联调
 make demo-complex   # 生成 .demo/complex-hub（gitignored）便于手工打开
 make hooks   # 可选：启用 .githooks（前端提交前 check-assets）
 GOTOOLCHAIN=go1.27.0 go build -o bin/studio-reporter .

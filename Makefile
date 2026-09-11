@@ -1,4 +1,4 @@
-.PHONY: test vet build build-windows lint sync-assets check-assets check-fail-digest cover hooks smoke-input smoke-complex smoke-failsteps-hash demo-complex desktop-test desktop-pack desktop-pack-win desktop-pack-smoke ci all
+.PHONY: test vet build build-windows lint sync-assets check-assets check-fail-digest cover hooks smoke-input smoke-complex smoke-failsteps-hash smoke-manage-digest demo-complex desktop-test desktop-pack desktop-pack-win desktop-pack-smoke ci all
 
 GO ?= go
 GOTOOLCHAIN ?= go1.27.0
@@ -37,6 +37,9 @@ smoke-complex:
 
 smoke-failsteps-hash:
 	./scripts/smoke-failsteps-hash.sh
+
+smoke-manage-digest:
+	./scripts/smoke-manage-digest.sh
 
 demo-complex:
 	./scripts/gen-complex-demo.sh

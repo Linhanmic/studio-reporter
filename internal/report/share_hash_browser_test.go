@@ -15,6 +15,9 @@ import (
 func TestFailStepsHashAliasesActivateMode(t *testing.T) {
 	chrome, err := findChrome()
 	if err != nil {
+		if os.Getenv("CI") != "" {
+			t.Fatalf("chrome required in CI for failSteps hash smoke: %v", err)
+		}
 		t.Skip(err.Error())
 	}
 
