@@ -255,7 +255,7 @@ studio-reporter/
 
 ### P3 — 体验 — **部分完成（0.5.2）**
 
-1. ~~原生报告树（若 WebView 不足）~~ — **首片已落地**：运行页左侧原生大纲（spec→scenario，来自 `ReportSnapshot`）；点击 `postMessage` 驱动 viewer 展开/选中。终态报告仍以内嵌 `index.html` 导航为主。
+1. ~~原生报告树（若 WebView 不足）~~ — **live + 终态已落地**：共享大纲侧栏（spec→scenario）；live 来自 `ReportSnapshot`，终态来自同目录 `report.json`；点击 `postMessage` 驱动 viewer / 静态 `index.html` 展开定位。
 2. ~~插件侧能力协商、版本门闸~~（`desktop/electron/compat.js` 校验 ServerHello ≥ 0.5.0 + 必需 capabilities）。
 3. ~~安装体验：Desktop 检测/提示 Gauge 插件版本~~（`plugin-detect.js`）；~~自动更新骨架~~（`electron-updater` + GitHub Releases；设置/菜单检查更新；tag Release 上传 AppImage）。代码签名证书仍待仓库 secrets。
 
@@ -295,4 +295,4 @@ studio-reporter/
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
 5. ~~Desktop 历史对比~~。
 6. ~~安装器 / 打包骨架~~（`desktop/` + electron-builder；`npm run pack:dir` / `pack`；bundle root 区分 dev/packaged）。
-7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live）~~；下一步：代码签名 secrets，或终态大纲深化，或 GaugeStudio 消费 `@studio-reporter/discover`。
+7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态）~~；下一步：代码签名 secrets，或 GaugeStudio 消费 `@studio-reporter/discover`。
