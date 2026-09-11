@@ -224,6 +224,33 @@ function formatHistoryFailDigestJson(digest, opts = {}) {
   return base;
 }
 
+/**
+ * Write fail-digest.md + fail-digest.json beside hub history.json (CLI digest --write contract).
+ * @param {string} hubDir
+ * @param {object[]} [runs]
+ * @param {{ limit?: number }} [opts]
+ * @returns {{ mdPath: string, jsonPath: string, digest: ReturnType<typeof buildHistoryFailDigest> }}
+ */
+function writeHistoryFailDigestSidecars(hubDir, runs, opts = {}) {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const hub = path.resolve(String(hubDir || '').trim());
+  if (!hub) throw new Error('hubDir is required');
+  const list = Array.isArray(runs) ? runs : [];
+  const digest = buildHistoryFailDigest(list, { limit: opts.limit });
+  const mdPath = path.join(hub, 'fail-digest.md');
+  const jsonPath = path.join(hub, 'fail-digest.json');
+  const md = formatHistoryFailDigestMarkdown(digest, {
+    title: '历史失败摘要',
+    hubDir: hub,
+    includeOpenLinks: true,
+  });
+  const json = formatHistoryFailDigestJson(digest, { hubDir: hub });
+  fs.writeFileSync(mdPath, md, 'utf8');
+  fs.writeFileSync(jsonPath, `${JSON.stringify(json, null, 2)}\n`, 'utf8');
+  return { mdPath, jsonPath, digest };
+}
+
 module.exports = {
   DEFAULT_DIGEST_LIMIT,
   normalizeFailReason,
@@ -232,4 +259,5 @@ module.exports = {
   formatHistoryFailDigestJson,
   buildHistoryFailDigestOpenLinks,
   buildOpenDeepLinkForRun,
+  writeHistoryFailDigestSidecars,
 };

@@ -77,4 +77,27 @@ describe('history-digest', () => {
     assert.ok(!/hub=/.test(hubless));
   });
 
+  it('writeHistoryFailDigestSidecars writes md+json beside hub', () => {
+    const fs = require('node:fs');
+    const os = require('node:os');
+    const path = require('node:path');
+    const {
+      writeHistoryFailDigestSidecars,
+    } = require('./history-digest.js');
+    const hub = fs.mkdtempSync(path.join(os.tmpdir(), 'fail-digest-'));
+    const runs = [
+      { id: 'r1', verdict: 'fail', topFailReason: 'timeout', timestampISO: '2026-09-02T10:00:00Z' },
+      { id: 'r2', verdict: 'pass' },
+    ];
+    const written = writeHistoryFailDigestSidecars(hub, runs);
+    assert.equal(written.digest.failRunCount, 1);
+    assert.ok(fs.existsSync(written.mdPath));
+    assert.ok(fs.existsSync(written.jsonPath));
+    assert.match(fs.readFileSync(written.mdPath, 'utf8'), /timeout/);
+    const json = JSON.parse(fs.readFileSync(written.jsonPath, 'utf8'));
+    assert.equal(json.format, 'studio-reporter.historyFailDigest/v1');
+    assert.equal(json.groups[0].reason, 'timeout');
+    fs.rmSync(hub, { recursive: true, force: true });
+  });
+
 });

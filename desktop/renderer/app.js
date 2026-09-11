@@ -1916,16 +1916,23 @@ async function exportSelectedOrLatest(kind) {
         );
     if (result?.cancelled) {
       setStatus(
-        `已取消导出${result.exported?.length ? `（已完成 ${result.exported.length} 个）` : ''}`,
+        `已取消导出${result.exported?.length ? `（已完成 ${result.exported.length} 个）` : ''}${
+          result.digest ? '；已刷新 hub 失败摘要旁路文件' : ''
+        }`,
         'warn',
       );
       return;
     }
     const n = result?.exported?.length || entries.length || 1;
+    const digestNote = result?.digest
+      ? `；已写入 fail-digest.md/json（失败 ${result.digest.failRunCount || 0}）`
+      : result?.digestError
+        ? `；失败摘要旁路未写入：${result.digestError}`
+        : '';
     setStatus(
       entries.length <= 1
-        ? `已导出${entries.length === 1 ? '所选' : '最新'}运行的 ${label}`
-        : `已批量导出 ${n} 次运行的 ${label}`,
+        ? `已导出${entries.length === 1 ? '所选' : '最新'}运行的 ${label}${digestNote}`
+        : `已批量导出 ${n} 次运行的 ${label}${digestNote}`,
       'ok',
     );
   } catch (err) {

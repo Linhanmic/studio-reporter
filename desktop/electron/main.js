@@ -51,6 +51,7 @@ const {
   reportOpenHashFromOutline,
   resolveReportOpenHash,
 } = require('./share-hash.js');
+const { writeHistoryFailDigestSidecars } = require('./history-digest.js');
 const {
   buildCompareShareCardHtml,
   inspectCompareShareCardHtml,
@@ -945,10 +946,36 @@ ipcMain.handle('desktop:open-path', async (_evt, absPath) => {
       },
     });
     activeExportChild = null;
-    if (result.cancelled) {
-      return { ok: false, cancelled: true, kind, exported: result.exported };
+    let digest = null;
+    let digestError = '';
+    try {
+      const hist = readHistory(hub);
+      digest = writeHistoryFailDigestSidecars(hub, hist?.runs || []);
+    } catch (err) {
+      digestError = String(err?.message || err);
+      console.warn('[export] fail-digest sidecars:', digestError);
     }
-    return { ok: true, kind, exported: result.exported };
+    if (result.cancelled) {
+      return {
+        ok: false,
+        cancelled: true,
+        kind,
+        exported: result.exported,
+        digest: digest
+          ? { mdPath: digest.mdPath, jsonPath: digest.jsonPath, failRunCount: digest.digest.failRunCount }
+          : undefined,
+        digestError: digestError || undefined,
+      };
+    }
+    return {
+      ok: true,
+      kind,
+      exported: result.exported,
+      digest: digest
+        ? { mdPath: digest.mdPath, jsonPath: digest.jsonPath, failRunCount: digest.digest.failRunCount }
+        : undefined,
+      digestError: digestError || undefined,
+    };
   });
 
   ipcMain.handle('desktop:cancel-export', async () => {
