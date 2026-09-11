@@ -95,6 +95,7 @@ npm start
 # Paste: studio-reporter websocket: ws://127.0.0.1:<port>
 
 make build && cd desktop && npm run pack:dir   # unpacked smoke build
+make build-windows && cd desktop && npm run pack:dir:win  # Windows cross-pack
 ```
 
 See [desktop/README.md](desktop/README.md) and [DESKTOP.md](DESKTOP.md).

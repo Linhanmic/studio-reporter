@@ -1,4 +1,4 @@
-.PHONY: test vet build lint sync-assets check-assets cover hooks smoke-input smoke-complex demo-complex desktop-test desktop-pack desktop-pack-smoke ci all
+.PHONY: test vet build build-windows lint sync-assets check-assets cover hooks smoke-input smoke-complex demo-complex desktop-test desktop-pack desktop-pack-win desktop-pack-smoke ci all
 
 GO ?= go
 GOTOOLCHAIN ?= go1.27.0
@@ -37,6 +37,10 @@ vet:
 build:
 	$(GO) build -o bin/studio-reporter .
 
+# Cross-compile Windows CLI for Desktop win packs / Gauge plugin zips
+build-windows:
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build -o bin/studio-reporter.exe .
+
 lint:
 	$(GOLANGCI_LINT) run ./...
 
@@ -46,6 +50,10 @@ desktop-test:
 # Unpacked dir build (smoke). Requires: make build && cd desktop && npm install
 desktop-pack: build
 	cd desktop && npm run pack:dir
+
+# Windows unpacked dir (cross-pack from Linux/mac). Requires studio-reporter.exe
+desktop-pack-win: build-windows
+	cd desktop && npm run pack:dir:win
 
 # Full unpacked Desktop smoke: CLI build + electron-builder --dir + layout verify
 desktop-pack-smoke:

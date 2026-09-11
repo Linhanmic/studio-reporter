@@ -83,6 +83,7 @@
 - [x] Desktop 失败跳转可见性（`prepareFailJumpFilter`：清除遮挡 query / 切到 fail 过滤并重放 iframe filter）
 - [x] Desktop Discover 超时可配置（设置页秒级输入；`discoverTimeoutMs` 持久化；默认 20s）
 - [x] Desktop 历史对比导出模板可配置（`default`/`light`/`compact` + 标题；`compareCardTemplate`/`compareCardTitle` 持久化）
+- [x] Desktop Windows 打包 CLI（`make build-windows`；`pack:check:win`/`pack:dir:win`/`pack:win`；平台级 `extraResources` 打入 `studio-reporter.exe`）
 
 ## 迭代日志
 
@@ -139,7 +140,8 @@
 | 2026-09-11 | Desktop 失败跳转可见性 | `prepareFailJumpFilter`：跳转前清除遮挡 query、必要时切 fail 过滤，并重放 iframe `filter` 后再 `select-node` |
 | 2026-09-11 | Desktop 历史对比导出模板 | 对比面板可选 default/light/compact + 自定义标题；`compareCardTemplate`/`compareCardTitle` 持久化；HTML `data-template` |
 | 2026-09-11 | Desktop Discover 超时可配置 | 设置页「Discover 超时（秒）」；`discoverTimeoutMs`（5–120s）持久化；启动 Gauge 使用该超时 |
+| 2026-09-11 | Desktop Win CLI 打包资源 | `make build-windows`；`pack:check:win` / `pack:dir:win` / `pack:win`；electron-builder 按平台 `extraResources` 打入 `.exe` |
 
 ## 下一任务（选定）
 
-**Windows 打包资源补齐 `studio-reporter.exe`**，或大纲/报告性能 profiling 与批量选中优化，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限）。
+**大纲/报告性能 profiling 与批量选中优化**，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限），或 Desktop 导出进度/取消。

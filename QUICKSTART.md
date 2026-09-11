@@ -152,12 +152,15 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 
 共享 discover 辅助包：`packages/studio-reporter-discover`（`@studio-reporter/discover`），供 Desktop / GaugeStudio 复用同一 stdout 契约。
 
-打包（先 `make build` 产出 CLI）：
+打包（先 `make build` 产出 CLI；打 Windows 包另需 `make build-windows`）：
 
 ```bash
 cd desktop
 npm run pack:dir   # 未打包目录 smoke
 npm run pack       # 平台安装包（Linux → AppImage 等）
+# Windows 交叉：
+# make build-windows && cd desktop && npm run pack:dir:win
+# 或：make desktop-pack-win
 # 或：make desktop-pack
 ```
 
