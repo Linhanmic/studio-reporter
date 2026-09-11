@@ -5,6 +5,9 @@ const {
   compareHistoryRuns,
   formatDurationDelta,
   formatCountsDelta,
+  buildCompareShareMarkdown,
+  buildCompareShareCardHtml,
+  suggestedCompareShareBasename,
 } = require('./compare.js');
 const { filterHistoryRuns } = require('./settings.js');
 const {
@@ -35,6 +38,8 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   deleteHistoryRuns: (ids) => ipcRenderer.invoke('desktop:delete-history-runs', ids),
   revealHistoryRun: (entry) => ipcRenderer.invoke('desktop:reveal-history-run', entry),
   copyHistoryPath: (entry, kind) => ipcRenderer.invoke('desktop:copy-history-path', entry, kind),
+  exportCompareCard: (cmp, opts) => ipcRenderer.invoke('desktop:export-compare-card', cmp, opts),
+  copyCompareMarkdown: (cmp, opts) => ipcRenderer.invoke('desktop:copy-compare-markdown', cmp, opts),
   filterHistoryRuns,
   matchShortcut,
   shouldIgnoreShortcutTarget,
@@ -52,6 +57,9 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   compareHistoryRuns,
   formatDurationDelta,
   formatCountsDelta,
+  buildCompareShareMarkdown,
+  buildCompareShareCardHtml,
+  suggestedCompareShareBasename,
   onBridgeStatus: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('bridge-status', handler);

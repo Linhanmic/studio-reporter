@@ -12,6 +12,7 @@ const state = {
   historyQuery: '',
   historyVerdict: 'all',
   selectedIds: [],
+  lastCompare: null,
   discoverTimer: null,
   pluginInstall: null,
   outline: null,
@@ -297,13 +298,20 @@ function toggleSelect(id, checked) {
 }
 
 function renderCompare(cmp) {
+  state.lastCompare = cmp;
   const panel = $('comparePanel');
   panel.classList.remove('hidden');
   const vText = cmp.verdictSame
     ? `结论相同（${cmp.base.verdict || '—'}）`
     : `结论变化：${cmp.base.verdict || '—'} → ${cmp.target.verdict || '—'}`;
   panel.innerHTML = `
-    <h3>对比 ${escapeHtml(cmp.base.id || 'base')} → ${escapeHtml(cmp.target.id || 'target')}</h3>
+    <div class="compare-panel-head">
+      <h3>对比 ${escapeHtml(cmp.base.id || 'base')} → ${escapeHtml(cmp.target.id || 'target')}</h3>
+      <div class="compare-actions">
+        <button type="button" class="btn" id="btnExportCompareCard" title="导出可离线打开的 HTML 分享卡片">导出对比卡片</button>
+        <button type="button" class="btn" id="btnCopyCompareMd" title="复制 Markdown 摘要到剪贴板">复制 Markdown</button>
+      </div>
+    </div>
     <div class="compare-grid">
       <div>${escapeHtml(vText)}</div>
       <div class="${deltaClass(cmp.durationMs.delta)}">时长 ${escapeHtml(window.desktopAPI.formatDurationDelta(cmp.durationMs.delta))}</div>
@@ -312,6 +320,8 @@ function renderCompare(cmp) {
       <div>步骤 ${escapeHtml(window.desktopAPI.formatCountsDelta(cmp.steps))}</div>
     </div>
   `;
+  $('btnExportCompareCard')?.addEventListener('click', exportCompareCard);
+  $('btnCopyCompareMd')?.addEventListener('click', copyCompareMarkdown);
 }
 
 function runCompare() {
@@ -326,11 +336,44 @@ function runCompare() {
   renderCompare(window.desktopAPI.compareHistoryRuns(base, target));
 }
 
+async function exportCompareCard() {
+  const cmp = state.lastCompare;
+  if (!cmp) {
+    setStatus('请先对比两次运行', 'warn');
+    return;
+  }
+  try {
+    const result = await window.desktopAPI.exportCompareCard(cmp);
+    if (result?.canceled) {
+      setStatus('已取消导出对比卡片', 'warn');
+      return;
+    }
+    setStatus(`已导出对比卡片：${result.path}`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+async function copyCompareMarkdown() {
+  const cmp = state.lastCompare;
+  if (!cmp) {
+    setStatus('请先对比两次运行', 'warn');
+    return;
+  }
+  try {
+    await window.desktopAPI.copyCompareMarkdown(cmp);
+    setStatus('已复制对比 Markdown 到剪贴板', 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
 async function refreshHistory() {
   const list = $('historyList');
   const empty = $('historyEmpty');
   list.innerHTML = '';
   state.selectedIds = [];
+  state.lastCompare = null;
   updateHistoryActionButtons();
   $('comparePanel').classList.add('hidden');
   try {

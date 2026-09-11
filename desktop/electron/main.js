@@ -38,6 +38,11 @@ const {
   extractDeepLinkFromArgv,
 } = require('./deeplink.js');
 const {
+  buildCompareShareCardHtml,
+  buildCompareShareMarkdown,
+  suggestedCompareShareBasename,
+} = require('./compare.js');
+const {
   resolveBundleRoot,
   resolveStudioReporterBin,
   missingBundleResources,
@@ -513,6 +518,32 @@ function registerIpc() {
     if (!text) throw new Error('找不到该次运行的路径');
     clipboard.writeText(text);
     return { ok: true, path: text };
+  });
+
+  ipcMain.handle('desktop:export-compare-card', async (_evt, cmp, opts = {}) => {
+    if (!cmp?.base || !cmp?.target) throw new Error('对比结果无效');
+    const basename = suggestedCompareShareBasename(cmp);
+    const defaultPath = path.join(app.getPath('documents'), `${basename}.html`);
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: '导出对比分享卡片',
+      defaultPath,
+      filters: [{ name: 'HTML', extensions: ['html'] }],
+    });
+    if (result.canceled || !result.filePath) {
+      return { ok: false, canceled: true };
+    }
+    const html = buildCompareShareCardHtml(cmp, {
+      title: opts.title || 'Studio Reporter 运行对比',
+      generatedAt: opts.generatedAt || new Date().toISOString(),
+    });
+    fs.writeFileSync(result.filePath, html, 'utf8');
+    return { ok: true, path: result.filePath };
+  });
+
+  ipcMain.handle('desktop:copy-compare-markdown', async (_evt, cmp, opts = {}) => {
+    const md = buildCompareShareMarkdown(cmp, opts);
+    clipboard.writeText(md);
+    return { ok: true, bytes: Buffer.byteLength(md, 'utf8') };
   });
 
   ipcMain.handle('desktop:file-url', async (_evt, absPath) => pathToFileURL(absPath).href);

@@ -365,7 +365,20 @@ iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
   background: rgba(61,184,232,.08);
 }
 .compare-panel.hidden { display: none; }
-.compare-panel h3 { margin: 0 0 8px; font-size: 13px; }
+.compare-panel h3 { margin: 0; font-size: 13px; }
+.compare-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.compare-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .compare-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
