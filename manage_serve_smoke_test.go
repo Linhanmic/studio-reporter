@@ -61,6 +61,9 @@ func TestManageServeFailDigestDeepLinkSmoke(t *testing.T) {
 	if entry.TopFailReason == "" {
 		t.Fatalf("expected topFailReason on failed run: %+v", entry)
 	}
+	if entry.TopFailFocus == "" || !strings.Contains(entry.TopFailFocus, "/") {
+		t.Fatalf("expected path-style topFailFocus on failed run: %+v", entry)
+	}
 	if entry.RelDir == "" {
 		t.Fatalf("expected archived relDir: %+v", entry)
 	}
@@ -117,6 +120,7 @@ func TestManageServeFailDigestDeepLinkSmoke(t *testing.T) {
 		"studio-reporter://open",
 		"failSteps",
 		"buildOpenDeepLinkForRun",
+		"lastRunFocus",
 		"StudioReporterHistoryDigest",
 	} {
 		if !strings.Contains(js, want) {
@@ -162,6 +166,9 @@ func TestManageServeFailDigestDeepLinkSmoke(t *testing.T) {
 	if !strings.Contains(md, entry.TopFailReason) {
 		t.Fatalf("markdown missing reason %q:\n%s", entry.TopFailReason, md)
 	}
+	if !strings.Contains(md, "focus=") || !strings.Contains(md, "%2F") {
+		t.Fatalf("markdown missing path-style focus encoding:\n%s", md)
+	}
 
 	jsonBytes, err := os.ReadFile(filepath.Join(hub, "fail-digest.json"))
 	if err != nil {
@@ -180,6 +187,21 @@ func TestManageServeFailDigestDeepLinkSmoke(t *testing.T) {
 	jsText := string(jsonBytes)
 	if !strings.Contains(jsText, "studio-reporter://open?") || !strings.Contains(jsText, "failSteps=1") {
 		t.Fatalf("json missing open deep link with failSteps: %s", jsText)
+	}
+	if !strings.Contains(jsText, `"lastRunFocus"`) || !strings.Contains(jsText, "%2F") {
+		t.Fatalf("json missing path-style lastRunFocus/openLinks encoding: %s", jsText)
+	}
+	openLinks, _ := sidecar["openLinksLatest"].([]any)
+	if len(openLinks) < 1 {
+		t.Fatalf("openLinksLatest empty: %#v", sidecar)
+	}
+	openLink, _ := openLinks[0].(string)
+	openURL, err := url.Parse(openLink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := openURL.Query().Get("focus"); got != entry.TopFailFocus {
+		t.Fatalf("sidecar open link focus: want %q got %q (%s)", entry.TopFailFocus, got, openLink)
 	}
 
 	for _, name := range []string{"fail-digest.md", "fail-digest.json"} {
@@ -221,6 +243,19 @@ func TestManageServeFailDigestDeepLinkSmoke(t *testing.T) {
 
 	domOff := chromeDumpDOMHTTP(t, chrome, srv.URL+"/"+pathJoinURL(entry.RelDir, report.IndexFile)+"#overview")
 	assertHTMLFailStepsMode(t, domOff, false)
+
+	// Sidecar openLinksLatest focus → same fragment contract as Desktop open pipeline.
+	focusHash := srv.URL + "/" + pathJoinURL(entry.RelDir, report.IndexFile) + "#" + entry.TopFailFocus + "?failSteps=1"
+	focusDOM := chromeDumpDOMHTTP(t, chrome, focusHash)
+	assertHTMLFailStepsMode(t, focusDOM, true)
+	openRE := regexp.MustCompile(`(?is)<details\b[^>]*\bid="` + regexp.QuoteMeta(entry.TopFailFocus) + `"[^>]*>`)
+	m := openRE.FindString(focusDOM)
+	if m == "" {
+		t.Fatalf("sidecar focus dump-dom: details for %q not found (url=%s)", entry.TopFailFocus, focusHash)
+	}
+	if !strings.Contains(m, " open") && !strings.Contains(m, "open>") && !strings.Contains(m, `open="`) {
+		t.Fatalf("sidecar focus dump-dom: expected details open; tag=%q", m)
+	}
 }
 
 func pathJoinURL(parts ...string) string {
