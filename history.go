@@ -134,13 +134,23 @@ func historyRootFor(runDir string) (string, bool) {
 }
 
 func uniqueDirName(parent, stamp string) string {
-	candidate := stamp
-	dest := filepath.Join(parent, candidate)
-	for i := 1; report.DirExists(dest); i++ {
-		candidate = fmt.Sprintf("%s-%d", stamp, i)
-		dest = filepath.Join(parent, candidate)
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		return stamp
 	}
-	return candidate
+	for i := 0; ; i++ {
+		candidate := stamp
+		if i > 0 {
+			candidate = fmt.Sprintf("%s-%d", stamp, i)
+		}
+		dest := filepath.Join(parent, candidate)
+		err := os.Mkdir(dest, 0o755)
+		if err == nil {
+			return candidate
+		}
+		if !os.IsExist(err) {
+			return candidate
+		}
+	}
 }
 
 func historyEntryFromReport(r *report.Report) HistoryEntry {
@@ -323,15 +333,21 @@ func isHistoryRunDir(path string) bool {
 }
 
 func deleteHistoryRun(root, id string) error {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return err
+	}
+	return report.WithHubLock(absRoot, func() error {
+		return deleteHistoryRunLocked(absRoot, id)
+	})
+}
+
+func deleteHistoryRunLocked(absRoot, id string) error {
 	historyMu.Lock()
 	defer historyMu.Unlock()
 	id = filepath.Base(strings.TrimSpace(id))
 	if reservedHistoryName(id) {
 		return fmt.Errorf("invalid history id")
-	}
-	absRoot, err := filepath.Abs(root)
-	if err != nil {
-		return err
 	}
 	candidates := []string{
 		filepath.Join(absRoot, archivesFolderName, id),

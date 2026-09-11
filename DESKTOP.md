@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0 已落地（v0.5.1）；P1+ 仍为路线图  
+状态：P0 已落地（v0.5.2）；P1+ 仍为路线图  
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -230,7 +230,7 @@ studio-reporter/
 
 ## 8. 分阶段落地
 
-### P0 — 可演示的 Desktop 壳（最小） — **已完成（0.5.1）**
+### P0 — 可演示的 Desktop 壳（最小） — **已完成（0.5.2）**
 
 1. Electron 窗口 + 加载本地 `viewer.html`（`desktop/`）。
 2. 主进程：粘贴/解析 WS URL（discover 行 / 端口）；loopback HTTP 托管资产。
@@ -289,5 +289,5 @@ studio-reporter/
 ## 12. 下一步实现入口
 
 1. ~~`desktop/` 骨架~~（已有；`cd desktop && npm install && npm start`）。
-2. ~~`ClientHello` / `RequestSnapshot`~~（插件 0.5.1）。
+2. ~~`ClientHello` / `RequestSnapshot`~~（插件 0.5.2）。
 3. P1：历史 / 导出 / 设置；可选 Desktop 启动 `gauge run`。

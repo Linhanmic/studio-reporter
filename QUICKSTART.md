@@ -1,6 +1,6 @@
 # Studio Reporter — Quick Start
 
-面向首次接入与本地验证。对应插件版本 **0.5.1**。
+面向首次接入与本地验证。对应插件版本 **0.5.2**。
 
 ## 0. 产品方向
 
@@ -21,15 +21,15 @@ studio-reporter version
 从 [Releases](https://github.com/Linhanmic/studio-reporter/releases) 下载对应平台 zip，例如：
 
 ```bash
-gauge install studio-reporter --file studio-reporter-0.5.1-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.5.2-linux.x86_64.zip
 ```
 
 或解压到 Gauge 插件目录：
 
 ```bash
 # Linux 示例
-mkdir -p ~/.gauge/plugins/studio-reporter/0.5.1
-unzip studio-reporter-0.5.1-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.1
+mkdir -p ~/.gauge/plugins/studio-reporter/0.5.2
+unzip studio-reporter-0.5.2-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.2
 ```
 
 确认 `plugin.json` 中 `version` 与目录名一致。

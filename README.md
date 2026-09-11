@@ -79,11 +79,11 @@ go build -o bin/studio-reporter ./...
 
 ```bash
 # Install the plugin (match the release version)
-gauge install studio-reporter --file studio-reporter-0.5.1-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.5.2-linux.x86_64.zip
 
 # Or unzip into the Gauge plugin directory
-mkdir -p ~/.gauge/plugins/studio-reporter/0.5.1
-unzip studio-reporter-0.5.1-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.1
+mkdir -p ~/.gauge/plugins/studio-reporter/0.5.2
+unzip studio-reporter-0.5.2-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.2
 ```
 
 ### Desktop App (P0)

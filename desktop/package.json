@@ -1,6 +1,6 @@
 {
   "name": "studio-reporter-desktop",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "description": "Studio Reporter Desktop — Electron workbench for live + final reports",
   "main": "electron/main.js",
