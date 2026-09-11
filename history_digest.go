@@ -323,5 +323,55 @@ func newDigestFlagSet(errOut io.Writer) *flag.FlagSet {
 	fs.String("format", "markdown", "output format: markdown|json")
 	fs.Bool("write", false, "also write fail-digest.md and fail-digest.json into the hub")
 	fs.String("out", "", "optional output file path (in addition to stdout)")
+	fs.Bool("check", false, "validate hub fail-digest.json freshness (formatVersion + generatedAt); exit non-zero on failure")
+	fs.String("max-age", "24h", "with --check: maximum age of generatedAt (Go duration, e.g. 1h, 24h, 168h)")
+	fs.Int("require-version", historyFailDigestFormatVersion, "with --check: required formatVersion")
+	fs.String("file", "", "with --check: path to fail-digest.json (default: <dir>/fail-digest.json)")
 	return fs
+}
+
+// failDigestSidecarMeta is the CI-facing subset of fail-digest.json.
+type failDigestSidecarMeta struct {
+	Format        string `json:"format"`
+	FormatVersion int    `json:"formatVersion"`
+	GeneratedAt   string `json:"generatedAt"`
+}
+
+// checkFailDigestSidecar validates formatVersion and generatedAt freshness for CI gates.
+func checkFailDigestSidecar(jsonPath string, requireVersion int, maxAge time.Duration, now time.Time) error {
+	raw, err := os.ReadFile(jsonPath)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", jsonPath, err)
+	}
+	var meta failDigestSidecarMeta
+	if err := json.Unmarshal(raw, &meta); err != nil {
+		return fmt.Errorf("parse %s: %w", jsonPath, err)
+	}
+	if requireVersion > 0 && meta.FormatVersion != requireVersion {
+		return fmt.Errorf("%s: formatVersion=%d want %d", jsonPath, meta.FormatVersion, requireVersion)
+	}
+	if meta.FormatVersion <= 0 {
+		return fmt.Errorf("%s: missing or invalid formatVersion", jsonPath)
+	}
+	at := strings.TrimSpace(meta.GeneratedAt)
+	if at == "" {
+		return fmt.Errorf("%s: missing generatedAt", jsonPath)
+	}
+	ts, err := time.Parse(time.RFC3339, at)
+	if err != nil {
+		ts, err = time.Parse(time.RFC3339Nano, at)
+	}
+	if err != nil {
+		return fmt.Errorf("%s: generatedAt %q: %w", jsonPath, at, err)
+	}
+	if maxAge > 0 {
+		age := now.UTC().Sub(ts.UTC())
+		if age < 0 {
+			age = -age // clock skew: treat future stamps as age=delta
+		}
+		if age > maxAge {
+			return fmt.Errorf("%s: generatedAt %s is older than max-age %s (age %s)", jsonPath, ts.UTC().Format(time.RFC3339), maxAge, age.Round(time.Second))
+		}
+	}
+	return nil
 }

@@ -14,6 +14,8 @@ studio-reporter generate --input path/to/run.uhilreport --out /tmp/out --single
 studio-reporter digest --dir reports/studio-report
 studio-reporter digest --dir reports/studio-report --format json
 studio-reporter digest --dir reports/studio-report --write
+studio-reporter digest --dir reports/studio-report --check --max-age 24h
+# make check-fail-digest DIR=reports/studio-report MAX_AGE=24h
 # 旁路 JSON 含 formatVersion=1 与 generatedAt（RFC3339），便于 CI 校验新鲜度
 # Desktop 导出 PDF/单文件后也会刷新 hub 下的 fail-digest.md/json
 # 套件结束后 hub 也会自动刷新（插件 finalize；删除历史同步）

@@ -151,5 +151,14 @@ Hub sidecars written by `studio-reporter digest --write`, Desktop export/refresh
 
 Markdown includes the same `formatVersion` / `generatedAt` meta lines for human/CI grepping.
 
+CI freshness gate:
+
+```bash
+studio-reporter digest --dir reports/studio-report --check --max-age 24h
+# or: make check-fail-digest DIR=reports/studio-report MAX_AGE=24h
+```
+
+Fails (exit 1) when the sidecar is missing, `formatVersion` mismatches, or `generatedAt` is older than `--max-age`.
+
 
 Static files (viewer, manage console, archives) are served from the hub root with `Cache-Control: no-store`.

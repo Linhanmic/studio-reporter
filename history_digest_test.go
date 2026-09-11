@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBuildHistoryFailDigestGroupsReasons(t *testing.T) {
@@ -165,5 +167,55 @@ func TestRunDigestCmdWriteSidecars(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "fail-digest.md") {
 		t.Fatalf("stderr=%s", stderr.String())
+	}
+}
+
+func TestCheckFailDigestSidecarFreshness(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "fail-digest.json")
+	now := time.Date(2026, 9, 11, 22, 0, 0, 0, time.UTC)
+	fresh := now.Add(-30 * time.Minute).Format(time.RFC3339)
+	stale := now.Add(-48 * time.Hour).Format(time.RFC3339)
+
+	write := func(generatedAt string, version int) {
+		t.Helper()
+		body := fmt.Sprintf(`{"format":"studio-reporter.historyFailDigest/v1","formatVersion":%d,"generatedAt":%q,"runCount":1}`, version, generatedAt)
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write(fresh, 1)
+	if err := checkFailDigestSidecar(path, 1, 24*time.Hour, now); err != nil {
+		t.Fatalf("fresh: %v", err)
+	}
+
+	write(stale, 1)
+	if err := checkFailDigestSidecar(path, 1, 24*time.Hour, now); err == nil {
+		t.Fatal("stale should fail")
+	}
+
+	write(fresh, 2)
+	if err := checkFailDigestSidecar(path, 1, 24*time.Hour, now); err == nil {
+		t.Fatal("wrong version should fail")
+	}
+
+	if err := checkFailDigestSidecar(filepath.Join(dir, "missing.json"), 1, time.Hour, now); err == nil {
+		t.Fatal("missing file should fail")
+	}
+
+	var stdout, stderr strings.Builder
+	write(fresh, 1)
+	code := runDigestCmd([]string{"--dir", dir, "--check", "--max-age", "2h"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("cli check code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "ok") {
+		t.Fatalf("stdout=%s", stdout.String())
+	}
+	write(stale, 1)
+	code = runDigestCmd([]string{"--file", path, "--check", "--max-age", "1h"}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("stale cli check code=%d want 1; stderr=%s", code, stderr.String())
 	}
 }

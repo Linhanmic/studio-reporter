@@ -135,6 +135,7 @@
 - [x] Desktop 一键刷新 fail-digest 旁路
 - [x] manage.html 一键刷新 fail-digest 旁路（`POST /api/fail-digest`；工具栏「刷新旁路」；仅 localhost serve）
 - [x] fail-digest 旁路 `formatVersion` / `generatedAt`（JSON+Markdown 元数据；Go/Desktop/浏览器同源；便于 CI 校验工件新鲜度）
+- [x] fail-digest CI 新鲜度闸门（`studio-reporter digest --check --max-age`；校验 formatVersion + generatedAt；`make check-fail-digest`）
 
 ## 迭代日志
 
@@ -282,6 +283,8 @@
 
 | 2026-09-11 | fail-digest 旁路 formatVersion/generatedAt | JSON/Markdown 写入 formatVersion=1 与 RFC3339 generatedAt；Go/Desktop/report-assets 同源 |
 
+| 2026-09-11 | fail-digest CI 新鲜度闸门 | `digest --check --max-age` 校验 formatVersion/generatedAt；`make check-fail-digest` |
+
 ## 下一任务（选定）
 
-**失败摘要旁路格式版本字段**（浏览器管理页在 `--serve` 下触发重写 fail-digest.*），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
+**静态报告 PDF 打印样式回归抽检**（复杂 hub smoke + 视觉锚点），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。

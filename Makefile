@@ -1,4 +1,4 @@
-.PHONY: test vet build build-windows lint sync-assets check-assets cover hooks smoke-input smoke-complex demo-complex desktop-test desktop-pack desktop-pack-win desktop-pack-smoke ci all
+.PHONY: test vet build build-windows lint sync-assets check-assets check-fail-digest cover hooks smoke-input smoke-complex demo-complex desktop-test desktop-pack desktop-pack-win desktop-pack-smoke ci all
 
 GO ?= go
 GOTOOLCHAIN ?= go1.27.0
@@ -6,12 +6,19 @@ GOLANGCI_LINT ?= golangci-lint
 
 export GOTOOLCHAIN
 
+# Optional hub freshness gate for CI (override DIR / MAX_AGE):
+#   make check-fail-digest DIR=reports/studio-report MAX_AGE=24h
+DIR ?= reports/studio-report
+MAX_AGE ?= 24h
+
 sync-assets:
 	./scripts/sync-assets.sh
 
 check-assets:
 	./scripts/check-assets.sh
 
+check-fail-digest: build
+	./bin/studio-reporter digest --dir "$(DIR)" --check --max-age "$(MAX_AGE)"
 hooks:
 	git config core.hooksPath .githooks
 	@echo "core.hooksPath=.githooks (pre-commit runs check-assets on frontend changes)"
