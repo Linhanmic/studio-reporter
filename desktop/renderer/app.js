@@ -20,6 +20,7 @@ const state = {
   outlineQuery: '',
   outlineVerdict: 'all',
   outlineFocusId: '',
+  outlineRows: [],
   activeTab: 'run',
 };
 
@@ -271,9 +272,8 @@ function jumpOutlineFail(delta) {
   state.outlineFocusId = result.id;
   renderOutline();
   if (filterChanged) postFilterToFrames();
+  scrollOutlineToId(result.id);
   postSelectNode(result.id);
-  const btn = document.querySelector(`#outlineTree [data-node-id="${CSS.escape(result.id)}"]`);
-  btn?.scrollIntoView({ block: 'nearest' });
   setStatus(`失败场景 ${result.index + 1}/${result.total}`, 'ok');
   updateOutlineFailMeta();
 }
@@ -370,12 +370,14 @@ function renderOutline(outline) {
   if (!meta || !tree) return;
   if (!state.outline || !state.outline.specs?.length) {
     meta.textContent = state.outline?.running ? '运行中…' : '等待快照…';
+    state.outlineRows = [];
     tree.innerHTML = '<div class="outline-empty">连接并运行后显示规格书 / 场景大纲</div>';
     updateOutlineFailMeta();
     return;
   }
   if (!view?.specs?.length) {
     meta.textContent = '无匹配';
+    state.outlineRows = [];
     tree.innerHTML = '<div class="outline-empty">没有匹配当前搜索 / 过滤的节点</div>';
     updateOutlineFailMeta();
     return;
@@ -390,22 +392,87 @@ function renderOutline(outline) {
   if (state.outlineQuery || (state.outlineVerdict && state.outlineVerdict !== 'all')) {
     parts.push(`${shownScn}/${totalScn}`);
   }
+  const rows = window.desktopAPI.flattenOutlineRows(view);
+  parts.push(`${rows.length} 行`);
   meta.textContent = parts.join(' · ') || '大纲';
-  const focusId = state.outlineFocusId || '';
-  tree.innerHTML = view.specs.map((spec) => {
-    const specCurrent =
-      (spec.id && (spec.id === focusId || spec.id === view.currentSpecId)) ? ' current' : '';
-    const scnHtml = (spec.scenarios || []).map((scn) => {
-      const scnCurrent =
-        (scn.id && (scn.id === focusId || (!focusId && scn.id === view.currentScenarioId)))
-          ? ' current'
-          : '';
-      return `<button type="button" class="outline-scn${scnCurrent}" data-node-id="${escapeHtml(scn.id)}">${verdictChip(scn.verdict)}${escapeHtml(scn.heading || scn.id)}</button>`;
-    }).join('');
-    return `<button type="button" class="outline-spec${specCurrent}" data-node-id="${escapeHtml(spec.id)}">${verdictChip(spec.verdict)}${escapeHtml(spec.heading || spec.fileName || spec.id)}</button>${scnHtml}`;
-  }).join('');
+  state.outlineRows = rows;
+  paintOutlineVirtualWindow();
   updateOutlineFailMeta();
 }
+
+function paintOutlineVirtualWindow() {
+  const tree = $('outlineTree');
+  if (!tree) return;
+  const rows = state.outlineRows || [];
+  if (!rows.length) return;
+
+  const rowHeight = window.desktopAPI.OUTLINE_ROW_HEIGHT || 28;
+  const scrollTop = tree.scrollTop;
+  const win = window.desktopAPI.computeVirtualWindow({
+    scrollTop,
+    viewportHeight: tree.clientHeight || 1,
+    rowCount: rows.length,
+    rowHeight,
+    overscan: window.desktopAPI.OUTLINE_OVERSCAN,
+  });
+
+  const focusId = state.outlineFocusId || '';
+  const currentSpecId = state.outline?.currentSpecId;
+  const currentScenarioId = state.outline?.currentScenarioId;
+  const slice = rows.slice(win.start, win.end);
+  const buttons = slice
+    .map((row) => {
+      const isCurrent =
+        (row.id && row.id === focusId) ||
+        (!focusId &&
+          ((row.kind === 'spec' && row.id === currentSpecId) ||
+            (row.kind === 'scn' && row.id === currentScenarioId)));
+      const cls = `${row.kind === 'spec' ? 'outline-spec' : 'outline-scn'}${isCurrent ? ' current' : ''}`;
+      return `<button type="button" class="${cls}" data-node-id="${escapeHtml(row.id)}" style="height:${rowHeight}px">${verdictChip(row.verdict)}${escapeHtml(row.heading || row.id)}</button>`;
+    })
+    .join('');
+
+  tree.innerHTML =
+    `<div class="outline-virt-spacer" style="height:${win.totalHeight}px">` +
+    `<div class="outline-virt-window" style="transform:translateY(${win.offsetY}px)">${buttons}</div>` +
+    `</div>`;
+  // Re-applying innerHTML resets scrollTop; restore so virtualization stays stable.
+  if (tree.scrollTop !== scrollTop) tree.scrollTop = scrollTop;
+}
+
+function scrollOutlineToId(id) {
+  const tree = $('outlineTree');
+  if (!tree) return;
+  const rows = state.outlineRows || [];
+  const idx = window.desktopAPI.findOutlineRowIndex(rows, id);
+  if (idx < 0) return;
+  const rowHeight = window.desktopAPI.OUTLINE_ROW_HEIGHT || 28;
+  tree.scrollTop = window.desktopAPI.scrollTopForRowIndex(idx, {
+    rowHeight,
+    viewportHeight: tree.clientHeight || 0,
+  });
+  paintOutlineVirtualWindow();
+}
+
+function wireOutlineVirtualScroll() {
+  const tree = $('outlineTree');
+  if (!tree || tree.dataset.virtScrollWired === '1') return;
+  tree.dataset.virtScrollWired = '1';
+  let ticking = false;
+  tree.addEventListener(
+    'scroll',
+    () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        paintOutlineVirtualWindow();
+      });
+    },
+    { passive: true }
+  );
+}
+
 
 function showReport(url) {
   $('reportFrame').src = url;
@@ -1399,6 +1466,7 @@ function wire() {
     renderOutline(outline);
     postFilterToFrames();
   });
+  wireOutlineVirtualScroll();
   $('outlineTree')?.addEventListener('click', (ev) => {
     const btn = ev.target.closest('[data-node-id]');
     if (!btn) return;

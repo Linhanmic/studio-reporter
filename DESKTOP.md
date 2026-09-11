@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件门闸/本机检测/自动更新骨架/原生大纲（live+终态）/大纲搜索过滤/失败路径一键跳转（含可见性） / 历史搜索过滤 / 勾选导出 / 原生删除与批量导出 / 打开文件夹与复制路径 / 删除 hub 锁 / 套件结束系统通知 / 自定义协议深链 / 键盘快捷键与 tablist a11y / 明暗主题 / 对比分享卡片（HTML+Markdown）/ 静态报告极轻量交互 / 打开 `.uhilreport` 离线再生 / 会话恢复与最近 hub / 窗口布局记忆 / 大纲分栏宽度记忆 / 安装包冒烟（含 Win/mac 布局） / 历史对比 UX 深化 / 统一大纲搜索 / Discover 超时可配置 / 对比导出模板（default/light/compact）已落地；代码签名仍为路线图   
+状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件门闸/本机检测/自动更新骨架/原生大纲（live+终态）/大纲搜索过滤/失败路径一键跳转（含可见性） / 历史搜索过滤 / 勾选导出 / 原生删除与批量导出 / 打开文件夹与复制路径 / 删除 hub 锁 / 套件结束系统通知 / 自定义协议深链 / 键盘快捷键与 tablist a11y / 明暗主题 / 对比分享卡片（HTML+Markdown）/ 静态报告极轻量交互 / 打开 `.uhilreport` 离线再生 / 会话恢复与最近 hub / 窗口布局记忆 / 大纲分栏宽度记忆 / 安装包冒烟（含 Win/mac 布局） / 大纲虚拟列表 / 历史对比 UX 深化 / 统一大纲搜索 / Discover 超时可配置 / 对比导出模板（default/light/compact）已落地；代码签名仍为路线图   
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -275,7 +275,7 @@ studio-reporter/
    - 建议：协议与 discover **共享**；品牌上允许 Desktop 独立发布「Studio Reporter」。
 2. **file:// vs 内置 serve**：截图与 ES module 限制 → P0 起倾向内置 loopback serve。
 3. **谁启动 Gauge**：Desktop 包 gauge vs 用户外部跑、Desktop 只附着日志。P0 可只附着。
-4. **大 snapshot 性能**：已有场景层裁剪；Desktop 需虚拟列表。
+4. **大 snapshot 性能**：已有场景层裁剪；Desktop 大纲侧栏已虚拟列表（固定行高窗口渲染）。
 
 ## 11. 决策记录（本设计）
 
@@ -295,4 +295,4 @@ studio-reporter/
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
 5. ~~Desktop 历史对比~~。
 6. ~~安装器 / 打包骨架~~（`desktop/` + electron-builder；`npm run pack:dir` / `pack`；bundle root 区分 dev/packaged）。
-7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态统一搜索过滤，可持久化）~~；~~失败路径一键跳转（上一/下一失败 + `j`/`k`，跳转时放宽过滤）~~；~~Discover 超时可配置~~；~~历史搜索过滤与勾选导出~~；~~历史原生删除 / 批量导出~~；~~打开所在文件夹 / 复制路径 / 删除 hub 锁~~；~~套件结束系统通知~~；~~自定义协议深链（`studio-reporter://`）~~；~~键盘快捷键 / tablist 无障碍~~；~~明暗主题（system/light/dark）~~；~~对比分享卡片（HTML + Markdown）~~；~~静态报告极轻量交互（hash/复制失败摘要/键盘）~~；~~打开 `.uhilreport` 离线入口~~；~~会话恢复 / 最近 hub~~；~~窗口布局记忆（bounds/最大化）~~；~~大纲分栏宽度记忆~~；~~安装包冒烟（pack:dir；linux/win/mac 布局校验）~~；~~历史对比 UX 深化（交换/JSON/打开）~~；~~统一大纲搜索（重放过滤 + `/` + 持久化）~~；~~对比导出模板（default/light/compact + 标题）~~；下一步：大纲虚拟列表，或 Win 打包补齐 studio-reporter.exe，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`，或大纲虚拟列表。
+7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态统一搜索过滤，可持久化）~~；~~失败路径一键跳转（上一/下一失败 + `j`/`k`，跳转时放宽过滤）~~；~~Discover 超时可配置~~；~~历史搜索过滤与勾选导出~~；~~历史原生删除 / 批量导出~~；~~打开所在文件夹 / 复制路径 / 删除 hub 锁~~；~~套件结束系统通知~~；~~自定义协议深链（`studio-reporter://`）~~；~~键盘快捷键 / tablist 无障碍~~；~~明暗主题（system/light/dark）~~；~~对比分享卡片（HTML + Markdown）~~；~~静态报告极轻量交互（hash/复制失败摘要/键盘）~~；~~打开 `.uhilreport` 离线入口~~；~~会话恢复 / 最近 hub~~；~~窗口布局记忆（bounds/最大化）~~；~~大纲分栏宽度记忆~~；~~安装包冒烟（pack:dir；linux/win/mac 布局校验）~~；~~历史对比 UX 深化（交换/JSON/打开）~~；~~统一大纲搜索（重放过滤 + `/` + 持久化）~~；~~对比导出模板（default/light/compact + 标题）~~；~~大纲虚拟列表~~；下一步：Win 打包补齐 `studio-reporter.exe`，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`，或报告页性能 profiling。

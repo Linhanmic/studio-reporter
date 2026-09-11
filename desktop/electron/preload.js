@@ -21,6 +21,14 @@ const {
   prepareFailJumpFilter,
 } = require('./outline.js');
 const {
+  OUTLINE_ROW_HEIGHT,
+  OUTLINE_OVERSCAN,
+  flattenOutlineRows,
+  computeVirtualWindow,
+  findOutlineRowIndex,
+  scrollTopForRowIndex,
+} = require('./outline-virtual.js');
+const {
   matchShortcut,
   shouldIgnoreShortcutTarget,
   nextTab,
@@ -83,6 +91,12 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   listFailScenarioIds,
   nextFailScenarioId,
   prepareFailJumpFilter,
+  OUTLINE_ROW_HEIGHT,
+  OUTLINE_OVERSCAN,
+  flattenOutlineRows,
+  computeVirtualWindow,
+  findOutlineRowIndex,
+  scrollTopForRowIndex,
   onBridgeStatus: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('bridge-status', handler);

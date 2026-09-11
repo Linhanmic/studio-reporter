@@ -224,11 +224,25 @@ html, body {
   overflow: auto;
   padding: 6px 0 12px;
   font-size: 12px;
+  position: relative;
+}
+.outline-virt-spacer {
+  position: relative;
+  width: 100%;
+}
+.outline-virt-window {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  will-change: transform;
 }
 .outline-empty { padding: 12px 10px; color: var(--muted); }
 .outline-spec, .outline-scn {
   display: block;
   width: 100%;
+  box-sizing: border-box;
+  height: 28px;
   text-align: left;
   border: 0;
   background: transparent;
@@ -237,6 +251,9 @@ html, body {
   padding: 4px 10px;
   font: inherit;
   border-left: 2px solid transparent;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .outline-spec:hover, .outline-scn:hover { background: rgba(61, 184, 232, 0.08); }
 .outline-spec.current, .outline-scn.current {

@@ -134,7 +134,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 连接成功后 Desktop 根据插件 `ServerHello` 做版本门闸（需要插件 ≥ 0.5.0）。  
 「设置」页可检测本机 `~/.gauge/plugins/studio-reporter` 安装版本；运行后约 20s 未见 discover 会提示检查插件。  
 打包安装包可通过「帮助 → 检查更新」或设置页对照 GitHub Releases（开发态 `npm start` 会跳过）。  
-运行页与报告页共享左侧原生大纲：live 随 `ReportSnapshot` 更新，打开终态目录时读取 `report.json`；支持搜索与 pass/fail/skip 过滤，并同步到 iframe。点击可定位 viewer / 静态报告节点。大纲提供「上一失败 / 下一失败」，主机层按 `j`/`k` 亦可跳转；若当前搜索会挡住目标失败，会自动放宽过滤后再定位。  
+运行页与报告页共享左侧原生大纲：live 随 `ReportSnapshot` 更新，打开终态目录时读取 `report.json`；支持搜索与 pass/fail/skip 过滤，并同步到 iframe。点击可定位 viewer / 静态报告节点。大纲侧栏对大报告使用虚拟列表（仅渲染可视行）。大纲提供「上一失败 / 下一失败」，主机层按 `j`/`k` 亦可跳转；若当前搜索会挡住目标失败，会自动放宽过滤后再定位。  
 静态报告支持 URL hash 深链（`#scn:…` / `#spec:…`）、工具栏「复制失败摘要」，以及 `/` 聚焦搜索、`j`/`k` 跳失败、`Esc` 关闭截图灯箱。
 
 设置页可调整 Discover 超时（默认 20 秒）：启动 Gauge 后若超时未见 websocket 宣告，会结合本机插件检测给出安装/启用提示。

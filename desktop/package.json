@@ -7,7 +7,7 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test electron/discover.test.js electron/compat.test.js electron/plugin-detect.test.js electron/updater.test.js electron/outline.test.js electron/settings.test.js electron/hublock.test.js electron/notify.test.js electron/deeplink.test.js electron/shortcuts.test.js electron/theme.test.js electron/compare.test.js electron/paths.test.js electron/gauge-run.test.js electron/sessions.test.js electron/uhil-open.test.js electron/window-state.test.js scripts/verify-pack-dir.test.js",
+    "test": "node --test electron/discover.test.js electron/compat.test.js electron/plugin-detect.test.js electron/updater.test.js electron/outline.test.js electron/outline-virtual.test.js electron/settings.test.js electron/hublock.test.js electron/notify.test.js electron/deeplink.test.js electron/shortcuts.test.js electron/theme.test.js electron/compare.test.js electron/paths.test.js electron/gauge-run.test.js electron/sessions.test.js electron/uhil-open.test.js electron/window-state.test.js scripts/verify-pack-dir.test.js",
     "pack:check": "node scripts/prepare-pack-resources.js",
     "pack:dir": "npm run pack:check && electron-builder --dir --publish never",
     "pack": "npm run pack:check && electron-builder --publish never",
