@@ -78,6 +78,7 @@ Gauge (gRPC)
 | 2026-09-11 | 实时 viewer 结束引导打开静态 `index.html`，不强切 SPA 终态 | Allure/Playwright 惯例是生成后再 open；`FinishWithReport` 早于落盘，故用 `ReportGenerated` + index 元数据变化探测；磁盘轮询见 `running=false` 时 index 已写完 |
 | 2026-09-11 | CI 输出 cover profile 摘要，不强阈值、不写 PR 评论 | 对照 Go Actions 常见做法先可见再治理；阈值与 sticky comment 待覆盖率基线稳定后再加 |
 | 2026-09-11 | 仓库内 `.githooks` + `make hooks`（`core.hooksPath`） | 前端变更时本地强制 `check-assets`；不引入 pre-commit.com 框架依赖；CI 仍校验漂移 |
+| 2026-09-11 | GaugeStudio 改为主动连接本插件监听口 | 单一发现契约：stdout `studio-reporter websocket:`；`GAUGE_STUDIO_WS` 降级为可选 outbound / Studio 兼容模式 |
 
 ## 前端资源布局（SSoT）
 

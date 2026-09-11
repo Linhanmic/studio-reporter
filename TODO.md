@@ -56,7 +56,8 @@
 | 2026-09-11 | viewer 结束引导打开 `index.html` | 对照 Allure「生成后再 open」：横幅 CTA + 可取消倒计时；`ReportGenerated`/元数据探测避免旧 index 误判 |
 | 2026-09-11 | CI cover profile 摘要 | 对照常见 Go Actions：coverprofile + `go tool cover -func` 日志摘要 + artifact；暂不强阈值 / 不打扰 PR 评论权限 |
 | 2026-09-11 | `.githooks/pre-commit` + `make hooks` | 对照 Makefile-first / core.hooksPath 实践；仅在前端 SSoT 路径变更时跑 `check-assets`；CI 仍是最终闸门 |
+| 2026-09-11 | 与 GaugeStudio 同步：插件监听 + Studio discover 客户端 | Studio 0.1.1 默认解析 stdout 连接本插件；`GAUGE_STUDIO_WS` 仅作可选 outbound / Studio 兼容注入 |
 
 ## 下一任务（选定）
 
-**打印样式验收**（P1），或 **`--input` e2e smoke**（P3）。
+**打印样式验收**（P1），或 **`--input` e2e smoke**（P3）；并与 [GaugeStudio](https://github.com/Linhanmic/GaugeStudio) 联调 discover 路径。
