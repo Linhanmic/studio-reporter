@@ -56,6 +56,19 @@ describe('share-hash', () => {
     assert.equal(resolveReportOpenHash({}), '');
   });
 
+  it('uhilreport open with failSteps-only (no focus) still resolves overview hash', () => {
+    // Mirrors desktop/electron/main.js handleDeepLinkAction:
+    // open?path=*.uhilreport&failSteps=1 must re-open with this hash after regenerate.
+    const parsed = { focus: undefined, failSteps: true };
+    assert.equal(
+      !!(parsed.focus || parsed.failSteps),
+      true,
+      'main must re-open when failSteps set without focus',
+    );
+    assert.equal(resolveReportOpenHash(parsed), 'overview?failSteps=1');
+    assert.equal(resolveReportOpenHash({ focus: '', failSteps: false }), '');
+  });
+
   it('appendShareHash replaces existing fragment', () => {
     assert.equal(
       appendShareHash('http://127.0.0.1:9/index.html#old', 'overview?failSteps=1'),

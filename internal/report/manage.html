@@ -426,10 +426,12 @@
           },
           openCurrent: function () { window.location.href = 'index.html'; },
           openRun: function (row) {
-            if (row.relDir) {
-              window.location.href = row.relDir + '/index.html';
+            var base = row.relDir ? (row.relDir + '/index.html') : 'index.html';
+            // Align with Desktop/history digest: failed runs open in fail-steps-only.
+            if (String(row.verdict || '').toLowerCase() === 'fail') {
+              window.location.href = base + '#overview?failSteps=1';
             } else {
-              window.location.href = 'index.html';
+              window.location.href = base;
             }
           },
           reload: async function () {

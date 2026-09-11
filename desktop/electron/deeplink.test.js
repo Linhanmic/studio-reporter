@@ -30,6 +30,14 @@ describe('deeplink', () => {
     const c = parseDeepLink('studio-reporter://open?path=/tmp/r/run.uhilreport');
     assert.equal(c.ok, true);
     assert.equal(c.path, '/tmp/r/run.uhilreport');
+
+    const d = parseDeepLink(
+      'studio-reporter://open?path=/tmp/r/run.uhilreport&failSteps=1'
+    );
+    assert.equal(d.ok, true);
+    assert.equal(d.path, '/tmp/r/run.uhilreport');
+    assert.equal(d.failSteps, true);
+    assert.equal(d.focus, undefined);
   });
 
 

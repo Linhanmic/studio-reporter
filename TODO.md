@@ -136,6 +136,7 @@
 - [x] manage.html 一键刷新 fail-digest 旁路（`POST /api/fail-digest`；工具栏「刷新旁路」；仅 localhost serve）
 - [x] fail-digest 旁路 `formatVersion` / `generatedAt`（JSON+Markdown 元数据；Go/Desktop/浏览器同源；便于 CI 校验工件新鲜度）
 - [x] fail-digest CI 新鲜度闸门（`studio-reporter digest --check --max-age`；校验 formatVersion + generatedAt；`make check-fail-digest`）
+- [x] Desktop `.uhilreport` 深链保留 failSteps；manage 失败行打开带 `#overview?failSteps=1`
 - [x] 静态报告 PDF/打印样式回归抽检（修复 `#fail-steps` 启动被 `applyFilter`→`syncShareHash` 冲掉；`print-color-adjust`；Chrome `--virtual-time-budget`；复杂 hub PDF 指纹差分测试）
 
 ## 迭代日志
@@ -288,6 +289,8 @@
 
 | 2026-09-11 | PDF/打印样式回归抽检 | 根因：启动 `applyFilter`→`syncShareHash` 在解析 URL 前把 `#fail-steps` 写成 `#overview`；`applyingHash` 启动门闩 + `failSteps=null` 保留会话；打印色准；`--virtual-time-budget`；复杂 hub PDF 差分断言 |
 
+| 2026-09-11 | uhilreport/manage 深链 failSteps | `open?path=*.uhilreport&failSteps=1` 再生后补挂 share hash；manage 失败行打开对齐 Desktop 摘要深链 |
+
 ## 下一任务（选定）
 
-**manage/viewer 深链与 Desktop 打开路径端到端抽检**（复杂 hub + `#fail-steps` / share hash 双向），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
+**静态报告 failSteps 解析大小写/别名与 Go/Desktop 对齐**（`TRUE`/`failsteps`），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。

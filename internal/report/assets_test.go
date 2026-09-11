@@ -20,6 +20,7 @@ func TestManageEmbedsHistoryFailDigest(t *testing.T) {
 		`refreshFailDigestSidecars`,
 		`api/fail-digest`,
 		`topFailReason`,
+		`#overview?failSteps=1`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("manage.html missing %q", want)

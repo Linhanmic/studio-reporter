@@ -1241,7 +1241,9 @@ async function handleDeepLinkAction(action) {
     }
     if (action.path && isUhilreportPath(action.path)) {
       const opened = await openUhilreport(action.path);
-      if (focusOpts.focus) {
+      // openUhilreport opens without hash; re-open when focus and/or failSteps
+      // were requested (digest links often send failSteps=1 without focus).
+      if (focusOpts.focus || focusOpts.failSteps) {
         await openReportDir(opened.outDir, focusOpts);
       }
       return {

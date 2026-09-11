@@ -166,6 +166,7 @@ Gauge (gRPC)
 | 2026-09-11 | fail-digest 旁路 formatVersion/generatedAt | 旁路 JSON/Markdown 增加 formatVersion=1 与 generatedAt；CI 可校验新鲜度 |
 | 2026-09-11 | fail-digest CI 新鲜度闸门 | `digest --check --max-age` + `make check-fail-digest`；校验 formatVersion/generatedAt |
 | 2026-09-11 | PDF `#fail-steps` 启动门闩 | 首轮 `applyFilter` 不得在解析 fragment 前 `syncShareHash`；`applyingHash=true` 至首次 `applyHashFromLocation`；未声明的 `failSteps` 为 `null` 以免冲掉会话；Chrome PDF 加 `--virtual-time-budget`；打印 `print-color-adjust: exact` |
+| 2026-09-11 | uhilreport/manage 深链 failSteps | `.uhilreport` 深链仅 failSteps 时也要 `openReportDir` 挂 hash；manage 失败「打开」带 `#overview?failSteps=1` |
 | 2026-09-11 | 自动更新 feed 离线校验 | `update-feed.js` 校验 latest*.yml 与 publish owner/repo；签名 secrets 文档化，证书到位前保持 unsigned |
 | 2026-09-11 | Release 无签名可发 | tag Release 分 plugin/linux/win；SHA256SUMS；`CSC_IDENTITY_AUTO_DISCOVERY=false`；签名 secrets 仍为可选 |
 | 2026-09-11 | Desktop 历史趋势 / 不稳定场景 | 过滤窗口 suite 趋势（history.json）+ report.json 场景翻转检测；与 pairwise compare 共用 scenarioKey |
