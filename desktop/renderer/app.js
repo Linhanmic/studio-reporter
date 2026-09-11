@@ -5,6 +5,9 @@ const $ = (id) => document.getElementById(id);
 const state = {
   lastGenerated: null,
   countdown: null,
+  settings: null,
+  jumpSeconds: 5,
+  autoJump: true,
 };
 
 function setTab(name) {
@@ -16,6 +19,9 @@ function setTab(name) {
   document.querySelectorAll('.pane').forEach((pane) => {
     pane.classList.toggle('active', pane.id === `pane-${name}`);
   });
+  $('connectBar').classList.toggle('hidden', name === 'history' || name === 'settings');
+  if (name === 'history') refreshHistory();
+  if (name === 'settings') fillSettingsForm();
 }
 
 function setStatus(text, kind) {
@@ -43,7 +49,11 @@ function showEndBanner(payload) {
     : '套件已结束，报告已生成';
   $('endBanner').classList.remove('hidden');
   clearInterval(state.countdown);
-  let left = 5;
+  if (!state.autoJump) {
+    $('btnOpenFinal').textContent = '打开终态报告';
+    return;
+  }
+  let left = state.jumpSeconds;
   const tick = () => {
     $('btnOpenFinal').textContent = left > 0 ? `打开终态报告（${left}）` : '打开终态报告';
     if (left <= 0) {
@@ -67,6 +77,7 @@ async function openFinal() {
   try {
     await window.desktopAPI.openReportPath(payload.reportPath || payload.reportDir);
     $('endBanner').classList.add('hidden');
+    refreshHistory();
   } catch (err) {
     setStatus(String(err.message || err), 'warn');
   }
@@ -94,6 +105,82 @@ async function disconnect() {
   setStatus('未连接');
 }
 
+function verdictClass(v) {
+  if (v === 'pass') return 'ok';
+  if (v === 'fail') return 'warn';
+  return '';
+}
+
+async function refreshHistory() {
+  const list = $('historyList');
+  const empty = $('historyEmpty');
+  list.innerHTML = '';
+  try {
+    const hist = await window.desktopAPI.listHistory();
+    $('historyMeta').textContent = hist.hubDir
+      ? `${hist.hubDir} · ${hist.runs.length} 次运行`
+      : '未设置报告根目录';
+    if (!hist.runs.length) {
+      empty.classList.remove('hidden');
+      empty.querySelector('p').textContent = hist.error || '暂无历史运行';
+      return;
+    }
+    empty.classList.add('hidden');
+    hist.runs.forEach((run) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'history-row';
+      row.innerHTML = `
+        <span class="verdict ${verdictClass(run.verdict)}">${run.verdict || '—'}</span>
+        <span class="hist-main">
+          <strong>${run.projectName || run.id || 'run'}</strong>
+          <span class="muted">${run.timestamp || run.timestampISO || ''}</span>
+        </span>
+        <span class="muted">${run.duration || ''}</span>
+      `;
+      row.addEventListener('click', async () => {
+        try {
+          await window.desktopAPI.openHistoryRun(run);
+          setTab('report');
+        } catch (err) {
+          setStatus(String(err.message || err), 'warn');
+        }
+      });
+      list.appendChild(row);
+    });
+  } catch (err) {
+    empty.classList.remove('hidden');
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+function fillSettingsForm() {
+  const s = state.settings || {};
+  $('settingHubDir').value = s.reportHubDir || '';
+  $('settingAutoJump').checked = s.autoJumpToReport !== false;
+  $('settingJumpSeconds').value = s.autoJumpSeconds ?? 5;
+}
+
+async function loadSettings() {
+  state.settings = await window.desktopAPI.getSettings();
+  state.autoJump = state.settings.autoJumpToReport !== false;
+  state.jumpSeconds = Number(state.settings.autoJumpSeconds ?? 5);
+  fillSettingsForm();
+}
+
+async function saveSettings() {
+  const partial = {
+    reportHubDir: $('settingHubDir').value.trim(),
+    autoJumpToReport: $('settingAutoJump').checked,
+    autoJumpSeconds: Number($('settingJumpSeconds').value) || 0,
+  };
+  state.settings = await window.desktopAPI.saveSettings(partial);
+  state.autoJump = state.settings.autoJumpToReport;
+  state.jumpSeconds = state.settings.autoJumpSeconds;
+  $('settingsStatus').textContent = '已保存';
+  setTimeout(() => { $('settingsStatus').textContent = ''; }, 1500);
+}
+
 function wire() {
   document.querySelectorAll('.tab').forEach((btn) => {
     btn.addEventListener('click', () => setTab(btn.dataset.tab));
@@ -113,6 +200,38 @@ function wire() {
   });
   $('wsInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') connect();
+  });
+  $('btnRefreshHistory').addEventListener('click', refreshHistory);
+  $('btnPickHub').addEventListener('click', async () => {
+    const hub = await window.desktopAPI.pickHubDir();
+    if (hub) {
+      await loadSettings();
+      refreshHistory();
+    }
+  });
+  $('btnSettingPickHub').addEventListener('click', async () => {
+    const hub = await window.desktopAPI.pickHubDir();
+    if (hub) {
+      await loadSettings();
+      fillSettingsForm();
+    }
+  });
+  $('btnSaveSettings').addEventListener('click', saveSettings);
+  $('btnExportPdf').addEventListener('click', async () => {
+    try {
+      await window.desktopAPI.exportReport('pdf');
+      setStatus('PDF 导出完成', 'ok');
+    } catch (err) {
+      setStatus(String(err.message || err), 'warn');
+    }
+  });
+  $('btnExportSingle').addEventListener('click', async () => {
+    try {
+      await window.desktopAPI.exportReport('single');
+      setStatus('单文件 HTML 导出完成', 'ok');
+    } catch (err) {
+      setStatus(String(err.message || err), 'warn');
+    }
   });
 
   window.desktopAPI.onBridgeStatus((data) => {
@@ -148,5 +267,10 @@ function wire() {
     $('version').textContent = `Desktop ${info.version}`;
   } catch {
     $('version').textContent = 'Desktop';
+  }
+  try {
+    await loadSettings();
+  } catch {
+    /* ignore */
   }
 })();

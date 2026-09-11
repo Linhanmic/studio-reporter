@@ -13,8 +13,14 @@ const {
   shell,
 } = require('electron');
 const { normalizeWsInput } = require('./discover.js');
+const {
+  loadSettings,
+  saveSettings,
+  readHistory,
+  resolveRunIndex,
+} = require('./settings.js');
 
-const DESKTOP_VERSION = '0.5.1';
+const DESKTOP_VERSION = '0.5.2';
 /** Repo root (parent of desktop/) — viewer.html / report-assets live here in dev. */
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const RENDERER = path.join(__dirname, '..', 'renderer', 'index.html');
@@ -305,6 +311,66 @@ function registerIpc() {
   });
 
   ipcMain.handle('desktop:file-url', async (_evt, absPath) => pathToFileURL(absPath).href);
+
+  ipcMain.handle('desktop:get-settings', async () => loadSettings(app.getPath('userData')));
+
+  ipcMain.handle('desktop:save-settings', async (_evt, partial) =>
+    saveSettings(app.getPath('userData'), partial || {})
+  );
+
+  ipcMain.handle('desktop:pick-hub-dir', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: '选择 studio-report 报告根目录（含 history.json）',
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const hub = result.filePaths[0];
+    saveSettings(app.getPath('userData'), { reportHubDir: hub });
+    return hub;
+  });
+
+  ipcMain.handle('desktop:list-history', async (_evt, hubDir) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const dir = hubDir || settings.reportHubDir;
+    return readHistory(dir);
+  });
+
+  ipcMain.handle('desktop:open-history-run', async (_evt, entry) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const indexPath = resolveRunIndex(settings.reportHubDir, entry);
+    if (!indexPath || !fs.existsSync(indexPath)) {
+      throw new Error('找不到该次运行的 index.html，请检查报告根目录设置');
+    }
+    await openReportDir(path.dirname(indexPath));
+    return { indexPath, dir: path.dirname(indexPath) };
+  });
+
+  ipcMain.handle('desktop:export-report', async (_evt, kind) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = settings.reportHubDir;
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const matches = fs.readdirSync(hub).filter((n) => n.endsWith('.uhilreport'));
+    if (!matches.length) throw new Error('报告根目录下没有 .uhilreport');
+    matches.sort();
+    const input = path.join(hub, matches[matches.length - 1]);
+    const binCandidates = [
+      path.join(REPO_ROOT, 'bin', 'studio-reporter'),
+      path.join(REPO_ROOT, 'bin', 'studio-reporter.exe'),
+      'studio-reporter',
+    ];
+    const { spawnSync } = require('node:child_process');
+    let bin = binCandidates.find((c) => c === 'studio-reporter' || fs.existsSync(c));
+    if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
+    const args = ['generate', '--input', input, '--out', hub];
+    if (kind === 'pdf') args.push('--pdf');
+    if (kind === 'single') args.push('--single');
+    const result = spawnSync(bin, args, { encoding: 'utf8' });
+    if (result.status !== 0) {
+      throw new Error(result.stderr || result.stdout || `export failed (${result.status})`);
+    }
+    return { ok: true, input, out: hub, kind, log: result.stdout };
+  });
+
 }
 
 app.whenReady().then(async () => {

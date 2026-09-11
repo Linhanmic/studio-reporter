@@ -9,6 +9,12 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   openReportPath: (p) => ipcRenderer.invoke('desktop:open-report-path', p),
   pickReportDir: () => ipcRenderer.invoke('desktop:pick-report-dir'),
   showInFolder: (p) => ipcRenderer.invoke('desktop:show-in-folder', p),
+  getSettings: () => ipcRenderer.invoke('desktop:get-settings'),
+  saveSettings: (partial) => ipcRenderer.invoke('desktop:save-settings', partial),
+  pickHubDir: () => ipcRenderer.invoke('desktop:pick-hub-dir'),
+  listHistory: (hubDir) => ipcRenderer.invoke('desktop:list-history', hubDir),
+  openHistoryRun: (entry) => ipcRenderer.invoke('desktop:open-history-run', entry),
+  exportReport: (kind) => ipcRenderer.invoke('desktop:export-report', kind),
   onBridgeStatus: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('bridge-status', handler);
