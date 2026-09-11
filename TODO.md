@@ -218,5 +218,5 @@
 
 ## 下一任务（选定）
 
-**对比分享卡片中的场景 diff 也可一键打开报告定位**（HTML 卡片深链/`studio-reporter://open` + focus），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**对比分享卡片中的场景 diff 也可一键打开报告定位**（HTML 卡片深链 / `studio-reporter://open` + focus），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
 
