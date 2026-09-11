@@ -224,4 +224,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [Gauge](https://gauge.org/) - Test automation framework
 - [gRPC](https://grpc.io/) - Remote procedure call framework
-- [Gauge Studio](https://github.com/gaugestudio/gauge-studio) - Test reporting and visualization
+- [Gauge Studio](https://github.com/Linhanmic/GaugeStudio) - Desktop client (discover WS URL from plugin stdout; v0.1.1+)
+- [Gauge Studio](https://github.com/gaugestudio/gauge-studio) - Legacy link (may redirect / rename)
