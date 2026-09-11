@@ -11,6 +11,7 @@ func writeFilterToolbar(b *bytes.Buffer, specs, scenarios Counts) {
 	b.WriteString("<div class=\"toolbar\">")
 	writeFilterGroup(b, "spec", "规格书", specs)
 	writeFilterGroup(b, "scenario", "场景", scenarios)
+	b.WriteString("<input class=\"search-input\" type=\"search\" placeholder=\"搜索规格书 / 场景\" aria-label=\"搜索规格书或场景\">")
 	b.WriteString("<div class=\"toolbar-actions\">")
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"expand-all\">全部展开</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"collapse-all\">全部折叠</button>")

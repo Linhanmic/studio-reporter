@@ -41,6 +41,7 @@ func TestRenderReportHTMLStaticShape(t *testing.T) {
 		`data-kind="scenario"`,
 		`leaf-row`,
 		`expand-all`,
+		`search-input`,
 		`class="err">nope`,
 		"summary-meta",
 		"<details",

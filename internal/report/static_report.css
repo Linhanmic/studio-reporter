@@ -83,6 +83,20 @@ html, body {
   gap: 4px;
   margin-left: auto;
 }
+.search-input {
+  min-width: 180px;
+  flex: 0 1 220px;
+  border: 1px solid #c5d0dc;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: #fff;
+  color: #1a202c;
+}
+.search-input:focus {
+  outline: 1px solid #1f4668;
+  border-color: #1f4668;
+}
 .action-btn {
   border: 1px solid #c5d0dc;
   background: #fff;

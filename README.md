@@ -163,12 +163,11 @@ The plugin also writes the portable report file `<project>-<timestamp>.uhilrepor
 ### Testing
 
 ```bash
-# Run tests
-go test ./...
+make test
+# or
+GOTOOLCHAIN=go1.27.0 go test ./...
 
-# Run with coverage
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
+make ci   # vet + test + build
 ```
 
 ### Project Structure

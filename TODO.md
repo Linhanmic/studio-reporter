@@ -19,7 +19,7 @@
 ## P1 — 静态报告体验
 
 - [x] 工具栏增加「全部展开 / 全部折叠」（失败过滤后便于扫读）
-- [ ] 静态报告增加简单搜索（规格书 / 场景名），对齐 viewer 能力的子集
+- [x] 静态报告增加简单搜索（规格书 / 场景名），对齐 viewer 能力的子集
 - [x] 失败默认展开路径：失败规格书 / 数据行 / 场景 / 步骤默认 open
 - [ ] 打印样式：过滤隐藏块打印时的表现再验收
 
@@ -32,7 +32,7 @@
 ## P3 — 工程化与质量
 
 - [ ] 增加 `golangci-lint` 配置（README 已提及但仓库无配置）
-- [ ] Makefile / `make test` / `make build` 统一本地入口
+- [x] Makefile / `make test` / `make build` 统一本地入口
 - [ ] 覆盖率门槛或至少在 CI 输出 cover profile 摘要
 - [ ] `--input` 再生路径的端到端 smoke（含截图相对路径）
 
@@ -48,8 +48,8 @@
 | 日期 | 项 | 结果 / 决策 |
 |------|----|-------------|
 | 2026-09-11 | 启动持续完善目标；盘点 v0.4.6 | 缺 DESIGN/TODO/QUICKSTART；README Features 仍写 Vue 终态；无 PR CI；`internal/report` 无包内测试；demo 空步骤折叠偏吵 |
-| 2026-09-11 | 文档四件套 + CI + 叶子步骤 + 包内单测 + 展开折叠 | 本 PR：工程文档、`ci.yml`、`leaf-row`、失败默认展开、全部展开/折叠 |
+| 2026-09-11 | 文档 + CI + leaf-row + 展开折叠 + 搜索 + Makefile | PR #12 持续迭代；下一优先：golangci 或 viewer 去重 |
 
 ## 下一任务（选定）
 
-本 PR 合并发布后：**静态报告搜索**（规格书/场景名），或 Makefile + golangci（P3）。
+合并发布后：**golangci-lint 配置**，或 **viewer/report.html 双源去重**。
