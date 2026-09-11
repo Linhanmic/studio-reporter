@@ -218,5 +218,5 @@
 
 ## 下一任务（选定）
 
-**Desktop 历史对比结果内嵌静态报告可见范围深链**（对比卡片/面板一键打开目标运行并带上当前过滤 hash），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**Desktop 历史打开终态报告时带上静态过滤 hash**（从对比/历史面板跳转 `index.html` 时附带当前或默认可见范围），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
 
