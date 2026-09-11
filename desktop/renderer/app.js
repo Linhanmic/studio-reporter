@@ -586,7 +586,46 @@ function setExportBusy(busy) {
   if (pdf) pdf.disabled = state.exporting;
   if (single) single.disabled = state.exporting;
   if (cancel) cancel.classList.toggle('hidden', !state.exporting);
+  if (!state.exporting) {
+    updateExportProgressUI(null);
+  }
   updateHistoryActionButtons();
+}
+
+function updateExportProgressUI(payload, fallbackLabel) {
+  const wrap = $('exportProgress');
+  const bar = $('exportProgressBar');
+  const labelEl = $('exportProgressLabel');
+  const fileEl = $('exportProgressFile');
+  if (!wrap || !bar || !labelEl || !fileEl) return;
+  if (!payload) {
+    wrap.classList.add('hidden');
+    bar.style.width = '0%';
+    bar.removeAttribute('aria-valuenow');
+    labelEl.textContent = '导出中…';
+    fileEl.textContent = '';
+    fileEl.removeAttribute('title');
+    return;
+  }
+  const fmt =
+    typeof window.desktopAPI.formatExportProgress === 'function'
+      ? window.desktopAPI.formatExportProgress(payload, fallbackLabel)
+      : {
+          percent: 0,
+          barLabel: '',
+          basename: payload.input || '',
+          statusText: `正在导出…`,
+        };
+  wrap.classList.remove('hidden');
+  bar.style.width = `${fmt.percent}%`;
+  bar.setAttribute('aria-valuenow', String(fmt.percent));
+  labelEl.textContent = fmt.barLabel
+    ? `导出 ${fmt.kindLabel || fallbackLabel || ''}（${fmt.barLabel}）`.trim()
+    : `导出 ${fmt.kindLabel || fallbackLabel || ''}…`.trim();
+  fileEl.textContent = fmt.basename || '';
+  if (fmt.basename) fileEl.setAttribute('title', payload.input || fmt.basename);
+  else fileEl.removeAttribute('title');
+  setStatus(fmt.statusText, 'ok');
 }
 
 function updateHistoryActionButtons() {
@@ -996,16 +1035,22 @@ async function exportSelectedOrLatest(kind) {
   const label = kind === 'pdf' ? 'PDF' : '单文件 HTML';
   const totalHint = entries.length || 1;
   setExportBusy(true);
-  setStatus(`正在导出 ${label}（0/${totalHint}）…`, 'ok');
+  updateExportProgressUI({ current: 0, total: totalHint, kind, input: '' }, label);
   if (typeof state.unsubExportProgress === 'function') {
     state.unsubExportProgress();
     state.unsubExportProgress = null;
   }
   if (typeof window.desktopAPI.onExportProgress === 'function') {
     state.unsubExportProgress = window.desktopAPI.onExportProgress((p) => {
-      const cur = p?.current || 0;
-      const total = p?.total || totalHint;
-      setStatus(`正在导出 ${label}（${cur}/${total}）…`, 'ok');
+      updateExportProgressUI(
+        {
+          kind: p?.kind || kind,
+          current: p?.current || 0,
+          total: p?.total || totalHint,
+          input: p?.input || '',
+        },
+        label,
+      );
     });
   }
   try {

@@ -85,6 +85,7 @@
 - [x] Desktop Discover 超时可配置（设置页秒级输入；`discoverTimeoutMs` 持久化；默认 20s）
 - [x] Desktop 历史对比导出模板可配置（`default`/`light`/`compact` + 标题；`compareCardTemplate`/`compareCardTitle` 持久化）
 - [x] Desktop Windows 打包 CLI（`make build-windows`；`pack:check:win`/`pack:dir:win`/`pack:win`；平台级 `extraResources` 打入 `studio-reporter.exe`）
+- [x] Desktop 导出进度条 UI（百分比 + 当前 `.uhilreport` 文件名；`formatExportProgress`）
 
 ## 迭代日志
 
@@ -153,6 +154,8 @@
 
 | 2026-09-11 | 截图灯箱 ←/→ 导航 | `StepLightboxIndex` + 键盘/按钮；`#shot-lightbox-pos`；与 JS 契约对齐单测 |
 
+| 2026-09-11 | Desktop 导出进度条 UI | 历史页进度条 + 百分比/当前文件名；`formatExportProgress`；状态栏同步 |
+
 ## 下一任务（选定）
 
-**导出进度条 UI 细化**（取消已可用；补进度百分比 / 当前文件名展示），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限），或**报告对比视图**（两份归档的场景通过率与失败原因 diff）。
+**报告对比视图深化**（场景级通过率 / 失败原因 diff，超越现有计数对比），或静态报告「仅失败步骤」快速折叠模式，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。

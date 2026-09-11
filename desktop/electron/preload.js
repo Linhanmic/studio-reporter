@@ -35,6 +35,12 @@ const {
   TAB_ORDER,
 } = require('./shortcuts.js');
 const { normalizeTheme, resolveTheme, THEMES } = require('./theme.js');
+const {
+  exportProgressPercent,
+  exportProgressBasename,
+  exportKindLabel,
+  formatExportProgress,
+} = require('./export-progress.js');
 
 contextBridge.exposeInMainWorld('desktopAPI', {
   info: () => ipcRenderer.invoke('desktop:info'),
@@ -61,6 +67,10 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     ipcRenderer.on('desktop:export-progress', handler);
     return () => ipcRenderer.removeListener('desktop:export-progress', handler);
   },
+  formatExportProgress,
+  exportProgressPercent,
+  exportProgressBasename,
+  exportKindLabel,
   deleteHistoryRuns: (ids) => ipcRenderer.invoke('desktop:delete-history-runs', ids),
   revealHistoryRun: (entry) => ipcRenderer.invoke('desktop:reveal-history-run', entry),
   copyHistoryPath: (entry, kind) => ipcRenderer.invoke('desktop:copy-history-path', entry, kind),

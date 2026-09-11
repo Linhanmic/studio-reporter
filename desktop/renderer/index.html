@@ -121,6 +121,15 @@
             <button type="button" id="btnDeleteRuns" class="btn danger" disabled title="删除勾选的历史归档">删除所选</button>
             <span id="historyMeta" class="muted"></span>
           </div>
+          <div id="exportProgress" class="export-progress hidden" role="status" aria-live="polite" aria-atomic="true">
+            <div class="export-progress-track" aria-hidden="true">
+              <div id="exportProgressBar" class="export-progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="export-progress-meta">
+              <span id="exportProgressLabel">导出中…</span>
+              <span id="exportProgressFile" class="muted" title=""></span>
+            </div>
+          </div>
           <div class="history-filters">
             <input id="historyQuery" type="search" spellcheck="false" placeholder="搜索项目 / 时间 / id…" aria-label="历史搜索">
             <div class="history-verdicts" role="group" aria-label="历史结果过滤">

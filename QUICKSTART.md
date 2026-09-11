@@ -138,7 +138,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 静态报告过滤只作用于规格书/场景等结构节点（大报告更跟手，搜索有短防抖）。Overview「失败原因聚合」按首条错误归类；「复制失败摘要」含聚合段。静态报告支持 URL hash 深链（`#scn:…` / `#spec:…`）、工具栏「复制失败摘要」，以及 `/` 聚焦搜索、`j`/`k` 跳失败、截图灯箱 `Esc` 关闭与 ←/→ 切换多图。
 
 设置页可调整 Discover 超时（默认 20 秒）：启动 Gauge 后若超时未见 websocket 宣告，会结合本机插件检测给出安装/启用提示。
-「历史」页支持搜索与 pass/fail/skip 过滤，以及「全选过滤结果 / 清除勾选」（长列表虚拟滚动）；勾选 1 次可打开所在文件夹 / 复制路径；勾选 1+ 次可导出（显示进度，可取消）或删除（确认，删除持有 hub 锁）；勾选恰好 2 次可对比，并可导出离线 HTML 分享卡片或复制 Markdown 摘要。  
+「历史」页支持搜索与 pass/fail/skip 过滤，以及「全选过滤结果 / 清除勾选」（长列表虚拟滚动）；勾选 1 次可打开所在文件夹 / 复制路径；勾选 1+ 次可导出（进度条显示百分比与当前文件名，可取消）或删除（确认，删除持有 hub 锁）；勾选恰好 2 次可对比，并可导出离线 HTML 分享卡片或复制 Markdown 摘要。  
 「运行」页嵌入 `viewer.html`；收到 `ReportGenerated` 后跳「报告」页打开静态 `index.html`。窗口未聚焦时会发系统通知（设置可关），点击通知可回到 Desktop 并打开终态。
 深链：`studio-reporter://open?dir=<报告目录>`、`studio-reporter://connect?url=ws://...`、`studio-reporter://hub?dir=<hub>`（安装包注册协议；开发态也会尝试注册）。
 快捷键：`Ctrl/Cmd+1…4` 切换运行/报告/历史/设置；`Ctrl/Cmd+Enter` 连接；`Ctrl/Cmd+Shift+H` 或 `F5` 刷新历史；页签支持方向键。
