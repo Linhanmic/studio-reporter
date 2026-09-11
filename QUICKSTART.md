@@ -138,6 +138,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 「历史」页支持搜索与 pass/fail/skip 过滤；勾选 1 次可打开所在文件夹 / 复制路径；勾选 1+ 次可导出或删除（确认，删除持有 hub 锁）；勾选恰好 2 次可对比。  
 「运行」页嵌入 `viewer.html`；收到 `ReportGenerated` 后跳「报告」页打开静态 `index.html`。窗口未聚焦时会发系统通知（设置可关），点击通知可回到 Desktop 并打开终态。
 深链：`studio-reporter://open?dir=<报告目录>`、`studio-reporter://connect?url=ws://...`、`studio-reporter://hub?dir=<hub>`（安装包注册协议；开发态也会尝试注册）。
+快捷键：`Ctrl/Cmd+1…4` 切换运行/报告/历史/设置；`Ctrl/Cmd+Enter` 连接；`Ctrl/Cmd+Shift+H` 或 `F5` 刷新历史；页签支持方向键。
 
 共享 discover 辅助包：`packages/studio-reporter-discover`（`@studio-reporter/discover`），供 Desktop / GaugeStudio 复用同一 stdout 契约。
 

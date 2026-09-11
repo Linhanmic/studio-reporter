@@ -377,6 +377,8 @@ While connected, each `ReportSnapshot` is reduced to a native outline (`desktop/
 
 History tab filters `history.json` runs client-side (`filterHistoryRuns`: query + verdict). Export PDF / single HTML resolves portable `.uhilreport` paths via `resolveRunUhilreport` for one or more selected runs; with none selected it uses the newest `.uhilreport` under the hub root. Delete uses native FS (`deleteHistoryRuns`, same semantics as Go `deleteHistoryRun`) under `withHubLock` on `.hub.lock` (python fcntl flock, compatible with Go), with a confirmation dialog, and rewrites `history.json` + `history-live.js`. Selected runs can also be revealed in the OS file manager or have their archive path copied to the clipboard. When the Desktop window is unfocused, a suite-end OS notification is shown on `ReportGenerated` (setting `notifyOnSuiteEnd`, default on); clicking it focuses the app and navigates to the final report.
 
+Desktop keyboard shortcuts (`desktop/electron/shortcuts.js`): Ctrl/Cmd+1–4 switch tabs, Ctrl/Cmd+Enter connects WS, Ctrl/Cmd+Shift+H or F5 refreshes history; tablist supports arrow/Home/End. Shortcuts are ignored while typing in text fields.
+
 Desktop also registers the `studio-reporter://` protocol (`desktop/electron/deeplink.js`): `open?path|dir=…` opens a report folder, `connect?url=ws://…` connects live WS, `hub?dir=…` sets the report hub and switches to History. A single-instance lock forwards links from a second process.
 
 ## HTML Report

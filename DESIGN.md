@@ -105,6 +105,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 历史定位 + hub 锁 | `showItemInFolder` / clipboard；删除走 `withHubLock`（与 Go `.hub.lock` flock 对齐） |
 | 2026-09-11 | Desktop 套件结束系统通知 | 窗口未聚焦时发 OS Notification；设置 `notifyOnSuiteEnd`；点击回前台打开报告 |
 | 2026-09-11 | Desktop 自定义协议深链 | `studio-reporter://open|connect|hub`；单实例转发；builder `protocols.schemes` |
+| 2026-09-11 | Desktop 键盘快捷键 | Cmd/Ctrl+1–4 切页；Enter 连接；Shift+H/F5 刷新历史；tablist 方向键 |
 | 2026-09-11 | Desktop 打包 | electron-builder + extraResources；dev/packaged 双路径 bundle root；CLI 随包分发供导出 |
 | 2026-09-11 | Desktop 启动 Gauge | Desktop 可 spawn `gauge run` 并解析 stdout discover；仍允许外部附着；单一 discover 契约 |
 | 2026-09-11 | Desktop 多会话 | 主进程会话管理器允许多 Gauge 并行（上限 3）；UI 会话条切换 active live；最近项目持久化 |
