@@ -344,6 +344,62 @@ function buildMenu() {
     {
       label: '查看',
       submenu: [
+        {
+          label: '运行',
+          accelerator: 'CmdOrCtrl+1',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-tab', { tab: 'run' });
+            }
+          },
+        },
+        {
+          label: '报告',
+          accelerator: 'CmdOrCtrl+2',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-tab', { tab: 'report' });
+            }
+          },
+        },
+        {
+          label: '历史',
+          accelerator: 'CmdOrCtrl+3',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-tab', { tab: 'history' });
+            }
+          },
+        },
+        {
+          label: '设置',
+          accelerator: 'CmdOrCtrl+4',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-tab', { tab: 'settings' });
+            }
+          },
+        },
+        { type: 'separator' },
+        {
+          label: '刷新历史',
+          accelerator: 'CmdOrCtrl+Shift+H',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('desktop-shortcut', { type: 'refresh-history' });
+            }
+          },
+        },
+        {
+          label: '连接 WebSocket',
+          accelerator: 'CmdOrCtrl+Enter',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('desktop-shortcut', { type: 'connect' });
+            }
+          },
+        },
+        { type: 'separator' },
         { role: 'reload', label: '重新加载' },
         { role: 'toggleDevTools', label: '开发者工具' },
       ],

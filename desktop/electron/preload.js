@@ -7,6 +7,12 @@ const {
   formatCountsDelta,
 } = require('./compare.js');
 const { filterHistoryRuns } = require('./settings.js');
+const {
+  matchShortcut,
+  shouldIgnoreShortcutTarget,
+  nextTab,
+  TAB_ORDER,
+} = require('./shortcuts.js');
 
 contextBridge.exposeInMainWorld('desktopAPI', {
   info: () => ipcRenderer.invoke('desktop:info'),
@@ -29,6 +35,10 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   revealHistoryRun: (entry) => ipcRenderer.invoke('desktop:reveal-history-run', entry),
   copyHistoryPath: (entry, kind) => ipcRenderer.invoke('desktop:copy-history-path', entry, kind),
   filterHistoryRuns,
+  matchShortcut,
+  shouldIgnoreShortcutTarget,
+  nextTab,
+  TAB_ORDER,
   pickGaugeProject: () => ipcRenderer.invoke('desktop:pick-gauge-project'),
   gaugeStatus: () => ipcRenderer.invoke('desktop:gauge-status'),
   startGauge: (opts) => ipcRenderer.invoke('desktop:start-gauge', opts),
@@ -67,6 +77,11 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('navigate-tab', handler);
     return () => ipcRenderer.removeListener('navigate-tab', handler);
+  },
+  onDesktopShortcut: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('desktop-shortcut', handler);
+    return () => ipcRenderer.removeListener('desktop-shortcut', handler);
   },
   onSnapshotMeta: (cb) => {
     const handler = (_e, data) => cb(data);

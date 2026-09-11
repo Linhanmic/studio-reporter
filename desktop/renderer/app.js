@@ -721,10 +721,47 @@ async function stopGauge() {
   }
 }
 
+
+function applyDesktopShortcut(action) {
+  if (!action || !action.type) return;
+  if (action.type === 'tab' && action.tab) {
+    setTab(action.tab);
+    return;
+  }
+  if (action.type === 'connect') {
+    connect();
+    return;
+  }
+  if (action.type === 'refresh-history') {
+    setTab('history');
+    refreshHistory();
+  }
+}
+
 function wire() {
   document.querySelectorAll('.tab').forEach((btn) => {
     btn.addEventListener('click', () => setTab(btn.dataset.tab));
   });
+  const tablist = document.querySelector('.tabs[role="tablist"]');
+  tablist?.addEventListener('keydown', (e) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const current =
+      document.querySelector('.tab.active')?.dataset.tab ||
+      state.activeTab ||
+      'run';
+    const next = window.desktopAPI.nextTab(current, e.key);
+    setTab(next);
+    document.querySelector(`.tab[data-tab="${next}"]`)?.focus();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (window.desktopAPI.shouldIgnoreShortcutTarget(e.target)) return;
+    const action = window.desktopAPI.matchShortcut(e);
+    if (!action || action.type === 'open-report') return;
+    e.preventDefault();
+    applyDesktopShortcut(action);
+  });
+  window.desktopAPI.onDesktopShortcut?.((action) => applyDesktopShortcut(action));
   $('btnConnect').addEventListener('click', connect);
   $('btnDisconnect').addEventListener('click', disconnect);
   $('btnOpenDir').addEventListener('click', async () => {
