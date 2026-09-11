@@ -71,6 +71,7 @@ go build -o bin/studio-reporter ./...
 | `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Kept for compatibility; the reporter no longer opens a browser by default |
 | `GAUGE_STUDIO_OPEN_BROWSER` | No | - | Set to `true` to restore opening `index.html` in the default browser |
 | `GAUGE_STUDIO_WRITE_PDF` | No | - | Set to `true` to also write `report.pdf` (requires Chrome/Chromium; or set `CHROME_PATH`) |
+| `GAUGE_STUDIO_PDF_FAIL_STEPS` | No | - | With PDF: set `true` to print with `#fail-steps` (fail-steps-only, same as interactive「所见即所打」) |
 | `GAUGE_STUDIO_WRITE_SINGLE` | No | - | Set to `true` to also write `report.single.html` (screenshots inlined as data URIs) |
 | `GAUGE_STUDIO_REPORT_META` | No | - | Extra Overview KV pairs: `k=v,k2=v2` |
 | `CHROME_PATH` | No | - | Absolute path to Chrome/Chromium for PDF export |
@@ -232,7 +233,7 @@ See also [`testdata/complex-gauge/`](testdata/complex-gauge/) for the readable G
 
 CI runs `./scripts/cover-summary.sh` and uploads `cover.out` as an artifact (no hard threshold yet).
 
-Static `index.html` print CSS respects the current filter/search (`filter-hidden` stays hidden — print what you see).
+Static `index.html` print CSS respects the current filter/search and **fail-steps-only** mode (`filter-hidden` / non-fail steps stay hidden — print what you see). Use `#fail-steps` or `GAUGE_STUDIO_PDF_FAIL_STEPS=true` for headless PDF.
 ### Project Structure
 
 ```

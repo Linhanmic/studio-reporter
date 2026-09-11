@@ -120,3 +120,47 @@ func TestPathToFileURL(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestWithURLFragment(t *testing.T) {
+	got := withURLFragment("file:///tmp/index.html", "fail-steps")
+	if got != "file:///tmp/index.html#fail-steps" {
+		t.Fatalf("got %q", got)
+	}
+	got = withURLFragment("file:///tmp/index.html#overview", "#fail-steps")
+	if got != "file:///tmp/index.html#fail-steps" {
+		t.Fatalf("replace frag: %q", got)
+	}
+	if withURLFragment("file:///x", "") != "file:///x" {
+		t.Fatal("empty frag should no-op")
+	}
+}
+
+func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
+	css := staticReportCSS
+	printIdx := strings.Index(css, "@media print")
+	if printIdx < 0 {
+		t.Fatal("missing @media print")
+	}
+	printBlock := css[printIdx:]
+	for _, want := range []string{
+		`html.fail-steps-mode`,
+		`data-kind="step"`,
+		`data-kind="concept"`,
+		`filter-hidden`,
+	} {
+		if !strings.Contains(printBlock, want) {
+			t.Fatalf("print CSS missing %q", want)
+		}
+	}
+	js := staticReportJS
+	for _, want := range []string{
+		`beforeprint`,
+		`prepareFailStepsForPrint`,
+		`wantFailStepsFromURL`,
+		`fail-steps`,
+	} {
+		if !strings.Contains(js, want) {
+			t.Fatalf("static JS missing %q", want)
+		}
+	}
+}

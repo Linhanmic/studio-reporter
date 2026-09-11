@@ -167,38 +167,60 @@
   var failStepsOnly = false;
   var FAIL_STEPS_KEY = 'studio-report-fail-steps-only';
 
-  function setFailStepsOnly(on) {
+  function openFailStepsAncestors() {
+    document.querySelectorAll(
+      '.result-pane details.report-block[data-kind="step"][data-verdict="fail"],' +
+      '.result-pane details.report-block[data-kind="concept"][data-verdict="fail"]'
+    ).forEach(function (el) {
+      if (!el.classList.contains('filter-hidden')) el.open = true;
+    });
+    document.querySelectorAll(
+      '.result-pane details.report-block[data-kind="scenario"][data-verdict="fail"],' +
+      '.result-pane details.report-block[data-kind="spec"]'
+    ).forEach(function (el) {
+      if (el.classList.contains('filter-hidden')) return;
+      if (el.dataset.kind === 'spec') {
+        var hasFail = el.querySelector('.report-block[data-kind="scenario"][data-verdict="fail"]:not(.filter-hidden)');
+        if (!hasFail) return;
+      }
+      el.open = true;
+    });
+  }
+
+  function setFailStepsOnly(on, opts) {
+    opts = opts || {};
     failStepsOnly = !!on;
     document.documentElement.classList.toggle('fail-steps-mode', failStepsOnly);
     document.querySelectorAll('[data-action="fail-steps-only"]').forEach(function (btn) {
       btn.setAttribute('aria-pressed', failStepsOnly ? 'true' : 'false');
       btn.classList.toggle('active', failStepsOnly);
     });
-    if (failStepsOnly) {
-      // Open failed step/concept details so the remaining rows are readable.
-      document.querySelectorAll(
-        '.result-pane details.report-block[data-kind="step"][data-verdict="fail"],' +
-        '.result-pane details.report-block[data-kind="concept"][data-verdict="fail"]'
-      ).forEach(function (el) {
-        if (!el.classList.contains('filter-hidden')) el.open = true;
-      });
-      // Ensure ancestor structural blocks are open so hidden siblings don't trap context.
-      document.querySelectorAll(
-        '.result-pane details.report-block[data-kind="scenario"][data-verdict="fail"],' +
-        '.result-pane details.report-block[data-kind="spec"]'
-      ).forEach(function (el) {
-        if (el.classList.contains('filter-hidden')) return;
-        if (el.dataset.kind === 'spec') {
-          var hasFail = el.querySelector('.report-block[data-kind="scenario"][data-verdict="fail"]:not(.filter-hidden)');
-          if (!hasFail) return;
-        }
-        el.open = true;
-      });
-    }
+    if (failStepsOnly) openFailStepsAncestors();
     try { sessionStorage.setItem(FAIL_STEPS_KEY, failStepsOnly ? '1' : '0'); } catch (e) {}
+    if (opts.silent) return;
     if (typeof flashStatus === 'function') {
       flashStatus(failStepsOnly ? '已开启：仅显示失败步骤' : '已关闭：仅失败步骤');
     }
+  }
+
+  function wantFailStepsFromURL() {
+    try {
+      var h = (location.hash || '').replace(/^#/, '');
+      if (h === 'fail-steps' || h.indexOf('fail-steps&') === 0 || h.indexOf('fail-steps/') === 0) {
+        return true;
+      }
+      var q = new URLSearchParams(location.search || '');
+      var v = q.get('failSteps') || q.get('fail-steps') || '';
+      return v === '1' || v === 'true' || v === 'yes';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function prepareFailStepsForPrint() {
+    if (!failStepsOnly) return;
+    openFailStepsAncestors();
+    // Closed <details> omit body content from print in Chromium; keep fail path open.
   }
 
   document.querySelectorAll('.toolbar-actions').forEach(function (group) {
@@ -243,8 +265,12 @@
   }
 
   try {
-    if (sessionStorage.getItem(FAIL_STEPS_KEY) === '1') setFailStepsOnly(true);
+    if (wantFailStepsFromURL() || sessionStorage.getItem(FAIL_STEPS_KEY) === '1') {
+      setFailStepsOnly(true, { silent: true });
+    }
   } catch (e) {}
+
+  window.addEventListener('beforeprint', prepareFailStepsForPrint);
 
   function writeHash(id) {
     try {
@@ -283,6 +309,11 @@
   function applyHashFromLocation() {
     var raw = '';
     try { raw = (location.hash || '').replace(/^#/, ''); } catch (e) {}
+    if (raw === 'fail-steps') {
+      setFailStepsOnly(true, { silent: true });
+      showOverview(true, { updateHash: false });
+      return;
+    }
     if (!raw || raw === 'overview') {
       showOverview(true, { updateHash: false });
       return;
@@ -486,7 +517,10 @@
       }
       if (actionBtn.dataset.action === 'export-pdf') {
         // Structured print → PDF (text/links/images). Not a raster collage.
-        showOverview(true);
+        // Respect current filters + fail-steps-only (CSS + beforeprint open ancestors).
+        prepareFailStepsForPrint();
+        showOverview(true, { updateHash: false });
+        if (failStepsOnly) flashStatus('打印：仅失败步骤模式（所见即所打）');
         window.print();
         return;
       }

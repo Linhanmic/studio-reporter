@@ -89,6 +89,7 @@
 - [x] Desktop/报告 场景级对比（verdict + 失败原因 diff；`CompareScenarios` / `scenario-compare.js`）
 - [x] 静态报告「仅失败步骤」模式（工具栏切换；隐藏 pass/skip step/concept；sessionStorage 记忆）
 - [x] 对比分享卡片纳入场景级 diff（Markdown/HTML/JSON；`formatScenarioCompareMarkdown/Html`）
+- [x] 静态报告打印/PDF 尊重仅失败步骤（`@media print` 重申隐藏；`beforeprint` 展开失败路径；`#fail-steps` / `GAUGE_STUDIO_PDF_FAIL_STEPS`）
 
 ## 迭代日志
 
@@ -165,6 +166,8 @@
 
 | 2026-09-11 | 对比分享卡片含场景 diff | Markdown/HTML/JSON 分享输出附带场景级变差/修复/新增/消失与失败原因 |
 
+| 2026-09-11 | 打印/PDF 尊重仅失败步骤 | 打印 CSS 重申 `fail-steps-mode`；`beforeprint` 展开失败祖先；深链 `#fail-steps`；CLI PDF 经 `GAUGE_STUDIO_PDF_FAIL_STEPS` 附带 fragment |
+
 ## 下一任务（选定）
 
-**静态报告打印/PDF 尊重仅失败步骤模式**，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限），或 Desktop 深链直达两侧对比。
+**Desktop 深链直达两侧历史对比**（`studio-reporter://compare?base=&target=`），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。

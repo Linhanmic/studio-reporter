@@ -458,21 +458,8 @@ html, body {
   display: flex;
   justify-content: space-between;
 }
-@media print {
-  html, body { overflow: visible !important; height: auto !important; background: #fff; }
-  .app-shell { height: auto !important; max-width: none; }
-  .toolbar, .status, .header-actions, .nav-pane, .shot-lightbox { display: none !important; }
-  .workspace { display: block !important; }
-  .content-pane, .result-pane { overflow: visible !important; height: auto !important; padding: 0 !important; }
-  .overview-panel { break-after: page; page-break-after: always; }
-  .overview-panel.is-hidden { display: block !important; }
-  .report-block.filter-hidden { display: none !important; }
-  .report-block { break-inside: avoid; page-break-inside: avoid; }
-  .shot-thumb img, .shots img { max-width: 100%; max-height: none; }
-}
-
-
-/* Fail-steps-only mode: hide non-fail step/concept rows inside the result tree. */
+/* Fail-steps-only mode: hide non-fail step/concept rows inside the result tree.
+   Screen + print share the same selectors so「所见即所打」includes this mode. */
 .fail-steps-mode .result-pane .report-block[data-kind="step"]:not([data-verdict="fail"]),
 .fail-steps-mode .result-pane .report-block[data-kind="concept"]:not([data-verdict="fail"]) {
   display: none !important;
@@ -481,4 +468,23 @@ html, body {
   border-color: var(--fail, #e85d5d);
   color: var(--fail, #e85d5d);
   background: rgba(232, 93, 93, 0.12);
+}
+
+@media print {
+  html, body { overflow: visible !important; height: auto !important; background: #fff; }
+  .app-shell { height: auto !important; max-width: none; }
+  .toolbar, .status, .header-actions, .nav-pane, .shot-lightbox { display: none !important; }
+  .workspace { display: block !important; }
+  .content-pane, .result-pane { overflow: visible !important; height: auto !important; padding: 0 !important; display: block !important; }
+  .result-pane.is-hidden { display: block !important; }
+  .overview-panel { break-after: page; page-break-after: always; }
+  .overview-panel.is-hidden { display: block !important; }
+  .report-block.filter-hidden { display: none !important; }
+  /* Reaffirm fail-steps hide inside print (same as screen; survives print UA resets). */
+  html.fail-steps-mode .result-pane .report-block[data-kind="step"]:not([data-verdict="fail"]),
+  html.fail-steps-mode .result-pane .report-block[data-kind="concept"]:not([data-verdict="fail"]) {
+    display: none !important;
+  }
+  .report-block { break-inside: avoid; page-break-inside: avoid; }
+  .shot-thumb img, .shots img { max-width: 100%; max-height: none; }
 }

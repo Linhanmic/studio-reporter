@@ -6,13 +6,22 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // WritePDF renders the report's index.html to a structured PDF via a headless
 // Chromium print pipeline (text + vector layout + linked images — not a
 // screenshot collage). Prefer the interactive HTML for CANoe-like navigation;
 // PDF is the printable/shareable twin of that document.
+//
+// When wantPDFFailSteps() is true (env GAUGE_STUDIO_PDF_FAIL_STEPS), the file
+// URL includes #fail-steps so the static report JS enables fail-steps-only
+// before Chromium prints — matching interactive「所见即所打」.
 func WritePDF(indexHTML, pdfPath string) error {
+	return writePDF(indexHTML, pdfPath, wantPDFFailSteps())
+}
+
+func writePDF(indexHTML, pdfPath string, failStepsOnly bool) error {
 	if indexHTML == "" {
 		return fmt.Errorf("pdf: empty index path")
 	}
@@ -38,6 +47,9 @@ func WritePDF(indexHTML, pdfPath string) error {
 		return err
 	}
 	fileURL := pathToFileURL(absHTML)
+	if failStepsOnly {
+		fileURL = withURLFragment(fileURL, "fail-steps")
+	}
 	cmd := exec.Command(chrome,
 		"--headless=new",
 		"--disable-gpu",
@@ -53,6 +65,22 @@ func WritePDF(indexHTML, pdfPath string) error {
 		return fmt.Errorf("pdf: output missing or empty at %s", absPDF)
 	}
 	return nil
+}
+
+func wantPDFFailSteps() bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv(WritePDFFailStepsEnv)))
+	return v == "1" || v == "true" || v == "yes"
+}
+
+func withURLFragment(u, frag string) string {
+	frag = strings.TrimPrefix(strings.TrimSpace(frag), "#")
+	if frag == "" {
+		return u
+	}
+	if i := strings.IndexByte(u, '#'); i >= 0 {
+		u = u[:i]
+	}
+	return u + "#" + frag
 }
 
 func findChrome() (string, error) {
