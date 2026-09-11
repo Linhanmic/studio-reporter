@@ -41,6 +41,7 @@ const {
 const {
   buildCompareShareCardHtml,
   buildCompareShareMarkdown,
+  buildCompareShareJson,
   suggestedCompareShareBasename,
 } = require('./compare.js');
 const {
@@ -665,6 +666,31 @@ function registerIpc() {
     const md = buildCompareShareMarkdown(cmp, opts);
     clipboard.writeText(md);
     return { ok: true, bytes: Buffer.byteLength(md, 'utf8') };
+  });
+
+  ipcMain.handle('desktop:copy-compare-json', async (_evt, cmp, opts = {}) => {
+    const json = buildCompareShareJson(cmp, opts);
+    clipboard.writeText(json);
+    return { ok: true, bytes: Buffer.byteLength(json, 'utf8') };
+  });
+
+  ipcMain.handle('desktop:open-path', async (_evt, absPath) => {
+    const target = path.resolve(String(absPath || ''));
+    if (!target || !fs.existsSync(target)) {
+      throw new Error('文件不存在');
+    }
+    const err = await shell.openPath(target);
+    if (err) throw new Error(err);
+    return { ok: true, path: target };
+  });
+
+  ipcMain.handle('desktop:reveal-path', async (_evt, absPath) => {
+    const target = path.resolve(String(absPath || ''));
+    if (!target || !fs.existsSync(target)) {
+      throw new Error('路径不存在');
+    }
+    shell.showItemInFolder(target);
+    return { ok: true, path: target };
   });
 
   ipcMain.handle('desktop:file-url', async (_evt, absPath) => pathToFileURL(absPath).href);

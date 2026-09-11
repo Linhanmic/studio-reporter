@@ -328,9 +328,75 @@ function formatCountsDelta(d) {
   return parts.length ? parts.join(' ') : '±0';
 }
 
+
+/**
+ * Swap base/target and negate deltas (same payload, reversed direction).
+ * @param {ReturnType<typeof compareHistoryRuns>} cmp
+ */
+function invertCompareResult(cmp) {
+  if (!cmp?.base || !cmp?.target) {
+    throw new Error('对比结果无效');
+  }
+  const negateCounts = (d) => ({
+    total: -(Number(d?.total) || 0),
+    passed: -(Number(d?.passed) || 0),
+    failed: -(Number(d?.failed) || 0),
+    skipped: -(Number(d?.skipped) || 0),
+  });
+  return {
+    base: cmp.target,
+    target: cmp.base,
+    verdictSame: Boolean(cmp.verdictSame),
+    durationMs: {
+      base: Number(cmp.durationMs?.target) || 0,
+      target: Number(cmp.durationMs?.base) || 0,
+      delta: -(Number(cmp.durationMs?.delta) || 0),
+    },
+    specs: negateCounts(cmp.specs),
+    scenarios: negateCounts(cmp.scenarios),
+    steps: negateCounts(cmp.steps),
+  };
+}
+
+/**
+ * Structured JSON for clipboard / tooling.
+ * @param {ReturnType<typeof compareHistoryRuns>} cmp
+ * @param {{ pretty?: boolean, title?: string, generatedAt?: string }} [opts]
+ */
+function buildCompareShareJson(cmp, opts = {}) {
+  if (!cmp?.base || !cmp?.target) {
+    throw new Error('对比结果无效');
+  }
+  const payload = {
+    format: 'studio-reporter.compare/v1',
+    title: opts.title || 'Studio Reporter 运行对比',
+    generatedAt: opts.generatedAt || new Date().toISOString(),
+    project: projectLabel(cmp) || undefined,
+    base: cmp.base,
+    target: cmp.target,
+    verdictSame: Boolean(cmp.verdictSame),
+    durationMs: cmp.durationMs,
+    specs: cmp.specs,
+    scenarios: cmp.scenarios,
+    steps: cmp.steps,
+    summary: {
+      verdict: cmp.verdictSame
+        ? `same:${cmp.base.verdict || ''}`
+        : `${cmp.base.verdict || ''}→${cmp.target.verdict || ''}`,
+      durationDelta: formatDurationDelta(cmp.durationMs?.delta),
+      specs: formatCountsDelta(cmp.specs),
+      scenarios: formatCountsDelta(cmp.scenarios),
+      steps: formatCountsDelta(cmp.steps),
+    },
+  };
+  return JSON.stringify(payload, null, opts.pretty === false ? 0 : 2);
+}
+
 module.exports = {
   parseReportDuration,
   compareHistoryRuns,
+  invertCompareResult,
+  buildCompareShareJson,
   formatDurationDelta,
   formatCountsDelta,
   emptyCounts,

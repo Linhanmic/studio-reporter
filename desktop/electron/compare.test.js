@@ -10,6 +10,8 @@ const {
   suggestedCompareShareBasename,
   buildCompareShareMarkdown,
   buildCompareShareCardHtml,
+  invertCompareResult,
+  buildCompareShareJson,
 } = require('./compare.js');
 
 function sampleEntries() {
@@ -92,3 +94,28 @@ describe('compare share card', () => {
     assert.throws(() => buildCompareShareCardHtml({}), /无效/);
   });
 });
+
+describe('compare invert and json', () => {
+  it('invertCompareResult swaps sides and negates deltas', () => {
+    const { base, target } = sampleEntries();
+    const cmp = compareHistoryRuns(base, target);
+    const inv = invertCompareResult(cmp);
+    assert.equal(inv.base.id, cmp.target.id);
+    assert.equal(inv.target.id, cmp.base.id);
+    assert.equal(inv.durationMs.delta, -cmp.durationMs.delta);
+    assert.equal(inv.specs.failed, -cmp.specs.failed);
+    assert.equal(inv.verdictSame, cmp.verdictSame);
+  });
+
+  it('buildCompareShareJson emits versioned payload', () => {
+    const { base, target } = sampleEntries();
+    const cmp = compareHistoryRuns(base, target);
+    const raw = buildCompareShareJson(cmp, { generatedAt: '2026-09-11T00:00:00.000Z' });
+    const json = JSON.parse(raw);
+    assert.equal(json.format, 'studio-reporter.compare/v1');
+    assert.equal(json.base.id, 'a/run-1');
+    assert.equal(json.target.id, 'b/run-2');
+    assert.match(json.summary.durationDelta, /\+/);
+  });
+});
+

@@ -13,6 +13,7 @@ const state = {
   historyVerdict: 'all',
   selectedIds: [],
   lastCompare: null,
+  lastExportedComparePath: null,
   discoverTimer: null,
   pluginInstall: null,
   outline: null,
@@ -416,13 +417,28 @@ function renderCompare(cmp) {
   const vText = cmp.verdictSame
     ? `结论相同（${cmp.base.verdict || '—'}）`
     : `结论变化：${cmp.base.verdict || '—'} → ${cmp.target.verdict || '—'}`;
+  const baseMeta = `${cmp.base.timestamp || '—'} · ${cmp.base.duration || '—'} · ${cmp.base.verdict || '—'}`;
+  const targetMeta = `${cmp.target.timestamp || '—'} · ${cmp.target.duration || '—'} · ${cmp.target.verdict || '—'}`;
+  const exported = state.lastExportedComparePath
+    ? `<div class="compare-export-row">
+        <span class="muted">上次导出：${escapeHtml(state.lastExportedComparePath)}</span>
+        <button type="button" class="btn" id="btnOpenCompareCard">打开卡片</button>
+        <button type="button" class="btn" id="btnRevealCompareCard">显示文件夹</button>
+      </div>`
+    : '';
   panel.innerHTML = `
     <div class="compare-panel-head">
       <h3>对比 ${escapeHtml(cmp.base.id || 'base')} → ${escapeHtml(cmp.target.id || 'target')}</h3>
       <div class="compare-actions">
+        <button type="button" class="btn" id="btnSwapCompare" title="交换基线与目标">交换方向</button>
         <button type="button" class="btn" id="btnExportCompareCard" title="导出可离线打开的 HTML 分享卡片">导出对比卡片</button>
         <button type="button" class="btn" id="btnCopyCompareMd" title="复制 Markdown 摘要到剪贴板">复制 Markdown</button>
+        <button type="button" class="btn" id="btnCopyCompareJson" title="复制结构化 JSON 到剪贴板">复制 JSON</button>
       </div>
+    </div>
+    <div class="compare-sides muted">
+      <div><strong>基线</strong> ${escapeHtml(baseMeta)}</div>
+      <div><strong>目标</strong> ${escapeHtml(targetMeta)}</div>
     </div>
     <div class="compare-grid">
       <div>${escapeHtml(vText)}</div>
@@ -431,9 +447,25 @@ function renderCompare(cmp) {
       <div>场景 ${escapeHtml(window.desktopAPI.formatCountsDelta(cmp.scenarios))}</div>
       <div>步骤 ${escapeHtml(window.desktopAPI.formatCountsDelta(cmp.steps))}</div>
     </div>
+    ${exported}
   `;
+  $('btnSwapCompare')?.addEventListener('click', swapCompareDirection);
   $('btnExportCompareCard')?.addEventListener('click', exportCompareCard);
   $('btnCopyCompareMd')?.addEventListener('click', copyCompareMarkdown);
+  $('btnCopyCompareJson')?.addEventListener('click', copyCompareJson);
+  $('btnOpenCompareCard')?.addEventListener('click', openLastCompareCard);
+  $('btnRevealCompareCard')?.addEventListener('click', revealLastCompareCard);
+}
+
+function swapCompareDirection() {
+  if (!state.lastCompare) return;
+  const inverted = window.desktopAPI.invertCompareResult(state.lastCompare);
+  // Keep selection order aligned with new base → target.
+  if (state.selectedIds.length === 2) {
+    state.selectedIds = [state.selectedIds[1], state.selectedIds[0]];
+  }
+  renderCompare(inverted);
+  setStatus('已交换对比方向（基线 ↔ 目标）', 'ok');
 }
 
 function runCompare() {
@@ -460,6 +492,8 @@ async function exportCompareCard() {
       setStatus('已取消导出对比卡片', 'warn');
       return;
     }
+    state.lastExportedComparePath = result.path;
+    renderCompare(cmp);
     setStatus(`已导出对比卡片：${result.path}`, 'ok');
   } catch (err) {
     setStatus(String(err.message || err), 'warn');
@@ -480,12 +514,55 @@ async function copyCompareMarkdown() {
   }
 }
 
+async function copyCompareJson() {
+  const cmp = state.lastCompare;
+  if (!cmp) {
+    setStatus('请先对比两次运行', 'warn');
+    return;
+  }
+  try {
+    await window.desktopAPI.copyCompareJson(cmp);
+    setStatus('已复制对比 JSON 到剪贴板', 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+async function openLastCompareCard() {
+  const filePath = state.lastExportedComparePath;
+  if (!filePath) {
+    setStatus('还没有导出过对比卡片', 'warn');
+    return;
+  }
+  try {
+    await window.desktopAPI.openPath(filePath);
+    setStatus(`已打开 ${filePath}`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+async function revealLastCompareCard() {
+  const filePath = state.lastExportedComparePath;
+  if (!filePath) {
+    setStatus('还没有导出过对比卡片', 'warn');
+    return;
+  }
+  try {
+    await window.desktopAPI.revealPath(filePath);
+    setStatus(`已在文件夹中显示 ${filePath}`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
 async function refreshHistory() {
   const list = $('historyList');
   const empty = $('historyEmpty');
   list.innerHTML = '';
   state.selectedIds = [];
   state.lastCompare = null;
+  state.lastExportedComparePath = null;
   updateHistoryActionButtons();
   $('comparePanel').classList.add('hidden');
   try {

@@ -3,10 +3,12 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const {
   compareHistoryRuns,
+  invertCompareResult,
   formatDurationDelta,
   formatCountsDelta,
   buildCompareShareMarkdown,
   buildCompareShareCardHtml,
+  buildCompareShareJson,
   suggestedCompareShareBasename,
 } = require('./compare.js');
 const { filterHistoryRuns } = require('./settings.js');
@@ -42,6 +44,9 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   copyHistoryPath: (entry, kind) => ipcRenderer.invoke('desktop:copy-history-path', entry, kind),
   exportCompareCard: (cmp, opts) => ipcRenderer.invoke('desktop:export-compare-card', cmp, opts),
   copyCompareMarkdown: (cmp, opts) => ipcRenderer.invoke('desktop:copy-compare-markdown', cmp, opts),
+  copyCompareJson: (cmp, opts) => ipcRenderer.invoke('desktop:copy-compare-json', cmp, opts),
+  openPath: (p) => ipcRenderer.invoke('desktop:open-path', p),
+  revealPath: (p) => ipcRenderer.invoke('desktop:reveal-path', p),
   filterHistoryRuns,
   matchShortcut,
   shouldIgnoreShortcutTarget,
@@ -57,10 +62,12 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   listSessions: () => ipcRenderer.invoke('desktop:list-sessions'),
   setActiveSession: (id) => ipcRenderer.invoke('desktop:set-active-session', id),
   compareHistoryRuns,
+  invertCompareResult,
   formatDurationDelta,
   formatCountsDelta,
   buildCompareShareMarkdown,
   buildCompareShareCardHtml,
+  buildCompareShareJson,
   suggestedCompareShareBasename,
   onBridgeStatus: (cb) => {
     const handler = (_e, data) => cb(data);
