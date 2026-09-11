@@ -927,7 +927,7 @@ async function runCompare() {
  * Open history compare for two run ids (UI button + deep link studio-reporter://compare).
  * Refreshes history once, selects base→target, then reuses runCompare().
  */
-async function openCompareByIds(baseId, targetId) {
+async function openCompareByIds(baseId, targetId, opts = {}) {
   const base = String(baseId || '').trim();
   const target = String(targetId || '').trim();
   if (!base || !target) {
@@ -937,6 +937,14 @@ async function openCompareByIds(baseId, targetId) {
   if (base === target) {
     setStatus('深链对比的两侧运行不能相同', 'warn');
     return false;
+  }
+  if (Object.prototype.hasOwnProperty.call(opts || {}, 'kinds')) {
+    const norm =
+      typeof window.desktopAPI.normalizeScenarioCompareKinds === 'function'
+        ? window.desktopAPI.normalizeScenarioCompareKinds(opts.kinds)
+        : opts.kinds;
+    state.compareScenarioKinds = Array.isArray(norm) && norm.length ? norm : null;
+    void persistCompareScenarioKinds();
   }
   setTab('history', { refresh: false });
   await refreshHistory();
@@ -954,7 +962,10 @@ async function openCompareByIds(baseId, targetId) {
   });
   updateHistoryActionButtons();
   await runCompare();
-  setStatus(`已打开对比：${base} → ${target}`, 'ok');
+  const kindNote = activeCompareScenarioKinds()
+    ? `（已筛 ${activeCompareScenarioKinds().length} 类）`
+    : '';
+  setStatus(`已打开对比：${base} → ${target}${kindNote}`, 'ok');
   return true;
 }
 
@@ -1060,6 +1071,7 @@ async function copyCompareDeepLink() {
       base: cmp.base.id,
       target: cmp.target.id,
       hub: state.settings?.reportHubDir || '',
+      ...compareShareKindOpts(),
     });
     setStatus(`已复制深链：${result?.url || 'studio-reporter://compare…'}`, 'ok');
   } catch (err) {
@@ -1890,7 +1902,10 @@ function wire() {
   window.desktopAPI.onNavigateCompare?.((data) => {
     if (data?.base && data?.target) {
       compareDeepLinkPending = true;
-      Promise.resolve(openCompareByIds(data.base, data.target)).finally(() => {
+      const opts = Object.prototype.hasOwnProperty.call(data, 'kinds')
+        ? { kinds: data.kinds }
+        : {};
+      Promise.resolve(openCompareByIds(data.base, data.target, opts)).finally(() => {
         compareDeepLinkPending = false;
       });
     }

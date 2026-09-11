@@ -22,6 +22,7 @@ function resolveCompareShareDeepLink(cmp, opts = {}) {
       base,
       target,
       hub: opts.hub != null ? opts.hub : '',
+      kinds: opts.kinds,
     });
   } catch {
     return '';

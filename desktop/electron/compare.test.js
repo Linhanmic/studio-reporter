@@ -113,6 +113,15 @@ describe('compare share card', () => {
     const json = JSON.parse(buildCompareShareJson(cmp, { hub }));
     assert.match(json.deepLink, /^studio-reporter:\/\/compare\?/);
     assert.ok(json.deepLink.includes('hub='));
+
+    const withKinds = JSON.parse(
+      buildCompareShareJson(cmp, { hub, kinds: ['regressed', 'fixed'] })
+    );
+    assert.match(withKinds.deepLink, /kinds=/);
+    assert.ok(
+      withKinds.deepLink.includes('regressed') && withKinds.deepLink.includes('fixed')
+    );
+
     assert.equal(
       resolveCompareShareDeepLink(cmp, { hub }),
       json.deepLink

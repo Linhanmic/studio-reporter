@@ -10,11 +10,42 @@ const PROTOCOL = 'studio-reporter';
  *   studio-reporter://open?dir=/abs/report-dir
  *   studio-reporter://connect?url=ws://127.0.0.1:1234
  *   studio-reporter://hub?dir=/abs/hub
- *   studio-reporter://compare?base=<runId>&target=<runId>[&hub=/abs/hub]
+ *   studio-reporter://compare?base=<runId>&target=<runId>[&hub=/abs/hub][&kinds=regressed,fixed]
  *
  * @param {string} raw
- * @returns {{ok: true, action: string, path?: string, dir?: string, url?: string, base?: string, target?: string, hub?: string}|{ok: false, error: string}}
+ * @returns {{ok: true, action: string, path?: string, dir?: string, url?: string, base?: string, target?: string, hub?: string, kinds?: string[]}|{ok: false, error: string}}
  */
+/**
+ * Parse optional compare kind filter from query string.
+ * Accepts `kinds=a,b` and/or repeated `kind=a&kind=b`.
+ * Unknown tokens are dropped; empty ⇒ null (no filter).
+ * @param {URLSearchParams} params
+ * @returns {string[]|null}
+ */
+function parseCompareKindsParam(params) {
+  const { normalizeScenarioCompareKinds } = require('./compare.js');
+  const raw = [];
+  const joined = params.get('kinds') || params.get('kind') || '';
+  if (joined) {
+    for (const part of String(joined).split(/[,+\s]+/)) {
+      const t = part.trim();
+      if (t) raw.push(t);
+    }
+  }
+  for (const v of params.getAll('kind')) {
+    const t = String(v || '').trim();
+    if (t) raw.push(t);
+  }
+  // Also allow repeated kinds=
+  for (const v of params.getAll('kinds')) {
+    for (const part of String(v || '').split(/[,+\s]+/)) {
+      const t = part.trim();
+      if (t) raw.push(t);
+    }
+  }
+  return normalizeScenarioCompareKinds(raw);
+}
+
 function parseDeepLink(raw) {
   const input = String(raw || '').trim();
   if (!input) return { ok: false, error: 'empty deep link' };
@@ -80,12 +111,14 @@ function parseDeepLink(raw) {
     if (base === target) {
       return { ok: false, error: 'compare base and target must differ' };
     }
+    const kinds = parseCompareKindsParam(url.searchParams);
     return {
       ok: true,
       action: 'compare',
       base,
       target,
       hub: hub || undefined,
+      kinds: kinds || undefined,
     };
   }
 
@@ -126,6 +159,9 @@ function buildCompareDeepLink(opts = {}) {
   params.set('target', target);
   const hub = String(opts.hub || '').trim();
   if (hub) params.set('hub', hub);
+  const { normalizeScenarioCompareKinds } = require('./compare.js');
+  const kinds = normalizeScenarioCompareKinds(opts.kinds);
+  if (kinds && kinds.length) params.set('kinds', kinds.join(','));
   return `${PROTOCOL}://compare?${params.toString()}`;
 }
 
@@ -198,6 +234,7 @@ function createDeepLinkQueue(options = {}) {
 module.exports = {
   PROTOCOL,
   parseDeepLink,
+  parseCompareKindsParam,
   extractDeepLinkFromArgv,
   buildCompareDeepLink,
   createDeepLinkQueue,

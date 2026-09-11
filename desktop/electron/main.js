@@ -715,6 +715,7 @@ function registerIpc() {
       base: payload.base,
       target: payload.target,
       hub: payload.hub,
+      kinds: payload.kinds,
     });
     clipboard.writeText(url);
     return { ok: true, url };
@@ -1065,6 +1066,7 @@ async function handleDeepLinkAction(action) {
       mainWindow.webContents.send('navigate-compare', {
         base: action.base,
         target: action.target,
+        kinds: action.kinds || null,
       });
     }
     return {
@@ -1073,6 +1075,7 @@ async function handleDeepLinkAction(action) {
       base: action.base,
       target: action.target,
       hub: action.hub ? path.resolve(action.hub) : undefined,
+      kinds: action.kinds || undefined,
     };
   }
   return { ok: false, error: `unhandled action ${action.action}` };

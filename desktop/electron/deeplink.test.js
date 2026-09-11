@@ -76,6 +76,33 @@ describe('deeplink', () => {
     );
   });
 
+
+  it('parses and builds compare kinds filter', () => {
+    const a = parseDeepLink(
+      'studio-reporter://compare?base=r1&target=r2&kinds=regressed,fixed,nope'
+    );
+    assert.equal(a.ok, true);
+    assert.deepEqual(a.kinds, ['regressed', 'fixed']);
+
+    const b = parseDeepLink(
+      'studio-reporter://compare?base=r1&target=r2&kind=added&kind=removed'
+    );
+    assert.equal(b.ok, true);
+    assert.deepEqual(b.kinds, ['added', 'removed']);
+
+    const url = buildCompareDeepLink({
+      base: 'r1',
+      target: 'r2',
+      kinds: ['reason_changed', 'regressed'],
+    });
+    assert.match(url, /kinds=reason_changed%2Cregressed|kinds=regressed%2Creason_changed/);
+    const round = parseDeepLink(url);
+    assert.deepEqual(new Set(round.kinds), new Set(['reason_changed', 'regressed']));
+
+    const bare = buildCompareDeepLink({ base: 'a', target: 'b', kinds: [] });
+    assert.equal(bare, 'studio-reporter://compare?base=a&target=b');
+  });
+
   it('rejects bad input', () => {
     assert.equal(parseDeepLink('').ok, false);
     assert.equal(parseDeepLink('https://example.com').ok, false);
