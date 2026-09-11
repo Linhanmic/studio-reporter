@@ -35,7 +35,7 @@ func RenderReportHTML(r *Report) ([]byte, error) {
 	writeHookAlert(&b, r.PreHookFailure, "Before Suite")
 	writeHookAlert(&b, r.PostHookFailure, "After Suite")
 	for i := range r.Specs {
-		writeSpecBlock(&b, &r.Specs[i], i == 0)
+		writeSpecBlock(&b, &r.Specs[i], i == 0 || r.Specs[i].Verdict == VerdictFail)
 	}
 	b.WriteString("</main>\n")
 	writeStaticFooter(&b, r)
@@ -142,7 +142,7 @@ func writeBodyRow(b *bytes.Buffer, row bodyRow) {
 		kind = "scenario"
 	}
 	tone := toneClass(row.verdict)
-	writeReportBlockOpen(b, tone, row.verdict, kind, false)
+	writeReportBlockOpen(b, tone, row.verdict, kind, row.verdict == VerdictFail)
 	writeBlockSummary(b, html.EscapeString(bodyName(row)), bodyTypeLabel(row), row.verdict, row.duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	if row.kind == "datarow" && len(row.headers) > 0 {

@@ -98,4 +98,20 @@
   });
 
   applyFilter();
+
+  function setDetailsOpen(open) {
+    document.querySelectorAll('.result-pane details.report-block').forEach(function (el) {
+      if (el.classList.contains('filter-hidden')) return;
+      el.open = open;
+    });
+  }
+
+  document.querySelectorAll('.toolbar-actions').forEach(function (group) {
+    group.addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'expand-all') setDetailsOpen(true);
+      if (btn.dataset.action === 'collapse-all') setDetailsOpen(false);
+    });
+  });
 })();
