@@ -71,6 +71,71 @@ func TestFailStepsHashAliasesActivateMode(t *testing.T) {
 	})
 }
 
+// TestShareHashSlashFocusSelectsDOMPathID ensures path-style focus ids
+// (spec:specs/auth/login.spec) survive hash apply and selectNode(getElementById).
+func TestShareHashSlashFocusSelectsDOMPathID(t *testing.T) {
+	chrome, err := findChrome()
+	if err != nil {
+		if os.Getenv("CI") != "" {
+			t.Fatalf("chrome required in CI for slash-focus smoke: %v", err)
+		}
+		t.Skip(err.Error())
+	}
+
+	dir := t.TempDir()
+	index := filepath.Join(dir, "index.html")
+	const focusID = "spec:specs/auth/login.spec"
+	html := `<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>slash-focus-smoke</title>
+<style>` + staticReportCSS + `</style>
+</head>
+<body>
+<nav class="nav-pane">
+  <button type="button" class="nav-item" data-nav-target="overview">Overview</button>
+  <button type="button" class="nav-item" data-nav-target="` + focusID + `">Login</button>
+</nav>
+<div class="result-pane">
+  <section id="overview" class="overview-pane">overview</section>
+  <details class="report-block tone-fail" data-kind="spec" data-verdict="fail" id="` + focusID + `">
+    <summary>Login</summary>
+  </details>
+</div>
+<script>` + staticReportJS + `</script>
+</body></html>`
+	if err := os.WriteFile(index, []byte(html), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fileURL := pathToFileURL(index)
+
+	dom := chromeDumpDOM(t, chrome, fileURL+"#"+focusID)
+	// selectNode opens the matching <details>; fallback to overview would leave it closed.
+	if !strings.Contains(dom, `id="`+focusID+`"`) {
+		t.Fatalf("dom missing focus id %q", focusID)
+	}
+	openRE := regexp.MustCompile(`(?is)<details\b[^>]*\bid="` + regexp.QuoteMeta(focusID) + `"[^>]*>`)
+	m := openRE.FindString(dom)
+	if m == "" {
+		t.Fatalf("details for %q not found in dump-dom", focusID)
+	}
+	if !strings.Contains(m, " open") && !strings.Contains(m, "open>") && !strings.Contains(m, `open="`) {
+		t.Fatalf("expected details open after slash-focus hash; got tag %q", m)
+	}
+	if !strings.Contains(dom, `data-nav-target="`+focusID+`" class="nav-item is-active"`) &&
+		!strings.Contains(dom, `class="nav-item is-active" data-nav-target="`+focusID+`"`) &&
+		!strings.Contains(dom, `is-active`) {
+		// Soft check: at least some nav active state; open details is the hard gate.
+		t.Logf("nav is-active not detected (ok if markup order differs); details open=%q", m)
+	}
+
+	// Legacy %2F form must still resolve to the same DOM node.
+	domLegacy := chromeDumpDOM(t, chrome, fileURL+"#spec:specs%2Fauth%2Flogin.spec")
+	mLegacy := openRE.FindString(domLegacy)
+	if mLegacy == "" || (!strings.Contains(mLegacy, " open") && !strings.Contains(mLegacy, "open>") && !strings.Contains(mLegacy, `open="`)) {
+		t.Fatalf("legacy %%2F focus did not open details; tag=%q", mLegacy)
+	}
+}
+
 func chromeDumpDOM(t *testing.T, chrome, url string) string {
 	t.Helper()
 	prof := t.TempDir() // fresh profile ⇒ no sticky sessionStorage

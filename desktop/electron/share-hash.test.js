@@ -107,4 +107,20 @@ describe('share-hash', () => {
     }
   });
 
+  it('keeps path slash in focus so hash matches DOM ids like spec:specs/auth/login.spec', () => {
+    const focus = 'spec:specs/auth/login.spec';
+    const { encodeShareFocus } = require('./share-hash.js');
+    assert.equal(encodeShareFocus(focus), focus);
+    assert.ok(!encodeShareFocus(focus).includes('%2F'));
+    const h = formatShareHash({ focus, failSteps: true });
+    assert.ok(h.startsWith(focus + '?'));
+    assert.ok(!h.includes('%2F'));
+    const url = appendShareHash('http://127.0.0.1:9/index.html', h);
+    const parsed = parseShareHash(new URL(url).hash);
+    assert.equal(parsed.focus, focus);
+    assert.equal(parsed.failSteps, true);
+    // Legacy percent-encoded slash still resolves to the DOM id.
+    assert.equal(parseShareHash('spec:specs%2Fauth%2Flogin.spec').focus, focus);
+  });
+
 });

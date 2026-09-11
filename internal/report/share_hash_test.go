@@ -94,3 +94,81 @@ func TestShareHashUnicodeAndSpacesRoundTrip(t *testing.T) {
 		t.Fatalf("encoded focus parse %+v", got)
 	}
 }
+
+func TestShareHashSlashFocusAlignsWithDOMPathIDs(t *testing.T) {
+	// convert.specStableID uses "spec:" + filepath, so real DOM ids contain '/'.
+	focus := "spec:specs/auth/login.spec"
+	enc := encodeShareFocus(focus)
+	if strings.Contains(enc, "%2F") || strings.Contains(enc, "%2f") {
+		t.Fatalf("encodeShareFocus must keep '/' literal for DOM id parity, got %q", enc)
+	}
+	if enc != focus {
+		t.Fatalf("slash-only focus should be unchanged, got %q want %q", enc, focus)
+	}
+
+	formatted := FormatShareHash(ShareHash{Focus: focus, FailSteps: true})
+	if !strings.HasPrefix(formatted, focus+"?") {
+		t.Fatalf("FormatShareHash should keep literal slash focus, got %q", formatted)
+	}
+	if strings.Contains(formatted, "%2F") {
+		t.Fatalf("formatted hash must not percent-encode '/': %q", formatted)
+	}
+	got := ParseShareHash(formatted)
+	if got.Focus != focus || !got.FailSteps {
+		t.Fatalf("round-trip %+v via %q", got, formatted)
+	}
+
+	// Legacy links that still percent-encode '/' must decode to the DOM id.
+	legacy := "spec:specs%2Fauth%2Flogin.spec?failSteps=1"
+	got = ParseShareHash(legacy)
+	if got.Focus != focus {
+		t.Fatalf("legacy %%2F focus: got %q want %q", got.Focus, focus)
+	}
+
+	scn := focus + "-scn-0"
+	if encodeShareFocus(scn) != scn {
+		t.Fatalf("scenario path id altered: %q", encodeShareFocus(scn))
+	}
+}
+
+func TestSpecStableIDAndHTMLKeepPathSlash(t *testing.T) {
+	id := specStableID("specs/auth/login.spec", 0)
+	if id != "spec:specs/auth/login.spec" {
+		t.Fatalf("specStableID=%q", id)
+	}
+	r := &Report{
+		ProjectName: "slash-id",
+		Verdict:     VerdictFail,
+		Duration:    "00:00:01.000",
+		Timestamp:   "2026-01-01 00:00:00",
+		Specs: []SpecReport{{
+			ID:       id,
+			Heading:  "Login",
+			FileName: "specs/auth/login.spec",
+			Verdict:  VerdictFail,
+			Duration: "00:00:01.000",
+			Scenarios: []ScenarioReport{{
+				ID:       id + "-scn-0",
+				Heading:  "bad password",
+				Verdict:  VerdictFail,
+				Duration: "00:00:01.000",
+			}},
+		}},
+	}
+	htmlBytes, err := RenderReportHTML(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	htmlStr := string(htmlBytes)
+	wantAttr := `id="` + id + `"`
+	if !strings.Contains(htmlStr, wantAttr) {
+		t.Fatalf("HTML missing %s", wantAttr)
+	}
+	h := FormatShareHash(ShareHash{Focus: id})
+	if strings.Contains(h, "%2F") {
+		t.Fatalf("share hash encoded slash away from DOM id: %q (dom=%q)", h, id)
+	}
+	if ParseShareHash(h).Focus != id {
+		t.Fatalf("parse focus mismatch: %q vs %q", ParseShareHash(h).Focus, id)
+	}
+}

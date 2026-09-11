@@ -567,7 +567,10 @@
 
   function encodeShareFocus(focus) {
     try {
-      return encodeURIComponent(String(focus || '')).replace(/%3A/gi, ':');
+      // Keep ':' and '/' literal — DOM ids are path-stable ("spec:specs/auth/login.spec").
+      return encodeURIComponent(String(focus || ''))
+        .replace(/%3A/gi, ':')
+        .replace(/%2F/gi, '/');
     } catch (e) {
       return String(focus || '');
     }

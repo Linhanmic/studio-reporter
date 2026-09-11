@@ -10,10 +10,11 @@ function normalizeVerdict(v) {
   return s === 'pass' || s === 'fail' || s === 'skip' ? s : 'all';
 }
 
-/** Encode focus for URL fragments; keep ':' (scn:/spec: prefixes). */
+/** Encode focus for URL fragments; keep ':' and '/' (spec path DOM ids). */
 function encodeShareFocus(focus) {
   return encodeURIComponent(String(focus || ''))
-    .replace(/%3A/gi, ':');
+    .replace(/%3A/gi, ':')
+    .replace(/%2F/gi, '/');
 }
 
 function decodeShareFocus(focus) {

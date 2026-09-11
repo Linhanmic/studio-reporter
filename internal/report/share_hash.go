@@ -50,13 +50,16 @@ func failStepsQueryValue(params url.Values) string {
 	return ""
 }
 
-// encodeShareFocus percent-encodes focus for safe URL fragments while keeping ':'
-// (e.g. scn:/spec: prefixes) readable. Spaces and non-ASCII must be encoded so
-// URL.hash round-trips do not leave a percent-encoded focus that no longer matches DOM ids.
+// encodeShareFocus percent-encodes focus for safe URL fragments while keeping
+// ':' and '/' literal. Spec/scenario DOM ids are stable paths like
+// "spec:specs/auth/login.spec"; encoding '/' to %2F makes hash focus diverge
+// from getElementById unless every reader decodes — keep slash so hash ↔ DOM align.
 func encodeShareFocus(focus string) string {
 	enc := url.PathEscape(focus)
 	enc = strings.ReplaceAll(enc, "%3A", ":")
 	enc = strings.ReplaceAll(enc, "%3a", ":")
+	enc = strings.ReplaceAll(enc, "%2F", "/")
+	enc = strings.ReplaceAll(enc, "%2f", "/")
 	return enc
 }
 
