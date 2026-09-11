@@ -45,6 +45,7 @@ func TestRenderReportHTMLStaticShape(t *testing.T) {
 		`expand-all`,
 		`fail-steps-only`,
 		`copy-fail-summary`,
+		`copy-share-link`,
 		`search-input`,
 		`class="err">nope`,
 		"summary-meta",

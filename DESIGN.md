@@ -145,6 +145,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 对比场景类型过滤持久化 | settings `compareScenarioKinds`；与模板/标题一样跨会话恢复；全选折叠为 null |
 | 2026-09-11 | Desktop 对比深链携带场景类型过滤 | compare 深链 `kinds=` 与面板过滤同源；复制深链/分享卡片附带；打开深链恢复勾选并持久化 |
 | 2026-09-11 | 静态报告过滤状态可分享 URL | `#focus?q=&spec=&scenario=&failSteps=1` 与工具栏双向同步；兼容 `#fail-steps`；Go `ParseShareHash` 契约测试 |
+| 2026-09-11 | 静态报告复制可见范围链接 | 工具栏一键复制当前 `#focus?…` 完整 URL；与过滤/定位同源 |
 | 2026-09-11 | 场景级运行对比 | 从两侧 `report.json` 提取 ScenarioLite；按 file+heading+row 对齐；分类 regressed/fixed/added/removed/reason_changed；Desktop 历史对比面板展示 |
 | 2026-09-11 | Desktop 导出进度条 UI | 历史页可视进度条；`formatExportProgress` 统一状态文案（百分比 + basename）；取消仍走 cancel-export |
 | 2026-09-11 | 截图灯箱 ←/→ | 打开后收集 `[data-shot-src]`；←/→ 与前后按钮环绕切换；`#shot-lightbox-pos`；Go/JS 步进契约对齐 |

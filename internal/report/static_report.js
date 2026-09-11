@@ -460,6 +460,7 @@
       if (btn.dataset.action === 'collapse-all') setDetailsOpen(false);
       if (btn.dataset.action === 'fail-steps-only') setFailStepsOnly(!failStepsOnly);
       if (btn.dataset.action === 'copy-fail-summary') copyFailSummary();
+      if (btn.dataset.action === 'copy-share-link') copyShareLink();
     });
   });
 
@@ -724,7 +725,38 @@ function writeHash(id) {
     });
   }
 
-  function copyFailSummary() {
+  
+  function currentShareURL() {
+    try {
+      syncShareHash({ focus: currentFocusId });
+      var href = String(location.href || '');
+      var hash = '#' + buildShareHash({
+        focus: currentFocusId,
+        query: state.query,
+        spec: state.spec,
+        scenario: state.scenario,
+        failSteps: failStepsOnly,
+      });
+      return href.split('#')[0] + hash;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function copyShareLink() {
+    var url = currentShareURL();
+    if (!url) {
+      flashStatus('无法生成分享链接');
+      return;
+    }
+    copyText(url).then(function () {
+      flashStatus('已复制可见范围链接');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
+function copyFailSummary() {
     var text = collectFailSummary();
     if (!text) {
       // If fails are filtered out, briefly switch scenario filter to fail.
