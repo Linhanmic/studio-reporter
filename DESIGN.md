@@ -179,6 +179,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop digest/compare→open 定位 | 历史摘要与对比分享卡产出的 path-style focus 深链，经 Desktop open 管道（parse→hash）后 dump-dom 打开对应 details |
 | 2026-09-11 | 旁路 fail-digest path-style focus | hub `fail-digest.md`/`json` 的 open 深链写入 LastRunFocus（query `%2F`）；与 CLI/Desktop/插件旁路同源 |
 | 2026-09-11 | manage POST 旁路 focus 联调 | serve POST `/api/fail-digest` 后 sidecar 深链 focus 往返；Chrome 打开 archive `#focus?failSteps=1` |
+| 2026-09-11 | Overview 失败原因跳转 path-style | 聚合表点击次数打开含 `/` 的场景 DOM；Chrome dump-dom；纳入 smoke-failsteps-hash |
 | 2026-09-11 | digest 深链特殊 hub 路径编码抽检 | 深链 hub 必须经 query 编码；Go/JS/Desktop 往返覆盖空格与保留字符，避免 `?&#` 截断 |
 | 2026-09-11 | report-browser-smoke CI | PR CI 安装 Chrome 并显式跑 failSteps/manage-digest 浏览器冒烟；避免 go test 在无浏览器环境静默 Skip |
 | 2026-09-11 | manage/serve 旁路与深链联调抽检 | 对照「API 单测 ≠ 页面契约」：用真实 hub + HTTP serve 串起 POST 旁路、sidecar 深链、manage.html/JS 字符串契约与 Chrome 打开 hash；`make smoke-manage-digest` 作为可重复抽检入口 |

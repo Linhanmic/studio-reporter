@@ -153,6 +153,7 @@
 - [x] 对比分享卡与历史摘要 focus 深链在 Desktop 打开后的定位联调（`open-focus-pipeline.test.js`：digest/compare → parseDeepLink → resolveReportOpenHash → Chrome dump-dom）
 - [x] 失败摘要旁路 MD/JSON 写入 path-style focus 深链（`openLinksLatest`/`All` 与 MD 深链带 `focus=` query `%2F`；Go sidecar 写入 + Desktop/report-assets 单测）
 - [x] manage/serve POST 旁路 path-style focus HTTP 联调（`TestManageServeFailDigestDeepLinkSmoke`：sidecar openLinks focus 往返 + Chrome dump-dom 打开对应 details）
+- [x] 静态报告 Overview 失败原因聚合跳转 path-style focus 抽检（`TestOverviewFailReasonJumpPathStyleFocus`：点击次数 → 打开含 `/` 的场景 details；纳入 `smoke-failsteps-hash`）
 
 ## 迭代日志
 
@@ -333,7 +334,8 @@
 | 2026-09-11 | Desktop digest/compare→open 定位联调 | open-focus-pipeline 覆盖历史摘要与对比分享卡 path-style focus 深链：parse→hash→dump-dom 打开 details |
 | 2026-09-11 | 旁路 fail-digest 写入 path-style focus | `historyFailDigestOpenLinks` 对 last run 写入 LastRunFocus；MD/JSON sidecar 与 Desktop 打开契约对齐；Go/Desktop/report-assets 单测 |
 | 2026-09-11 | manage POST 旁路 focus 联调 | FailDigestDeepLinkSmoke：POST 后 sidecar 含 path-style focus；Chrome dump-dom 打开对应 details |
+| 2026-09-11 | Overview 失败原因跳转 path-style focus | 点击聚合次数打开含 `/` 的场景 details；Chrome dump-dom；`smoke-failsteps-hash` 覆盖 |
 
 ## 下一任务（选定）
 
-**静态报告 Overview 失败原因聚合跳转对 path-style focus 的抽检**（点击次数/原因 → 首个失败场景 DOM id 含 `/`），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**Overview 失败原因跳转在仅失败步骤过滤下的 path-style focus 抽检**（fail-steps-mode 下点击聚合仍定位含 `/` 的场景），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

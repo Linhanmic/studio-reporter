@@ -5,5 +5,5 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.27.0}"
 go test ./internal/report/ -count=1 \
-  -run 'TestFailStepsHashAliasesActivateMode|TestShareHashSlashFocusSelectsDOMPathID' -v
+  -run 'TestFailStepsHashAliasesActivateMode|TestShareHashSlashFocusSelectsDOMPathID|TestOverviewFailReasonJumpPathStyleFocus' -v
 echo "smoke-failsteps-hash: ok"
