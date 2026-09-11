@@ -82,6 +82,7 @@ Gauge (gRPC)
 | 2026-09-11 | 静态报告打印尊重过滤器；`--input` 再生含截图 smoke | 打印「所见即所打」优于强制打出全部；uhilreport 再生仍依赖源截图路径可读（当时契约） |
 | 2026-09-11 | `.uhilreport` 截图改为相对 `images/` 路径 | 可移植单元 = uhileport + 同级 `images/`；`--input` 相对输入文件目录解析；旧绝对路径回退 `images/<basename>` |
 | 2026-09-11 | viewer 与静态报告视觉对齐 | 终态跳转后色板/密度一致优先于完全同构 DOM；静态补 frag/行底色/步骤卡；live tag 用品牌 token |
+| 2026-09-11 | manage 历史对比 | 对比信息已在 history.json；客户端勾选两次即可，无需新 API；时长变慢标红、变快标绿 |
 
 ## 前端资源布局（SSoT）
 

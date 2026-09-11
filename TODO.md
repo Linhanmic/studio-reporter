@@ -43,8 +43,8 @@
 ## P4 — 产品演进（可改架构）
 
 - [ ] 评估静态报告是否引入极轻量客户端交互（不过度 SPA 化）
-- [ ] 历史对比（两次归档的 verdict / 时长 diff）
 - [ ] 导出 PDF / 单文件 HTML（内联截图）选项
+- [x] 历史对比（两次归档的 verdict / 时长 / 计数 diff；`manage.html` 勾选 + `CompareHistoryRuns`）
 - [ ] 多 suite / 并行执行下的 hub 写入竞态审计
 
 ## 迭代日志
@@ -61,7 +61,8 @@
 | 2026-09-11 | 打印 CSS + `--input` smoke | 打印尊重 `filter-hidden`（所见即所打）；再生路径断言 `images/` 相对路径与 CLI `--input` |
 | 2026-09-11 | uhileport 截图可移植 | 写入时重写 proto 为 `images/`；`GenerateFromJSON` 以输入文件目录为基路径；smoke 删除绝对源后再 regen |
 | 2026-09-11 | viewer / 静态视觉对齐 | 共享 frag/行底色/统计卡/字号间距；live el-tag 映射到 `--pass/--fail/--skip`；类型标签统一中文 |
+| 2026-09-11 | 历史对比 | manage 勾选两次运行；对比 verdict / 时长 delta / 规格书·场景·步骤计数；纯函数 `CompareHistoryRuns` 可单测 |
 
 ## 下一任务（选定）
 
-**历史对比（两次归档 verdict / 时长 diff）**（P4），或 PDF/单文件 HTML 导出评估。
+**PDF / 单文件 HTML 导出评估**（P4），或多 suite hub 写入竞态审计。

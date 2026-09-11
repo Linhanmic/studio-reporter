@@ -118,7 +118,7 @@ Each entry:
 
 ## Management console and HTTP API
 
-`manage.html` is a standalone page written next to `index.html`. It lists `history.json`, opens runs via their static `index.html`, and deletes archives through the HTTP API. Deleting requires serving the hub:
+`manage.html` is a standalone page written next to `index.html`. It lists `history.json`, opens runs via their static `index.html`, **compares two selected runs** (verdict change, duration delta, specs/scenarios/steps count deltas — computed client-side from history entries), and deletes archives through the HTTP API. Deleting requires serving the hub:
 
 ```bash
 studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
