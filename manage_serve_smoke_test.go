@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -295,5 +296,100 @@ func assertHTMLFailStepsMode(t *testing.T, dom string, want bool) {
 	has := strings.Contains(m, "fail-steps-mode")
 	if has != want {
 		t.Fatalf("html tag %q: fail-steps-mode=%v want %v", m, has, want)
+	}
+}
+
+// TestManageServePathStyleFocusDeepLinkSmoke serves a real archive index over
+// manage/serve HTTP and asserts path-style focus hashes (#spec:specs/… with
+// literal '/' and legacy %2F) open the matching <details>.
+func TestManageServePathStyleFocusDeepLinkSmoke(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv(report.ReportsDirEnv, root)
+	t.Setenv(report.OverwriteReportsEnv, "true")
+	hub := filepath.Join(root, report.FolderName)
+	if err := os.MkdirAll(hub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	r := report.FromSuite(sampleSuite())
+	if err := report.WriteAssets(hub); err != nil {
+		t.Fatal(err)
+	}
+	if err := report.WriteFinalHTML(hub, r, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := recordCompletedRun(hub, r); err != nil {
+		t.Fatal(err)
+	}
+
+	raw, err := os.ReadFile(filepath.Join(hub, historyFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var hist HistoryFile
+	if err := json.Unmarshal(raw, &hist); err != nil {
+		t.Fatal(err)
+	}
+	if len(hist.Runs) < 1 {
+		t.Fatalf("want history run, got %+v", hist.Runs)
+	}
+	entry := hist.Runs[0]
+	archiveIndex := filepath.Join(hub, filepath.FromSlash(entry.RelDir), report.IndexFile)
+	htmlBytes, err := os.ReadFile(archiveIndex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(htmlBytes)
+	const focusID = "spec:specs/auth/login.spec"
+	if !strings.Contains(html, `id="`+focusID+`"`) {
+		t.Fatalf("archive index missing path-style DOM id %q (sampleSuite FileName drift?)", focusID)
+	}
+
+	srv := httptest.NewServer(historyServeMux(hub))
+	defer srv.Close()
+
+	chrome, err := lookPathChrome()
+	if err != nil {
+		if os.Getenv("CI") != "" {
+			t.Fatalf("chrome required in CI for manage/serve path-focus smoke: %v", err)
+		}
+		t.Skip("chrome not available:", err)
+	}
+
+	base := srv.URL + "/" + pathJoinURL(entry.RelDir, report.IndexFile)
+	openRE := regexp.MustCompile(`(?is)<details\b[^>]*\bid="` + regexp.QuoteMeta(focusID) + `"[^>]*>`)
+
+	assertOpen := func(t *testing.T, label, url string) {
+		t.Helper()
+		dom := chromeDumpDOMHTTP(t, chrome, url)
+		m := openRE.FindString(dom)
+		if m == "" {
+			t.Fatalf("%s: details for %q not found", label, focusID)
+		}
+		if !strings.Contains(m, " open") && !strings.Contains(m, "open>") && !strings.Contains(m, `open="`) {
+			t.Fatalf("%s: expected details open; tag=%q url=%s", label, m, url)
+		}
+	}
+
+	// Literal slash in fragment (Desktop/share-hash encodeShareFocus contract).
+	assertOpen(t, "literal-slash", base+"#"+focusID)
+	// With failSteps query on the fragment.
+	assertOpen(t, "slash+failSteps", base+"#"+focusID+"?failSteps=1")
+	assertHTMLFailStepsMode(t, chromeDumpDOMHTTP(t, chrome, base+"#"+focusID+"?failSteps=1"), true)
+	// Legacy percent-encoded slash must still resolve over HTTP serve.
+	assertOpen(t, "legacy-%2F", base+"#spec:specs%2Fauth%2Flogin.spec")
+
+	// Digest-style open deep link encodes focus for query; after Desktop opens,
+	// the hash uses literal slash — lock Go openDeepLink encoding here too.
+	link := openDeepLink(entry.ID, hub, focusID, true)
+	if !strings.Contains(link, "focus=spec%3Aspecs%2Fauth%2Flogin.spec") {
+		t.Fatalf("openDeepLink should query-encode path slash: %s", link)
+	}
+	u, err := url.Parse(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := u.Query().Get("focus"); got != focusID {
+		t.Fatalf("openDeepLink focus round-trip: want %q got %q", focusID, got)
 	}
 }
