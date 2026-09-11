@@ -25,6 +25,31 @@ func normalizeShareVerdict(v string) string {
 	}
 }
 
+// parseFailStepsFlag interprets share/deeplink boolean tokens.
+// Accepted truthy: 1/true/yes; falsy: 0/false/no (case-insensitive).
+// ok=false means the value was empty or unrecognized (leave prior state).
+func parseFailStepsFlag(raw string) (val bool, ok bool) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "1", "true", "yes":
+		return true, true
+	case "0", "false", "no":
+		return false, true
+	default:
+		return false, false
+	}
+}
+
+// failStepsQueryValue reads failSteps from query under canonical + alias keys.
+// Keys (first hit wins): failSteps, fail-steps, failsteps, fail_steps.
+func failStepsQueryValue(params url.Values) string {
+	for _, k := range []string{"failSteps", "fail-steps", "failsteps", "fail_steps"} {
+		if v := params.Get(k); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 // ParseShareHash parses a location.hash (with or without leading #).
 func ParseShareHash(raw string) ShareHash {
 	out := ShareHash{Focus: "overview", Spec: "all", Scenario: "all"}
@@ -70,15 +95,10 @@ func ParseShareHash(raw string) ShareHash {
 			} else if sc := params.Get("scn"); sc != "" {
 				out.Scenario = normalizeShareVerdict(sc)
 			}
-			fs := params.Get("failSteps")
-			if fs == "" {
-				fs = params.Get("fail-steps")
-			}
-			switch strings.ToLower(fs) {
-			case "1", "true", "yes":
-				out.FailSteps = true
-			case "0", "false", "no":
-				out.FailSteps = false
+			if fs := failStepsQueryValue(params); fs != "" {
+				if v, ok := parseFailStepsFlag(fs); ok {
+					out.FailSteps = v
+				}
 			}
 		}
 	}

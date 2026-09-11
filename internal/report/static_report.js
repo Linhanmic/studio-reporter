@@ -453,13 +453,30 @@
     }
   }
 
+  // Keep token folding aligned with Go ParseShareHash / Desktop share-hash.js.
+  function parseFailStepsFlag(raw) {
+    var v = String(raw || '').toLowerCase();
+    if (v === '1' || v === 'true' || v === 'yes') return true;
+    if (v === '0' || v === 'false' || v === 'no') return false;
+    return null;
+  }
+
+  function failStepsParamValue(params) {
+    return (
+      params.get('failSteps') ||
+      params.get('fail-steps') ||
+      params.get('failsteps') ||
+      params.get('fail_steps') ||
+      ''
+    );
+  }
+
   function wantFailStepsFromURL() {
     try {
       var h = (location.hash || '').replace(/^#/, '');
       if (parseShareHash(h).failSteps) return true;
       var q = new URLSearchParams(location.search || '');
-      var v = q.get('failSteps') || q.get('fail-steps') || '';
-      return v === '1' || v === 'true' || v === 'yes';
+      return parseFailStepsFlag(failStepsParamValue(q)) === true;
     } catch (e) {
       return false;
     }
@@ -581,9 +598,8 @@
         var sc = params.get('scenario') || params.get('scn') || params.get('scenarioVerdict') || '';
         if (sp) spec = String(sp);
         if (sc) scenario = String(sc);
-        var fs = params.get('failSteps') || params.get('fail-steps') || params.get('failsteps') || '';
-        if (fs === '1' || fs === 'true' || fs === 'yes') failSteps = true;
-        if (fs === '0' || fs === 'false' || fs === 'no') failSteps = false;
+        var parsedFs = parseFailStepsFlag(failStepsParamValue(params));
+        if (parsedFs != null) failSteps = parsedFs;
       } catch (e) {}
     }
     if (spec !== 'all' && spec !== 'pass' && spec !== 'fail' && spec !== 'skip') spec = 'all';

@@ -40,9 +40,17 @@ function parseShareHash(raw) {
     if (params.get('spec')) out.spec = normalizeVerdict(params.get('spec'));
     const sc = params.get('scenario') || params.get('scn');
     if (sc) out.scenario = normalizeVerdict(sc);
-    const fs = params.get('failSteps') || params.get('fail-steps') || '';
-    if (['1', 'true', 'yes'].includes(String(fs).toLowerCase())) out.failSteps = true;
-    if (['0', 'false', 'no'].includes(String(fs).toLowerCase())) out.failSteps = false;
+    // Keys + truthy/falsy tokens must stay aligned with Go ParseShareHash
+    // and static_report.js (case-insensitive; failsteps / fail_steps aliases).
+    const fs =
+      params.get('failSteps') ||
+      params.get('fail-steps') ||
+      params.get('failsteps') ||
+      params.get('fail_steps') ||
+      '';
+    const token = String(fs).toLowerCase();
+    if (['1', 'true', 'yes'].includes(token)) out.failSteps = true;
+    if (['0', 'false', 'no'].includes(token)) out.failSteps = false;
   }
   out.spec = normalizeVerdict(out.spec);
   out.scenario = normalizeVerdict(out.scenario);

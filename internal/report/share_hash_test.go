@@ -13,6 +13,12 @@ func TestParseFormatShareHash(t *testing.T) {
 		{"#overview?q=login&scenario=fail&failSteps=1", ShareHash{Focus: "overview", Query: "login", Spec: "all", Scenario: "fail", FailSteps: true}},
 		{"scn:abc?spec=fail&scenario=pass", ShareHash{Focus: "scn:abc", Spec: "fail", Scenario: "pass"}},
 		{"overview?q=a+b&fail-steps=true", ShareHash{Focus: "overview", Query: "a b", Spec: "all", Scenario: "all", FailSteps: true}},
+		// Case / alias parity with Desktop share-hash.js + static_report.js
+		{"overview?failSteps=TRUE", ShareHash{Focus: "overview", Spec: "all", Scenario: "all", FailSteps: true}},
+		{"overview?failsteps=1", ShareHash{Focus: "overview", Spec: "all", Scenario: "all", FailSteps: true}},
+		{"overview?fail_steps=Yes", ShareHash{Focus: "overview", Spec: "all", Scenario: "all", FailSteps: true}},
+		{"overview?failSteps=FALSE", ShareHash{Focus: "overview", Spec: "all", Scenario: "all", FailSteps: false}},
+		{"fail-steps&failSteps=0", ShareHash{Focus: "overview", Spec: "all", Scenario: "all", FailSteps: false}},
 	}
 	for _, tc := range cases {
 		got := ParseShareHash(tc.in)

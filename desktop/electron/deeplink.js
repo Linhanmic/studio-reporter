@@ -22,9 +22,11 @@ const PROTOCOL = 'studio-reporter';
  * @returns {boolean}
  */
 function parseFailStepsParam(params) {
+  // Keep aliases + case folding aligned with share-hash.js / Go ParseShareHash.
   const raw =
     params.get('failSteps') ||
     params.get('fail-steps') ||
+    params.get('failsteps') ||
     params.get('fail_steps') ||
     '';
   return ['1', 'true', 'yes'].includes(String(raw).toLowerCase());

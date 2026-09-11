@@ -204,6 +204,10 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`FilterFailReasonGroups`,
 		`applyingHash = true`,
 		`failSteps = null`,
+		`parseFailStepsFlag`,
+		`failStepsParamValue`,
+		`failsteps`,
+		`fail_steps`,
 	} {
 		if !strings.Contains(js, want) {
 			t.Fatalf("static JS missing %q", want)

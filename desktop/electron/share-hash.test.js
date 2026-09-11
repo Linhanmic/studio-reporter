@@ -33,6 +33,15 @@ describe('share-hash', () => {
     assert.equal(p.failSteps, true);
   });
 
+  it('accepts failSteps case and alias keys (parity with Go/static)', () => {
+    assert.equal(parseShareHash('overview?failSteps=TRUE').failSteps, true);
+    assert.equal(parseShareHash('overview?failsteps=1').failSteps, true);
+    assert.equal(parseShareHash('overview?fail_steps=Yes').failSteps, true);
+    assert.equal(parseShareHash('overview?fail-steps=true').failSteps, true);
+    assert.equal(parseShareHash('overview?failSteps=FALSE').failSteps, false);
+    assert.equal(parseShareHash('fail-steps&failSteps=0').failSteps, false);
+  });
+
   it('reportOpenHashFromOutline maps fail verdict to failSteps', () => {
     assert.equal(
       reportOpenHashFromOutline({ query: 'x', verdict: 'fail' }),
