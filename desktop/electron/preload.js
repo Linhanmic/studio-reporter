@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   listHistory: (hubDir) => ipcRenderer.invoke('desktop:list-history', hubDir),
   openHistoryRun: (entry) => ipcRenderer.invoke('desktop:open-history-run', entry),
   exportReport: (kind, entry) => ipcRenderer.invoke('desktop:export-report', kind, entry),
+  deleteHistoryRuns: (ids) => ipcRenderer.invoke('desktop:delete-history-runs', ids),
   filterHistoryRuns,
   pickGaugeProject: () => ipcRenderer.invoke('desktop:pick-gauge-project'),
   gaugeStatus: () => ipcRenderer.invoke('desktop:gauge-status'),

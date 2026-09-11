@@ -22,6 +22,7 @@ const {
   readHistory,
   resolveRunIndex,
   resolveRunUhilreport,
+  deleteHistoryRuns,
 } = require('./settings.js');
 const {
   resolveBundleRoot,
@@ -421,31 +422,71 @@ function registerIpc() {
     return { indexPath, dir: path.dirname(indexPath) };
   });
 
-  ipcMain.handle('desktop:export-report', async (_evt, kind, entry) => {
+  ipcMain.handle('desktop:export-report', async (_evt, kind, entryOrEntries) => {
     const settings = loadSettings(app.getPath('userData'));
     const hub = settings.reportHubDir;
     if (!hub) throw new Error('请先在设置中指定报告根目录');
-    let input = null;
-    if (entry) {
-      input = resolveRunUhilreport(hub, entry);
-      if (!input) throw new Error('所选运行找不到 .uhilreport，请打开归档目录确认');
-    } else {
+    const entries = Array.isArray(entryOrEntries)
+      ? entryOrEntries.filter(Boolean)
+      : entryOrEntries
+        ? [entryOrEntries]
+        : [];
+    const bin = resolveStudioReporterBin(BUNDLE_ROOT);
+    if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
+
+    const exportOne = (input) => {
+      const outDir = path.dirname(input);
+      const args = ['generate', '--input', input, '--out', outDir];
+      if (kind === 'pdf') args.push('--pdf');
+      if (kind === 'single') args.push('--single');
+      const result = spawnSync(bin, args, { encoding: 'utf8' });
+      if (result.status !== 0) {
+        throw new Error(result.stderr || result.stdout || `export failed (${result.status})`);
+      }
+      return { input, out: outDir, log: result.stdout };
+    };
+
+    if (!entries.length) {
       const matches = fs.readdirSync(hub).filter((n) => n.endsWith('.uhilreport'));
       if (!matches.length) throw new Error('报告根目录下没有 .uhilreport');
       matches.sort();
-      input = path.join(hub, matches[matches.length - 1]);
+      const one = exportOne(path.join(hub, matches[matches.length - 1]));
+      return { ok: true, kind, exported: [one] };
     }
-    const bin = resolveStudioReporterBin(BUNDLE_ROOT);
-    if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
-    const outDir = path.dirname(input);
-    const args = ['generate', '--input', input, '--out', outDir];
-    if (kind === 'pdf') args.push('--pdf');
-    if (kind === 'single') args.push('--single');
-    const result = spawnSync(bin, args, { encoding: 'utf8' });
-    if (result.status !== 0) {
-      throw new Error(result.stderr || result.stdout || `export failed (${result.status})`);
+
+    const exported = [];
+    for (const entry of entries) {
+      const input = resolveRunUhilreport(hub, entry);
+      if (!input) {
+        throw new Error(`运行 ${entry.id || entry.href || '?'} 找不到 .uhilreport`);
+      }
+      exported.push(exportOne(input));
     }
-    return { ok: true, input, out: outDir, kind, log: result.stdout };
+    return { ok: true, kind, exported };
+  });
+
+  ipcMain.handle('desktop:delete-history-runs', async (_evt, ids) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = settings.reportHubDir;
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
+    if (!list.length) throw new Error('未选择要删除的运行');
+    const detail =
+      list.length === 1
+        ? `删除运行 ${list[0]}？\n归档文件将被移除且无法恢复。`
+        : `删除所选 ${list.length} 次运行？\n${list.join('\n')}\n\n归档文件将被移除且无法恢复。`;
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      buttons: ['删除', '取消'],
+      defaultId: 1,
+      cancelId: 1,
+      title: '删除历史运行',
+      message: '确认删除历史运行',
+      detail,
+      noLink: true,
+    });
+    if (response !== 0) return { ok: false, cancelled: true, deleted: [] };
+    return deleteHistoryRuns(hub, list);
   });
 
   ipcMain.handle('desktop:pick-gauge-project', async () => {

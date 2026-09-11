@@ -123,6 +123,119 @@ function filterHistoryRuns(runs, opts = {}) {
   });
 }
 
+const RESERVED_HISTORY_NAMES = new Set([
+  '',
+  '.',
+  '..',
+  'archives',
+  'assets',
+  'images',
+  'index.html',
+  'viewer.html',
+  'manage.html',
+  'history.json',
+  'history-live.js',
+  'report.json',
+  'report-live.js',
+]);
+
+function isHistoryRunDir(dir) {
+  try {
+    if (!fs.statSync(dir).isDirectory()) return false;
+  } catch {
+    return false;
+  }
+  return (
+    fs.existsSync(path.join(dir, 'index.html')) ||
+    fs.existsSync(path.join(dir, 'report.json'))
+  );
+}
+
+/**
+ * Atomically rewrite history.json + history-live.js (same payload as Go writeHistoryFile).
+ * @param {string} hubDir
+ * @param {{formatVersion?: number, runs?: object[]}} hist
+ */
+function writeHistoryFile(hubDir, hist) {
+  const payload = {
+    formatVersion: hist?.formatVersion || 1,
+    runs: Array.isArray(hist?.runs) ? hist.runs : [],
+  };
+  const json = `${JSON.stringify(payload, null, 2)}\n`;
+  fs.mkdirSync(hubDir, { recursive: true });
+  const histPath = path.join(hubDir, 'history.json');
+  const histTmp = `${histPath}.tmp`;
+  fs.writeFileSync(histTmp, json);
+  fs.renameSync(histTmp, histPath);
+  const jsPath = path.join(hubDir, 'history-live.js');
+  const jsTmp = `${jsPath}.tmp`;
+  fs.writeFileSync(jsTmp, `window.__GAUGE_HISTORY__=${json.trim()};`);
+  fs.renameSync(jsTmp, jsPath);
+  return payload;
+}
+
+/**
+ * Delete one archived run (mirrors Go deleteHistoryRunLocked).
+ * Removes archives/<id> (or hub/<id>) then drops the history.json entry.
+ * @param {string} hubDir
+ * @param {string} id
+ */
+function deleteHistoryRun(hubDir, id) {
+  if (!hubDir) throw new Error('请先设置报告根目录');
+  const absRoot = path.resolve(hubDir);
+  const cleanId = path.basename(String(id || '').trim());
+  if (
+    RESERVED_HISTORY_NAMES.has(cleanId) ||
+    /[\\/]/.test(String(id || '')) ||
+    cleanId.endsWith('.uhilreport')
+  ) {
+    throw new Error('invalid history id');
+  }
+  const candidates = [
+    path.join(absRoot, 'archives', cleanId),
+    path.join(absRoot, cleanId),
+  ];
+  let removed = null;
+  for (const cand of candidates) {
+    const abs = path.resolve(cand);
+    if (abs === absRoot || !abs.startsWith(`${absRoot}${path.sep}`)) continue;
+    if (!isHistoryRunDir(abs)) continue;
+    fs.rmSync(abs, { recursive: true, force: true });
+    removed = abs;
+    break;
+  }
+  if (!removed) throw new Error(`history run ${cleanId} not found`);
+  const hist = readHistory(absRoot);
+  const nextRuns = (hist.runs || []).filter((r) => r.id !== cleanId);
+  writeHistoryFile(absRoot, {
+    formatVersion: hist.formatVersion || 1,
+    runs: nextRuns,
+  });
+  return { ok: true, id: cleanId, removed };
+}
+
+/**
+ * Delete multiple runs sequentially.
+ * @param {string} hubDir
+ * @param {string[]} ids
+ */
+function deleteHistoryRuns(hubDir, ids) {
+  const list = [
+    ...new Set(
+      (Array.isArray(ids) ? ids : [])
+        .map((id) => path.basename(String(id || '').trim()))
+        .filter(Boolean)
+    ),
+  ];
+  if (!list.length) throw new Error('未选择要删除的运行');
+  const deleted = [];
+  for (const id of list) {
+    deleteHistoryRun(hubDir, id);
+    deleted.push(id);
+  }
+  return { ok: true, deleted };
+}
+
 module.exports = {
   DEFAULTS,
   settingsPath,
@@ -132,4 +245,7 @@ module.exports = {
   resolveRunIndex,
   resolveRunUhilreport,
   filterHistoryRuns,
+  writeHistoryFile,
+  deleteHistoryRun,
+  deleteHistoryRuns,
 };

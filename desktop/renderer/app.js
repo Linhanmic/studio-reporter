@@ -266,17 +266,22 @@ function deltaClass(ms) {
   return 'delta-same';
 }
 
-function updateCompareButton() {
+function updateHistoryActionButtons() {
   const n = state.selectedIds.length;
-  const btn = $('btnCompareRuns');
-  btn.disabled = n !== 2;
-  btn.textContent = `对比所选（${n}/2）`;
+  const compareBtn = $('btnCompareRuns');
+  compareBtn.disabled = n !== 2;
+  compareBtn.textContent = `对比所选（${n}/2）`;
+  const deleteBtn = $('btnDeleteRuns');
+  if (deleteBtn) {
+    deleteBtn.disabled = n < 1;
+    deleteBtn.textContent = n > 0 ? `删除所选（${n}）` : '删除所选';
+  }
 }
 
 function toggleSelect(id, checked) {
   if (checked) {
     if (!state.selectedIds.includes(id)) state.selectedIds.push(id);
-    while (state.selectedIds.length > 2) {
+    while (state.selectedIds.length > 50) {
       const dropped = state.selectedIds.shift();
       const box = document.querySelector(`input.pick[data-id="${CSS.escape(dropped)}"]`);
       if (box) box.checked = false;
@@ -284,7 +289,7 @@ function toggleSelect(id, checked) {
   } else {
     state.selectedIds = state.selectedIds.filter((x) => x !== id);
   }
-  updateCompareButton();
+  updateHistoryActionButtons();
 }
 
 function renderCompare(cmp) {
@@ -322,7 +327,7 @@ async function refreshHistory() {
   const empty = $('historyEmpty');
   list.innerHTML = '';
   state.selectedIds = [];
-  updateCompareButton();
+  updateHistoryActionButtons();
   $('comparePanel').classList.add('hidden');
   try {
     const hist = await window.desktopAPI.listHistory();
@@ -365,7 +370,7 @@ function renderHistoryList(histMeta) {
     const row = document.createElement('div');
     row.className = 'history-row';
     row.innerHTML = `
-      <input class="pick" type="checkbox" data-id="${escapeHtml(id)}" title="勾选以对比或导出" ${state.selectedIds.includes(id) ? 'checked' : ''}>
+      <input class="pick" type="checkbox" data-id="${escapeHtml(id)}" title="勾选以对比、导出或删除" ${state.selectedIds.includes(id) ? 'checked' : ''}>
       <span class="verdict ${verdictClass(run.verdict)}">${escapeHtml(run.verdict || '—')}</span>
       <span class="hist-main">
         <strong>${escapeHtml(run.projectName || id)}</strong>
@@ -390,20 +395,50 @@ function renderHistoryList(histMeta) {
   });
 }
 
+function selectedHistoryEntries() {
+  return state.selectedIds
+    .map((id) => state.historyRuns.find((r) => r.id === id))
+    .filter(Boolean);
+}
+
 function selectedHistoryEntry() {
-  if (state.selectedIds.length !== 1) return null;
-  return state.historyRuns.find((r) => r.id === state.selectedIds[0]) || null;
+  const entries = selectedHistoryEntries();
+  return entries.length === 1 ? entries[0] : null;
 }
 
 async function exportSelectedOrLatest(kind) {
-  const entry = selectedHistoryEntry();
+  const entries = selectedHistoryEntries();
   const label = kind === 'pdf' ? 'PDF' : '单文件 HTML';
   try {
-    await window.desktopAPI.exportReport(kind, entry || undefined);
+    if (!entries.length) {
+      await window.desktopAPI.exportReport(kind);
+      setStatus(`已导出最新运行的 ${label}`, 'ok');
+      return;
+    }
+    await window.desktopAPI.exportReport(kind, entries.length === 1 ? entries[0] : entries);
     setStatus(
-      entry ? `已导出所选运行的 ${label}` : `已导出最新运行的 ${label}`,
+      entries.length === 1
+        ? `已导出所选运行的 ${label}`
+        : `已批量导出 ${entries.length} 次运行的 ${label}`,
       'ok'
     );
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+async function deleteSelectedRuns() {
+  const entries = selectedHistoryEntries();
+  if (!entries.length) return;
+  try {
+    const result = await window.desktopAPI.deleteHistoryRuns(entries.map((e) => e.id));
+    if (result?.cancelled) {
+      setStatus('已取消删除', 'warn');
+      return;
+    }
+    const n = (result?.deleted || []).length;
+    setStatus(n ? `已删除 ${n} 次历史运行` : '未删除任何运行', n ? 'ok' : 'warn');
+    await refreshHistory();
   } catch (err) {
     setStatus(String(err.message || err), 'warn');
   }
@@ -699,6 +734,7 @@ function wire() {
   });
   $('btnExportPdf').addEventListener('click', () => exportSelectedOrLatest('pdf'));
   $('btnExportSingle').addEventListener('click', () => exportSelectedOrLatest('single'));
+  $('btnDeleteRuns')?.addEventListener('click', () => deleteSelectedRuns());
   $('historyQuery')?.addEventListener('input', () => {
     state.historyQuery = $('historyQuery').value || '';
     renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });

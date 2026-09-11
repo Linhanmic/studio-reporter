@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunUhilreport, filterHistoryRuns } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -55,4 +55,63 @@ describe('settings history helpers', () => {
     const entry = { id: 'run-1', href: 'archives/run-1/index.html' };
     assert.equal(resolveRunUhilreport(dir, entry), uhil);
   });
+
+  it('deleteHistoryRun removes archive and history entry', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-hist-del-'));
+    const arch = path.join(dir, 'archives', 'run-1');
+    fs.mkdirSync(arch, { recursive: true });
+    fs.writeFileSync(path.join(arch, 'index.html'), '<html></html>');
+    fs.writeFileSync(
+      path.join(dir, 'history.json'),
+      JSON.stringify({
+        formatVersion: 1,
+        runs: [
+          { id: 'run-1', href: 'archives/run-1/index.html', projectName: 'demo', verdict: 'pass' },
+          { id: 'run-2', href: 'archives/run-2/index.html', projectName: 'demo', verdict: 'fail' },
+        ],
+      })
+    );
+    const result = deleteHistoryRun(dir, 'run-1');
+    assert.equal(result.id, 'run-1');
+    assert.equal(fs.existsSync(arch), false);
+    const hist = readHistory(dir);
+    assert.equal(hist.runs.length, 1);
+    assert.equal(hist.runs[0].id, 'run-2');
+    assert.ok(fs.existsSync(path.join(dir, 'history-live.js')));
+  });
+
+  it('deleteHistoryRun rejects reserved hub files', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-hist-reserved-'));
+    fs.writeFileSync(path.join(dir, 'history.json'), JSON.stringify({ formatVersion: 1, runs: [] }));
+    fs.writeFileSync(path.join(dir, 'index.html'), '<html></html>');
+    assert.throws(() => deleteHistoryRun(dir, 'index.html'));
+    assert.throws(() => deleteHistoryRun(dir, 'history.json'));
+    assert.ok(fs.existsSync(path.join(dir, 'index.html')));
+  });
+
+  it('deleteHistoryRuns deletes multiple ids', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-hist-batch-'));
+    for (const id of ['a', 'b', 'c']) {
+      const arch = path.join(dir, 'archives', id);
+      fs.mkdirSync(arch, { recursive: true });
+      fs.writeFileSync(path.join(arch, 'index.html'), '<html></html>');
+    }
+    fs.writeFileSync(
+      path.join(dir, 'history.json'),
+      JSON.stringify({
+        formatVersion: 1,
+        runs: [
+          { id: 'a', href: 'archives/a/index.html' },
+          { id: 'b', href: 'archives/b/index.html' },
+          { id: 'c', href: 'archives/c/index.html' },
+        ],
+      })
+    );
+    const result = deleteHistoryRuns(dir, ['a', 'c']);
+    assert.deepEqual(result.deleted, ['a', 'c']);
+    const hist = readHistory(dir);
+    assert.equal(hist.runs.length, 1);
+    assert.equal(hist.runs[0].id, 'b');
+  });
+
 });
