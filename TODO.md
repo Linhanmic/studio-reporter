@@ -77,6 +77,7 @@
 - [x] Desktop 安装包冒烟（`pack:dir` + 解包布局校验；CI `desktop-pack-smoke`）
 - [x] Desktop 历史对比 UX 深化（交换方向 / 复制 JSON / 导出后打开与显示文件夹）
 - [x] Desktop 统一大纲搜索（live/终态同步过滤、`/` 聚焦、查询/结论过滤持久化）
+- [x] Desktop 失败路径一键跳转（大纲「上一/下一失败」+ `j`/`k`；`listFailScenarioIds`/`nextFailScenarioId`；选中同步 iframe）
 
 ## 迭代日志
 
@@ -127,7 +128,8 @@
 | 2026-09-11 | Desktop 安装包冒烟 | `verify-pack-dir.js` 校验 electron-builder `--dir` 产物（app + extraResources）；`make desktop-pack-smoke`；CI job `desktop-pack-smoke` |
 | 2026-09-11 | Desktop 历史对比 UX 深化 | 对比面板：交换基线/目标、复制 JSON（`studio-reporter.compare/v1`）、导出后打开卡片/显示文件夹 |
 | 2026-09-11 | Desktop 统一大纲搜索 | 大纲 query/verdict 持久化；切页与 iframe load 重放 `studio-reporter:filter`；`/` 聚焦搜索框 |
+| 2026-09-11 | Desktop 失败路径一键跳转 | 大纲「上一失败 / 下一失败」；主机层 `j`/`k`；`outlineFocusId` 高亮；必要时自动切到 fail 过滤并 `select-node` |
 
 ## 下一任务（选定）
 
-**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或报告失败路径一键跳转增强。
+**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或安装包冒烟扩展到 Windows/mac 产物布局，或历史对比导出模板可配置。

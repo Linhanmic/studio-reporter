@@ -121,8 +121,48 @@ function filterOutline(outline, opts = {}) {
   return { ...outline, specs };
 }
 
+/**
+ * Collect failed scenario ids in document order.
+ * @param {ReturnType<typeof buildReportOutline>|null|undefined} outline
+ * @returns {string[]}
+ */
+function listFailScenarioIds(outline) {
+  const ids = [];
+  for (const spec of outline?.specs || []) {
+    for (const scn of spec.scenarios || []) {
+      if (String(scn.verdict || '').toLowerCase() !== 'fail') continue;
+      const id = String(scn.id || '').trim();
+      if (id) ids.push(id);
+    }
+  }
+  return ids;
+}
+
+/**
+ * Pick the next/previous failed scenario id.
+ * @param {ReturnType<typeof buildReportOutline>|null|undefined} outline
+ * @param {string} [currentId]
+ * @param {number} [delta=1]
+ * @returns {{ id: string|null, index: number, total: number }}
+ */
+function nextFailScenarioId(outline, currentId = '', delta = 1) {
+  const ids = listFailScenarioIds(outline);
+  if (!ids.length) return { id: null, index: -1, total: 0 };
+  const step = Number(delta);
+  const dir = Number.isFinite(step) && step !== 0 ? Math.sign(step) : 1;
+  let idx = ids.indexOf(String(currentId || ''));
+  if (idx < 0) {
+    idx = dir > 0 ? 0 : ids.length - 1;
+  } else {
+    idx = (idx + dir + ids.length) % ids.length;
+  }
+  return { id: ids[idx], index: idx, total: ids.length };
+}
+
 module.exports = {
   buildReportOutline,
   loadOutlineFromReportDir,
   filterOutline,
+  listFailScenarioIds,
+  nextFailScenarioId,
 };

@@ -19,6 +19,7 @@ const state = {
   outline: null,
   outlineQuery: '',
   outlineVerdict: 'all',
+  outlineFocusId: '',
   activeTab: 'run',
 };
 
@@ -226,8 +227,52 @@ function showLive(url) {
   $('liveEmpty').classList.add('hidden');
 }
 
+
+function updateOutlineFailMeta() {
+  const el = $('outlineFailMeta');
+  if (!el) return;
+  const ids = window.desktopAPI.listFailScenarioIds(state.outline);
+  if (!ids.length) {
+    el.textContent = '无失败';
+    return;
+  }
+  const idx = ids.indexOf(state.outlineFocusId);
+  el.textContent = idx >= 0 ? `失败 ${idx + 1}/${ids.length}` : `失败 ${ids.length}`;
+}
+
+function jumpOutlineFail(delta) {
+  const result = window.desktopAPI.nextFailScenarioId(
+    state.outline,
+    state.outlineFocusId,
+    delta
+  );
+  if (!result.id) {
+    setStatus('当前大纲没有失败场景', 'warn');
+    updateOutlineFailMeta();
+    return;
+  }
+  if (state.activeTab !== 'run' && state.activeTab !== 'report') {
+    setTab('run', { persist: false });
+  }
+  // Make fails visible in the outline filter when needed.
+  if (state.outlineVerdict !== 'all' && state.outlineVerdict !== 'fail') {
+    state.outlineVerdict = 'fail';
+    applyOutlineFilterToUi();
+    persistOutlineFilter();
+  }
+  state.outlineFocusId = result.id;
+  renderOutline();
+  postSelectNode(result.id);
+  const btn = document.querySelector(`#outlineTree [data-node-id="${CSS.escape(result.id)}"]`);
+  btn?.scrollIntoView({ block: 'nearest' });
+  setStatus(`失败场景 ${result.index + 1}/${result.total}`, 'ok');
+  updateOutlineFailMeta();
+}
+
 function postSelectNode(id) {
   if (!id) return;
+  state.outlineFocusId = id;
+  updateOutlineFailMeta();
   const tab = state.activeTab || 'run';
   const frame = tab === 'report' ? $('reportFrame') : $('liveFrame');
   if (!frame || !frame.contentWindow) return;
@@ -317,11 +362,13 @@ function renderOutline(outline) {
   if (!state.outline || !state.outline.specs?.length) {
     meta.textContent = state.outline?.running ? '运行中…' : '等待快照…';
     tree.innerHTML = '<div class="outline-empty">连接并运行后显示规格书 / 场景大纲</div>';
+    updateOutlineFailMeta();
     return;
   }
   if (!view?.specs?.length) {
     meta.textContent = '无匹配';
     tree.innerHTML = '<div class="outline-empty">没有匹配当前搜索 / 过滤的节点</div>';
+    updateOutlineFailMeta();
     return;
   }
   const parts = [];
@@ -335,14 +382,20 @@ function renderOutline(outline) {
     parts.push(`${shownScn}/${totalScn}`);
   }
   meta.textContent = parts.join(' · ') || '大纲';
+  const focusId = state.outlineFocusId || '';
   tree.innerHTML = view.specs.map((spec) => {
-    const specCurrent = spec.id && spec.id === view.currentSpecId ? ' current' : '';
+    const specCurrent =
+      (spec.id && (spec.id === focusId || spec.id === view.currentSpecId)) ? ' current' : '';
     const scnHtml = (spec.scenarios || []).map((scn) => {
-      const scnCurrent = scn.id && scn.id === view.currentScenarioId ? ' current' : '';
+      const scnCurrent =
+        (scn.id && (scn.id === focusId || (!focusId && scn.id === view.currentScenarioId)))
+          ? ' current'
+          : '';
       return `<button type="button" class="outline-scn${scnCurrent}" data-node-id="${escapeHtml(scn.id)}">${verdictChip(scn.verdict)}${escapeHtml(scn.heading || scn.id)}</button>`;
     }).join('');
     return `<button type="button" class="outline-spec${specCurrent}" data-node-id="${escapeHtml(spec.id)}">${verdictChip(spec.verdict)}${escapeHtml(spec.heading || spec.fileName || spec.id)}</button>${scnHtml}`;
   }).join('');
+  updateOutlineFailMeta();
 }
 
 function showReport(url) {
@@ -1132,6 +1185,16 @@ function wire() {
         return;
       }
     }
+    if ((e.key === 'j' || e.key === 'J' || e.key === 'k' || e.key === 'K') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (
+        (state.activeTab === 'run' || state.activeTab === 'report') &&
+        !window.desktopAPI.shouldIgnoreShortcutTarget(e.target)
+      ) {
+        e.preventDefault();
+        jumpOutlineFail(e.key === 'k' || e.key === 'K' ? -1 : 1);
+        return;
+      }
+    }
     if (window.desktopAPI.shouldIgnoreShortcutTarget(e.target)) return;
     const action = window.desktopAPI.matchShortcut(e);
     if (!action || action.type === 'open-report') return;
@@ -1282,7 +1345,10 @@ function wire() {
     const btn = ev.target.closest('[data-node-id]');
     if (!btn) return;
     postSelectNode(btn.getAttribute('data-node-id'));
+    renderOutline();
   });
+  $('btnOutlinePrevFail')?.addEventListener('click', () => jumpOutlineFail(-1));
+  $('btnOutlineNextFail')?.addEventListener('click', () => jumpOutlineFail(1));
   $('outlineQuery')?.addEventListener('input', () => {
     state.outlineQuery = $('outlineQuery').value || '';
     renderOutline();

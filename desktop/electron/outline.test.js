@@ -5,7 +5,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { buildReportOutline, loadOutlineFromReportDir, filterOutline } = require('./outline.js');
+const {
+  buildReportOutline,
+  loadOutlineFromReportDir,
+  filterOutline,
+  listFailScenarioIds,
+  nextFailScenarioId,
+} = require('./outline.js');
 
 describe('outline', () => {
   it('builds slim spec→scenario tree', () => {
@@ -106,5 +112,35 @@ describe('outline', () => {
     assert.ok(fails.specs[0].scenarios.every((s) => s.verdict === 'fail'));
 
     assert.equal(filterOutline(null, { query: 'x' }), null);
+  });
+
+  it('listFailScenarioIds and nextFailScenarioId walk failures', () => {
+    const outline = buildReportOutline({
+      report: {
+        specs: [
+          {
+            id: 's1',
+            heading: 'A',
+            verdict: 'fail',
+            scenarios: [
+              { id: 'ok', heading: 'ok', verdict: 'pass' },
+              { id: 'f1', heading: 'fail-1', verdict: 'fail' },
+            ],
+          },
+          {
+            id: 's2',
+            heading: 'B',
+            verdict: 'fail',
+            scenarios: [{ id: 'f2', heading: 'fail-2', verdict: 'fail' }],
+          },
+        ],
+      },
+    });
+    assert.deepEqual(listFailScenarioIds(outline), ['f1', 'f2']);
+    assert.equal(nextFailScenarioId(outline, '', 1).id, 'f1');
+    assert.equal(nextFailScenarioId(outline, 'f1', 1).id, 'f2');
+    assert.equal(nextFailScenarioId(outline, 'f2', 1).id, 'f1');
+    assert.equal(nextFailScenarioId(outline, 'f1', -1).id, 'f2');
+    assert.equal(nextFailScenarioId(null).total, 0);
   });
 });
