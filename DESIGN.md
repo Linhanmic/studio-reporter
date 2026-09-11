@@ -169,6 +169,7 @@ Gauge (gRPC)
 | 2026-09-11 | uhilreport/manage 深链 failSteps | `.uhilreport` 深链仅 failSteps 时也要 `openReportDir` 挂 hash；manage 失败「打开」带 `#overview?failSteps=1` |
 | 2026-09-11 | failSteps 解析跨端对齐 | 契约：键 failSteps/fail-steps/failsteps/fail_steps；真值 1/true/yes、假值 0/false/no（大小写不敏感）；空 hash 静态端仍用 null 保会话 |
 | 2026-09-11 | Desktop 打包 unsigned 闸门 | CI 增加 Win 交叉 pack smoke；pack-smoke/Release 强制 unsigned；文档写明 secrets 清单未注入 workflow |
+| 2026-09-11 | failSteps 别名浏览器冒烟 | headless dump-dom 门禁别名契约；与 Go/Desktop 解析表同源；CI 可通过 `make smoke-failsteps-hash` |
 | 2026-09-11 | 自动更新 feed 离线校验 | `update-feed.js` 校验 latest*.yml 与 publish owner/repo；签名 secrets 文档化，证书到位前保持 unsigned |
 | 2026-09-11 | Release 无签名可发 | tag Release 分 plugin/linux/win；SHA256SUMS；`CSC_IDENTITY_AUTO_DISCOVERY=false`；签名 secrets 仍为可选 |
 | 2026-09-11 | Desktop 历史趋势 / 不稳定场景 | 过滤窗口 suite 趋势（history.json）+ report.json 场景翻转检测；与 pairwise compare 共用 scenarioKey |

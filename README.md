@@ -226,6 +226,7 @@ make ci      # check-assets + vet + test + build
 make cover   # go test -coverprofile + function/package summary
 make smoke-input  # --input regeneration + screenshot relative paths
 make smoke-complex  # dense fixture (nested concepts / shots / CJK / skip)
+make smoke-failsteps-hash  # failSteps hash aliases via Chrome dump-dom
 make demo-complex   # write .demo/complex-hub for manual browsing
 make lint    # golangci-lint v2 (install matching CI pin locally)
 make sync-assets

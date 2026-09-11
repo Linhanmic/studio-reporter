@@ -140,6 +140,7 @@
 - [x] 静态报告 PDF/打印样式回归抽检（修复 `#fail-steps` 启动被 `applyFilter`→`syncShareHash` 冲掉；`print-color-adjust`；Chrome `--virtual-time-budget`；复杂 hub PDF 指纹差分测试）
 - [x] 静态报告 failSteps 解析大小写/别名与 Go/Desktop 对齐（`TRUE`/`failsteps`/`fail_steps`）
 - [x] Desktop 打包冒烟扩展：CI Win 交叉 `pack:dir:win` + unsigned 闸门文档对齐（`CSC_IDENTITY_AUTO_DISCOVERY=false`）
+- [x] 静态报告 failSteps 别名浏览器冒烟（Chrome dump-dom；`make smoke-failsteps-hash`；覆盖 TRUE/failsteps/fail_steps/FALSE）
 
 ## 迭代日志
 
@@ -299,4 +300,4 @@
 
 ## 下一任务（选定）
 
-**静态报告/share-hash 端到端浏览器冒烟（failSteps 别名）**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**manage/serve 失败摘要旁路与深链联调抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
