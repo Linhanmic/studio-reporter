@@ -95,6 +95,50 @@ describe('compare share card', () => {
     assert.throws(() => buildCompareShareMarkdown(null), /无效/);
     assert.throws(() => buildCompareShareCardHtml({}), /无效/);
   });
+  it('includes scenarioCompare in markdown, HTML, and JSON', () => {
+    const { base, target } = sampleEntries();
+    const cmp = compareHistoryRuns(base, target);
+    cmp.scenarioCompare = {
+      changed: [
+        {
+          kind: 'regressed',
+          specName: 'Login',
+          scnName: 'valid user',
+          baseVerdict: 'pass',
+          targetVerdict: 'fail',
+          targetReason: 'timeout after 30s',
+        },
+        {
+          kind: 'fixed',
+          specName: 'Pay',
+          scnName: 'ok path',
+          baseVerdict: 'fail',
+          targetVerdict: 'pass',
+          baseReason: 'null pointer',
+        },
+      ],
+      unchangedCount: 2,
+      baseCount: 4,
+      targetCount: 4,
+    };
+
+    const md = buildCompareShareMarkdown(cmp, { title: '场景 diff' });
+    assert.match(md, /## 场景级差异/);
+    assert.match(md, /变差/);
+    assert.match(md, /Login · valid user/);
+    assert.match(md, /timeout after 30s/);
+
+    const html = buildCompareShareCardHtml(cmp, { title: '场景 diff' });
+    assert.match(html, /scenario-diff/);
+    assert.match(html, /变差/);
+    assert.match(html, /timeout after 30s/);
+    assert.match(html, /修复/);
+
+    const json = JSON.parse(buildCompareShareJson(cmp));
+    assert.equal(json.scenarioCompare.changedCount, 2);
+    assert.equal(json.scenarioCompare.changed[0].kind, 'regressed');
+    assert.equal(json.scenarioCompare.unchangedCount, 2);
+  });
 });
 
 describe('compare invert and json', () => {

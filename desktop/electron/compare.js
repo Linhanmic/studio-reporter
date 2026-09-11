@@ -88,6 +88,98 @@ function projectLabel(cmp) {
  * Stable basename for share-card files (no path separators).
  * @param {ReturnType<typeof compareHistoryRuns>} cmp
  */
+
+/**
+ * Markdown bullets for optional cmp.scenarioCompare.
+ * @param {object|null|undefined} sc
+ * @param {{ limit?: number }} [opts]
+ */
+function formatScenarioCompareMarkdown(sc, opts = {}) {
+  if (!sc) return '';
+  const { scenarioDiffKindLabel } = require('./scenario-compare.js');
+  const limit = Math.max(1, Number(opts.limit) || 20);
+  const changed = Array.isArray(sc.changed) ? sc.changed : [];
+  const lines = [
+    '## 场景级差异',
+    '',
+    `共 ${changed.length} 变 · ${Number(sc.unchangedCount) || 0} 不变 · ${Number(sc.baseCount) || 0}→${Number(sc.targetCount) || 0}`,
+  ];
+  if (!changed.length) {
+    lines.push('', '_场景结论与失败原因均无变化_');
+    return lines.join('\n');
+  }
+  lines.push('');
+  for (const d of changed.slice(0, limit)) {
+    const kind = scenarioDiffKindLabel(d.kind);
+    const name = `${d.specName || '—'} · ${d.scnName || '—'}`;
+    let verdict = '';
+    if (d.kind === 'added') verdict = d.targetVerdict || '—';
+    else if (d.kind === 'removed') verdict = d.baseVerdict || '—';
+    else verdict = `${d.baseVerdict || '—'} → ${d.targetVerdict || '—'}`;
+    let line = `- **${kind}** ${name}（${verdict}）`;
+    const reason = d.targetReason || d.baseReason || '';
+    if (
+      reason &&
+      (d.kind === 'reason_changed' ||
+        d.kind === 'regressed' ||
+        d.kind === 'added' ||
+        d.kind === 'removed')
+    ) {
+      line += ` — ${reason}`;
+    }
+    lines.push(line);
+  }
+  if (changed.length > limit) {
+    lines.push(`- _另有 ${changed.length - limit} 条未列出_`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * HTML section for optional cmp.scenarioCompare inside the share card.
+ * @param {object|null|undefined} sc
+ * @param {{ limit?: number }} [opts]
+ */
+function formatScenarioCompareHtml(sc, opts = {}) {
+  if (!sc) return '';
+  const { scenarioDiffKindLabel } = require('./scenario-compare.js');
+  const limit = Math.max(1, Number(opts.limit) || 20);
+  const changed = Array.isArray(sc.changed) ? sc.changed : [];
+  const head = `<section class="scenario-diff">
+    <h2>场景级差异 <span class="muted">${changed.length} 变 · ${Number(sc.unchangedCount) || 0} 不变 · ${Number(sc.baseCount) || 0}→${Number(sc.targetCount) || 0}</span></h2>`;
+  if (!changed.length) {
+    return `${head}<p class="muted">场景结论与失败原因均无变化</p></section>`;
+  }
+  const items = changed
+    .slice(0, limit)
+    .map((d) => {
+      const kind = scenarioDiffKindLabel(d.kind);
+      const name = `${d.specName || '—'} · ${d.scnName || '—'}`;
+      let verdict = '';
+      if (d.kind === 'added') verdict = d.targetVerdict || '—';
+      else if (d.kind === 'removed') verdict = d.baseVerdict || '—';
+      else verdict = `${d.baseVerdict || '—'} → ${d.targetVerdict || '—'}`;
+      let reason = '';
+      if (d.kind === 'reason_changed' || d.kind === 'regressed' || d.kind === 'added') {
+        reason = d.targetReason || d.baseReason || '';
+      } else if (d.kind === 'removed') {
+        reason = d.baseReason || '';
+      }
+      return `<li class="scenario-diff-item kind-${escapeHtml(d.kind || '')}">
+      <span class="scenario-diff-kind">${escapeHtml(kind)}</span>
+      <span class="scenario-diff-name">${escapeHtml(name)}</span>
+      <span class="scenario-diff-verdict muted">${escapeHtml(verdict)}</span>
+      ${reason ? `<span class="scenario-diff-reason muted" title="${escapeHtml(reason)}">${escapeHtml(reason)}</span>` : ''}
+    </li>`;
+    })
+    .join('');
+  const more =
+    changed.length > limit
+      ? `<p class="muted">另有 ${changed.length - limit} 条未显示</p>`
+      : '';
+  return `${head}<ul class="scenario-diff-list">${items}</ul>${more}</section>`;
+}
+
 function suggestedCompareShareBasename(cmp) {
   const baseId = String(cmp?.base?.id || 'base').replace(/[^\w.-]+/g, '_').slice(0, 48);
   const targetId = String(cmp?.target?.id || 'target').replace(/[^\w.-]+/g, '_').slice(0, 48);
@@ -121,9 +213,15 @@ function buildCompareShareMarkdown(cmp, opts = {}) {
     `- 场景 ${formatCountsDelta(cmp.scenarios)}`,
     `- 步骤 ${formatCountsDelta(cmp.steps)}`,
     '',
-    '_由 Studio Reporter Desktop 生成_',
-  ].filter((x) => x != null);
-  return lines.join('\n');
+  ];
+  const scMd = formatScenarioCompareMarkdown(cmp.scenarioCompare);
+  if (scMd) {
+    lines.push(scMd, '');
+  } else if (cmp.scenarioCompareWarning) {
+    lines.push('## 场景级差异', '', `_${cmp.scenarioCompareWarning}_`, '');
+  }
+  lines.push('_由 Studio Reporter Desktop 生成_');
+  return lines.filter((x) => x != null).join('\n');
 }
 
 const COMPARE_CARD_TEMPLATES = new Set(['default', 'light', 'compact']);
@@ -306,6 +404,51 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
   .delta.same .v { color: var(--ok); }
   .delta.worse .v { color: var(--bad); }
   .delta.better .v { color: var(--ok); }
+
+  .scenario-diff {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .scenario-diff h2 {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .scenario-diff h2 .muted { font-weight: 500; text-transform: none; letter-spacing: 0; margin-left: 8px; }
+  .scenario-diff-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .scenario-diff-item {
+    display: grid;
+    grid-template-columns: 72px 1fr auto;
+    gap: 4px 10px;
+    align-items: baseline;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.03);
+  }
+  html[data-template="light"] .scenario-diff-item { background: rgba(15,40,60,.04); }
+  .scenario-diff-kind { font-weight: 650; }
+  .scenario-diff-item.kind-regressed .scenario-diff-kind { color: var(--bad); }
+  .scenario-diff-item.kind-fixed .scenario-diff-kind { color: var(--ok); }
+  .scenario-diff-item.kind-added .scenario-diff-kind,
+  .scenario-diff-item.kind-removed .scenario-diff-kind { color: var(--skip); }
+  .scenario-diff-reason {
+    grid-column: 2 / -1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .muted { color: var(--muted); }
   footer {
     margin-top: 18px;
     padding-top: 12px;
@@ -331,6 +474,9 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
       <div class="delta"><span class="k">场景</span><span class="v">${escapeHtml(formatCountsDelta(cmp.scenarios))}</span></div>
       <div class="delta"><span class="k">步骤</span><span class="v">${escapeHtml(formatCountsDelta(cmp.steps))}</span></div>
     </div>
+    ${formatScenarioCompareHtml(cmp.scenarioCompare) || (cmp.scenarioCompareWarning
+      ? `<section class="scenario-diff"><h2>场景级差异</h2><p class="muted">${escapeHtml(cmp.scenarioCompareWarning)}</p></section>`
+      : '')}
     <footer>可离线打开的对比分享卡片 · 非完整报告真源</footer>
   </article>
 </body>
@@ -454,6 +600,17 @@ function buildCompareShareJson(cmp, opts = {}) {
       steps: formatCountsDelta(cmp.steps),
     },
   };
+  if (cmp.scenarioCompare) {
+    payload.scenarioCompare = {
+      changedCount: Array.isArray(cmp.scenarioCompare.changed) ? cmp.scenarioCompare.changed.length : 0,
+      unchangedCount: Number(cmp.scenarioCompare.unchangedCount) || 0,
+      baseCount: Number(cmp.scenarioCompare.baseCount) || 0,
+      targetCount: Number(cmp.scenarioCompare.targetCount) || 0,
+      changed: (cmp.scenarioCompare.changed || []).slice(0, 50),
+    };
+  } else if (cmp.scenarioCompareWarning) {
+    payload.scenarioCompareWarning = String(cmp.scenarioCompareWarning);
+  }
   return JSON.stringify(payload, null, opts.pretty === false ? 0 : 2);
 }
 
@@ -462,6 +619,8 @@ module.exports = {
   compareHistoryRuns,
   invertCompareResult,
   buildCompareShareJson,
+  formatScenarioCompareMarkdown,
+  formatScenarioCompareHtml,
   formatDurationDelta,
   formatCountsDelta,
   emptyCounts,

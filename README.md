@@ -13,7 +13,7 @@ Studio Reporter ships today as a [Gauge](https://gauge.org/) reporter plugin (WS
 - Supports all Gauge execution lifecycle events
 - **Static HTML report** at suite end (`index.html`, Go-rendered — no embedded JSON / no Vue required to read)
 - **Live viewer** (`viewer.html`) via WebSocket `ReportSnapshot` while the suite runs (disk writes only on finalize)
-- **Desktop P0 shell** (`desktop/`) — Electron workbench: paste/discover WS URL, embed live viewer + final `index.html`, control Hello/RequestSnapshot; history export with cancellable progress bar; scenario-level compare diffs
+- **Desktop P0 shell** (`desktop/`) — Electron workbench: paste/discover WS URL, embed live viewer + final `index.html`, control Hello/RequestSnapshot; history export with cancellable progress bar; scenario-level compare diffs (also in share cards)
 - Spec / scenario filter toolbar on the static report (pass / fail / skip)
 - **CANoe-style layout**: left navigation tree + right content, with an **Overview** page (env / host / plugin / stats)
 - Screenshot galleries at suite / spec / scenario / step (hook + failure shots; click-to-enlarge lightbox with ←/→ navigation; toolbar “fail steps only” mode)

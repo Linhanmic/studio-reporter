@@ -88,6 +88,7 @@
 - [x] Desktop 导出进度条 UI（百分比 + 当前 `.uhilreport` 文件名；`formatExportProgress`）
 - [x] Desktop/报告 场景级对比（verdict + 失败原因 diff；`CompareScenarios` / `scenario-compare.js`）
 - [x] 静态报告「仅失败步骤」模式（工具栏切换；隐藏 pass/skip step/concept；sessionStorage 记忆）
+- [x] 对比分享卡片纳入场景级 diff（Markdown/HTML/JSON；`formatScenarioCompareMarkdown/Html`）
 
 ## 迭代日志
 
@@ -162,6 +163,8 @@
 
 | 2026-09-11 | 静态报告仅失败步骤 | 工具栏切换 `fail-steps-only`；CSS 隐藏非失败 step/concept；自动展开失败步骤与祖先 |
 
+| 2026-09-11 | 对比分享卡片含场景 diff | Markdown/HTML/JSON 分享输出附带场景级变差/修复/新增/消失与失败原因 |
+
 ## 下一任务（选定）
 
-**对比分享卡片纳入场景级 diff**，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限），或 Desktop 深链打开对比两侧运行。
+**静态报告打印/PDF 尊重仅失败步骤模式**，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限），或 Desktop 深链直达两侧对比。
