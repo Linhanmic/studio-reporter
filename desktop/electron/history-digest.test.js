@@ -7,6 +7,7 @@ const {
   buildHistoryFailDigest,
   formatHistoryFailDigestMarkdown,
   formatHistoryFailDigestJson,
+  buildHistoryFailDigestOpenLinks,
 } = require('./history-digest.js');
 
 describe('history-digest', () => {
@@ -54,4 +55,22 @@ describe('history-digest', () => {
     assert.equal(digest.groups.length, 0);
     assert.match(formatHistoryFailDigestMarkdown(digest), /无失败运行/);
   });
+
+  it('emits open deep links for latest failed runs per reason', () => {
+    const runs = [
+      { id: 'r1', verdict: 'fail', topFailReason: 'timeout', timestampISO: '2026-09-01T10:00:00Z' },
+      { id: 'r2', verdict: 'fail', topFailReason: 'timeout', timestampISO: '2026-09-02T10:00:00Z' },
+      { id: 'r3', verdict: 'fail', topFailReason: 'null', timestampISO: '2026-09-03T10:00:00Z' },
+    ];
+    const digest = buildHistoryFailDigest(runs);
+    const links = buildHistoryFailDigestOpenLinks(digest, { hubDir: '/hub', mode: 'latest' });
+    assert.match(links, /studio-reporter:\/\/open\?/);
+    assert.match(links, /run=r2/);
+    assert.match(links, /run=r3/);
+    assert.ok(!/run=r1/.test(links));
+    const md = formatHistoryFailDigestMarkdown(digest, { hubDir: '/hub', includeOpenLinks: true });
+    assert.match(md, /\[open\]\(studio-reporter:\/\/open/);
+    assert.match(md, /最近失败打开深链/);
+  });
+
 });

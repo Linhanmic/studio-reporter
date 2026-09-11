@@ -1607,6 +1607,34 @@ function renderHistoryTrendPanel(bundle) {
 }
 
 
+
+async function copyHistoryFailDigestOpenLinks() {
+  const runs = filteredHistoryRuns();
+  if (!runs.length) {
+    setStatus('当前过滤结果没有历史运行', 'warn');
+    return;
+  }
+  const api = window.desktopAPI;
+  if (typeof api.buildHistoryFailDigest !== 'function' || typeof api.buildHistoryFailDigestOpenLinks !== 'function') {
+    setStatus('当前版本不支持失败摘要深链', 'warn');
+    return;
+  }
+  try {
+    const digest = api.buildHistoryFailDigest(runs, { limit: 15 });
+    const hub = state.settings?.reportHubDir || '';
+    const links = api.buildHistoryFailDigestOpenLinks(digest, { hubDir: hub, mode: 'latest' });
+    if (!links.trim()) {
+      setStatus('没有可复制的失败打开深链', 'warn');
+      return;
+    }
+    await navigator.clipboard.writeText(links);
+    const n = links.split('\n').filter(Boolean).length;
+    setStatus(`已复制 ${n} 条失败摘要打开深链`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
 async function copyHistoryFailDigest() {
   const runs = filteredHistoryRuns();
   if (!runs.length) {
@@ -1619,9 +1647,11 @@ async function copyHistoryFailDigest() {
   }
   try {
     const digest = window.desktopAPI.buildHistoryFailDigest(runs, { limit: 15 });
+    const hubDir = state.settings?.reportHubDir || '';
     const md = window.desktopAPI.formatHistoryFailDigestMarkdown(digest, {
       title: '历史失败摘要',
-      hubDir: state.settings?.reportHubDir || '',
+      hubDir,
+      includeOpenLinks: Boolean(hubDir),
     });
     await navigator.clipboard.writeText(md);
     setStatus(
@@ -2472,6 +2502,7 @@ function wire() {
   $('btnRefreshHistory').addEventListener('click', refreshHistory);
   $('btnCompareRuns').addEventListener('click', runCompare);
   $('btnCopyFailDigest')?.addEventListener('click', copyHistoryFailDigest);
+  $('btnCopyFailDigestLinks')?.addEventListener('click', copyHistoryFailDigestOpenLinks);
   $('btnHistoryTrend')?.addEventListener('click', showHistoryTrend);
   $('btnPickHub').addEventListener('click', async () => {
     const hub = await window.desktopAPI.pickHubDir();

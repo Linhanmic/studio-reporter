@@ -2,8 +2,11 @@
 
 /**
  * Cross-run failure digest from hub history.json entries.
- * Aggregates topFailReason for CI comments / shareable Markdown.
+ * Aggregates topFailReason for CI comments / shareable Markdown,
+ * and can emit studio-reporter://open deep links for failed runs.
  */
+
+const { buildOpenDeepLink } = require('./deeplink.js');
 
 const DEFAULT_DIGEST_LIMIT = 15;
 
@@ -13,7 +16,9 @@ const DEFAULT_DIGEST_LIMIT = 15;
  * @returns {string}
  */
 function normalizeFailReason(msg) {
-  let s = String(msg ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const s = String(msg ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
   for (const line of s.split('\n')) {
     const t = line.trim().replace(/\s+/g, ' ');
     if (!t) continue;
@@ -69,7 +74,6 @@ function buildHistoryFailDigest(runs, opts = {}) {
     }
     g.count += 1;
     if (id) g.runIds.push(id);
-    // Prefer chronologically latest timestamp when parseable; else last seen.
     const prev = Date.parse(g.lastTimestamp) || 0;
     const next = Date.parse(ts) || 0;
     if (!g.lastRunId || next >= prev) {
@@ -95,16 +99,56 @@ function buildHistoryFailDigest(runs, opts = {}) {
 }
 
 /**
+ * studio-reporter://open deep link for one history run (failSteps=1).
+ * @param {string} runId
+ * @param {string} hub
+ */
+function buildOpenDeepLinkForRun(runId, hub) {
+  const id = String(runId || '').trim();
+  if (!id) return '';
+  return buildOpenDeepLink({
+    run: id,
+    hub: String(hub || '').trim() || undefined,
+    failSteps: true,
+  });
+}
+
+/**
+ * Newline-joined open deep links from a fail digest.
  * @param {ReturnType<typeof buildHistoryFailDigest>} digest
- * @param {{ title?: string, hubDir?: string }} [opts]
+ * @param {{ hubDir?: string, mode?: 'latest'|'all' }} [opts]
+ * @returns {string}
+ */
+function buildHistoryFailDigestOpenLinks(digest, opts = {}) {
+  const d = digest || { groups: [] };
+  const hub = String(opts.hubDir || '').trim();
+  const mode = opts.mode === 'all' ? 'all' : 'latest';
+  const ids = [];
+  const seen = new Set();
+  for (const g of d.groups || []) {
+    const list = mode === 'all' ? g.runIds || [] : g.lastRunId ? [g.lastRunId] : [];
+    for (const id of list) {
+      const clean = String(id || '').trim();
+      if (!clean || seen.has(clean)) continue;
+      seen.add(clean);
+      ids.push(clean);
+    }
+  }
+  return ids.map((id) => buildOpenDeepLinkForRun(id, hub)).join('\n');
+}
+
+/**
+ * @param {ReturnType<typeof buildHistoryFailDigest>} digest
+ * @param {{ title?: string, hubDir?: string, includeOpenLinks?: boolean }} [opts]
  * @returns {string}
  */
 function formatHistoryFailDigestMarkdown(digest, opts = {}) {
   const d = digest || buildHistoryFailDigest([]);
   const title = String(opts.title || '历史失败摘要').trim() || '历史失败摘要';
+  const hub = String(opts.hubDir || '').trim();
   const lines = [];
   lines.push(`## ${title}`);
-  if (opts.hubDir) lines.push(`- Hub: \`${opts.hubDir}\``);
+  if (hub) lines.push(`- Hub: \`${hub}\``);
   lines.push(
     `- 窗口：${d.runCount} 次运行（失败 ${d.failRunCount} / 通过 ${d.passRunCount} / 跳过 ${d.skipRunCount}）`,
   );
@@ -114,15 +158,39 @@ function formatHistoryFailDigestMarkdown(digest, opts = {}) {
     lines.push('');
     return lines.join('\n');
   }
-  lines.push('| # | 次数 | 最近运行 | 失败原因 |');
-  lines.push('|---|------|----------|----------|');
+  const withLinks = opts.includeOpenLinks !== false && Boolean(hub);
+  if (withLinks) {
+    lines.push('| # | 次数 | 最近运行 | 打开 | 失败原因 |');
+    lines.push('|---|------|----------|------|----------|');
+  } else {
+    lines.push('| # | 次数 | 最近运行 | 失败原因 |');
+    lines.push('|---|------|----------|----------|');
+  }
   d.groups.forEach((g, i) => {
     const reason = g.reason.replace(/\|/g, '\\|');
-    lines.push(`| ${i + 1} | ${g.count} | \`${g.lastRunId || '—'}\` | ${reason} |`);
+    if (withLinks) {
+      const link = g.lastRunId ? buildOpenDeepLinkForRun(g.lastRunId, hub) : '';
+      const linkCell = link ? `[open](${link})` : '—';
+      lines.push(
+        `| ${i + 1} | ${g.count} | \`${g.lastRunId || '—'}\` | ${linkCell} | ${reason} |`,
+      );
+    } else {
+      lines.push(`| ${i + 1} | ${g.count} | \`${g.lastRunId || '—'}\` | ${reason} |`);
+    }
   });
   if (d.runsWithoutReason?.length) {
     lines.push('');
     lines.push(`_另有 ${d.runsWithoutReason.length} 次失败无原因文本。_`);
+  }
+  if (withLinks) {
+    const links = buildHistoryFailDigestOpenLinks(d, { hubDir: hub, mode: 'latest' });
+    if (links) {
+      lines.push('');
+      lines.push('### 最近失败打开深链');
+      lines.push('```');
+      lines.push(links);
+      lines.push('```');
+    }
   }
   lines.push('');
   return lines.join('\n');
@@ -133,11 +201,27 @@ function formatHistoryFailDigestMarkdown(digest, opts = {}) {
  * @param {{ hubDir?: string }} [opts]
  */
 function formatHistoryFailDigestJson(digest, opts = {}) {
-  return {
+  const hubDir = opts.hubDir || '';
+  const base = {
     format: 'studio-reporter.historyFailDigest/v1',
-    hubDir: opts.hubDir || '',
+    hubDir,
     ...digest,
   };
+  if (hubDir && digest?.groups?.length) {
+    base.openLinksLatest = buildHistoryFailDigestOpenLinks(digest, {
+      hubDir,
+      mode: 'latest',
+    })
+      .split('\n')
+      .filter(Boolean);
+    base.openLinksAll = buildHistoryFailDigestOpenLinks(digest, {
+      hubDir,
+      mode: 'all',
+    })
+      .split('\n')
+      .filter(Boolean);
+  }
+  return base;
 }
 
 module.exports = {
@@ -146,4 +230,6 @@ module.exports = {
   buildHistoryFailDigest,
   formatHistoryFailDigestMarkdown,
   formatHistoryFailDigestJson,
+  buildHistoryFailDigestOpenLinks,
+  buildOpenDeepLinkForRun,
 };

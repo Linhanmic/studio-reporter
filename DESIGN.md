@@ -152,6 +152,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop hub 历史文件监视 | `fs.watch` history.json/archives；设置 `watchHubHistory`；IPC `history-changed`；刷新保留勾选 |
 | 2026-09-11 | Desktop 历史过滤与趋势窗口持久化 | `historyQuery`/`historyVerdict`/`historyFailReasonQuery`/`historyTrendLimit`/`historyTrendFlakyLimit` 写入 desktop-settings.json；趋势分析读设置而非硬编码 |
 | 2026-09-11 | 历史失败摘要 digest | 跨运行聚合 topFailReason；Desktop 复制 Markdown；CLI `digest` 输出 md/json 供 CI |
+| 2026-09-11 | 失败摘要附带打开深链 | digest Markdown/JSON 与 Desktop「复制摘要深链」输出 `open?run=&hub=&failSteps=1`；复用 deeplink 契约 |
 | 2026-09-11 | 自动更新 feed 离线校验 | `update-feed.js` 校验 latest*.yml 与 publish owner/repo；签名 secrets 文档化，证书到位前保持 unsigned |
 | 2026-09-11 | Release 无签名可发 | tag Release 分 plugin/linux/win；SHA256SUMS；`CSC_IDENTITY_AUTO_DISCOVERY=false`；签名 secrets 仍为可选 |
 | 2026-09-11 | Desktop 历史趋势 / 不稳定场景 | 过滤窗口 suite 趋势（history.json）+ report.json 场景翻转检测；与 pairwise compare 共用 scenarioKey |

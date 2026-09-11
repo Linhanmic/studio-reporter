@@ -178,6 +178,8 @@ describe('history-trend', () => {
     assert.equal(bundle.digest.failRunCount, 1);
     assert.equal(typeof bundle.digestMarkdown, 'string');
     assert.match(bundle.digestMarkdown, /timeout|失败/);
+    assert.match(bundle.digestMarkdown, /studio-reporter:\/\/open\?/);
+    assert.match(bundle.digestMarkdown, /最近失败打开深链/);
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 });

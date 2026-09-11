@@ -267,6 +267,8 @@ function buildHistoryTrendBundle(hubDir, runs, resolveRunDir, opts = {}) {
     digest,
     digestMarkdown: formatHistoryFailDigestMarkdown(digest, {
       title: '历史失败摘要',
+      hubDir: hubDir || '',
+      includeOpenLinks: Boolean(hubDir),
     }),
     scenarioLoad: {
       attempted: withLites.length,

@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/url"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -22,15 +23,15 @@ type FailDigestGroup struct {
 
 // HistoryFailDigest aggregates failed history entries by normalized reason.
 type HistoryFailDigest struct {
-	RunCount           int               `json:"runCount"`
-	FailRunCount       int               `json:"failRunCount"`
-	PassRunCount       int               `json:"passRunCount"`
-	SkipRunCount       int               `json:"skipRunCount"`
-	UnknownRunCount    int               `json:"unknownRunCount"`
-	Groups             []FailDigestGroup `json:"groups"`
-	RunsWithoutReason  []string          `json:"runsWithoutReason,omitempty"`
-	Format             string            `json:"format,omitempty"`
-	HubDir             string            `json:"hubDir,omitempty"`
+	RunCount          int               `json:"runCount"`
+	FailRunCount      int               `json:"failRunCount"`
+	PassRunCount      int               `json:"passRunCount"`
+	SkipRunCount      int               `json:"skipRunCount"`
+	UnknownRunCount   int               `json:"unknownRunCount"`
+	Groups            []FailDigestGroup `json:"groups"`
+	RunsWithoutReason []string          `json:"runsWithoutReason,omitempty"`
+	Format            string            `json:"format,omitempty"`
+	HubDir            string            `json:"hubDir,omitempty"`
 }
 
 func normalizeHistoryFailReason(msg string) string {
@@ -130,6 +131,20 @@ func buildHistoryFailDigest(runs []HistoryEntry, limit int) HistoryFailDigest {
 	return out
 }
 
+func openDeepLinkForRun(runID, hub string) string {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return ""
+	}
+	q := url.Values{}
+	q.Set("run", runID)
+	if hub = strings.TrimSpace(hub); hub != "" {
+		q.Set("hub", hub)
+	}
+	q.Set("failSteps", "1")
+	return "studio-reporter://open?" + q.Encode()
+}
+
 func formatHistoryFailDigestMarkdown(d HistoryFailDigest, title string) string {
 	if title == "" {
 		title = "历史失败摘要"
@@ -148,20 +163,72 @@ func formatHistoryFailDigestMarkdown(d HistoryFailDigest, title string) string {
 		}
 		return b.String()
 	}
-	b.WriteString("| # | 次数 | 最近运行 | 失败原因 |\n")
-	b.WriteString("|---|------|----------|----------|\n")
+	withLinks := strings.TrimSpace(d.HubDir) != ""
+	if withLinks {
+		b.WriteString("| # | 次数 | 最近运行 | 打开 | 失败原因 |\n")
+		b.WriteString("|---|------|----------|------|----------|\n")
+	} else {
+		b.WriteString("| # | 次数 | 最近运行 | 失败原因 |\n")
+		b.WriteString("|---|------|----------|----------|\n")
+	}
 	for i, g := range d.Groups {
 		reason := strings.ReplaceAll(g.Reason, "|", "\\|")
 		last := g.LastRunID
 		if last == "" {
 			last = "—"
 		}
-		fmt.Fprintf(&b, "| %d | %d | `%s` | %s |\n", i+1, g.Count, last, reason)
+		if withLinks {
+			linkCell := "—"
+			if link := openDeepLinkForRun(g.LastRunID, d.HubDir); link != "" {
+				linkCell = fmt.Sprintf("[open](%s)", link)
+			}
+			fmt.Fprintf(&b, "| %d | %d | `%s` | %s | %s |\n", i+1, g.Count, last, linkCell, reason)
+		} else {
+			fmt.Fprintf(&b, "| %d | %d | `%s` | %s |\n", i+1, g.Count, last, reason)
+		}
 	}
 	if len(d.RunsWithoutReason) > 0 {
 		fmt.Fprintf(&b, "\n_另有 %d 次失败无原因文本。_\n", len(d.RunsWithoutReason))
 	}
+	if withLinks {
+		b.WriteString("\n### 最近失败打开深链\n```\n")
+		for _, g := range d.Groups {
+			if link := openDeepLinkForRun(g.LastRunID, d.HubDir); link != "" {
+				b.WriteString(link)
+				b.WriteByte('\n')
+			}
+		}
+		b.WriteString("```\n")
+	}
 	return b.String()
+}
+
+func historyFailDigestOpenLinks(d HistoryFailDigest, mode string) []string {
+	seen := map[string]struct{}{}
+	var out []string
+	for _, g := range d.Groups {
+		ids := g.RunIDs
+		if mode != "all" {
+			if g.LastRunID == "" {
+				continue
+			}
+			ids = []string{g.LastRunID}
+		}
+		for _, id := range ids {
+			id = strings.TrimSpace(id)
+			if id == "" {
+				continue
+			}
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			if link := openDeepLinkForRun(id, d.HubDir); link != "" {
+				out = append(out, link)
+			}
+		}
+	}
+	return out
 }
 
 func loadHistoryFailDigestFromHub(hubDir string, limit int) (HistoryFailDigest, error) {
@@ -181,9 +248,24 @@ func loadHistoryFailDigestFromHub(hubDir string, limit int) (HistoryFailDigest, 
 func writeHistoryFailDigest(w io.Writer, d HistoryFailDigest, format string) error {
 	switch strings.ToLower(strings.TrimSpace(format)) {
 	case "json":
+		payload := map[string]any{
+			"format":            d.Format,
+			"hubDir":            d.HubDir,
+			"runCount":          d.RunCount,
+			"failRunCount":      d.FailRunCount,
+			"passRunCount":      d.PassRunCount,
+			"skipRunCount":      d.SkipRunCount,
+			"unknownRunCount":   d.UnknownRunCount,
+			"groups":            d.Groups,
+			"runsWithoutReason": d.RunsWithoutReason,
+		}
+		if strings.TrimSpace(d.HubDir) != "" && len(d.Groups) > 0 {
+			payload["openLinksLatest"] = historyFailDigestOpenLinks(d, "latest")
+			payload["openLinksAll"] = historyFailDigestOpenLinks(d, "all")
+		}
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
-		return enc.Encode(d)
+		return enc.Encode(payload)
 	default:
 		_, err := io.WriteString(w, formatHistoryFailDigestMarkdown(d, "历史失败摘要"))
 		return err

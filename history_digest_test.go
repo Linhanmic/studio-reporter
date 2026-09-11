@@ -70,6 +70,31 @@ func TestLoadHistoryFailDigestFromHub(t *testing.T) {
 	if d.HubDir != abs {
 		t.Fatalf("hubDir=%q want %q", d.HubDir, abs)
 	}
+	md := formatHistoryFailDigestMarkdown(d, "CI")
+	if !strings.Contains(md, "studio-reporter://open?") || !strings.Contains(md, "最近失败打开深链") {
+		t.Fatalf("markdown missing open links:\n%s", md)
+	}
+	if !strings.Contains(md, "[open](") {
+		t.Fatalf("markdown missing open column:\n%s", md)
+	}
+}
+
+func TestHistoryFailDigestOpenLinks(t *testing.T) {
+	d := HistoryFailDigest{
+		HubDir: "/hub",
+		Groups: []FailDigestGroup{
+			{Reason: "timeout", Count: 2, RunIDs: []string{"r1", "r2"}, LastRunID: "r2"},
+			{Reason: "null", Count: 1, RunIDs: []string{"r3"}, LastRunID: "r3"},
+		},
+	}
+	latest := historyFailDigestOpenLinks(d, "latest")
+	if len(latest) != 2 || !strings.Contains(latest[0], "run=r2") || !strings.Contains(latest[1], "run=r3") {
+		t.Fatalf("latest=%v", latest)
+	}
+	all := historyFailDigestOpenLinks(d, "all")
+	if len(all) != 3 {
+		t.Fatalf("all=%v", all)
+	}
 }
 
 func TestRunDigestCmd(t *testing.T) {
@@ -86,7 +111,11 @@ func TestRunDigestCmd(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), `"reason": "x"`) {
-		t.Fatalf("stdout=%s", stdout.String())
+	out := stdout.String()
+	if !strings.Contains(out, `"reason": "x"`) {
+		t.Fatalf("stdout=%s", out)
+	}
+	if !strings.Contains(out, `"openLinksLatest"`) || !strings.Contains(out, "studio-reporter://open?") {
+		t.Fatalf("json missing open links: %s", out)
 	}
 }
