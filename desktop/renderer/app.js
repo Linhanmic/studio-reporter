@@ -1677,6 +1677,7 @@ function refreshFailDigestSidecarUi(histMeta) {
   const mdBtn = $('btnOpenFailDigestMd');
   const jsonBtn = $('btnOpenFailDigestJson');
   const revealBtn = $('btnRevealFailDigest');
+  const refreshBtn = $('btnRefreshFailDigest');
   const hint = $('failDigestSidecarHint');
   const probe =
     hub && typeof window.desktopAPI.probeHistoryFailDigestSidecars === 'function'
@@ -1686,13 +1687,14 @@ function refreshFailDigestSidecarUi(histMeta) {
   if (mdBtn) mdBtn.disabled = !probe.md;
   if (jsonBtn) jsonBtn.disabled = !probe.json;
   if (revealBtn) revealBtn.disabled = !(probe.md || probe.json);
+  if (refreshBtn) refreshBtn.disabled = !hub;
   if (hint) {
     if (!hub) {
-      hint.textContent = '选择 hub 后可打开 fail-digest 旁路';
+      hint.textContent = '选择 hub 后可打开 / 刷新 fail-digest 旁路';
     } else if (probe.md || probe.json) {
       hint.textContent = `旁路：${probe.md ? 'md' : ''}${probe.md && probe.json ? '+' : ''}${probe.json ? 'json' : ''}`;
     } else {
-      hint.textContent = '尚无 fail-digest 旁路（导出或 digest --write 后生成）';
+      hint.textContent = '尚无 fail-digest 旁路（点「刷新旁路」或导出 / digest --write）';
     }
   }
   return probe;
@@ -1732,6 +1734,38 @@ async function revealFailDigestSidecar() {
     setStatus('已在文件管理器中显示 fail-digest 旁路', 'ok');
   } catch (err) {
     setStatus(String(err.message || err), 'warn');
+  }
+}
+
+async function refreshFailDigestSidecarsFromHub() {
+  const hub = currentHistoryHubDir();
+  if (!hub) {
+    setStatus('请先选择报告根目录（hub）', 'warn');
+    return;
+  }
+  if (typeof window.desktopAPI.refreshFailDigestSidecars !== 'function') {
+    setStatus('当前版本不支持刷新失败摘要旁路', 'warn');
+    return;
+  }
+  const btn = $('btnRefreshFailDigest');
+  if (btn) btn.disabled = true;
+  try {
+    setStatus('正在刷新 fail-digest 旁路…', 'ok');
+    const result = await window.desktopAPI.refreshFailDigestSidecars(hub);
+    refreshFailDigestSidecarUi({ hubDir: result?.hubDir || hub });
+    setStatus(
+      `已刷新旁路：${result?.groupCount || 0} 类原因 / ${result?.failRunCount || 0} 次失败（共 ${result?.runCount || 0} 次运行）`,
+      'ok',
+    );
+  } catch (err) {
+    refreshFailDigestSidecarUi({ hubDir: hub });
+    setStatus(String(err.message || err), 'warn');
+  } finally {
+    const probe = state.failDigestSidecar;
+    if (btn) btn.disabled = !currentHistoryHubDir();
+    // keep enabled whenever hub is set (write creates files even if previously missing)
+    if (btn && currentHistoryHubDir()) btn.disabled = false;
+    void probe;
   }
 }
 
@@ -2584,6 +2618,7 @@ function wire() {
   $('btnOpenFailDigestMd')?.addEventListener('click', () => openFailDigestSidecar('md'));
   $('btnOpenFailDigestJson')?.addEventListener('click', () => openFailDigestSidecar('json'));
   $('btnRevealFailDigest')?.addEventListener('click', revealFailDigestSidecar);
+  $('btnRefreshFailDigest')?.addEventListener('click', refreshFailDigestSidecarsFromHub);
   $('btnHistoryTrend')?.addEventListener('click', showHistoryTrend);
   $('btnPickHub').addEventListener('click', async () => {
     const hub = await window.desktopAPI.pickHubDir();

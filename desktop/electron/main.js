@@ -885,6 +885,25 @@ ipcMain.handle('desktop:open-path', async (_evt, absPath) => {
     return readHistory(dir);
   });
 
+  ipcMain.handle('desktop:refresh-fail-digest', async (_evt, hubDir) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = path.resolve(String(hubDir || settings.reportHubDir || '').trim());
+    if (!hub) throw new Error('未设置报告根目录（hub）');
+    if (!fs.existsSync(hub)) throw new Error(`hub 不存在：${hub}`);
+    const hist = readHistory(hub);
+    if (hist?.error) throw new Error(hist.error);
+    const written = writeHistoryFailDigestSidecars(hub, hist?.runs || []);
+    return {
+      ok: true,
+      hubDir: hub,
+      mdPath: written.mdPath,
+      jsonPath: written.jsonPath,
+      failRunCount: written.digest?.failRunCount || 0,
+      groupCount: written.digest?.groups?.length || 0,
+      runCount: written.digest?.runCount || 0,
+    };
+  });
+
   ipcMain.handle('desktop:open-history-run', async (_evt, entry, opts = {}) => {
     const settings = loadSettings(app.getPath('userData'));
     const indexPath = resolveRunIndex(settings.reportHubDir, entry);

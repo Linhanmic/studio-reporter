@@ -163,6 +163,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   formatHistoryFailDigestJson,
   buildHistoryFailDigestOpenLinks,
   probeHistoryFailDigestSidecars,
+  refreshFailDigestSidecars: (hubDir) => ipcRenderer.invoke('desktop:refresh-fail-digest', hubDir),
   loadHistoryTrendBundle: (opts) => ipcRenderer.invoke('desktop:history-trend-bundle', opts || {}),
   compareScenariosForRuns: (base, target) =>
     ipcRenderer.invoke('desktop:compare-scenarios', base, target),
