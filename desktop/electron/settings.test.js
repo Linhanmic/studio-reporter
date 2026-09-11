@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, normalizeDiscoverTimeoutMs, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX, DISCOVER_TIMEOUT_MS_MIN, DISCOVER_TIMEOUT_MS_MAX, DISCOVER_TIMEOUT_MS_DEFAULT } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -198,6 +198,24 @@ describe('settings outline search persistence', () => {
     assert.equal(loaded.outlineVerdict, 'fail');
     assert.equal(DEFAULTS.outlineQuery, '');
     assert.equal(DEFAULTS.outlineVerdict, 'all');
+  });
+});
+
+describe('settings discover timeout', () => {
+  it('normalizeDiscoverTimeoutMs clamps to range', () => {
+    assert.equal(normalizeDiscoverTimeoutMs(20000), 20000);
+    assert.equal(normalizeDiscoverTimeoutMs(100), DISCOVER_TIMEOUT_MS_MIN);
+    assert.equal(normalizeDiscoverTimeoutMs(999999), DISCOVER_TIMEOUT_MS_MAX);
+    assert.equal(normalizeDiscoverTimeoutMs('nope'), DISCOVER_TIMEOUT_MS_DEFAULT);
+  });
+
+  it('load/save round-trips discoverTimeoutMs', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-discover-t-'));
+    const saved = saveSettings(dir, { discoverTimeoutMs: 45000 });
+    assert.equal(saved.discoverTimeoutMs, 45000);
+    assert.equal(loadSettings(dir).discoverTimeoutMs, 45000);
+    assert.equal(saveSettings(dir, { discoverTimeoutMs: 1 }).discoverTimeoutMs, DISCOVER_TIMEOUT_MS_MIN);
+    assert.equal(DEFAULTS.discoverTimeoutMs, 20000);
   });
 });
 

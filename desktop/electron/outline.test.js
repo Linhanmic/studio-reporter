@@ -11,6 +11,7 @@ const {
   filterOutline,
   listFailScenarioIds,
   nextFailScenarioId,
+  prepareFailJumpFilter,
 } = require('./outline.js');
 
 describe('outline', () => {
@@ -142,5 +143,18 @@ describe('outline', () => {
     assert.equal(nextFailScenarioId(outline, 'f2', 1).id, 'f1');
     assert.equal(nextFailScenarioId(outline, 'f1', -1).id, 'f2');
     assert.equal(nextFailScenarioId(null).total, 0);
+
+    assert.deepEqual(
+      prepareFailJumpFilter(outline, 'f1', { query: 'zzz', verdict: 'pass' }),
+      { query: '', verdict: 'fail' }
+    );
+    assert.deepEqual(
+      prepareFailJumpFilter(outline, 'f1', { query: 'fail-1', verdict: 'all' }),
+      { query: 'fail-1', verdict: 'all' }
+    );
+    assert.deepEqual(
+      prepareFailJumpFilter(outline, 'f2', { query: '', verdict: 'pass' }),
+      { query: '', verdict: 'fail' }
+    );
   });
 });

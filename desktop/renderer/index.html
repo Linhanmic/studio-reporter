@@ -174,6 +174,10 @@
             <input id="settingJumpSeconds" type="number" min="0" max="60" value="5">
           </label>
           <label class="field">
+            <span>Discover 超时（秒）</span>
+            <input id="settingDiscoverTimeout" type="number" min="5" max="120" value="20" title="启动 Gauge 后等待 websocket 宣告的最长时间">
+          </label>
+          <label class="field">
             <span>Gauge 可执行文件（默认 PATH 中的 gauge）</span>
             <input id="settingGaugeBin" type="text" spellcheck="false" placeholder="gauge">
           </label>

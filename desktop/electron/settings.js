@@ -21,12 +21,16 @@ const DEFAULTS = {
   outlinePaneWidth: 240,
   outlineQuery: '',
   outlineVerdict: 'all',
+  discoverTimeoutMs: 20000,
 };
 
 
 const OUTLINE_PANE_WIDTH_MIN = 180;
 const OUTLINE_PANE_WIDTH_MAX = 480;
 const OUTLINE_PANE_WIDTH_DEFAULT = 240;
+const DISCOVER_TIMEOUT_MS_MIN = 5000;
+const DISCOVER_TIMEOUT_MS_MAX = 120000;
+const DISCOVER_TIMEOUT_MS_DEFAULT = 20000;
 
 /**
  * Clamp outline pane width to a usable pixel range.
@@ -38,6 +42,18 @@ function normalizeOutlinePaneWidth(width, fallback = OUTLINE_PANE_WIDTH_DEFAULT)
   const base = Number.isFinite(Number(fallback)) ? Number(fallback) : OUTLINE_PANE_WIDTH_DEFAULT;
   if (!Number.isFinite(n)) return Math.round(base);
   return Math.round(Math.min(OUTLINE_PANE_WIDTH_MAX, Math.max(OUTLINE_PANE_WIDTH_MIN, n)));
+}
+
+/**
+ * Clamp discover websocket wait timeout (ms).
+ * @param {unknown} ms
+ * @param {number} [fallback=DISCOVER_TIMEOUT_MS_DEFAULT]
+ */
+function normalizeDiscoverTimeoutMs(ms, fallback = DISCOVER_TIMEOUT_MS_DEFAULT) {
+  const n = Number(ms);
+  const base = Number.isFinite(Number(fallback)) ? Number(fallback) : DISCOVER_TIMEOUT_MS_DEFAULT;
+  if (!Number.isFinite(n)) return Math.round(base);
+  return Math.round(Math.min(DISCOVER_TIMEOUT_MS_MAX, Math.max(DISCOVER_TIMEOUT_MS_MIN, n)));
 }
 
 
@@ -92,6 +108,7 @@ function loadSettings(userDataDir) {
     merged.outlinePaneWidth = normalizeOutlinePaneWidth(merged.outlinePaneWidth);
     merged.outlineQuery = normalizeOutlineQuery(merged.outlineQuery);
     merged.outlineVerdict = normalizeOutlineVerdict(merged.outlineVerdict);
+    merged.discoverTimeoutMs = normalizeDiscoverTimeoutMs(merged.discoverTimeoutMs);
     return merged;
   } catch {
     return { ...DEFAULTS };
@@ -115,6 +132,9 @@ function saveSettings(userDataDir, partial) {
   if (Object.prototype.hasOwnProperty.call(patch, 'outlineVerdict')) {
     patch.outlineVerdict = normalizeOutlineVerdict(patch.outlineVerdict);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'discoverTimeoutMs')) {
+    patch.discoverTimeoutMs = normalizeDiscoverTimeoutMs(patch.discoverTimeoutMs);
+  }
   const next = { ...loadSettings(userDataDir), ...patch };
   next.recentProjects = Array.isArray(next.recentProjects) ? next.recentProjects : [];
   next.recentHubs = Array.isArray(next.recentHubs) ? next.recentHubs : [];
@@ -122,6 +142,7 @@ function saveSettings(userDataDir, partial) {
   next.outlinePaneWidth = normalizeOutlinePaneWidth(next.outlinePaneWidth);
   next.outlineQuery = normalizeOutlineQuery(next.outlineQuery);
   next.outlineVerdict = normalizeOutlineVerdict(next.outlineVerdict);
+  next.discoverTimeoutMs = normalizeDiscoverTimeoutMs(next.discoverTimeoutMs);
   fs.mkdirSync(userDataDir, { recursive: true });
   fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(next, null, 2));
   return next;
@@ -349,10 +370,14 @@ module.exports = {
   normalizeOutlinePaneWidth,
   normalizeOutlineQuery,
   normalizeOutlineVerdict,
+  normalizeDiscoverTimeoutMs,
   OUTLINE_VERDICTS,
   OUTLINE_PANE_WIDTH_MIN,
   OUTLINE_PANE_WIDTH_MAX,
   OUTLINE_PANE_WIDTH_DEFAULT,
+  DISCOVER_TIMEOUT_MS_MIN,
+  DISCOVER_TIMEOUT_MS_MAX,
+  DISCOVER_TIMEOUT_MS_DEFAULT,
   readHistory,
   resolveRunIndex,
   resolveRunDir,

@@ -254,14 +254,23 @@ function jumpOutlineFail(delta) {
   if (state.activeTab !== 'run' && state.activeTab !== 'report') {
     setTab('run', { persist: false });
   }
-  // Make fails visible in the outline filter when needed.
-  if (state.outlineVerdict !== 'all' && state.outlineVerdict !== 'fail') {
-    state.outlineVerdict = 'fail';
+  // Relax search/verdict so the fail stays visible in sidebar + iframe.
+  const nextFilter = window.desktopAPI.prepareFailJumpFilter(state.outline, result.id, {
+    query: state.outlineQuery,
+    verdict: state.outlineVerdict,
+  });
+  const filterChanged =
+    nextFilter.query !== (state.outlineQuery || '') ||
+    nextFilter.verdict !== (state.outlineVerdict || 'all');
+  if (filterChanged) {
+    state.outlineQuery = nextFilter.query;
+    state.outlineVerdict = nextFilter.verdict;
     applyOutlineFilterToUi();
     persistOutlineFilter();
   }
   state.outlineFocusId = result.id;
   renderOutline();
+  if (filterChanged) postFilterToFrames();
   postSelectNode(result.id);
   const btn = document.querySelector(`#outlineTree [data-node-id="${CSS.escape(result.id)}"]`);
   btn?.scrollIntoView({ block: 'nearest' });
@@ -939,6 +948,10 @@ function fillSettingsForm() {
   }
   applyTheme(s.theme);
   $('settingJumpSeconds').value = s.autoJumpSeconds ?? 5;
+  if ($('settingDiscoverTimeout')) {
+    const ms = Number(s.discoverTimeoutMs);
+    $('settingDiscoverTimeout').value = Number.isFinite(ms) ? Math.round(ms / 1000) : 20;
+  }
   $('settingGaugeBin').value = s.gaugeBin || 'gauge';
   $('settingAutoCheckUpdates').checked = Boolean(s.autoCheckUpdates);
   $('gaugeProjectDir').value = s.gaugeProjectDir || $('gaugeProjectDir').value || '';
@@ -1071,6 +1084,10 @@ async function saveSettings() {
       ? window.desktopAPI.normalizeTheme($('settingTheme').value)
       : 'system',
     autoJumpSeconds: Number($('settingJumpSeconds').value) || 0,
+    discoverTimeoutMs: (() => {
+      const sec = Number($('settingDiscoverTimeout')?.value);
+      return Number.isFinite(sec) ? Math.round(sec * 1000) : 20000;
+    })(),
     gaugeBin: $('settingGaugeBin').value.trim() || 'gauge',
     gaugeProjectDir: $('gaugeProjectDir').value.trim(),
     gaugeSpecs: $('gaugeSpecs').value.trim() || 'specs',
@@ -1123,7 +1140,8 @@ async function startGauge() {
       gaugeBin: $('settingGaugeBin').value.trim() || state.settings?.gaugeBin || 'gauge',
     });
     setStatus('Gauge 已启动，等待 discover…', 'ok');
-    watchDiscoverTimeout(20000);
+    const timeoutMs = Number(state.settings?.discoverTimeoutMs);
+    watchDiscoverTimeout(Number.isFinite(timeoutMs) ? timeoutMs : 20000);
     setTab('run');
   } catch (err) {
     setGaugeRunning(false);

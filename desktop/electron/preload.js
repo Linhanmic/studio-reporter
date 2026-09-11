@@ -12,7 +12,11 @@ const {
   suggestedCompareShareBasename,
 } = require('./compare.js');
 const { filterHistoryRuns } = require('./settings.js');
-const { listFailScenarioIds, nextFailScenarioId } = require('./outline.js');
+const {
+  listFailScenarioIds,
+  nextFailScenarioId,
+  prepareFailJumpFilter,
+} = require('./outline.js');
 const {
   matchShortcut,
   shouldIgnoreShortcutTarget,
@@ -72,6 +76,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   suggestedCompareShareBasename,
   listFailScenarioIds,
   nextFailScenarioId,
+  prepareFailJumpFilter,
   onBridgeStatus: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('bridge-status', handler);

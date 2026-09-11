@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件门闸/本机检测/自动更新骨架/原生大纲（live+终态）/大纲搜索过滤/失败路径一键跳转 / 历史搜索过滤 / 勾选导出 / 原生删除与批量导出 / 打开文件夹与复制路径 / 删除 hub 锁 / 套件结束系统通知 / 自定义协议深链 / 键盘快捷键与 tablist a11y / 明暗主题 / 对比分享卡片（HTML+Markdown）/ 静态报告极轻量交互 / 打开 `.uhilreport` 离线再生 / 会话恢复与最近 hub / 窗口布局记忆 / 大纲分栏宽度记忆 / 安装包冒烟 / 历史对比 UX 深化 / 统一大纲搜索已落地；代码签名仍为路线图   
+状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件门闸/本机检测/自动更新骨架/原生大纲（live+终态）/大纲搜索过滤/失败路径一键跳转（含可见性） / 历史搜索过滤 / 勾选导出 / 原生删除与批量导出 / 打开文件夹与复制路径 / 删除 hub 锁 / 套件结束系统通知 / 自定义协议深链 / 键盘快捷键与 tablist a11y / 明暗主题 / 对比分享卡片（HTML+Markdown）/ 静态报告极轻量交互 / 打开 `.uhilreport` 离线再生 / 会话恢复与最近 hub / 窗口布局记忆 / 大纲分栏宽度记忆 / 安装包冒烟 / 历史对比 UX 深化 / 统一大纲搜索 / Discover 超时可配置已落地；代码签名仍为路线图   
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -161,7 +161,7 @@ Desktop 在无 Gauge 进程时仍应可用：
 | **报告** | 嵌入终态 `index.html`（CANoe 左右栏；静态页 hash 深链 / 复制失败摘要 / 键盘）；**文件 → 打开 .uhilreport…**（`Cmd/Ctrl+Shift+O`）CLI `generate` 再生后打开；深链 `studio-reporter://open?path=*.uhilreport` |
 | **历史** | `history.json` 列表、搜索/结果过滤、对比（可交换方向）、对比分享卡片（离线 HTML / Markdown / JSON）、导出后打开/显示、打开归档、打开所在文件夹、复制路径、原生删除（确认框 + hub 锁）、最近 hub 下拉切换 |
 | **导出** | PDF / 单文件 HTML（默认最新；勾选 1+ 次批量导出所选）/ 在访达/资源管理器中显示 / 复制路径 |
-| **设置** | 报告根目录、最近 hub、启动恢复上次标签、是否自动打开终态、主题、发现超时、兼容模式 |
+| **设置** | 报告根目录、最近 hub、启动恢复上次标签、是否自动打开终态、主题、Discover 超时、兼容模式 |
 
 ### 5.2 「报告」页策略（关键）
 
@@ -255,7 +255,7 @@ studio-reporter/
 
 ### P3 — 体验 — **部分完成（0.5.2）**
 
-1. ~~原生报告树（若 WebView 不足）~~ — **live + 终态已落地**：共享大纲侧栏（spec→scenario）；live 来自 `ReportSnapshot`，终态来自同目录 `report.json`；点击 `postMessage` 驱动 viewer / 静态 `index.html` 展开定位。侧栏支持搜索与 pass/fail/skip 过滤，并同步到 iframe。支持「上一/下一失败」与主机层 `j`/`k` 跳转失败场景。
+1. ~~原生报告树（若 WebView 不足）~~ — **live + 终态已落地**：共享大纲侧栏（spec→scenario）；live 来自 `ReportSnapshot`，终态来自同目录 `report.json`；点击 `postMessage` 驱动 viewer / 静态 `index.html` 展开定位。侧栏支持搜索与 pass/fail/skip 过滤，并同步到 iframe。支持「上一/下一失败」与主机层 `j`/`k`；跳转前会放宽遮挡过滤以保证可见。
 2. ~~插件侧能力协商、版本门闸~~（`desktop/electron/compat.js` 校验 ServerHello ≥ 0.5.0 + 必需 capabilities）。
 3. ~~安装体验：Desktop 检测/提示 Gauge 插件版本~~（`plugin-detect.js`）；~~自动更新骨架~~（`electron-updater` + GitHub Releases；设置/菜单检查更新；tag Release 上传 AppImage）。代码签名证书仍待仓库 secrets。~~历史原生删除 / 批量导出~~（`deleteHistoryRuns`；确认框；多选导出）。
 
@@ -295,4 +295,4 @@ studio-reporter/
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
 5. ~~Desktop 历史对比~~。
 6. ~~安装器 / 打包骨架~~（`desktop/` + electron-builder；`npm run pack:dir` / `pack`；bundle root 区分 dev/packaged）。
-7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态统一搜索过滤，可持久化）~~；~~失败路径一键跳转（上一/下一失败 + `j`/`k`）~~；~~历史搜索过滤与勾选导出~~；~~历史原生删除 / 批量导出~~；~~打开所在文件夹 / 复制路径 / 删除 hub 锁~~；~~套件结束系统通知~~；~~自定义协议深链（`studio-reporter://`）~~；~~键盘快捷键 / tablist 无障碍~~；~~明暗主题（system/light/dark）~~；~~对比分享卡片（HTML + Markdown）~~；~~静态报告极轻量交互（hash/复制失败摘要/键盘）~~；~~打开 `.uhilreport` 离线入口~~；~~会话恢复 / 最近 hub~~；~~窗口布局记忆（bounds/最大化）~~；~~大纲分栏宽度记忆~~；~~安装包冒烟（pack:dir 布局校验）~~；~~历史对比 UX 深化（交换/JSON/打开）~~；~~统一大纲搜索（重放过滤 + `/` + 持久化）~~；下一步：代码签名 secrets，或 GaugeStudio 消费 `@studio-reporter/discover`。
+7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态统一搜索过滤，可持久化）~~；~~失败路径一键跳转（上一/下一失败 + `j`/`k`，跳转时放宽过滤）~~；~~Discover 超时可配置~~；~~历史搜索过滤与勾选导出~~；~~历史原生删除 / 批量导出~~；~~打开所在文件夹 / 复制路径 / 删除 hub 锁~~；~~套件结束系统通知~~；~~自定义协议深链（`studio-reporter://`）~~；~~键盘快捷键 / tablist 无障碍~~；~~明暗主题（system/light/dark）~~；~~对比分享卡片（HTML + Markdown）~~；~~静态报告极轻量交互（hash/复制失败摘要/键盘）~~；~~打开 `.uhilreport` 离线入口~~；~~会话恢复 / 最近 hub~~；~~窗口布局记忆（bounds/最大化）~~；~~大纲分栏宽度记忆~~；~~安装包冒烟（pack:dir 布局校验）~~；~~历史对比 UX 深化（交换/JSON/打开）~~；~~统一大纲搜索（重放过滤 + `/` + 持久化）~~；下一步：历史对比导出模板可配置，或 Win/mac pack-smoke，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`。

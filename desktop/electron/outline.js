@@ -159,10 +159,47 @@ function nextFailScenarioId(outline, currentId = '', delta = 1) {
   return { id: ids[idx], index: idx, total: ids.length };
 }
 
+function outlineContainsNodeId(outline, nodeId) {
+  const want = String(nodeId || '').trim();
+  if (!want) return false;
+  for (const spec of outline?.specs || []) {
+    if (String(spec.id || '') === want) return true;
+    for (const scn of spec.scenarios || []) {
+      if (String(scn.id || '') === want) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Relax outline filters so a fail-jump target stays visible in the sidebar and iframe.
+ * Clears a hiding query and switches pass/skip verdict filters to fail when needed.
+ * @param {ReturnType<typeof buildReportOutline>|null|undefined} outline
+ * @param {string} targetId
+ * @param {{ query?: string, verdict?: string }} [current]
+ * @returns {{ query: string, verdict: string }}
+ */
+function prepareFailJumpFilter(outline, targetId, current = {}) {
+  let query = String(current.query || '');
+  let verdict = String(current.verdict || 'all').trim().toLowerCase() || 'all';
+  if (verdict !== 'all' && verdict !== 'fail') {
+    verdict = 'fail';
+  }
+  const visible = (q, v) => outlineContainsNodeId(filterOutline(outline, { query: q, verdict: v }), targetId);
+  if (!visible(query, verdict)) {
+    query = '';
+  }
+  if (!visible(query, verdict)) {
+    verdict = 'fail';
+  }
+  return { query, verdict };
+}
+
 module.exports = {
   buildReportOutline,
   loadOutlineFromReportDir,
   filterOutline,
   listFailScenarioIds,
   nextFailScenarioId,
+  prepareFailJumpFilter,
 };
