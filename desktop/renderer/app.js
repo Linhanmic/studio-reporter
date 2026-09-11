@@ -936,6 +936,7 @@ function renderCompare(cmp) {
       <h3>对比 ${escapeHtml(cmp.base.id || 'base')} → ${escapeHtml(cmp.target.id || 'target')}</h3>
       <div class="compare-actions">
         <button type="button" class="btn" id="btnSwapCompare" title="交换基线与目标">交换方向</button>
+        <button type="button" class="btn" id="btnPreviewCompareCard" title="按当前模板/标题预览分享卡片（不落盘）">预览卡片</button>
         <button type="button" class="btn" id="btnExportCompareCard" title="导出可离线打开的 HTML 分享卡片">导出对比卡片</button>
         <button type="button" class="btn" id="btnCopyCompareMd" title="复制 Markdown 摘要到剪贴板">复制 Markdown</button>
         <button type="button" class="btn" id="btnCopyCompareJson" title="复制结构化 JSON 到剪贴板">复制 JSON</button>
@@ -971,14 +972,25 @@ function renderCompare(cmp) {
     ${exported}
   `;
   $('btnSwapCompare')?.addEventListener('click', swapCompareDirection);
+  $('btnPreviewCompareCard')?.addEventListener('click', previewCompareCard);
   $('btnExportCompareCard')?.addEventListener('click', exportCompareCard);
   $('btnCopyCompareMd')?.addEventListener('click', copyCompareMarkdown);
   $('btnCopyCompareJson')?.addEventListener('click', copyCompareJson);
   $('btnCopyCompareLink')?.addEventListener('click', copyCompareDeepLink);
   $('btnOpenCompareCard')?.addEventListener('click', openLastCompareCard);
   $('btnRevealCompareCard')?.addEventListener('click', revealLastCompareCard);
-  $('compareCardTemplate')?.addEventListener('change', persistCompareShareOpts);
-  $('compareCardTitle')?.addEventListener('change', persistCompareShareOpts);
+  $('compareCardTemplate')?.addEventListener('change', async () => {
+    await persistCompareShareOpts();
+    refreshCompareCardPreviewIfOpen();
+  });
+  $('compareCardTitle')?.addEventListener('change', async () => {
+    await persistCompareShareOpts();
+    refreshCompareCardPreviewIfOpen();
+  });
+  $('compareCardTitle')?.addEventListener('input', () => {
+    // live title preview without waiting for blur
+    refreshCompareCardPreviewIfOpen();
+  });
   document.querySelectorAll('[data-compare-kind]').forEach((input) => {
     input.addEventListener('change', () => {
       const picked = [...document.querySelectorAll('[data-compare-kind]:checked')].map((el) =>
@@ -1111,6 +1123,124 @@ async function persistCompareShareOpts() {
     });
   } catch {
     /* ignore */
+  }
+}
+
+
+function currentCompareCardShareOpts() {
+  return {
+    template:
+      window.desktopAPI.normalizeCompareCardTemplate?.(
+        $('compareCardTemplate')?.value || state.settings?.compareCardTemplate || 'default'
+      ) || 'default',
+    title:
+      window.desktopAPI.normalizeCompareCardTitle?.(
+        $('compareCardTitle')?.value ?? state.settings?.compareCardTitle ?? ''
+      ) ||
+      $('compareCardTitle')?.value ||
+      state.settings?.compareCardTitle ||
+      '',
+    hub: state.settings?.reportHubDir || '',
+    ...compareShareKindOpts(),
+  };
+}
+
+function ensureCompareCardPreviewModal() {
+  let root = $('compareCardPreviewModal');
+  if (root) return root;
+  root = document.createElement('div');
+  root.id = 'compareCardPreviewModal';
+  root.className = 'compare-card-preview-modal hidden';
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-modal', 'true');
+  root.setAttribute('aria-label', '对比分享卡片预览');
+  root.innerHTML = `
+    <div class="compare-card-preview-backdrop" data-preview-close="1"></div>
+    <div class="compare-card-preview-sheet">
+      <header class="compare-card-preview-head">
+        <h3>分享卡片预览 <span class="muted" id="compareCardPreviewMeta"></span></h3>
+        <div class="compare-card-preview-actions">
+          <button type="button" class="btn" id="btnExportCompareCardFromPreview" title="按当前预览导出 HTML">导出此卡片</button>
+          <button type="button" class="btn" id="btnCloseCompareCardPreview" title="关闭预览">关闭</button>
+        </div>
+      </header>
+      <iframe id="compareCardPreviewFrame" class="compare-card-preview-frame" title="对比分享卡片预览" sandbox=""></iframe>
+    </div>
+  `;
+  document.body.appendChild(root);
+  if (document.documentElement.dataset.comparePreviewEscapeWired !== '1') {
+    document.documentElement.dataset.comparePreviewEscapeWired = '1';
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Escape') return;
+      const modal = $('compareCardPreviewModal');
+      if (!modal || modal.classList.contains('hidden')) return;
+      ev.preventDefault();
+      closeCompareCardPreview();
+    });
+  }
+  root.addEventListener('click', (ev) => {
+    if (ev.target?.getAttribute?.('data-preview-close') === '1') closeCompareCardPreview();
+  });
+  $('btnCloseCompareCardPreview')?.addEventListener('click', () => closeCompareCardPreview());
+  $('btnExportCompareCardFromPreview')?.addEventListener('click', () => {
+    closeCompareCardPreview();
+    void exportCompareCard();
+  });
+  return root;
+}
+
+function closeCompareCardPreview() {
+  const root = $('compareCardPreviewModal');
+  if (!root) return;
+  root.classList.add('hidden');
+  const frame = $('compareCardPreviewFrame');
+  if (frame) frame.removeAttribute('srcdoc');
+}
+
+function renderCompareCardPreview(html, opts = {}) {
+  const root = ensureCompareCardPreviewModal();
+  const frame = $('compareCardPreviewFrame');
+  const meta = $('compareCardPreviewMeta');
+  if (frame) frame.srcdoc = String(html || '');
+  if (meta) {
+    const tpl = opts.template || 'default';
+    const title = String(opts.title || '').trim();
+    meta.textContent = title ? `· ${tpl} · ${title}` : `· ${tpl}`;
+  }
+  root.classList.remove('hidden');
+}
+
+function previewCompareCard() {
+  const cmp = state.lastCompare;
+  if (!cmp) {
+    setStatus('请先对比两次运行', 'warn');
+    return;
+  }
+  if (typeof window.desktopAPI.buildCompareShareCardHtml !== 'function') {
+    setStatus('当前版本不支持卡片预览', 'warn');
+    return;
+  }
+  try {
+    const opts = currentCompareCardShareOpts();
+    const html = window.desktopAPI.buildCompareShareCardHtml(cmp, opts);
+    renderCompareCardPreview(html, opts);
+    setStatus(`已预览「${opts.template}」模板分享卡片`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+function refreshCompareCardPreviewIfOpen() {
+  const root = $('compareCardPreviewModal');
+  if (!root || root.classList.contains('hidden')) return;
+  if (!state.lastCompare) return;
+  if (typeof window.desktopAPI.buildCompareShareCardHtml !== 'function') return;
+  try {
+    const opts = currentCompareCardShareOpts();
+    const html = window.desktopAPI.buildCompareShareCardHtml(state.lastCompare, opts);
+    renderCompareCardPreview(html, opts);
+  } catch {
+    /* ignore live refresh errors */
   }
 }
 
