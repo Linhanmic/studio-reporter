@@ -122,6 +122,7 @@
 - [x] Desktop 历史趋势窗口与过滤偏好持久化（`historyTrendLimit` / `historyTrendFlakyLimit` / `historyQuery` / `historyVerdict` / `historyFailReasonQuery`）
 - [x] Release 管道加固（plugin+linux+win 分 job；SHA256SUMS；`CSC_IDENTITY_AUTO_DISCOVERY=false` 无签名 secrets 可发 unsigned）
 - [x] Desktop 自动更新 feed 离线校验 + 代码签名 secrets 文档（`update-feed.js`；DESKTOP 签名表；updater 下载/就绪/安装路径单测）
+- [x] 历史失败摘要 digest（跨运行聚合 topFailReason；Desktop 复制 Markdown；CLI `digest --dir`；JSON/Markdown）
 
 ## 迭代日志
 
@@ -243,4 +244,4 @@
 
 ## 下一任务（选定）
 
-**GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检 / 安装包端到端更新**（需发测试 tag），或在具备证书后启用签名 job。
+**GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检 / 安装包端到端更新**（需发测试 tag），或证书到位后启用签名 job，或 Desktop 失败摘要深链批量打开。

@@ -1543,6 +1543,23 @@ function renderHistoryTrendPanel(bundle) {
     </div>
     <div class="history-trend-spark" title="时长 sparkline（左旧右新）">${escapeHtml(spark) || '—'}</div>
     <div class="history-trend-points">${chips || '<span class="muted">无运行点</span>'}</div>
+    <div class="history-trend-digest">
+      <div class="history-trend-digest-head">
+        <h4 style="margin:8px 0 6px;font-size:12px;">失败原因摘要 ${bundle.digest?.groups?.length ? `（${bundle.digest.groups.length}）` : ''}</h4>
+        <button type="button" class="btn" id="btnCopyTrendDigest" title="复制 Markdown 失败摘要">复制摘要</button>
+      </div>
+      ${
+        (bundle.digest?.groups || []).length
+          ? `<ol class="history-digest-list">${(bundle.digest.groups || [])
+              .slice(0, 8)
+              .map(
+                (g) =>
+                  `<li><strong>${g.count}×</strong> ${escapeHtml(g.reason)} <span class="muted">· ${escapeHtml(g.lastRunId || '')}</span></li>`,
+              )
+              .join('')}</ol>`
+          : '<p class="muted">窗口内无失败原因可汇总。</p>'
+      }
+    </div>
     <h4 style="margin:8px 0 6px;font-size:12px;">不稳定场景 ${flaky.length ? `（${flaky.length}）` : ''}</h4>
     ${
       flakyRows
@@ -1551,6 +1568,23 @@ function renderHistoryTrendPanel(bundle) {
     }
   `;
   $('btnCloseHistoryTrend')?.addEventListener('click', hideHistoryTrendPanel);
+  $('btnCopyTrendDigest')?.addEventListener('click', async () => {
+    const md =
+      bundle.digestMarkdown ||
+      (typeof window.desktopAPI.formatHistoryFailDigestMarkdown === 'function'
+        ? window.desktopAPI.formatHistoryFailDigestMarkdown(bundle.digest || {}, { title: '历史失败摘要' })
+        : '');
+    if (!md) {
+      setStatus('没有可复制的失败摘要', 'warn');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(md);
+      setStatus('已复制失败摘要 Markdown', 'ok');
+    } catch (err) {
+      setStatus(String(err.message || err), 'warn');
+    }
+  });
   panel.querySelectorAll('[data-trend-run]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-trend-run');
@@ -1570,6 +1604,35 @@ function renderHistoryTrendPanel(bundle) {
       await openHistoryRunEntry(run, { focus: focus || undefined, failSteps: true });
     });
   });
+}
+
+
+async function copyHistoryFailDigest() {
+  const runs = filteredHistoryRuns();
+  if (!runs.length) {
+    setStatus('当前过滤结果没有历史运行', 'warn');
+    return;
+  }
+  if (typeof window.desktopAPI.buildHistoryFailDigest !== 'function') {
+    setStatus('当前版本不支持失败摘要', 'warn');
+    return;
+  }
+  try {
+    const digest = window.desktopAPI.buildHistoryFailDigest(runs, { limit: 15 });
+    const md = window.desktopAPI.formatHistoryFailDigestMarkdown(digest, {
+      title: '历史失败摘要',
+      hubDir: state.settings?.reportHubDir || '',
+    });
+    await navigator.clipboard.writeText(md);
+    setStatus(
+      digest.failRunCount
+        ? `已复制失败摘要：${digest.groups.length} 类原因 / ${digest.failRunCount} 次失败`
+        : '已复制失败摘要（窗口内无失败）',
+      'ok',
+    );
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
 }
 
 async function showHistoryTrend() {
@@ -2408,6 +2471,7 @@ function wire() {
   });
   $('btnRefreshHistory').addEventListener('click', refreshHistory);
   $('btnCompareRuns').addEventListener('click', runCompare);
+  $('btnCopyFailDigest')?.addEventListener('click', copyHistoryFailDigest);
   $('btnHistoryTrend')?.addEventListener('click', showHistoryTrend);
   $('btnPickHub').addEventListener('click', async () => {
     const hub = await window.desktopAPI.pickHubDir();

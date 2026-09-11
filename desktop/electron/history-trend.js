@@ -6,6 +6,10 @@ const {
   scenarioLitesFromReport,
   loadReportSnapshot,
 } = require('./scenario-compare.js');
+const {
+  buildHistoryFailDigest,
+  formatHistoryFailDigestMarkdown,
+} = require('./history-digest.js');
 
 const DEFAULT_TREND_LIMIT = 12;
 const DEFAULT_FLAKY_LIMIT = 20;
@@ -254,9 +258,16 @@ function buildHistoryTrendBundle(hubDir, runs, resolveRunDir, opts = {}) {
     };
   });
   const loadedOk = withLites.filter((r) => r.ok).length;
+  const digest = buildHistoryFailDigest(windowRuns, {
+    limit: Number(opts.digestLimit) > 0 ? Number(opts.digestLimit) : 15,
+  });
   return {
     trend,
     flaky: listFlakyScenarios(withLites, { limit: opts.flakyLimit }),
+    digest,
+    digestMarkdown: formatHistoryFailDigestMarkdown(digest, {
+      title: '历史失败摘要',
+    }),
     scenarioLoad: {
       attempted: withLites.length,
       loaded: loadedOk,
@@ -273,6 +284,8 @@ module.exports = {
   formatTrendDuration,
   loadScenarioLitesForEntry,
   buildHistoryTrendBundle,
+  buildHistoryFailDigest,
+  formatHistoryFailDigestMarkdown,
   scenarioKey,
   DEFAULT_TREND_LIMIT,
   DEFAULT_FLAKY_LIMIT,

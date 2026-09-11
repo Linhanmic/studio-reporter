@@ -11,6 +11,7 @@
 
 ```bash
 studio-reporter generate --input path/to/run.uhilreport --out /tmp/out --single
+studio-reporter digest --dir reports/studio-report
 studio-reporter serve --dir reports/studio-report
 studio-reporter version
 ```

@@ -174,6 +174,10 @@ describe('history-trend', () => {
     assert.equal(bundle.trend.stats.runCount, 3);
     assert.equal(bundle.scenarioLoad.loaded, 3);
     assert.ok(bundle.flaky.some((f) => f.scnName === 'Flip' && f.flips >= 1));
+    assert.ok(bundle.digest);
+    assert.equal(bundle.digest.failRunCount, 1);
+    assert.equal(typeof bundle.digestMarkdown, 'string');
+    assert.match(bundle.digestMarkdown, /timeout|失败/);
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 });

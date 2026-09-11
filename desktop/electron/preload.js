@@ -36,6 +36,11 @@ const {
   DEFAULT_TREND_LIMIT,
   DEFAULT_FLAKY_LIMIT,
 } = require('./history-trend.js');
+const {
+  buildHistoryFailDigest,
+  formatHistoryFailDigestMarkdown,
+  formatHistoryFailDigestJson,
+} = require('./history-digest.js');
 const { buildCompareDeepLink, buildOpenDeepLink, buildHistoryOpenDeepLinks } = require('./deeplink.js');
 const {
   parseShareHash,
@@ -151,6 +156,9 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   normalizeHistoryQuery,
   normalizeHistoryTrendLimit,
   normalizeHistoryTrendFlakyLimit,
+  buildHistoryFailDigest,
+  formatHistoryFailDigestMarkdown,
+  formatHistoryFailDigestJson,
   loadHistoryTrendBundle: (opts) => ipcRenderer.invoke('desktop:history-trend-bundle', opts || {}),
   compareScenariosForRuns: (base, target) =>
     ipcRenderer.invoke('desktop:compare-scenarios', base, target),

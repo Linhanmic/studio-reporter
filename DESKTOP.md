@@ -320,6 +320,10 @@ Desktop 通过 `electron-updater` 读取 GitHub Releases 上的 `latest-linux.ym
 
 单元测试覆盖 `desktop/electron/update-feed.js`：解析/校验 `latest*.yml` 形状，并断言 `build.publish` 的 `owner`/`repo` 与仓库一致。发版后可用同逻辑抽检 Releases 资产。
 
+### 历史失败摘要
+
+历史工具栏「复制失败摘要」与趋势面板「复制摘要」将当前过滤窗口的 `topFailReason` 聚合成 Markdown。工程入口：`studio-reporter digest --dir <hub> [--format json|markdown]`。
+
 ### 历史趋势与过滤偏好
 
 设置页可配置 `historyTrendLimit`（默认 12）与 `historyTrendFlakyLimit`（默认 20）。历史页的搜索（`historyQuery`）、结论 chips（`historyVerdict`）、失败原因关键字（`historyFailReasonQuery`）防抖写入 `desktop-settings.json`，重启后恢复；「运行趋势」读取上述窗口上限而非硬编码。
