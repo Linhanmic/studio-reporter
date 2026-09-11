@@ -62,4 +62,34 @@ describe('updater', () => {
     assert.equal(status.state, 'error');
     assert.match(status.message, /network down/);
   });
+
+  it('reports download progress and ready, then quitAndInstall', async () => {
+    const ee = new EventEmitter();
+    let installed = false;
+    ee.checkForUpdates = async () => {
+      ee.emit('update-available', { version: '0.6.1' });
+      ee.emit('download-progress', { percent: 41.2 });
+      ee.emit('update-downloaded', { version: '0.6.1' });
+      return { updateInfo: { version: '0.6.1' } };
+    };
+    ee.quitAndInstall = () => {
+      installed = true;
+    };
+    const seen = [];
+    const u = createUpdater({ isPackaged: true, autoUpdater: ee, autoDownload: true });
+    u.setStatusListener((s) => seen.push(s.state));
+    await u.checkForUpdates();
+    assert.equal(u.getStatus().state, 'ready');
+    assert.equal(u.getStatus().version, '0.6.1');
+    assert.ok(seen.includes('available') || seen.includes('downloading') || seen.includes('ready'));
+    await u.quitAndInstall();
+    assert.equal(installed, true);
+  });
+
+  it('skips quitAndInstall when not packaged', async () => {
+    const u = createUpdater({ isPackaged: false });
+    const status = await u.quitAndInstall();
+    assert.equal(status.state, 'skipped');
+  });
+
 });

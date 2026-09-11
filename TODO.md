@@ -121,6 +121,7 @@
 - [x] Desktop 历史多运行趋势与不稳定场景面板（`history-trend.js`；过滤窗口 sparkline + flaky 列表）
 - [x] Desktop 历史趋势窗口与过滤偏好持久化（`historyTrendLimit` / `historyTrendFlakyLimit` / `historyQuery` / `historyVerdict` / `historyFailReasonQuery`）
 - [x] Release 管道加固（plugin+linux+win 分 job；SHA256SUMS；`CSC_IDENTITY_AUTO_DISCOVERY=false` 无签名 secrets 可发 unsigned）
+- [x] Desktop 自动更新 feed 离线校验 + 代码签名 secrets 文档（`update-feed.js`；DESKTOP 签名表；updater 下载/就绪/安装路径单测）
 
 ## 迭代日志
 
@@ -238,6 +239,8 @@
 
 | 2026-09-11 | Desktop 趋势窗口/过滤偏好持久化 + Release 加固 | 设置页可配 trend/flaky 上限；历史搜索/结论/失败原因防抖写入 settings；Release 分 plugin/linux/win + SHA256SUMS + 显式关闭自动签名发现 |
 
+| 2026-09-11 | 自动更新 feed 离线校验 + 签名 secrets 文档 | `update-feed.js` 解析/校验 latest*.yml + publish owner/repo；updater 补下载/就绪/安装单测；DESKTOP 记录 CSC_*/WIN_CSC_* |
+
 ## 下一任务（选定）
 
-**安装包冒烟 / 自动更新端到端验证**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或补充 Windows/macOS 代码签名 secrets 文档与可选 job（仓库仍无签名证书时保持 unsigned）。
+**GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检 / 安装包端到端更新**（需发测试 tag），或在具备证书后启用签名 job。

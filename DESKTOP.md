@@ -298,6 +298,28 @@ studio-reporter/
 7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态统一搜索过滤，可持久化）~~；~~失败路径一键跳转（上一/下一失败 + `j`/`k`，跳转时放宽过滤）~~；~~Discover 超时可配置~~；~~历史搜索过滤与勾选导出~~；~~历史原生删除 / 批量导出~~；~~打开所在文件夹 / 复制路径 / 删除 hub 锁~~；~~套件结束系统通知~~；~~自定义协议深链（`studio-reporter://`）~~；~~键盘快捷键 / tablist 无障碍~~；~~明暗主题（system/light/dark）~~；~~对比分享卡片（HTML + Markdown）~~；~~静态报告极轻量交互（hash/复制失败摘要/键盘）~~；~~打开 `.uhilreport` 离线入口~~；~~会话恢复 / 最近 hub~~；~~窗口布局记忆（bounds/最大化）~~；~~大纲分栏宽度记忆~~；~~安装包冒烟（pack:dir；linux/win/mac 布局校验）~~；~~历史对比 UX 深化（交换/JSON/打开）~~；~~统一大纲搜索（重放过滤 + `/` + 持久化）~~；~~对比导出模板（default/light/compact + 标题）~~；~~大纲虚拟列表~~；~~Win 打包补齐 `studio-reporter.exe`（`build-windows` + 平台 extraResources）~~；~~导出进度/取消 + 历史全选过滤结果~~；~~历史列表虚拟化~~；~~静态报告过滤性能（structural-only + data-name + 防抖）~~；~~静态报告失败原因聚合~~；~~截图灯箱 ←/→~~；~~导出进度条 UI（百分比/文件名）~~；~~场景级对比（verdict/失败原因）~~；~~静态报告仅失败步骤~~；~~对比卡片纳入场景 diff~~；~~打印/PDF 尊重仅失败步骤~~；~~深链直达两侧历史对比~~；~~对比面板一键复制 compare 深链~~；~~仅失败步骤模式下场景级折叠精简~~；~~导航树与 fail-steps-mode 同步~~；~~对比分享卡片场景深链定位 / 对比分享卡片附带 compare 深链~~；~~深链冷启动队列加固 / 端到端验证~~；~~fail-steps-mode 下失败摘要与可见树一致~~；~~Overview 汇总计数与过滤可见树对齐~~；~~工具栏过滤徽标与可见树实时对齐~~；~~Overview 规格书清单随过滤可见树同步~~；~~左侧导航场景计数与过滤可见树对齐~~；~~打印页眉标注可见过滤范围~~；~~导航场景项随过滤隐藏~~；~~Desktop 对比按场景差异类型过滤导出~~；~~对比场景类型过滤持久化~~；~~对比深链携带场景类型过滤~~；~~静态报告过滤状态可分享 URL~~；~~静态报告复制可见范围链接~~；~~对比面板复制场景打开深链~~；~~历史列表右键打开定位~~；~~历史多选批量复制打开深链~~；~~对比分享卡片模板预览~~；~~历史失败运行快速筛选强化~~；~~分享卡片导出后自动打开预览一致性抽检~~；~~hub 历史文件监视自动刷新~~；~~历史多运行趋势 / 不稳定场景面板~~；下一步：代码签名 secrets / 发布管道加固，或 GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限），或安装包冒烟扩展 / 自动更新端到端验证。
 
 
+
+
+## 代码签名与自动更新（发布）
+
+Desktop 通过 `electron-updater` 读取 GitHub Releases 上的 `latest-linux.yml` / `latest.yml` / `latest-mac.yml`。Release workflow 已上传 AppImage/Windows 产物与 `SHA256SUMS-*.txt`，并设置 `CSC_IDENTITY_AUTO_DISCOVERY=false`，**无证书时仍发 unsigned 包**。
+
+### 可选仓库 Secrets（有证书再配）
+
+| Secret | 用途 |
+|--------|------|
+| `CSC_LINK` | macOS/通用证书（p12/p8 文件的 base64 或 path，见 electron-builder） |
+| `CSC_KEY_PASSWORD` | 证书密码 |
+| `WIN_CSC_LINK` | Windows 代码签名证书（可选；与 `CSC_LINK` 二选一或并存） |
+| `WIN_CSC_KEY_PASSWORD` | Windows 证书密码 |
+| `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` | macOS notarization（若做 notarize） |
+
+未配置时：安装包可下载/冒烟，但 OS 可能提示「未签名」；自动更新仍可走 GitHub provider（`desktop/package.json` → `build.publish`）。
+
+### 离线校验更新 feed
+
+单元测试覆盖 `desktop/electron/update-feed.js`：解析/校验 `latest*.yml` 形状，并断言 `build.publish` 的 `owner`/`repo` 与仓库一致。发版后可用同逻辑抽检 Releases 资产。
+
 ### 历史趋势与过滤偏好
 
 设置页可配置 `historyTrendLimit`（默认 12）与 `historyTrendFlakyLimit`（默认 20）。历史页的搜索（`historyQuery`）、结论 chips（`historyVerdict`）、失败原因关键字（`historyFailReasonQuery`）防抖写入 `desktop-settings.json`，重启后恢复；「运行趋势」读取上述窗口上限而非硬编码。

@@ -134,7 +134,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 或在运行栏选择 Gauge 项目后点「运行 Gauge」，Desktop 会解析 discover 并自动连接。  
 连接成功后 Desktop 根据插件 `ServerHello` 做版本门闸（需要插件 ≥ 0.5.0）。  
 「设置」页可检测本机 `~/.gauge/plugins/studio-reporter` 安装版本；运行后约 20s 未见 discover 会提示检查插件。  
-打包安装包可通过「帮助 → 检查更新」或设置页对照 GitHub Releases（开发态 `npm start` 会跳过）。  
+打包安装包可通过「帮助 → 检查更新」或设置页对照 GitHub Releases（开发态 `npm start` 会跳过）。 发版产物含 `latest-*.yml` 与 `SHA256SUMS-*.txt`；代码签名需配置 `CSC_LINK` / `WIN_CSC_LINK` 等 secrets，否则为 unsigned。  
 运行页与报告页共享左侧原生大纲：live 随 `ReportSnapshot` 更新，打开终态目录时读取 `report.json`；支持搜索与 pass/fail/skip 过滤，并同步到 iframe。点击可定位 viewer / 静态报告节点。大纲侧栏对大报告使用虚拟列表（仅渲染可视行）。大纲提供「上一失败 / 下一失败」，主机层按 `j`/`k` 亦可跳转；若当前搜索会挡住目标失败，会自动放宽过滤后再定位。  
 静态报告过滤只作用于规格书/场景等结构节点（大报告更跟手，搜索有短防抖）。Overview「失败原因聚合」按首条错误归类；过滤或「仅失败步骤」开启时，顶栏/Overview 汇总计数、Overview 规格书清单、左侧导航场景计数（不可见场景项同步隐藏）、工具栏过滤徽标、失败原因聚合与「复制失败摘要」均对齐结果树当前可见节点（徽标反映交叉约束下的可选数量；聚合段对齐可见失败场景）。静态报告支持可分享 URL hash（`#scn:…` / `#overview?q=…&scenario=fail&failSteps=1`；兼容 `#fail-steps`；过滤与工具栏双向同步）、工具栏「复制失败摘要」「复制可见范围链接」（成功后状态栏显示当前过滤摘要）；Desktop 从历史/终态打开报告时会把当前大纲搜索与结论过滤写入 URL hash，以及 `/` 聚焦搜索、`j`/`k` 跳失败、工具栏「仅失败步骤」（隐藏通过场景与步骤，左侧导航同步；打印/导出 PDF 所见即所打，页眉标注当前过滤范围）、截图灯箱 `Esc` 关闭与 ←/→ 切换多图。
 
