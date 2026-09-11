@@ -175,6 +175,11 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     ipcRenderer.on('settings-updated', handler);
     return () => ipcRenderer.removeListener('settings-updated', handler);
   },
+  onHistoryChanged: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('history-changed', handler);
+    return () => ipcRenderer.removeListener('history-changed', handler);
+  },
   onNavigateTab: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('navigate-tab', handler);

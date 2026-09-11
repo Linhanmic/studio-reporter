@@ -17,6 +17,7 @@ const DEFAULTS = {
   restoreSession: true,
   autoCheckUpdates: false,
   notifyOnSuiteEnd: true,
+  watchHubHistory: true,
   theme: 'system',
   outlinePaneWidth: 240,
   outlineQuery: '',

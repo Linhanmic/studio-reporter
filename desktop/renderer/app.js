@@ -2,6 +2,15 @@
 
 const $ = (id) => document.getElementById(id);
 
+/** Normalize absolute hub paths for equality checks (renderer has no node:path). */
+function pathResolveSafe(p) {
+  return String(p || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/\/+$/, '')
+    .toLowerCase();
+}
+
 const state = {
   lastGenerated: null,
   countdown: null,
@@ -1371,22 +1380,40 @@ async function revealLastCompareCard() {
   }
 }
 
-async function refreshHistory() {
+async function refreshHistory(opts = {}) {
+  const preserve = Boolean(opts.preserveSelection);
   const list = $('historyList');
   const empty = $('historyEmpty');
-  list.innerHTML = '';
-  state.selectedIds = [];
-  state.lastCompare = null;
-  state.lastExportedComparePath = null;
-  updateHistoryActionButtons();
-  $('comparePanel').classList.add('hidden');
+  const prevSelected = preserve ? new Set(state.selectedIds || []) : null;
+  const prevCompare = preserve ? state.lastCompare : null;
+  const prevExportPath = preserve ? state.lastExportedComparePath : null;
+  if (!preserve) {
+    list.innerHTML = '';
+    state.selectedIds = [];
+    state.lastCompare = null;
+    state.lastExportedComparePath = null;
+    updateHistoryActionButtons();
+    $('comparePanel').classList.add('hidden');
+  }
   try {
     const hist = await window.desktopAPI.listHistory();
     state.historyRuns = hist.runs || [];
     state.historyRuns.forEach((run, idx) => {
       run.id = run.id || run.href || run.relDir || `run-${idx}`;
     });
+    if (preserve && prevSelected) {
+      const alive = new Set(state.historyRuns.map((r) => r.id));
+      state.selectedIds = [...prevSelected].filter((id) => alive.has(id));
+      state.lastCompare = prevCompare;
+      state.lastExportedComparePath = prevExportPath;
+      if (prevCompare && state.selectedIds.length < 2) {
+        state.lastCompare = null;
+        state.lastExportedComparePath = null;
+        $('comparePanel')?.classList.add('hidden');
+      }
+    }
     renderHistoryList(hist);
+    updateHistoryActionButtons();
   } catch (err) {
     empty.classList.remove('hidden');
     setStatus(String(err.message || err), 'warn');
@@ -1881,6 +1908,9 @@ function fillSettingsForm() {
   if ($('settingNotifySuiteEnd')) {
     $('settingNotifySuiteEnd').checked = s.notifyOnSuiteEnd !== false;
   }
+  if ($('settingWatchHubHistory')) {
+    $('settingWatchHubHistory').checked = s.watchHubHistory !== false;
+  }
   if ($('settingTheme')) {
     $('settingTheme').value = window.desktopAPI.normalizeTheme(s.theme);
   }
@@ -2022,6 +2052,9 @@ async function saveSettings() {
     autoJumpToReport: $('settingAutoJump').checked,
     notifyOnSuiteEnd: $('settingNotifySuiteEnd')
       ? $('settingNotifySuiteEnd').checked
+      : true,
+    watchHubHistory: $('settingWatchHubHistory')
+      ? $('settingWatchHubHistory').checked
       : true,
     theme: $('settingTheme')
       ? window.desktopAPI.normalizeTheme($('settingTheme').value)
@@ -2294,6 +2327,18 @@ function wire() {
     else if (data && data.connected === false) setStatus('已断开', 'warn');
   });
   window.desktopAPI.onReportGenerated((payload) => showEndBanner(payload));
+  window.desktopAPI.onHistoryChanged?.((info) => {
+    if (state.settings?.watchHubHistory === false) return;
+    const currentHub = String(state.settings?.reportHubDir || '').trim();
+    if (info?.hubDir && currentHub && pathResolveSafe(info.hubDir) !== pathResolveSafe(currentHub)) {
+      return;
+    }
+    refreshHistory({ preserveSelection: true }).then(() => {
+      if (state.activeTab === 'history') {
+        setStatus('历史列表已随报告根目录变更自动刷新', 'ok');
+      }
+    });
+  });
   // When compare deep links also switch hub, main sends settings-updated then
   // navigate-compare. Skip the intermediate history wipe so selection sticks.
   let compareDeepLinkPending = false;

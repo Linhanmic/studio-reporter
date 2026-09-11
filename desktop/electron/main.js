@@ -28,6 +28,7 @@ const {
   deleteHistoryRuns,
 } = require('./settings.js');
 const { withHubLock } = require('./hublock.js');
+const { createHubWatcher } = require('./hub-watch.js');
 const {
   shouldNotifySuiteEnd,
   formatSuiteEndNotification,
@@ -91,10 +92,12 @@ function persistReportHub(hubDir) {
   const userData = app.getPath('userData');
   const settings = loadSettings(userData);
   const hub = path.resolve(String(hubDir || '').trim());
-  return saveSettings(userData, {
+  const next = saveSettings(userData, {
     reportHubDir: hub,
     recentHubs: rememberRecentHub(settings.recentHubs, hub),
   });
+  syncHubWatcher(next);
+  return next;
 }
 const DESKTOP_VERSION = '0.5.2';
 /** Dev: repo root. Packaged: Electron extraResources (viewer + report-assets + bin). */
@@ -123,6 +126,35 @@ function sendToRenderer(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send(channel, payload);
   }
+}
+
+const hubWatcher = createHubWatcher({
+  debounceMs: 350,
+  onChange: (info) => {
+    sendToRenderer('history-changed', {
+      hubDir: info.hubDir,
+      reason: info.reason,
+      at: new Date().toISOString(),
+    });
+  },
+});
+
+/**
+ * Start/stop hub history.json watcher from current settings.
+ * @param {ReturnType<typeof loadSettings>} [settings]
+ */
+function syncHubWatcher(settings) {
+  const s = settings || loadSettings(app.getPath('userData'));
+  if (s.watchHubHistory === false) {
+    hubWatcher.stop();
+    return;
+  }
+  const hub = String(s.reportHubDir || '').trim();
+  if (!hub) {
+    hubWatcher.stop();
+    return;
+  }
+  hubWatcher.setHub(hub);
 }
 
 let activeExportChild = null;
@@ -810,7 +842,12 @@ ipcMain.handle('desktop:open-path', async (_evt, absPath) => {
       const cur = loadSettings(userData);
       patch.recentHubs = rememberRecentHub(cur.recentHubs, patch.reportHubDir);
     }
-    return saveSettings(userData, patch);
+    if (Object.prototype.hasOwnProperty.call(patch, 'watchHubHistory')) {
+      patch.watchHubHistory = patch.watchHubHistory !== false;
+    }
+    const next = saveSettings(userData, patch);
+    syncHubWatcher(next);
+    return next;
   });
 
   ipcMain.handle('desktop:pick-hub-dir', async () => {
@@ -1251,6 +1288,11 @@ app.whenReady().then(async () => {
   await startAssetServer(BUNDLE_ROOT);
   await createWindow();
   await flushPendingDeepLinks();
+  try {
+    syncHubWatcher(loadSettings(app.getPath('userData')));
+  } catch {
+    /* ignore */
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -1266,9 +1308,22 @@ app.whenReady().then(async () => {
   }
 });
 
+app.on('before-quit', () => {
+  try {
+    hubWatcher.stop();
+  } catch {
+    /* ignore */
+  }
+});
+
 app.on('window-all-closed', () => {
   if (bridge) bridge.close();
   sessionManager.stopAll();
   if (assetServer) assetServer.close();
+  try {
+    hubWatcher.stop();
+  } catch {
+    /* ignore */
+  }
   if (process.platform !== 'darwin') app.quit();
 });

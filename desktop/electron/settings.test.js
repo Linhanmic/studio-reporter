@@ -154,6 +154,7 @@ describe('settings session restore fields', () => {
     assert.deepEqual(DEFAULTS.recentHubs, []);
     assert.equal(DEFAULTS.lastTab, 'run');
     assert.equal(DEFAULTS.restoreSession, true);
+    assert.equal(DEFAULTS.watchHubHistory, true);
   });
 
   it('load/save round-trips recentHubs and lastTab', () => {

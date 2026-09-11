@@ -28,18 +28,18 @@ type HistoryFile struct {
 }
 
 type HistoryEntry struct {
-	ID           string               `json:"id"`
-	Href         string               `json:"href"`
-	RelDir       string               `json:"relDir"`
-	ProjectName  string               `json:"projectName"`
-	Timestamp    string               `json:"timestamp"`
-	TimestampISO string               `json:"timestampISO,omitempty"`
-	Duration     string               `json:"duration"`
-	Verdict      string               `json:"verdict"`
-	Failed       bool                 `json:"failed"`
-	TopFailReason string              `json:"topFailReason,omitempty"`
-	Summary      report.ReportSummary `json:"summary"`
-	Current      bool                 `json:"current,omitempty"`
+	ID            string               `json:"id"`
+	Href          string               `json:"href"`
+	RelDir        string               `json:"relDir"`
+	ProjectName   string               `json:"projectName"`
+	Timestamp     string               `json:"timestamp"`
+	TimestampISO  string               `json:"timestampISO,omitempty"`
+	Duration      string               `json:"duration"`
+	Verdict       string               `json:"verdict"`
+	Failed        bool                 `json:"failed"`
+	TopFailReason string               `json:"topFailReason,omitempty"`
+	Summary       report.ReportSummary `json:"summary"`
+	Current       bool                 `json:"current,omitempty"`
 }
 
 func recordCompletedRun(runDir string, r *report.Report) error {
