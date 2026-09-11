@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gaugestudio/studio-reporter/internal/report"
 )
 
 func TestBuildHistoryFailDigestGroupsReasons(t *testing.T) {
@@ -294,5 +296,43 @@ func TestOpenDeepLinkPathStyleFocusEncodesSlashInQuery(t *testing.T) {
 	}
 	if strings.Contains(cjkLink, "failSteps=") {
 		t.Fatalf("failSteps should be omitted when false: %s", cjkLink)
+	}
+}
+
+
+
+func TestHistoryFailDigestPathStyleFocusDeepLink(t *testing.T) {
+	rpt := report.FromSuite(sampleSuite())
+	entry := historyEntryFromReport(rpt)
+	if entry.TopFailFocus == "" {
+		t.Fatalf("expected TopFailFocus from sampleSuite fail scenario, entry=%+v", entry)
+	}
+	if !strings.Contains(entry.TopFailFocus, "/") {
+		t.Fatalf("TopFailFocus should be path-style DOM id, got %q", entry.TopFailFocus)
+	}
+	entry.ID = "run-focus-1"
+	entry.Verdict = "fail"
+	entry.Failed = true
+	entry.TimestampISO = "2026-09-11T12:00:00Z"
+	d := buildHistoryFailDigest([]HistoryEntry{entry}, 10)
+	d.HubDir = "/tmp/hub path"
+	if len(d.Groups) < 1 {
+		t.Fatalf("digest groups empty: %+v", d)
+	}
+	g := d.Groups[0]
+	if g.LastRunFocus != entry.TopFailFocus {
+		t.Fatalf("LastRunFocus=%q want %q", g.LastRunFocus, entry.TopFailFocus)
+	}
+	md := formatHistoryFailDigestMarkdown(d, "focus-e2e")
+	if !strings.Contains(md, "focus=") || !strings.Contains(md, "%2F") {
+		t.Fatalf("markdown missing path-style focus encoding:\n%s\n(focus=%q)", md, entry.TopFailFocus)
+	}
+	link := openDeepLink(g.LastRunID, d.HubDir, g.LastRunFocus, true)
+	u, err := url.Parse(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := u.Query().Get("focus"); got != entry.TopFailFocus {
+		t.Fatalf("focus round-trip: want %q got %q link=%s", entry.TopFailFocus, got, link)
 	}
 }

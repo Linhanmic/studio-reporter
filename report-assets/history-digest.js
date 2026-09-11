@@ -24,13 +24,15 @@
     return '';
   }
 
-  function buildOpenDeepLinkForRun(runId, hub) {
+  function buildOpenDeepLinkForRun(runId, hub, focus) {
     var id = String(runId || '').trim();
     if (!id) return '';
     var params = new URLSearchParams();
     params.set('run', id);
     var h = String(hub || '').trim();
     if (h) params.set('hub', h);
+    var f = String(focus || '').trim();
+    if (f) params.set('focus', f);
     params.set('failSteps', '1');
     return PROTOCOL + '://open?' + params.toString();
   }
@@ -66,7 +68,7 @@
       }
       var g = map[reason];
       if (!g) {
-        g = { reason: reason, count: 0, runIds: [], lastRunId: '', lastTimestamp: '' };
+        g = { reason: reason, count: 0, runIds: [], lastRunId: '', lastRunFocus: '', lastTimestamp: '' };
         map[reason] = g;
         order.push(reason);
       }
@@ -74,8 +76,10 @@
       if (id) g.runIds.push(id);
       var prev = Date.parse(g.lastTimestamp) || 0;
       var next = Date.parse(ts) || 0;
+      var focus = String(run.topFailFocus || run.failFocus || '').trim();
       if (!g.lastRunId || next >= prev) {
         g.lastRunId = id;
+        g.lastRunFocus = focus;
         g.lastTimestamp = ts;
       }
     }
@@ -108,24 +112,29 @@
     var d = digest || { groups: [] };
     var hub = String(opts.hubDir || '').trim();
     var mode = opts.mode === 'all' ? 'all' : 'latest';
-    var ids = [];
+    var lines = [];
     var seen = Object.create(null);
     var groups = d.groups || [];
     for (var i = 0; i < groups.length; i++) {
       var g = groups[i];
-      var list = mode === 'all' ? g.runIds || [] : g.lastRunId ? [g.lastRunId] : [];
+      if (mode === 'latest') {
+        var last = String(g.lastRunId || '').trim();
+        if (!last || seen[last]) continue;
+        seen[last] = true;
+        lines.push(buildOpenDeepLinkForRun(last, hub, g.lastRunFocus));
+        continue;
+      }
+      var list = g.runIds || [];
       for (var j = 0; j < list.length; j++) {
         var clean = String(list[j] || '').trim();
         if (!clean || seen[clean]) continue;
         seen[clean] = true;
-        ids.push(clean);
+        // Only the group's last run carries a known path-style focus.
+        var focus = clean === g.lastRunId ? g.lastRunFocus : '';
+        lines.push(buildOpenDeepLinkForRun(clean, hub, focus));
       }
     }
-    return ids
-      .map(function (id) {
-        return buildOpenDeepLinkForRun(id, hub);
-      })
-      .join('\n');
+    return lines.join('\n');
   }
 
   function formatHistoryFailDigestMarkdown(digest, opts) {
@@ -166,7 +175,7 @@
     d.groups.forEach(function (g, i) {
       var reason = g.reason.replace(/\|/g, '\\|');
       if (withLinks) {
-        var link = g.lastRunId ? buildOpenDeepLinkForRun(g.lastRunId, hub) : '';
+        var link = g.lastRunId ? buildOpenDeepLinkForRun(g.lastRunId, hub, g.lastRunFocus) : '';
         var linkCell = link ? '[open](' + link + ')' : '—';
         lines.push(
           '| ' +

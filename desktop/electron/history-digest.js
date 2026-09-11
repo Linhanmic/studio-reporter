@@ -70,15 +70,17 @@ function buildHistoryFailDigest(runs, opts = {}) {
     }
     let g = map.get(reason);
     if (!g) {
-      g = { reason, count: 0, runIds: [], lastRunId: '', lastTimestamp: '' };
+      g = { reason, count: 0, runIds: [], lastRunId: '', lastRunFocus: '', lastTimestamp: '' };
       map.set(reason, g);
     }
     g.count += 1;
     if (id) g.runIds.push(id);
     const prev = Date.parse(g.lastTimestamp) || 0;
     const next = Date.parse(ts) || 0;
+    const focus = String(run?.topFailFocus || run?.failFocus || '').trim();
     if (!g.lastRunId || next >= prev) {
       g.lastRunId = id;
+      g.lastRunFocus = focus;
       g.lastTimestamp = ts;
     }
   }
@@ -106,12 +108,13 @@ function buildHistoryFailDigest(runs, opts = {}) {
  * @param {string} runId
  * @param {string} hub
  */
-function buildOpenDeepLinkForRun(runId, hub) {
+function buildOpenDeepLinkForRun(runId, hub, focus) {
   const id = String(runId || '').trim();
   if (!id) return '';
   return buildOpenDeepLink({
     run: id,
     hub: String(hub || '').trim() || undefined,
+    focus: String(focus || '').trim() || undefined,
     failSteps: true,
   });
 }
@@ -126,18 +129,25 @@ function buildHistoryFailDigestOpenLinks(digest, opts = {}) {
   const d = digest || { groups: [] };
   const hub = String(opts.hubDir || '').trim();
   const mode = opts.mode === 'all' ? 'all' : 'latest';
-  const ids = [];
+  const lines = [];
   const seen = new Set();
   for (const g of d.groups || []) {
-    const list = mode === 'all' ? g.runIds || [] : g.lastRunId ? [g.lastRunId] : [];
-    for (const id of list) {
+    if (mode === 'latest') {
+      const last = String(g.lastRunId || '').trim();
+      if (!last || seen.has(last)) continue;
+      seen.add(last);
+      lines.push(buildOpenDeepLinkForRun(last, hub, g.lastRunFocus));
+      continue;
+    }
+    for (const id of g.runIds || []) {
       const clean = String(id || '').trim();
       if (!clean || seen.has(clean)) continue;
       seen.add(clean);
-      ids.push(clean);
+      const focus = clean === g.lastRunId ? g.lastRunFocus : '';
+      lines.push(buildOpenDeepLinkForRun(clean, hub, focus));
     }
   }
-  return ids.map((id) => buildOpenDeepLinkForRun(id, hub)).join('\n');
+  return lines.join('\n');
 }
 
 /**
@@ -174,7 +184,7 @@ function formatHistoryFailDigestMarkdown(digest, opts = {}) {
   d.groups.forEach((g, i) => {
     const reason = g.reason.replace(/\|/g, '\\|');
     if (withLinks) {
-      const link = g.lastRunId ? buildOpenDeepLinkForRun(g.lastRunId, hub) : '';
+      const link = g.lastRunId ? buildOpenDeepLinkForRun(g.lastRunId, hub, g.lastRunFocus) : '';
       const linkCell = link ? `[open](${link})` : '—';
       lines.push(
         `| ${i + 1} | ${g.count} | \`${g.lastRunId || '—'}\` | ${linkCell} | ${reason} |`,

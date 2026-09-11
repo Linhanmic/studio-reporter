@@ -38,6 +38,7 @@ type HistoryEntry struct {
 	Verdict       string               `json:"verdict"`
 	Failed        bool                 `json:"failed"`
 	TopFailReason string               `json:"topFailReason,omitempty"`
+	TopFailFocus  string               `json:"topFailFocus,omitempty"`
 	Summary       report.ReportSummary `json:"summary"`
 	Current       bool                 `json:"current,omitempty"`
 }
@@ -173,8 +174,20 @@ func historyEntryFromReport(r *report.Report) HistoryEntry {
 		Failed:       r.Failed,
 		Summary:      r.Summary,
 	}
-	if groups := report.AggregateFailReasons(r); len(groups) > 0 && groups[0].Reason != "" {
-		entry.TopFailReason = groups[0].Reason
+	if groups := report.AggregateFailReasons(r); len(groups) > 0 {
+		if groups[0].Reason != "" {
+			entry.TopFailReason = groups[0].Reason
+		}
+		// Prefer scenario DOM id, else spec id (path-style: spec:specs/.../x.spec).
+		for _, ref := range groups[0].Refs {
+			if id := strings.TrimSpace(ref.ScnID); id != "" {
+				entry.TopFailFocus = id
+				break
+			}
+			if id := strings.TrimSpace(ref.SpecID); id != "" && entry.TopFailFocus == "" {
+				entry.TopFailFocus = id
+			}
+		}
 	}
 	return entry
 }

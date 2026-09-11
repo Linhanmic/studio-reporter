@@ -20,6 +20,7 @@ type FailDigestGroup struct {
 	Count         int      `json:"count"`
 	RunIDs        []string `json:"runIds"`
 	LastRunID     string   `json:"lastRunId"`
+	LastRunFocus  string   `json:"lastRunFocus,omitempty"`
 	LastTimestamp string   `json:"lastTimestamp"`
 }
 
@@ -65,11 +66,12 @@ func buildHistoryFailDigest(runs []HistoryEntry, limit int) HistoryFailDigest {
 		limit = 50
 	}
 	type agg struct {
-		reason string
-		count  int
-		ids    []string
-		lastID string
-		lastTS string
+		reason    string
+		count     int
+		ids       []string
+		lastID    string
+		lastFocus string
+		lastTS    string
 	}
 	byReason := map[string]*agg{}
 	out := HistoryFailDigest{RunCount: len(runs), Format: "studio-reporter.historyFailDigest/v1", FormatVersion: historyFailDigestFormatVersion, GeneratedAt: time.Now().UTC().Format(time.RFC3339)}
@@ -111,6 +113,7 @@ func buildHistoryFailDigest(runs []HistoryEntry, limit int) HistoryFailDigest {
 		}
 		if g.lastID == "" || ts >= g.lastTS {
 			g.lastID = run.ID
+			g.lastFocus = strings.TrimSpace(run.TopFailFocus)
 			g.lastTS = ts
 		}
 	}
@@ -121,6 +124,7 @@ func buildHistoryFailDigest(runs []HistoryEntry, limit int) HistoryFailDigest {
 			Count:         g.count,
 			RunIDs:        g.ids,
 			LastRunID:     g.lastID,
+			LastRunFocus:  g.lastFocus,
 			LastTimestamp: g.lastTS,
 		})
 	}
@@ -204,7 +208,7 @@ func formatHistoryFailDigestMarkdown(d HistoryFailDigest, title string) string {
 		}
 		if withLinks {
 			linkCell := "—"
-			if link := openDeepLinkForRun(g.LastRunID, d.HubDir); link != "" {
+			if link := openDeepLink(g.LastRunID, d.HubDir, g.LastRunFocus, true); link != "" {
 				linkCell = fmt.Sprintf("[open](%s)", link)
 			}
 			fmt.Fprintf(&b, "| %d | %d | `%s` | %s | %s |\n", i+1, g.Count, last, linkCell, reason)
@@ -218,7 +222,7 @@ func formatHistoryFailDigestMarkdown(d HistoryFailDigest, title string) string {
 	if withLinks {
 		b.WriteString("\n### 最近失败打开深链\n```\n")
 		for _, g := range d.Groups {
-			if link := openDeepLinkForRun(g.LastRunID, d.HubDir); link != "" {
+			if link := openDeepLink(g.LastRunID, d.HubDir, g.LastRunFocus, true); link != "" {
 				b.WriteString(link)
 				b.WriteByte('\n')
 			}

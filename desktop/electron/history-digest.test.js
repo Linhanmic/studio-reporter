@@ -118,4 +118,28 @@ describe('history-digest', () => {
     fs.rmSync(hub, { recursive: true, force: true });
   });
 
+
+  it('emits path-style focus on open deep links from topFailFocus', () => {
+    const focus = 'spec:specs/auth/login.spec-scn-0';
+    const runs = [
+      {
+        id: 'run-a',
+        verdict: 'fail',
+        topFailReason: 'assert failed',
+        topFailFocus: focus,
+        timestampISO: '2026-09-11T10:00:00Z',
+      },
+    ];
+    const digest = buildHistoryFailDigest(runs, { limit: 5 });
+    assert.equal(digest.groups[0].lastRunFocus, focus);
+    const hub = '/tmp/hub with space';
+    const links = buildHistoryFailDigestOpenLinks(digest, { hubDir: hub, mode: 'latest' });
+    assert.match(links, /focus=spec%3Aspecs%2Fauth%2Flogin\.spec-scn-0/);
+    assert.ok(links.includes('%2F'), 'focus slash must be query-encoded');
+    const u = new URL(links.trim());
+    assert.equal(u.searchParams.get('focus'), focus);
+    const md = formatHistoryFailDigestMarkdown(digest, { hubDir: hub, title: 'focus-e2e' });
+    assert.match(md, /focus=spec%3Aspecs%2Fauth%2Flogin\.spec-scn-0/);
+  });
+
 });

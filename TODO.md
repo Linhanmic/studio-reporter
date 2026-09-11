@@ -149,6 +149,7 @@
 - [x] Desktop/对比深链 `open?focus=` path-style DOM id（含 `/`）query 编码与打开抽检（query `%2F` ≠ fragment 字面 `/`；Go `openDeepLink` + Desktop/compare 单测）
 - [x] Desktop 打开深链后静态报告定位 path-style focus 冒烟（`open-focus-pipeline.test.js`：deeplink→resolveReportOpenHash→Chrome dump-dom；`report-browser-smoke` 以 `REQUIRE_CHROME=1` 强制执行）
 - [x] manage/serve 打开 path-style focus 深链的浏览器联调（`TestManageServePathStyleFocusDeepLinkSmoke`；HTTP 服务 archive index + `#spec:specs/…` / legacy `%2F` dump-dom；纳入 `smoke-manage-digest`）
+- [x] 历史摘要/对比分享卡写入 path-style focus 深链端到端抽检（HistoryEntry.TopFailFocus；digest LastRunFocus；Go/JS open 深链 `%2F`；三端单测）
 
 ## 迭代日志
 
@@ -324,6 +325,8 @@
 
 | 2026-09-11 | manage/serve path-style focus 联调 | HTTP 服务真实 archive + Chrome dump-dom：字面 `/`、`?failSteps=1`、legacy `%2F` 均打开 path-style details；`smoke-manage-digest` 覆盖 |
 
+| 2026-09-11 | 历史摘要 path-style focus 深链 | HistoryEntry 写入 TopFailFocus（首个失败 scn/spec DOM id）；digest LastRunFocus；MD/JSON open 深链 query 编码 `/`；Go/Desktop/report-assets 单测 |
+
 ## 下一任务（选定）
 
-**历史摘要/对比分享卡写入 path-style focus 深链的端到端抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**对比分享卡与历史摘要 focus 深链在 Desktop 打开后的定位联调**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
