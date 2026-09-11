@@ -24,7 +24,10 @@ function setTab(name) {
   const hideChrome = name === 'history' || name === 'settings';
   $('connectBar').classList.toggle('hidden', hideChrome);
   $('runBar').classList.toggle('hidden', hideChrome);
-  if (hideChrome) $('gaugeLog').classList.add('hidden');
+  if (hideChrome) {
+    $('gaugeLog').classList.add('hidden');
+    $('sessionBar').classList.add('hidden');
+  }
   if (name === 'history') refreshHistory();
   if (name === 'settings') fillSettingsForm();
 }
@@ -236,6 +239,49 @@ async function refreshHistory() {
   }
 }
 
+function fillRecentProjects(list) {
+  const dl = $('recentProjectsList');
+  if (!dl) return;
+  dl.innerHTML = '';
+  (list || []).forEach((p) => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    dl.appendChild(opt);
+  });
+}
+
+function renderSessions(payload) {
+  const bar = $('sessionBar');
+  if (!bar) return;
+  const sessions = payload?.sessions || [];
+  const activeId = payload?.activeId || null;
+  if (!sessions.length) {
+    bar.classList.add('hidden');
+    bar.innerHTML = '';
+    return;
+  }
+  bar.classList.remove('hidden');
+  bar.innerHTML = sessions.map((s) => {
+    const active = s.id === activeId ? ' active' : '';
+    const status = s.status === 'running' ? '运行中' : (s.exitCode ? `退出 ${s.exitCode}` : '结束');
+    return `<button type="button" class="session-chip${active}" data-session-id="${s.id}" title="${s.projectDir}">
+      <strong>${s.projectName || s.id}</strong>
+      <span class="muted">${status}</span>
+    </button>`;
+  }).join('');
+  bar.querySelectorAll('.session-chip').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        const session = await window.desktopAPI.setActiveSession(btn.dataset.sessionId);
+        if (session?.discoveredUrl) $('wsInput').value = session.discoveredUrl;
+        setStatus(`已切换会话 ${session?.projectName || ''}`, 'ok');
+      } catch (err) {
+        setStatus(String(err.message || err), 'warn');
+      }
+    });
+  });
+}
+
 function fillSettingsForm() {
   const s = state.settings || {};
   $('settingHubDir').value = s.reportHubDir || '';
@@ -245,6 +291,7 @@ function fillSettingsForm() {
   $('gaugeProjectDir').value = s.gaugeProjectDir || $('gaugeProjectDir').value || '';
   $('gaugeSpecs').value = s.gaugeSpecs || $('gaugeSpecs').value || 'specs';
   $('gaugeEnv').value = s.gaugeEnv || '';
+  fillRecentProjects(s.recentProjects || []);
 }
 
 async function loadSettings() {
@@ -281,10 +328,14 @@ function appendGaugeLog(text) {
   el.scrollTop = el.scrollHeight;
 }
 
-function setGaugeRunning(running) {
-  $('btnStartGauge').disabled = running;
+function setGaugeRunning(runningCountOrBool) {
+  const running = typeof runningCountOrBool === 'number'
+    ? runningCountOrBool > 0
+    : Boolean(runningCountOrBool);
+  // Multi-session: allow starting another run while one is active (cap enforced in main).
+  $('btnStartGauge').disabled = false;
   $('btnStopGauge').disabled = !running;
-  $('btnPickGaugeProject').disabled = running;
+  $('btnPickGaugeProject').disabled = false;
 }
 
 async function startGauge() {
@@ -419,18 +470,26 @@ function wire() {
   });
   window.desktopAPI.onGaugeStatus((data) => {
     if (!data) return;
-    setGaugeRunning(Boolean(data.running));
+    if (data.sessions) renderSessions(data);
+    const runningN = (data.sessions || []).filter((s) => s.status === 'running').length;
+    setGaugeRunning(runningN > 0 || Boolean(data.running));
     if (data.autoConnected && data.liveUrl) {
       showLive(data.liveUrl);
       setTab('run');
       setStatus(`已自动连接 ${data.discoveredUrl || ''}`.trim(), 'ok');
       $('btnDisconnect').disabled = false;
+      fillRecentProjects(state.settings?.recentProjects || []);
     } else if (data.running === false) {
       const code = data.code != null ? ` code=${data.code}` : '';
       setStatus(`Gauge 已退出${code}`, data.code ? 'warn' : 'ok');
     } else if (data.error) {
       setStatus(data.error, 'warn');
     }
+  });
+  window.desktopAPI.onSessionsUpdated((data) => {
+    renderSessions(data || {});
+    const runningN = (data?.sessions || []).filter((s) => s.status === 'running').length;
+    setGaugeRunning(runningN);
   });
 }
 
@@ -444,6 +503,12 @@ function wire() {
   }
   try {
     await loadSettings();
+  } catch {
+    /* ignore */
+  }
+  try {
+    const sess = await window.desktopAPI.listSessions();
+    renderSessions(sess || {});
   } catch {
     /* ignore */
   }

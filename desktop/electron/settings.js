@@ -11,6 +11,7 @@ const DEFAULTS = {
   gaugeSpecs: 'specs',
   gaugeEnv: '',
   gaugeBin: 'gauge',
+  recentProjects: [],
 };
 
 function settingsPath(userDataDir) {

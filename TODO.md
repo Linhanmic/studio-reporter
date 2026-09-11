@@ -57,6 +57,7 @@
 - [x] Desktop 历史对比（移植 `CompareHistoryRuns` → `desktop/electron/compare.js`）
 - [x] Desktop 安装器 / 打包骨架（electron-builder；`extraResources` 打入 viewer + report-assets + CLI；`paths.js` 解析 bundle root）
 - [x] Desktop P2「运行」封装 gauge（选项目/specs/env；stdout discover 自动连接 live viewer）
+- [x] Desktop 多项目 / 多会话（recentProjects + GaugeSessionManager；会话条切换；CI 跑 desktop npm test）
 
 ## 迭代日志
 
@@ -85,7 +86,8 @@
 | 2026-09-11 | Desktop 历史对比 | 历史页勾选两次运行；`compare.js` 对齐 Go `CompareHistoryRuns`（verdict / 时长 / 计数 delta） |
 | 2026-09-11 | Desktop 打包骨架 | electron-builder；`pack:dir`/`pack`；extraResources 含 viewer/report-assets/CLI；packaged 态 `BUNDLE_ROOT=resourcesPath` |
 | 2026-09-11 | Desktop P2 运行 Gauge | `gauge-run.js` 封装 `gauge run`；扫描 stdout discover；自动 `connect-ws`；运行栏 + 日志 |
+| 2026-09-11 | Desktop 多项目/多会话 | `sessions.js`：最近项目列表 + 最多 3 路并行 Gauge；会话条切换 live；CI 增加 desktop unit tests |
 
 ## 下一任务（选定）
 
-**多会话 / 多项目**，或完善安装包签名 / 自动更新。
+**与 GaugeStudio 共享 discover 包**，或完善安装包签名 / 自动更新 / 插件版本门闸。

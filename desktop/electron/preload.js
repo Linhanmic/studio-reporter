@@ -23,7 +23,9 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   pickGaugeProject: () => ipcRenderer.invoke('desktop:pick-gauge-project'),
   gaugeStatus: () => ipcRenderer.invoke('desktop:gauge-status'),
   startGauge: (opts) => ipcRenderer.invoke('desktop:start-gauge', opts),
-  stopGauge: () => ipcRenderer.invoke('desktop:stop-gauge'),
+  stopGauge: (sessionId) => ipcRenderer.invoke('desktop:stop-gauge', sessionId),
+  listSessions: () => ipcRenderer.invoke('desktop:list-sessions'),
+  setActiveSession: (id) => ipcRenderer.invoke('desktop:set-active-session', id),
   compareHistoryRuns,
   formatDurationDelta,
   formatCountsDelta,
@@ -66,5 +68,10 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('gauge-status', handler);
     return () => ipcRenderer.removeListener('gauge-status', handler);
+  },
+  onSessionsUpdated: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('sessions-updated', handler);
+    return () => ipcRenderer.removeListener('sessions-updated', handler);
   },
 });

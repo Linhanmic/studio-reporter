@@ -25,7 +25,7 @@ html, body {
 .shell {
   height: 100%;
   display: grid;
-  grid-template-rows: auto auto auto auto auto 1fr;
+  grid-template-rows: auto auto auto auto auto auto 1fr;
 }
 .topbar {
   display: flex;
@@ -126,6 +126,21 @@ iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
   font-family: var(--mono); font-size: 11px; white-space: pre-wrap;
 }
 .gauge-log.hidden { display: none; }
+.session-bar {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  padding: 6px 14px; background: rgba(0,0,0,.16); border-bottom: 1px solid var(--line);
+}
+.session-bar.hidden { display: none; }
+.session-chip {
+  appearance: none; border: 1px solid var(--line); background: #1a2f42;
+  color: var(--text); border-radius: 999px; padding: 4px 10px; cursor: pointer;
+  font: inherit; display: inline-flex; gap: 8px; align-items: center;
+}
+.session-chip:hover { border-color: rgba(61,184,232,.5); }
+.session-chip.active {
+  border-color: var(--accent); background: rgba(61,184,232,.16);
+}
+.session-chip .muted { color: var(--muted); font-size: 11px; }
 .panel {
   height: 100%;
   overflow: auto;

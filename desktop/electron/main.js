@@ -25,7 +25,10 @@ const {
   resolveStudioReporterBin,
   missingBundleResources,
 } = require('./paths.js');
-const { GaugeRunner } = require('./gauge-run.js');
+const {
+  rememberRecentProject,
+  GaugeSessionManager,
+} = require('./sessions.js');
 
 const DESKTOP_VERSION = '0.5.2';
 /** Dev: repo root. Packaged: Electron extraResources (viewer + report-assets + bin). */
@@ -40,7 +43,7 @@ let mainWindow = null;
 let assetServer = null;
 let assetPort = 0;
 let bridge = null;
-const gaugeRunner = new GaugeRunner();
+const sessionManager = new GaugeSessionManager();
 
 function sendToRenderer(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -401,78 +404,135 @@ function registerIpc() {
     });
     if (result.canceled || !result.filePaths[0]) return null;
     const projectDir = result.filePaths[0];
-    saveSettings(app.getPath('userData'), { gaugeProjectDir: projectDir });
+    const settings = loadSettings(app.getPath('userData'));
+    saveSettings(app.getPath('userData'), {
+      gaugeProjectDir: projectDir,
+      recentProjects: rememberRecentProject(settings.recentProjects, projectDir),
+    });
     return projectDir;
   });
 
-  ipcMain.handle('desktop:gauge-status', async () => ({
-    running: gaugeRunner.running,
-    discoveredUrl: gaugeRunner.discoveredUrl,
+  ipcMain.handle('desktop:list-sessions', async () => ({
+    sessions: sessionManager.list(),
+    activeId: sessionManager.activeId,
   }));
 
+  ipcMain.handle('desktop:set-active-session', async (_evt, id) => {
+    const session = sessionManager.setActive(id);
+    if (!session) throw new Error('会话不存在');
+    if (session.liveUrl) {
+      sendToRenderer('navigate-live', { url: session.liveUrl });
+    } else if (session.discoveredUrl) {
+      const live = await connectLiveWs(session.discoveredUrl);
+      sessionManager.markLive(id, live.liveUrl);
+    }
+    sendToRenderer('sessions-updated', {
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
+    });
+    return sessionManager.get(id);
+  });
+
+  ipcMain.handle('desktop:gauge-status', async () => {
+    const active = sessionManager.active;
+    return {
+      running: Boolean(active && active.status === 'running'),
+      discoveredUrl: active?.discoveredUrl || null,
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
+    };
+  });
+
   ipcMain.handle('desktop:start-gauge', async (_evt, opts = {}) => {
-    if (gaugeRunner.running) throw new Error('Gauge 已在运行');
     const settings = loadSettings(app.getPath('userData'));
     const projectDir = opts.projectDir || settings.gaugeProjectDir;
     const specs = opts.specs || settings.gaugeSpecs || 'specs';
     const env = opts.env != null ? opts.env : settings.gaugeEnv || '';
     const gaugeBin = opts.gaugeBin || settings.gaugeBin || 'gauge';
+    const recentProjects = rememberRecentProject(settings.recentProjects, projectDir);
     saveSettings(app.getPath('userData'), {
       gaugeProjectDir: projectDir || '',
       gaugeSpecs: specs,
       gaugeEnv: env,
       gaugeBin,
+      recentProjects,
     });
-    let autoConnected = false;
-    const started = gaugeRunner.start({
+
+    const session = sessionManager.start({
       projectDir,
       specs,
       env,
       gaugeBin,
-      onLog: (text, stream) => sendToRenderer('gauge-log', { text, stream }),
-      onDiscover: async (url) => {
-        sendToRenderer('gauge-discover', { url });
-        if (autoConnected) return;
-        autoConnected = true;
+      onLog: (text, stream, sessionId) =>
+        sendToRenderer('gauge-log', { text, stream, sessionId }),
+      onDiscover: async (url, sessionId) => {
+        sendToRenderer('gauge-discover', { url, sessionId });
+        if (sessionManager.activeId !== sessionId) return;
         try {
           const live = await connectLiveWs(url);
+          sessionManager.markLive(sessionId, live.liveUrl);
           sendToRenderer('gauge-status', {
             running: true,
+            sessionId,
             discoveredUrl: url,
             autoConnected: true,
             liveUrl: live.liveUrl,
+            sessions: sessionManager.list(),
+            activeId: sessionManager.activeId,
           });
         } catch (err) {
           sendToRenderer('gauge-status', {
             running: true,
+            sessionId,
             discoveredUrl: url,
             autoConnected: false,
             error: String(err.message || err),
+            sessions: sessionManager.list(),
+            activeId: sessionManager.activeId,
           });
         }
       },
-      onExit: (code, signal) => {
+      onExit: (code, signal, sessionId) => {
         sendToRenderer('gauge-status', {
           running: false,
+          sessionId,
           code,
           signal,
-          discoveredUrl: gaugeRunner.discoveredUrl,
+          discoveredUrl: sessionManager.get(sessionId)?.discoveredUrl || null,
+          sessions: sessionManager.list(),
+          activeId: sessionManager.activeId,
+        });
+        sendToRenderer('sessions-updated', {
+          sessions: sessionManager.list(),
+          activeId: sessionManager.activeId,
         });
       },
     });
+
     sendToRenderer('gauge-status', {
       running: true,
-      pid: started.pid,
-      bin: started.bin,
-      args: started.args,
+      sessionId: session.id,
+      pid: session.pid,
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
     });
-    return { ok: true, ...started };
+    sendToRenderer('sessions-updated', {
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
+    });
+    return { ok: true, session, sessions: sessionManager.list() };
   });
 
-  ipcMain.handle('desktop:stop-gauge', async () => {
-    const stopped = gaugeRunner.stop();
-    return { ok: true, stopped };
+  ipcMain.handle('desktop:stop-gauge', async (_evt, sessionId) => {
+    const stopped = sessionManager.stop(sessionId);
+    return {
+      ok: true,
+      stopped,
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
+    };
   });
+
 }
 
 app.whenReady().then(async () => {
@@ -491,7 +551,7 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   if (bridge) bridge.close();
-  if (gaugeRunner.running) gaugeRunner.stop();
+  sessionManager.stopAll();
   if (assetServer) assetServer.close();
   if (process.platform !== 'darwin') app.quit();
 });

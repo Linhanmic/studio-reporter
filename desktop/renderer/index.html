@@ -37,13 +37,15 @@
 
     <section class="run-bar" id="runBar">
       <label class="connect-label" for="gaugeProjectDir">Gauge 项目</label>
-      <input id="gaugeProjectDir" type="text" spellcheck="false" placeholder="选择含 specs/ 的 Gauge 工程目录">
+      <input id="gaugeProjectDir" type="text" list="recentProjectsList" spellcheck="false" placeholder="选择含 specs/ 的 Gauge 工程目录">
+      <datalist id="recentProjectsList"></datalist>
       <button type="button" id="btnPickGaugeProject" class="btn">浏览…</button>
       <input id="gaugeSpecs" type="text" spellcheck="false" value="specs" title="规格路径" placeholder="specs">
       <input id="gaugeEnv" type="text" spellcheck="false" placeholder="env（可选）" title="--env">
       <button type="button" id="btnStartGauge" class="btn primary">运行 Gauge</button>
       <button type="button" id="btnStopGauge" class="btn" disabled>停止</button>
     </section>
+    <section class="session-bar hidden" id="sessionBar" aria-label="会话列表"></section>
     <pre id="gaugeLog" class="gauge-log hidden" aria-label="Gauge 输出"></pre>
 
     <div class="banner hidden" id="endBanner">
