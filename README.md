@@ -16,7 +16,7 @@ Studio Reporter ships today as a [Gauge](https://gauge.org/) reporter plugin (WS
 - **Desktop P0 shell** (`desktop/`) — Electron workbench: paste/discover WS URL, embed live viewer + final `index.html`, control Hello/RequestSnapshot
 - Spec / scenario filter toolbar on the static report (pass / fail / skip)
 - **CANoe-style layout**: left navigation tree + right content, with an **Overview** page (env / host / plugin / stats)
-- Screenshot galleries at suite / spec / scenario / step (hook + failure shots; click-to-enlarge lightbox)
+- Screenshot galleries at suite / spec / scenario / step (hook + failure shots; click-to-enlarge lightbox with ←/→ navigation)
 - Optional **structured PDF** export via headless Chrome (`--pdf` / `GAUGE_STUDIO_WRITE_PDF`) — text + links + images, not a screenshot collage
 - Optional **single-file HTML** (`--single` / `GAUGE_STUDIO_WRITE_SINGLE` → `report.single.html`) with screenshots inlined as data URIs; directory `index.html` remains the default source of truth
 - Versioned report file format (see [REPORT_FORMAT.md](REPORT_FORMAT.md))

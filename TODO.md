@@ -26,6 +26,7 @@
 - [x] 静态报告搜索（规格书 / 场景名）
 - [x] 失败默认展开路径
 - [x] 打印样式：过滤隐藏块打印时「所见即所打」（不再强制展开被过滤块）
+- [x] 截图灯箱 ←/→ 多图导航（键盘 + 前后按钮；`StepLightboxIndex`）
 
 ## P2 — 实时 viewer
 
@@ -150,6 +151,8 @@
 
 | 2026-09-11 | 静态报告失败原因聚合 | Overview「失败原因聚合」按首条错误归类；复制失败摘要含聚合段；`AggregateFailReasons` 单测 |
 
+| 2026-09-11 | 截图灯箱 ←/→ 导航 | `StepLightboxIndex` + 键盘/按钮；`#shot-lightbox-pos`；与 JS 契约对齐单测 |
+
 ## 下一任务（选定）
 
-**导出进度条 UI 细化**，或终态报告截图灯箱键盘可达性（←/→），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限）。
+**导出进度条 UI 细化**（取消已可用；补进度百分比 / 当前文件名展示），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限），或**报告对比视图**（两份归档的场景通过率与失败原因 diff）。

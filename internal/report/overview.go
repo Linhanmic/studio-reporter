@@ -208,7 +208,13 @@ type shotItem struct {
 
 func writeShotLightbox(b *bytes.Buffer) {
 	b.WriteString(`<dialog id="shot-lightbox" class="shot-lightbox" closedby="any">`)
-	b.WriteString(`<form method="dialog" class="shot-lightbox-bar"><span id="shot-lightbox-cap"></span>`)
+	b.WriteString(`<form method="dialog" class="shot-lightbox-bar">`)
+	b.WriteString(`<div class="shot-lightbox-nav">`)
+	b.WriteString(`<button type="button" class="shot-lightbox-prev" data-lightbox-nav="-1" aria-label="上一张截图" title="← 上一张">‹</button>`)
+	b.WriteString(`<button type="button" class="shot-lightbox-next" data-lightbox-nav="1" aria-label="下一张截图" title="→ 下一张">›</button>`)
+	b.WriteString(`</div>`)
+	b.WriteString(`<span id="shot-lightbox-cap"></span>`)
+	b.WriteString(`<span id="shot-lightbox-pos" class="shot-lightbox-pos" aria-live="polite"></span>`)
 	b.WriteString(`<button value="close" type="submit" class="shot-lightbox-close">关闭</button></form>`)
 	b.WriteString(`<img id="shot-lightbox-img" alt="screenshot enlarged">`)
 	b.WriteString(`</dialog>`)

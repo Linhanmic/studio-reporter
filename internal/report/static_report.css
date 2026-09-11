@@ -289,6 +289,26 @@ html, body {
   padding: 8px 10px;
   background: #1e293b;
 }
+.shot-lightbox-nav { display: flex; gap: 4px; }
+.shot-lightbox-prev,
+.shot-lightbox-next {
+  border: 1px solid #64748b;
+  background: transparent;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  line-height: 1;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.shot-lightbox-prev:hover,
+.shot-lightbox-next:hover { background: rgba(255,255,255,.08); }
+.shot-lightbox-pos {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
 .shot-lightbox-close {
   border: 1px solid #64748b;
   background: transparent;

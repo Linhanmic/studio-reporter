@@ -347,6 +347,67 @@
     if (dlg && typeof dlg.close === 'function' && dlg.open) dlg.close();
   }
 
+  function isLightboxOpen() {
+    var dlg = document.getElementById('shot-lightbox');
+    return !!(dlg && dlg.open);
+  }
+
+  // Mirrors Go StepLightboxIndex — keep behavior aligned with lightbox_nav.go.
+  function stepLightboxIndex(current, delta, total) {
+    if (total <= 0) return -1;
+    if (current < 0 || current >= total) return delta >= 0 ? 0 : total - 1;
+    var n = total;
+    return (current + (delta % n) + n) % n;
+  }
+
+  var lightboxShots = [];
+  var lightboxIndex = -1;
+
+  function collectShotThumbs() {
+    return Array.prototype.slice.call(document.querySelectorAll('[data-shot-src]'));
+  }
+
+  function updateLightboxPos() {
+    var pos = document.getElementById('shot-lightbox-pos');
+    if (!pos) return;
+    if (lightboxIndex < 0 || !lightboxShots.length) {
+      pos.textContent = '';
+      return;
+    }
+    pos.textContent = (lightboxIndex + 1) + ' / ' + lightboxShots.length;
+  }
+
+  function showLightboxAt(index) {
+    var dlg = document.getElementById('shot-lightbox');
+    var img = document.getElementById('shot-lightbox-img');
+    var cap = document.getElementById('shot-lightbox-cap');
+    if (!dlg || !img || !lightboxShots.length) return;
+    var i = stepLightboxIndex(index, 0, lightboxShots.length);
+    if (i < 0) return;
+    lightboxIndex = i;
+    var thumb = lightboxShots[i];
+    img.src = thumb.dataset.shotSrc;
+    if (cap) cap.textContent = thumb.dataset.shotCaption || '截图';
+    updateLightboxPos();
+    if (!dlg.open && typeof dlg.showModal === 'function') dlg.showModal();
+  }
+
+  function openLightboxFromThumb(thumb) {
+    lightboxShots = collectShotThumbs();
+    var idx = lightboxShots.indexOf(thumb);
+    if (idx < 0) {
+      lightboxShots = [thumb];
+      idx = 0;
+    }
+    showLightboxAt(idx);
+  }
+
+  function stepLightbox(delta) {
+    if (!isLightboxOpen() || !lightboxShots.length) return false;
+    showLightboxAt(stepLightboxIndex(lightboxIndex, delta, lightboxShots.length));
+    return true;
+  }
+
   function isTypingTarget(el) {
     if (!el) return false;
     var tag = (el.tagName || '').toLowerCase();
@@ -399,20 +460,24 @@
     }
     var thumb = ev.target.closest('[data-shot-src]');
     if (thumb) {
-      var dlg = document.getElementById('shot-lightbox');
-      var img = document.getElementById('shot-lightbox-img');
-      var cap = document.getElementById('shot-lightbox-cap');
-      if (dlg && img) {
-        img.src = thumb.dataset.shotSrc;
-        if (cap) cap.textContent = thumb.dataset.shotCaption || '截图';
-        if (typeof dlg.showModal === 'function') dlg.showModal();
-      }
+      openLightboxFromThumb(thumb);
+      return;
+    }
+    var navBtn = ev.target.closest('[data-lightbox-nav]');
+    if (navBtn) {
+      ev.preventDefault();
+      stepLightbox(parseInt(navBtn.dataset.lightboxNav, 10) || 0);
     }
   });
 
   document.addEventListener('keydown', function (ev) {
     if (ev.key === 'Escape') {
       closeLightbox();
+      return;
+    }
+    if (isLightboxOpen() && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
+      ev.preventDefault();
+      stepLightbox(ev.key === 'ArrowRight' ? 1 : -1);
       return;
     }
     if (isTypingTarget(ev.target)) return;
