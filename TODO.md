@@ -109,7 +109,8 @@
 | 2026-09-11 | Desktop 套件结束系统通知 | `notify.js`；未聚焦时 Notification；点击聚焦并 navigate-report |
 | 2026-09-11 | Desktop 自定义协议深链 | `deeplink.js`：`open`/`connect`/`hub`；单实例 + protocol client；builder schemes |
 | 2026-09-11 | Desktop 键盘快捷键 | 菜单加速键 + 渲染进程监听；tablist 方向键；输入框内忽略 |
+| 2026-09-11 | Desktop 明暗主题 | `theme.js` resolve system/light/dark；CSS tokens；设置下拉即时预览 |
 
 ## 下一任务（选定）
 
-**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或 Desktop 明暗主题。
+**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或 Desktop 报告对比导出为分享卡片。
