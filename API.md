@@ -369,7 +369,9 @@ Optional bidirectional control on the same WebSocket. Unknown types are ignored 
 | `Ping` / `Pong` | either | keepalive (`Pong` payload `{}`) |
 | `RequestSnapshot` | client → plugin | reply with a `ReportSnapshot` of the current in-memory tree (no-op if none) |
 
-Desktop P0 sends `ClientHello` + `RequestSnapshot` on connect.
+Desktop P0 sends `ClientHello` + `RequestSnapshot` on connect. On `ServerHello`, Desktop runs a compatibility gate (`desktop/electron/compat.js`): plugin version must be ≥ `0.5.0`, and capabilities must include `ReportSnapshot`, `ReportGenerated`, and `RequestSnapshot`. Status bar shows ok / warn / error accordingly.
+
+Stdout discover helpers are shared as `@studio-reporter/discover` (`packages/studio-reporter-discover`) for Desktop and GaugeStudio.
 
 ## HTML Report
 

@@ -58,6 +58,8 @@
 - [x] Desktop 安装器 / 打包骨架（electron-builder；`extraResources` 打入 viewer + report-assets + CLI；`paths.js` 解析 bundle root）
 - [x] Desktop P2「运行」封装 gauge（选项目/specs/env；stdout discover 自动连接 live viewer）
 - [x] Desktop 多项目 / 多会话（recentProjects + GaugeSessionManager；会话条切换；CI 跑 desktop npm test）
+- [x] 共享 discover 包（`packages/studio-reporter-discover` / `@studio-reporter/discover`）
+- [x] Desktop 插件版本门闸（ServerHello ≥ 0.5.0 + 必需 capabilities）
 
 ## 迭代日志
 
@@ -77,7 +79,6 @@
 | 2026-09-11 | 复杂 Gauge 夹具 | 真实 `.spec`/`.cpt` 树 + Go 合成 SuiteResult（无需 Gauge 运行时）；覆盖嵌套概念、表驱动、截图、CJK、skip、multiline |
 | 2026-09-11 | CANoe Overview / 分栏 / PDF | 交互在 HTML；PDF 为 Chrome 结构化打印；截图：步骤全量 + 失败标注 + hook + lightbox；`meta` 附加字段不升 formatVersion |
 | 2026-09-11 | 单文件 HTML | 默认仍写目录版；可选 `report.single.html` 把 `images/` 内联为 data URI；分享单文件、不替代可移植 uhileport 单元 |
-
 | 2026-09-11 | 工程 CLI 子命令 | `generate`/`serve`/`plugin`；legacy flag 保留；定位为工程入口而非产品面 |
 | 2026-09-11 | Desktop 详细设计 | 产品终点改为 Desktop App；插件 WS 桥接；终态嵌入 index.html；短中期 Electron；见 DESKTOP.md |
 | 2026-09-11 | Desktop P0 + 控制通道 | `desktop/` Electron 壳：discover、loopback 托管 viewer/index、ReportGenerated 跳转；插件侧 Hello/Ping/RequestSnapshot |
@@ -87,7 +88,8 @@
 | 2026-09-11 | Desktop 打包骨架 | electron-builder；`pack:dir`/`pack`；extraResources 含 viewer/report-assets/CLI；packaged 态 `BUNDLE_ROOT=resourcesPath` |
 | 2026-09-11 | Desktop P2 运行 Gauge | `gauge-run.js` 封装 `gauge run`；扫描 stdout discover；自动 `connect-ws`；运行栏 + 日志 |
 | 2026-09-11 | Desktop 多项目/多会话 | `sessions.js`：最近项目列表 + 最多 3 路并行 Gauge；会话条切换 live；CI 增加 desktop unit tests |
+| 2026-09-11 | 共享 discover + 版本门闸 | `@studio-reporter/discover`；Desktop `compat.js` 校验 ServerHello；CI 跑共享包测试 |
 
 ## 下一任务（选定）
 
-**与 GaugeStudio 共享 discover 包**，或完善安装包签名 / 自动更新 / 插件版本门闸。
+**安装包签名 / 自动更新**，或原生报告树（若 WebView 不足），或 GaugeStudio 真正消费 `@studio-reporter/discover`。

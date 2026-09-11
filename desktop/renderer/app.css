@@ -9,6 +9,7 @@
   --accent-2: #2a8fb8;
   --ok: #3ecf8e;
   --warn: #e6b84d;
+  --err: #e85d5d;
   --font: "IBM Plex Sans", "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 }
@@ -59,6 +60,7 @@ html, body {
 }
 .status.ok { color: var(--ok); border-color: rgba(62,207,142,.4); }
 .status.warn { color: var(--warn); border-color: rgba(230,184,77,.4); }
+.status.error { color: var(--err); border-color: rgba(232,93,93,.45); }
 
 .connect-bar {
   display: flex; gap: 8px; align-items: center;

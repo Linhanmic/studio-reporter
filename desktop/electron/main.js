@@ -14,6 +14,7 @@ const {
   shell,
 } = require('electron');
 const { normalizeWsInput } = require('./discover.js');
+const { checkPluginHello } = require('./compat.js');
 const {
   loadSettings,
   saveSettings,
@@ -162,7 +163,13 @@ class ReporterBridge {
           return;
         }
         if (msg.type === 'ServerHello') {
-          this.emitStatus({ hello: msg.payload, connected: true, url });
+          const compat = checkPluginHello(msg.payload);
+          this.emitStatus({
+            hello: msg.payload,
+            compat,
+            connected: true,
+            url,
+          });
         }
         if (msg.type === 'ReportGenerated' && msg.payload) {
           this.emitStatus({ reportGenerated: msg.payload });

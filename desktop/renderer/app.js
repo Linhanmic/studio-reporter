@@ -35,7 +35,7 @@ function setTab(name) {
 function setStatus(text, kind) {
   const el = $('connStatus');
   el.textContent = text;
-  el.classList.remove('ok', 'warn');
+  el.classList.remove('ok', 'warn', 'error');
   if (kind) el.classList.add(kind);
 }
 
@@ -436,6 +436,11 @@ function wire() {
   $('btnStopGauge').addEventListener('click', stopGauge);
 
   window.desktopAPI.onBridgeStatus((data) => {
+    if (data?.compat) {
+      const level = data.compat.level === 'error' ? 'error' : data.compat.ok ? 'ok' : 'warn';
+      setStatus(data.compat.message || `插件 ${data.compat.version || ''}`, level);
+      return;
+    }
     if (data?.hello?.version) {
       setStatus(`已连接 · 插件 ${data.hello.version}`, 'ok');
       return;

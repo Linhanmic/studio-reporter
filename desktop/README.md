@@ -46,6 +46,11 @@ npm run pack               # 平台安装包（Linux → AppImage 等）
 ## 测试（无需 Electron 二进制）
 
 ```bash
+cd packages/studio-reporter-discover && npm test
 cd desktop
-npm test   # discover + settings/history + compare + paths + gauge-run + sessions
+npm test   # discover (re-export) + compat + settings/history + compare + paths + gauge-run + sessions
 ```
+
+Discover 真源：`packages/studio-reporter-discover`（`@studio-reporter/discover`）。Desktop 经 `file:` 依赖引用；打包时打入 `node_modules/@studio-reporter/discover`。
+
+连接后 Desktop 根据 `ServerHello` 做版本门闸（≥ 0.5.0 + 必需 capabilities）。

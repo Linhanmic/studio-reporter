@@ -31,6 +31,10 @@ jobs:
           if-no-files-found: ignore
       - name: Build
         run: go build -o /tmp/studio-reporter .
+      - name: Shared discover package tests
+        run: |
+          cd packages/studio-reporter-discover
+          npm test
       - name: Desktop unit tests
         run: |
           cd desktop
