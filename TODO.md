@@ -5,9 +5,9 @@
 
 ## 当前版本
 
-- 版本：**0.5.0**（本 PR）
+- 版本：**0.5.2**（本 PR）
 - 产品目标：**Desktop App 报告工作台**（设计见 [DESKTOP.md](DESKTOP.md)）；插件 = 桥接；CLI = 工程入口
-- 已有能力：静态 CANoe 报告 + PDF/单文件 + WS live + 归档/管理 + `.uhilreport` + CLI 子命令
+- 已有能力：静态 CANoe 报告 + PDF/单文件 + WS live + 归档/管理 + `.uhilreport` + CLI 子命令 + Desktop P0 壳 + hub 写入锁
 
 ## P0 — 工程基建
 
@@ -46,13 +46,15 @@
 - [ ] 评估静态报告是否引入极轻量客户端交互（不过度 SPA 化）
 - [x] 历史对比（两次归档的 verdict / 时长 / 计数 diff；`manage.html` 勾选 + `CompareHistoryRuns`）
 - [x] 复杂 Gauge 测试夹具（`testdata/complex-gauge` + `internal/complexsuite`；`make demo-complex` / `smoke-complex`）
-- [ ] 多 suite / 并行执行下的 hub 写入竞态审计
+- [x] 多 suite / 并行执行下的 hub 写入竞态审计（`WithHubLock` + 原子 uhilreport + 排他 archive mkdir）
 - [x] CANoe 风 Overview + 左右分栏 + 截图画廊/lightbox
 - [x] 结构化 PDF 导出（`--pdf` / `GAUGE_STUDIO_WRITE_PDF`；Chrome print，非拼图）
 - [x] 单文件 HTML（内联截图；`--single` / `GAUGE_STUDIO_WRITE_SINGLE` → `report.single.html`；目录版 `index.html` 仍为默认真源）
 - [x] 工程 CLI 子命令（`generate` / `serve` / `plugin` / `version`；兼容扁平 flag）— **非产品终点**
-- [ ] Desktop App P0 壳（Electron + WS discover + live/终态）；详见 DESKTOP.md
-- [ ] 插件控制通道（`ClientHello` / `RequestSnapshot`）
+- [x] Desktop App P0 壳（`desktop/` Electron + WS discover + 嵌入 live/终态）；详见 DESKTOP.md
+- [x] 插件控制通道（`ClientHello` / `ServerHello` / `Ping`/`Pong` / `RequestSnapshot`）
+- [x] Desktop P1 工作台骨架（历史 / 设置 / 导出入口）
+- [ ] Desktop 历史对比（移植 `CompareHistoryRuns`）
 
 ## 迭代日志
 
@@ -75,7 +77,10 @@
 
 | 2026-09-11 | 工程 CLI 子命令 | `generate`/`serve`/`plugin`；legacy flag 保留；定位为工程入口而非产品面 |
 | 2026-09-11 | Desktop 详细设计 | 产品终点改为 Desktop App；插件 WS 桥接；终态嵌入 index.html；短中期 Electron；见 DESKTOP.md |
+| 2026-09-11 | Desktop P0 + 控制通道 | `desktop/` Electron 壳：discover、loopback 托管 viewer/index、ReportGenerated 跳转；插件侧 Hello/Ping/RequestSnapshot |
+| 2026-09-11 | Hub 写入竞态 hardening | 跨进程 `WithHubLock`（flock）；uhilreport 先原子写再清旧文件；archives 排他 `Mkdir`；Engine finalize 互斥 |
+| 2026-09-11 | Desktop P1 工作台骨架 | 历史页读 `history.json`、设置持久化、导出 PDF/单文件入口（调 CLI） |
 
 ## 下一任务（选定）
 
-**Desktop App P0 壳**（`desktop/` + discover + live/终态），并行可做插件 `RequestSnapshot`。
+**Desktop 历史对比**（移植 `CompareHistoryRuns`）或安装器/打包。

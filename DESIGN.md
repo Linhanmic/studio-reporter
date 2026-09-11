@@ -1,6 +1,6 @@
 # Studio Reporter — Design
 
-本文描述 **v0.5.0** 起的真实架构与关键决策。实现以仓库代码为准；文档随迭代更新。
+本文描述 **v0.5.2** 起的真实架构与关键决策。实现以仓库代码为准；文档随迭代更新。
 
 ## 产品目标
 
@@ -21,7 +21,7 @@ Gauge 执行期插件仍负责：实时事件转发 + 套件结束写报告。De
 
 | 场景 | 入口 | 技术 |
 |------|------|------|
-| **Desktop 工作台** | Electron 壳（设计中） | 见 [DESKTOP.md](DESKTOP.md)；WS discover + 嵌入 `viewer`/`index`/`manage` |
+| **Desktop 工作台** | Electron 壳（`desktop/`，P0 已落地） | 见 [DESKTOP.md](DESKTOP.md)；WS discover + 嵌入 `viewer`/`index`；控制通道 Hello/Ping/RequestSnapshot |
 | 终态阅读 / 分享 / 归档 | `index.html` | Go 端预渲染静态 HTML（CANoe 风：左导航 + Overview + 结果树；无内嵌 JSON、无 Vue） |
 | 单文件分享 | `report.single.html`（可选） | 将相对 `images/` 内联为 data URI；目录版仍为默认真源 |
 | 可打印/分享 PDF | `report.pdf`（可选） | Chrome headless `--print-to-pdf`；与 HTML 同源结构化文档，非截图拼贴 |

@@ -64,6 +64,16 @@ func (w *FinalWriter) logf(format string, args ...any) {
 // Write persists screenshots, HTML, portable .uhilreport, and the final live snapshot.
 // History recording is explicit via HistoryRecorder when set.
 func (w *FinalWriter) Write(dir string, r *Report, src proto.Message) (*GeneratedReport, error) {
+	var out *GeneratedReport
+	err := WithHubLock(dir, func() error {
+		var writeErr error
+		out, writeErr = w.writeLocked(dir, r, src)
+		return writeErr
+	})
+	return out, err
+}
+
+func (w *FinalWriter) writeLocked(dir string, r *Report, src proto.Message) (*GeneratedReport, error) {
 	imagesDir := filepath.Join(dir, "images")
 	if err := os.MkdirAll(imagesDir, 0o755); err != nil {
 		return nil, fmt.Errorf("create report directory: %w", err)
@@ -83,18 +93,24 @@ func (w *FinalWriter) Write(dir string, r *Report, src proto.Message) (*Generate
 	}
 	indexPath := filepath.Join(dir, IndexFile)
 
-	if stale, err := filepath.Glob(filepath.Join(dir, "*"+UhilReportExt)); err == nil {
-		for _, f := range stale {
-			_ = os.Remove(f)
-		}
-	}
 	jsonPath := filepath.Join(dir, UhilReportFileName(r))
 	payload, err := protoMarshalOptions.Marshal(src)
 	if err != nil {
 		return nil, fmt.Errorf("marshal suite result: %w", err)
 	}
-	if err := os.WriteFile(jsonPath, payload, 0o644); err != nil {
+	// Write the new portable report first, then remove other hub *.uhilreport files.
+	if err := AtomicWriteFile(jsonPath, payload); err != nil {
 		return nil, fmt.Errorf("write %s: %w", filepath.Base(jsonPath), err)
+	}
+	if stale, err := filepath.Glob(filepath.Join(dir, "*"+UhilReportExt)); err == nil {
+		want, _ := filepath.Abs(jsonPath)
+		for _, f := range stale {
+			abs, err := filepath.Abs(f)
+			if err != nil || abs == want {
+				continue
+			}
+			_ = os.Remove(f)
+		}
 	}
 	if err := WriteLiveSnapshot(dir, snap); err != nil {
 		return nil, err

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data: http://127.0.0.1:*; frame-src http://127.0.0.1:*; connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:*;">
+  <title>Studio Reporter</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">SR</span>
+        <div class="brand-text">
+          <strong>Studio Reporter</strong>
+          <span id="version" class="muted"></span>
+        </div>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="run" role="tab" aria-selected="true">运行</button>
+        <button type="button" class="tab" data-tab="report" role="tab" aria-selected="false">报告</button>
+        <button type="button" class="tab" data-tab="history" role="tab" aria-selected="false">历史</button>
+        <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">设置</button>
+      </nav>
+      <div class="status" id="connStatus" title="连接状态">未连接</div>
+    </header>
+
+    <section class="connect-bar" id="connectBar">
+      <label class="connect-label" for="wsInput">WebSocket</label>
+      <input id="wsInput" type="text" spellcheck="false"
+        placeholder="粘贴 ws://127.0.0.1:&lt;port&gt; 或整行 studio-reporter websocket: …">
+      <button type="button" id="btnConnect" class="btn primary">连接</button>
+      <button type="button" id="btnDisconnect" class="btn" disabled>断开</button>
+      <button type="button" id="btnOpenDir" class="btn">打开报告目录…</button>
+    </section>
+
+    <div class="banner hidden" id="endBanner">
+      <span id="endBannerText">套件已结束</span>
+      <button type="button" id="btnOpenFinal" class="btn primary">打开终态报告</button>
+      <button type="button" id="btnDismissBanner" class="btn ghost">稍后</button>
+    </div>
+
+    <main class="panes">
+      <div class="pane active" id="pane-run" role="tabpanel">
+        <iframe id="liveFrame" title="Live viewer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+        <div class="empty" id="liveEmpty">
+          <p>连接插件 WebSocket 后，此处嵌入 <code>viewer.html</code> 实时树。</p>
+          <p class="muted">Gauge 运行时 stdout 会打印 <code>studio-reporter websocket: ws://127.0.0.1:&lt;port&gt;</code></p>
+        </div>
+      </div>
+      <div class="pane" id="pane-report" role="tabpanel">
+        <iframe id="reportFrame" title="Final report" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+        <div class="empty" id="reportEmpty">
+          <p>终态报告嵌入静态 <code>index.html</code>（CANoe 风 Overview / 分栏）。</p>
+          <p class="muted">套件结束收到 <code>ReportGenerated</code> 后自动跳转，或手动「打开报告目录」。</p>
+        </div>
+      </div>
+      <div class="pane" id="pane-history" role="tabpanel">
+        <div class="panel">
+          <div class="panel-toolbar">
+            <button type="button" id="btnRefreshHistory" class="btn">刷新</button>
+            <button type="button" id="btnPickHub" class="btn">选择报告根目录…</button>
+            <button type="button" id="btnExportPdf" class="btn">导出 PDF</button>
+            <button type="button" id="btnExportSingle" class="btn">导出单文件 HTML</button>
+            <span id="historyMeta" class="muted"></span>
+          </div>
+          <div id="historyList" class="history-list"></div>
+          <div class="empty" id="historyEmpty">
+            <p>在「设置」中指定含 <code>history.json</code> 的报告根目录后，这里列出归档运行。</p>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="pane-settings" role="tabpanel">
+        <div class="panel settings">
+          <label class="field">
+            <span>报告根目录（studio-report hub）</span>
+            <div class="field-row">
+              <input id="settingHubDir" type="text" spellcheck="false" readonly placeholder="未设置">
+              <button type="button" id="btnSettingPickHub" class="btn">浏览…</button>
+            </div>
+          </label>
+          <label class="field check">
+            <input id="settingAutoJump" type="checkbox">
+            <span>套件结束后自动跳转到终态报告</span>
+          </label>
+          <label class="field">
+            <span>自动跳转倒计时（秒）</span>
+            <input id="settingJumpSeconds" type="number" min="0" max="60" value="5">
+          </label>
+          <div class="field-row">
+            <button type="button" id="btnSaveSettings" class="btn primary">保存设置</button>
+            <span id="settingsStatus" class="muted"></span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

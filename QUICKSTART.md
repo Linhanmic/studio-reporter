@@ -1,11 +1,11 @@
 # Studio Reporter — Quick Start
 
-面向首次接入与本地验证。对应插件版本 **0.5.0**。
+面向首次接入与本地验证。对应插件版本 **0.5.2**。
 
 ## 0. 产品方向
 
 主产品目标是 **Desktop App**（见 [DESKTOP.md](DESKTOP.md)）：桌面工作台通过 WebSocket 连接 reporter 插件看实时/终态报告。  
-当前仓库已提供：**插件桥接 + 静态报告 + 工程 CLI**。Desktop 壳按 DESKTOP.md P0 落地。
+当前仓库已提供：**插件桥接 + 静态报告 + 工程 CLI + Desktop P0 壳**（`desktop/`）。
 
 工程 CLI（无 UI / CI）：
 
@@ -21,15 +21,15 @@ studio-reporter version
 从 [Releases](https://github.com/Linhanmic/studio-reporter/releases) 下载对应平台 zip，例如：
 
 ```bash
-gauge install studio-reporter --file studio-reporter-0.5.0-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.5.2-linux.x86_64.zip
 ```
 
 或解压到 Gauge 插件目录：
 
 ```bash
 # Linux 示例
-mkdir -p ~/.gauge/plugins/studio-reporter/0.5.0
-unzip studio-reporter-0.5.0-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.0
+mkdir -p ~/.gauge/plugins/studio-reporter/0.5.2
+unzip studio-reporter-0.5.2-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.2
 ```
 
 确认 `plugin.json` 中 `version` 与目录名一致。
@@ -121,9 +121,23 @@ GOTOOLCHAIN=go1.27.0 go build -o bin/studio-reporter .
 | `CHROME_PATH` | 指定 headless Chrome 可执行文件 |
 | `GAUGE_STUDIO_WS` | 额外再推一份事件的 WebSocket URL（可选） |
 
-## 6. 下一步阅读
+## 6. Desktop P0（可选）
+
+```bash
+cd desktop
+npm install
+npm start
+```
+
+Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.1:<port>` 粘贴进 Desktop 连接栏。  
+「运行」页嵌入 `viewer.html`；收到 `ReportGenerated` 后跳「报告」页打开静态 `index.html`。
+
+详见 [desktop/README.md](desktop/README.md) / [DESKTOP.md](DESKTOP.md)。
+
+## 7. 下一步阅读
 
 - [DESIGN.md](DESIGN.md) — 架构与决策
 - [TODO.md](TODO.md) — 迭代 backlog
+- [DESKTOP.md](DESKTOP.md) — Desktop 产品设计
 - [REPORT_FORMAT.md](REPORT_FORMAT.md) — 磁盘格式契约
 - [API.md](API.md) — WebSocket / 事件协议

@@ -1,8 +1,8 @@
 {
   "id": "studio-reporter",
-  "version": "0.5.0",
+  "version": "0.5.2",
   "name": "Studio Reporter",
-  "description": "Standalone test report tool with Gauge plugin mode: live WebSocket forwarding and local HTML/PDF reports.",
+  "description": "Desktop-bound report tool: Gauge plugin WS bridge + local HTML/PDF; Desktop App is the product surface.",
   "capabilities": [
     "grpc_support"
   ],

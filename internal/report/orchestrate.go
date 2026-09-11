@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/getgauge/gauge-proto/go/gauge_messages"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -11,8 +12,9 @@ import (
 
 // Engine coordinates live publishing and final report writes.
 type Engine struct {
-	Live   *LivePublisher
-	Writer *FinalWriter
+	Live       *LivePublisher
+	Writer     *FinalWriter
+	finalizeMu sync.Mutex
 }
 
 // NewEngine returns a report engine with a fresh live publisher.
@@ -25,6 +27,8 @@ func NewEngine(writer *FinalWriter, broadcast SnapshotBroadcaster) *Engine {
 
 // FinalizeSuite converts the suite once, finishes the live stream, and writes the final artifacts.
 func (e *Engine) FinalizeSuite(req *gauge_messages.SuiteExecutionResult) (*GeneratedReport, error) {
+	e.finalizeMu.Lock()
+	defer e.finalizeMu.Unlock()
 	if req == nil || req.GetSuiteResult() == nil {
 		return nil, fmt.Errorf("suite result is empty")
 	}
