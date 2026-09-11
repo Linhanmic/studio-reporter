@@ -271,6 +271,10 @@ function updateHistoryActionButtons() {
   const compareBtn = $('btnCompareRuns');
   compareBtn.disabled = n !== 2;
   compareBtn.textContent = `对比所选（${n}/2）`;
+  const revealBtn = $('btnRevealRun');
+  if (revealBtn) revealBtn.disabled = n !== 1;
+  const copyBtn = $('btnCopyPath');
+  if (copyBtn) copyBtn.disabled = n !== 1;
   const deleteBtn = $('btnDeleteRuns');
   if (deleteBtn) {
     deleteBtn.disabled = n < 1;
@@ -370,7 +374,7 @@ function renderHistoryList(histMeta) {
     const row = document.createElement('div');
     row.className = 'history-row';
     row.innerHTML = `
-      <input class="pick" type="checkbox" data-id="${escapeHtml(id)}" title="勾选以对比、导出或删除" ${state.selectedIds.includes(id) ? 'checked' : ''}>
+      <input class="pick" type="checkbox" data-id="${escapeHtml(id)}" title="勾选以对比、导出、打开文件夹或删除" ${state.selectedIds.includes(id) ? 'checked' : ''}>
       <span class="verdict ${verdictClass(run.verdict)}">${escapeHtml(run.verdict || '—')}</span>
       <span class="hist-main">
         <strong>${escapeHtml(run.projectName || id)}</strong>
@@ -443,6 +447,35 @@ async function deleteSelectedRuns() {
     setStatus(String(err.message || err), 'warn');
   }
 }
+
+async function revealSelectedRun() {
+  const entry = selectedHistoryEntry();
+  if (!entry) {
+    setStatus('请勾选恰好 1 次运行以打开所在文件夹', 'warn');
+    return;
+  }
+  try {
+    const result = await window.desktopAPI.revealHistoryRun(entry);
+    setStatus(`已在文件管理器中显示：${result.path}`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+async function copySelectedPath() {
+  const entry = selectedHistoryEntry();
+  if (!entry) {
+    setStatus('请勾选恰好 1 次运行以复制路径', 'warn');
+    return;
+  }
+  try {
+    const result = await window.desktopAPI.copyHistoryPath(entry, 'dir');
+    setStatus(`已复制路径：${result.path}`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
 
 function fillRecentProjects(list) {
   const dl = $('recentProjectsList');
@@ -734,6 +767,8 @@ function wire() {
   });
   $('btnExportPdf').addEventListener('click', () => exportSelectedOrLatest('pdf'));
   $('btnExportSingle').addEventListener('click', () => exportSelectedOrLatest('single'));
+  $('btnRevealRun')?.addEventListener('click', () => revealSelectedRun());
+  $('btnCopyPath')?.addEventListener('click', () => copySelectedPath());
   $('btnDeleteRuns')?.addEventListener('click', () => deleteSelectedRuns());
   $('historyQuery')?.addEventListener('input', () => {
     state.historyQuery = $('historyQuery').value || '';

@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -112,6 +112,16 @@ describe('settings history helpers', () => {
     const hist = readHistory(dir);
     assert.equal(hist.runs.length, 1);
     assert.equal(hist.runs[0].id, 'b');
+  });
+
+
+  it('resolveRunDir returns archive directory', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-rundir-'));
+    const entry = { id: 'run-1', href: 'archives/run-1/index.html' };
+    assert.equal(
+      resolveRunDir(dir, entry),
+      path.resolve(dir, 'archives/run-1')
+    );
   });
 
 });

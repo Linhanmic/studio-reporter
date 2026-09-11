@@ -94,6 +94,8 @@
             <button type="button" id="btnCompareRuns" class="btn primary" disabled>对比所选（0/2）</button>
             <button type="button" id="btnExportPdf" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出 PDF</button>
             <button type="button" id="btnExportSingle" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出单文件 HTML</button>
+            <button type="button" id="btnRevealRun" class="btn" disabled title="在文件管理器中显示所选运行">打开所在文件夹</button>
+            <button type="button" id="btnCopyPath" class="btn" disabled title="复制所选运行的归档目录路径">复制路径</button>
             <button type="button" id="btnDeleteRuns" class="btn danger" disabled title="删除勾选的历史归档">删除所选</button>
             <span id="historyMeta" class="muted"></span>
           </div>
@@ -109,7 +111,7 @@
           <div id="comparePanel" class="compare-panel hidden"></div>
           <div id="historyList" class="history-list"></div>
           <div class="empty" id="historyEmpty">
-            <p>在「设置」中指定含 <code>history.json</code> 的报告根目录后，这里列出归档运行。可搜索 / 按结果过滤；勾选 1+ 次可导出或删除，勾选恰好 2 次可对比。</p>
+            <p>在「设置」中指定含 <code>history.json</code> 的报告根目录后，这里列出归档运行。可搜索 / 按结果过滤；勾选 1 次可打开所在文件夹 / 复制路径；勾选 1+ 次可导出或删除；勾选恰好 2 次可对比。</p>
           </div>
         </div>
       </div>

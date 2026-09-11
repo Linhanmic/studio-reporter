@@ -61,6 +61,17 @@ function resolveRunIndex(hubDir, entry) {
 }
 
 /**
+ * Resolve the archive directory for a history entry (dirname of index.html).
+ * @param {string} hubDir
+ * @param {object} entry
+ * @returns {string|null}
+ */
+function resolveRunDir(hubDir, entry) {
+  const indexPath = resolveRunIndex(hubDir, entry);
+  return indexPath ? path.dirname(indexPath) : null;
+}
+
+/**
  * Resolve a portable .uhilreport path for a history entry (hub-relative).
  * Prefers entry.jsonPath / entry.uhilreport; falls back to sibling of index.html.
  * @param {string} hubDir
@@ -243,6 +254,7 @@ module.exports = {
   saveSettings,
   readHistory,
   resolveRunIndex,
+  resolveRunDir,
   resolveRunUhilreport,
   filterHistoryRuns,
   writeHistoryFile,

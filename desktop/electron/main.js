@@ -12,6 +12,7 @@ const {
   dialog,
   ipcMain,
   shell,
+  clipboard,
 } = require('electron');
 const { normalizeWsInput } = require('./discover.js');
 const { checkPluginHello } = require('./compat.js');
@@ -21,9 +22,11 @@ const {
   saveSettings,
   readHistory,
   resolveRunIndex,
+  resolveRunDir,
   resolveRunUhilreport,
   deleteHistoryRuns,
 } = require('./settings.js');
+const { withHubLock } = require('./hublock.js');
 const {
   resolveBundleRoot,
   resolveStudioReporterBin,
@@ -387,6 +390,32 @@ function registerIpc() {
     if (targetPath) shell.showItemInFolder(path.resolve(targetPath));
   });
 
+  ipcMain.handle('desktop:reveal-history-run', async (_evt, entry) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = settings.reportHubDir;
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const dir = resolveRunDir(hub, entry);
+    const indexPath = resolveRunIndex(hub, entry);
+    const target = indexPath && fs.existsSync(indexPath) ? indexPath : dir;
+    if (!target || !fs.existsSync(target)) {
+      throw new Error('找不到该次运行的归档目录');
+    }
+    shell.showItemInFolder(path.resolve(target));
+    return { ok: true, path: target };
+  });
+
+  ipcMain.handle('desktop:copy-history-path', async (_evt, entry, kind = 'dir') => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = settings.reportHubDir;
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const indexPath = resolveRunIndex(hub, entry);
+    const dir = resolveRunDir(hub, entry);
+    const text = kind === 'index' ? indexPath : dir;
+    if (!text) throw new Error('找不到该次运行的路径');
+    clipboard.writeText(text);
+    return { ok: true, path: text };
+  });
+
   ipcMain.handle('desktop:file-url', async (_evt, absPath) => pathToFileURL(absPath).href);
 
   ipcMain.handle('desktop:get-settings', async () => loadSettings(app.getPath('userData')));
@@ -486,7 +515,7 @@ function registerIpc() {
       noLink: true,
     });
     if (response !== 0) return { ok: false, cancelled: true, deleted: [] };
-    return deleteHistoryRuns(hub, list);
+    return withHubLock(hub, () => deleteHistoryRuns(hub, list));
   });
 
   ipcMain.handle('desktop:pick-gauge-project', async () => {
