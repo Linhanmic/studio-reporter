@@ -6,6 +6,7 @@ const {
   formatDurationDelta,
   formatCountsDelta,
 } = require('./compare.js');
+const { filterHistoryRuns } = require('./settings.js');
 
 contextBridge.exposeInMainWorld('desktopAPI', {
   info: () => ipcRenderer.invoke('desktop:info'),
@@ -23,7 +24,8 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   pickHubDir: () => ipcRenderer.invoke('desktop:pick-hub-dir'),
   listHistory: (hubDir) => ipcRenderer.invoke('desktop:list-history', hubDir),
   openHistoryRun: (entry) => ipcRenderer.invoke('desktop:open-history-run', entry),
-  exportReport: (kind) => ipcRenderer.invoke('desktop:export-report', kind),
+  exportReport: (kind, entry) => ipcRenderer.invoke('desktop:export-report', kind, entry),
+  filterHistoryRuns,
   pickGaugeProject: () => ipcRenderer.invoke('desktop:pick-gauge-project'),
   gaugeStatus: () => ipcRenderer.invoke('desktop:gauge-status'),
   startGauge: (opts) => ipcRenderer.invoke('desktop:start-gauge', opts),

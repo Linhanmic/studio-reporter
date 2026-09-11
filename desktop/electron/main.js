@@ -21,6 +21,7 @@ const {
   saveSettings,
   readHistory,
   resolveRunIndex,
+  resolveRunUhilreport,
 } = require('./settings.js');
 const {
   resolveBundleRoot,
@@ -420,24 +421,31 @@ function registerIpc() {
     return { indexPath, dir: path.dirname(indexPath) };
   });
 
-  ipcMain.handle('desktop:export-report', async (_evt, kind) => {
+  ipcMain.handle('desktop:export-report', async (_evt, kind, entry) => {
     const settings = loadSettings(app.getPath('userData'));
     const hub = settings.reportHubDir;
     if (!hub) throw new Error('请先在设置中指定报告根目录');
-    const matches = fs.readdirSync(hub).filter((n) => n.endsWith('.uhilreport'));
-    if (!matches.length) throw new Error('报告根目录下没有 .uhilreport');
-    matches.sort();
-    const input = path.join(hub, matches[matches.length - 1]);
+    let input = null;
+    if (entry) {
+      input = resolveRunUhilreport(hub, entry);
+      if (!input) throw new Error('所选运行找不到 .uhilreport，请打开归档目录确认');
+    } else {
+      const matches = fs.readdirSync(hub).filter((n) => n.endsWith('.uhilreport'));
+      if (!matches.length) throw new Error('报告根目录下没有 .uhilreport');
+      matches.sort();
+      input = path.join(hub, matches[matches.length - 1]);
+    }
     const bin = resolveStudioReporterBin(BUNDLE_ROOT);
     if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
-    const args = ['generate', '--input', input, '--out', hub];
+    const outDir = path.dirname(input);
+    const args = ['generate', '--input', input, '--out', outDir];
     if (kind === 'pdf') args.push('--pdf');
     if (kind === 'single') args.push('--single');
     const result = spawnSync(bin, args, { encoding: 'utf8' });
     if (result.status !== 0) {
       throw new Error(result.stderr || result.stdout || `export failed (${result.status})`);
     }
-    return { ok: true, input, out: hub, kind, log: result.stdout };
+    return { ok: true, input, out: outDir, kind, log: result.stdout };
   });
 
   ipcMain.handle('desktop:pick-gauge-project', async () => {

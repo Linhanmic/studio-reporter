@@ -60,6 +60,69 @@ function resolveRunIndex(hubDir, entry) {
   return path.resolve(hubDir, rel);
 }
 
+/**
+ * Resolve a portable .uhilreport path for a history entry (hub-relative).
+ * Prefers entry.jsonPath / entry.uhilreport; falls back to sibling of index.html.
+ * @param {string} hubDir
+ * @param {object} entry
+ * @returns {string|null}
+ */
+function resolveRunUhilreport(hubDir, entry) {
+  if (!hubDir || !entry) return null;
+  const candidates = [];
+  if (entry.jsonPath) candidates.push(entry.jsonPath);
+  if (entry.uhilreport) candidates.push(entry.uhilreport);
+  if (entry.reportFile) candidates.push(entry.reportFile);
+  const indexPath = resolveRunIndex(hubDir, entry);
+  if (indexPath) {
+    const dir = path.dirname(indexPath);
+    try {
+      const files = fs.readdirSync(dir).filter((n) => n.endsWith('.uhilreport'));
+      files.sort();
+      if (files.length) candidates.push(path.join(dir, files[files.length - 1]));
+    } catch {
+      /* ignore */
+    }
+  }
+  for (const c of candidates) {
+    const abs = path.isAbsolute(c) ? c : path.resolve(hubDir, c);
+    if (fs.existsSync(abs)) return abs;
+  }
+  return null;
+}
+
+/**
+ * Filter history runs by text query and/or verdict.
+ * @param {Array<object>} runs
+ * @param {{query?: string, verdict?: string}} [opts]
+ */
+function filterHistoryRuns(runs, opts = {}) {
+  const list = Array.isArray(runs) ? runs : [];
+  const query = String(opts.query || '')
+    .trim()
+    .toLowerCase();
+  const verdict = String(opts.verdict || 'all')
+    .trim()
+    .toLowerCase();
+  const wantVerdict = verdict && verdict !== 'all';
+  return list.filter((run) => {
+    if (wantVerdict && String(run.verdict || '').toLowerCase() !== verdict) return false;
+    if (!query) return true;
+    const hay = [
+      run.id,
+      run.projectName,
+      run.timestamp,
+      run.timestampISO,
+      run.href,
+      run.relDir,
+      run.duration,
+    ]
+      .map((x) => String(x || '').toLowerCase())
+      .join(' ');
+    return hay.includes(query);
+  });
+}
+
 module.exports = {
   DEFAULTS,
   settingsPath,
@@ -67,4 +130,6 @@ module.exports = {
   saveSettings,
   readHistory,
   resolveRunIndex,
+  resolveRunUhilreport,
+  filterHistoryRuns,
 };

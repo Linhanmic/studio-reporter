@@ -9,6 +9,8 @@ const state = {
   jumpSeconds: 5,
   autoJump: true,
   historyRuns: [],
+  historyQuery: '',
+  historyVerdict: 'all',
   selectedIds: [],
   discoverTimer: null,
   pluginInstall: null,
@@ -325,46 +327,84 @@ async function refreshHistory() {
   try {
     const hist = await window.desktopAPI.listHistory();
     state.historyRuns = hist.runs || [];
-    $('historyMeta').textContent = hist.hubDir
-      ? `${hist.hubDir} · ${state.historyRuns.length} 次运行`
-      : '未设置报告根目录';
-    if (!state.historyRuns.length) {
-      empty.classList.remove('hidden');
-      empty.querySelector('p').textContent = hist.error || '暂无历史运行';
-      return;
-    }
-    empty.classList.add('hidden');
     state.historyRuns.forEach((run, idx) => {
-      const id = run.id || run.href || run.relDir || `run-${idx}`;
-      run.id = id;
-      const row = document.createElement('div');
-      row.className = 'history-row';
-      row.innerHTML = `
-        <input class="pick" type="checkbox" data-id="${escapeHtml(id)}" title="勾选以对比">
-        <span class="verdict ${verdictClass(run.verdict)}">${escapeHtml(run.verdict || '—')}</span>
-        <span class="hist-main">
-          <strong>${escapeHtml(run.projectName || id)}</strong>
-          <span class="muted">${escapeHtml(run.timestamp || run.timestampISO || '')}</span>
-        </span>
-        <span class="muted">${escapeHtml(run.duration || '')}</span>
-      `;
-      const open = async () => {
-        try {
-          await window.desktopAPI.openHistoryRun(run);
-          setTab('report');
-        } catch (err) {
-          setStatus(String(err.message || err), 'warn');
-        }
-      };
-      row.querySelector('.hist-main').addEventListener('click', open);
-      row.querySelector('.verdict').addEventListener('click', open);
-      row.querySelector('.pick').addEventListener('change', (e) => {
-        toggleSelect(id, e.target.checked);
-      });
-      list.appendChild(row);
+      run.id = run.id || run.href || run.relDir || `run-${idx}`;
     });
+    renderHistoryList(hist);
   } catch (err) {
     empty.classList.remove('hidden');
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+function renderHistoryList(histMeta) {
+  const list = $('historyList');
+  const empty = $('historyEmpty');
+  list.innerHTML = '';
+  const filtered = window.desktopAPI.filterHistoryRuns(state.historyRuns, {
+    query: state.historyQuery,
+    verdict: state.historyVerdict,
+  });
+  const hubHint = histMeta?.hubDir || state.settings?.reportHubDir || '';
+  $('historyMeta').textContent = hubHint
+    ? `${hubHint} · ${filtered.length}/${state.historyRuns.length} 次运行`
+    : `${filtered.length}/${state.historyRuns.length} 次运行`;
+  if (!state.historyRuns.length) {
+    empty.classList.remove('hidden');
+    empty.querySelector('p').textContent = histMeta?.error || '暂无历史运行';
+    return;
+  }
+  if (!filtered.length) {
+    empty.classList.remove('hidden');
+    empty.querySelector('p').textContent = '没有匹配当前搜索 / 过滤的运行';
+    return;
+  }
+  empty.classList.add('hidden');
+  filtered.forEach((run) => {
+    const id = run.id;
+    const row = document.createElement('div');
+    row.className = 'history-row';
+    row.innerHTML = `
+      <input class="pick" type="checkbox" data-id="${escapeHtml(id)}" title="勾选以对比或导出" ${state.selectedIds.includes(id) ? 'checked' : ''}>
+      <span class="verdict ${verdictClass(run.verdict)}">${escapeHtml(run.verdict || '—')}</span>
+      <span class="hist-main">
+        <strong>${escapeHtml(run.projectName || id)}</strong>
+        <span class="muted">${escapeHtml(run.timestamp || run.timestampISO || '')}</span>
+      </span>
+      <span class="muted">${escapeHtml(run.duration || '')}</span>
+    `;
+    const open = async () => {
+      try {
+        await window.desktopAPI.openHistoryRun(run);
+        setTab('report');
+      } catch (err) {
+        setStatus(String(err.message || err), 'warn');
+      }
+    };
+    row.querySelector('.hist-main').addEventListener('click', open);
+    row.querySelector('.verdict').addEventListener('click', open);
+    row.querySelector('.pick').addEventListener('change', (e) => {
+      toggleSelect(id, e.target.checked);
+    });
+    list.appendChild(row);
+  });
+}
+
+function selectedHistoryEntry() {
+  if (state.selectedIds.length !== 1) return null;
+  return state.historyRuns.find((r) => r.id === state.selectedIds[0]) || null;
+}
+
+async function exportSelectedOrLatest(kind) {
+  const entry = selectedHistoryEntry();
+  const label = kind === 'pdf' ? 'PDF' : '单文件 HTML';
+  try {
+    await window.desktopAPI.exportReport(kind, entry || undefined);
+    setStatus(
+      entry ? `已导出所选运行的 ${label}` : `已导出最新运行的 ${label}`,
+      'ok'
+    );
+  } catch (err) {
     setStatus(String(err.message || err), 'warn');
   }
 }
@@ -657,21 +697,20 @@ function wire() {
       setStatus(String(err.message || err), 'warn');
     }
   });
-  $('btnExportPdf').addEventListener('click', async () => {
-    try {
-      await window.desktopAPI.exportReport('pdf');
-      setStatus('PDF 导出完成', 'ok');
-    } catch (err) {
-      setStatus(String(err.message || err), 'warn');
-    }
+  $('btnExportPdf').addEventListener('click', () => exportSelectedOrLatest('pdf'));
+  $('btnExportSingle').addEventListener('click', () => exportSelectedOrLatest('single'));
+  $('historyQuery')?.addEventListener('input', () => {
+    state.historyQuery = $('historyQuery').value || '';
+    renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
   });
-  $('btnExportSingle').addEventListener('click', async () => {
-    try {
-      await window.desktopAPI.exportReport('single');
-      setStatus('单文件 HTML 导出完成', 'ok');
-    } catch (err) {
-      setStatus(String(err.message || err), 'warn');
-    }
+  document.querySelectorAll('.history-filter-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.historyVerdict = btn.dataset.verdict || 'all';
+      document.querySelectorAll('.history-filter-btn').forEach((b) => {
+        b.classList.toggle('active', b === btn);
+      });
+      renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
+    });
   });
 
   $('btnPickGaugeProject').addEventListener('click', async () => {

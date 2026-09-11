@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunUhilreport, filterHistoryRuns } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -31,5 +31,28 @@ describe('settings history helpers', () => {
     const hist = readHistory(dir);
     assert.equal(hist.runs.length, 0);
     assert.ok(hist.error);
+  });
+
+  it('filterHistoryRuns filters by query and verdict', () => {
+    const runs = [
+      { id: 'a', projectName: 'Login suite', verdict: 'pass', timestamp: '2026-01-01' },
+      { id: 'b', projectName: 'Logout suite', verdict: 'fail', timestamp: '2026-01-02' },
+      { id: 'c', projectName: 'Smoke', verdict: 'skip', timestamp: '2026-01-03' },
+    ];
+    assert.equal(filterHistoryRuns(runs, { query: 'login' }).length, 1);
+    assert.equal(filterHistoryRuns(runs, { verdict: 'fail' })[0].id, 'b');
+    assert.equal(filterHistoryRuns(runs, { query: 'suite', verdict: 'pass' })[0].id, 'a');
+    assert.deepEqual(filterHistoryRuns(null, { query: 'x' }), []);
+  });
+
+  it('resolveRunUhilreport finds sibling portable report', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-uhil-'));
+    const arch = path.join(dir, 'archives', 'run-1');
+    fs.mkdirSync(arch, { recursive: true });
+    fs.writeFileSync(path.join(arch, 'index.html'), '<html></html>');
+    const uhil = path.join(arch, 'demo-2026.uhilreport');
+    fs.writeFileSync(uhil, '{}');
+    const entry = { id: 'run-1', href: 'archives/run-1/index.html' };
+    assert.equal(resolveRunUhilreport(dir, entry), uhil);
   });
 });
