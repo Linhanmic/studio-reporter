@@ -230,9 +230,12 @@ html, body {
   justify-content: space-between;
 }
 @media print {
-  html, body { overflow: visible; height: auto; }
-  .app-shell { height: auto; }
-  .toolbar { display: none; }
-  .status { display: none; }
-  .report-block.filter-hidden { display: block !important; }
+  html, body { overflow: visible !important; height: auto !important; background: #fff; }
+  .app-shell { height: auto !important; max-width: none; }
+  .toolbar, .status { display: none !important; }
+  .workspace, .result-pane { overflow: visible !important; height: auto !important; }
+  /* Print what the user currently sees (respect filter / search). */
+  .report-block.filter-hidden { display: none !important; }
+  .report-block { break-inside: avoid; page-break-inside: avoid; }
+  .shots img { max-width: 100%; max-height: none; }
 }
