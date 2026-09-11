@@ -1037,9 +1037,60 @@ async function handleDeepLinkAction(action) {
   if (!action || !action.ok) return { ok: false, error: action?.error || 'invalid' };
   focusMainWindow();
   if (action.action === 'open') {
+    const focusOpts = {
+      focus: action.focus || undefined,
+      failSteps: !!action.failSteps,
+    };
+    if (action.run) {
+      let settings = loadSettings(app.getPath('userData'));
+      if (action.hub) {
+        settings = persistReportHub(path.resolve(action.hub)) || settings;
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('settings-updated', settings);
+        }
+      }
+      const hub = settings.reportHubDir;
+      if (!hub) {
+        throw new Error('open?run= 需要 hub 参数或已配置的报告根目录');
+      }
+      const hist = readHistory(hub);
+      const runs = Array.isArray(hist?.runs) ? hist.runs : Array.isArray(hist) ? hist : [];
+      const entry = runs.find((r) => String(r?.id || '') === String(action.run));
+      if (!entry) {
+        throw new Error(`历史中找不到运行 ${action.run}`);
+      }
+      const indexPath = resolveRunIndex(hub, entry);
+      if (!indexPath || !fs.existsSync(indexPath)) {
+        throw new Error(`找不到运行 ${action.run} 的 index.html`);
+      }
+      const dir = path.dirname(indexPath);
+      await openReportDir(dir, focusOpts);
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('navigate-tab', { tab: 'report' });
+      }
+      return {
+        ok: true,
+        action: 'open',
+        dir,
+        run: action.run,
+        focus: focusOpts.focus,
+        failSteps: focusOpts.failSteps || undefined,
+      };
+    }
     if (action.path && isUhilreportPath(action.path)) {
       const opened = await openUhilreport(action.path);
-      return { ok: true, action: 'open', dir: opened.outDir, uhilreport: opened.input, regenerated: true };
+      if (focusOpts.focus) {
+        await openReportDir(opened.outDir, focusOpts);
+      }
+      return {
+        ok: true,
+        action: 'open',
+        dir: opened.outDir,
+        uhilreport: opened.input,
+        regenerated: true,
+        focus: focusOpts.focus,
+        failSteps: focusOpts.failSteps || undefined,
+      };
     }
     let dir = action.dir || '';
     if (action.path) {
@@ -1047,10 +1098,16 @@ async function handleDeepLinkAction(action) {
       dir = abs.toLowerCase().endsWith('.html') ? path.dirname(abs) : abs;
     }
     dir = path.resolve(dir);
-    await openReportDir(dir);
-    return { ok: true, action: 'open', dir };
+    await openReportDir(dir, focusOpts);
+    return {
+      ok: true,
+      action: 'open',
+      dir,
+      focus: focusOpts.focus,
+      failSteps: focusOpts.failSteps || undefined,
+    };
   }
-  if (action.action === 'connect') {
+if (action.action === 'connect') {
     await connectLiveWs(action.url);
     return { ok: true, action: 'connect', url: action.url };
   }

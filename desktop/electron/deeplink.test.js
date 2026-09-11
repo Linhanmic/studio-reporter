@@ -7,6 +7,7 @@ const {
   parseDeepLink,
   extractDeepLinkFromArgv,
   buildCompareDeepLink,
+  buildOpenDeepLink,
   createDeepLinkQueue,
 } = require('./deeplink.js');
 
@@ -28,6 +29,36 @@ describe('deeplink', () => {
     const c = parseDeepLink('studio-reporter://open?path=/tmp/r/run.uhilreport');
     assert.equal(c.ok, true);
     assert.equal(c.path, '/tmp/r/run.uhilreport');
+  });
+
+
+  it('parses and builds open run/focus/failSteps', () => {
+    const a = parseDeepLink(
+      'studio-reporter://open?run=run-1&hub=/tmp/hub&focus=scn:login&failSteps=1'
+    );
+    assert.equal(a.ok, true);
+    assert.equal(a.action, 'open');
+    assert.equal(a.run, 'run-1');
+    assert.equal(a.hub, '/tmp/hub');
+    assert.equal(a.focus, 'scn:login');
+    assert.equal(a.failSteps, true);
+
+    const url = buildOpenDeepLink({
+      run: 'run-2',
+      hub: '/hub path',
+      focus: 'scn:pay',
+      failSteps: true,
+    });
+    assert.match(url, /^studio-reporter:\/\/open\?/);
+    const round = parseDeepLink(url);
+    assert.equal(round.run, 'run-2');
+    assert.equal(round.hub, '/hub path');
+    assert.equal(round.focus, 'scn:pay');
+    assert.equal(round.failSteps, true);
+
+    const bare = buildOpenDeepLink({ dir: '/tmp/r' });
+    assert.equal(bare, 'studio-reporter://open?dir=%2Ftmp%2Fr');
+    assert.throws(() => buildOpenDeepLink({}), /requires/);
   });
 
   it('parses connect ws url', () => {

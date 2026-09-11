@@ -8,13 +8,28 @@ const PROTOCOL = 'studio-reporter';
  *   studio-reporter://open?path=/abs/index.html
  *   studio-reporter://open?path=/abs/run.uhilreport
  *   studio-reporter://open?dir=/abs/report-dir
+ *   studio-reporter://open?run=<runId>[&hub=/abs/hub][&focus=scn:…][&failSteps=1]
  *   studio-reporter://connect?url=ws://127.0.0.1:1234
  *   studio-reporter://hub?dir=/abs/hub
  *   studio-reporter://compare?base=<runId>&target=<runId>[&hub=/abs/hub][&kinds=regressed,fixed]
  *
  * @param {string} raw
- * @returns {{ok: true, action: string, path?: string, dir?: string, url?: string, base?: string, target?: string, hub?: string, kinds?: string[]}|{ok: false, error: string}}
+ * @returns {{ok: true, action: string, path?: string, dir?: string, url?: string, base?: string, target?: string, hub?: string, kinds?: string[], run?: string, focus?: string, failSteps?: boolean}|{ok: false, error: string}}
  */
+/**
+ * Parse optional boolean failSteps from query string.
+ * @param {URLSearchParams} params
+ * @returns {boolean}
+ */
+function parseFailStepsParam(params) {
+  const raw =
+    params.get('failSteps') ||
+    params.get('fail-steps') ||
+    params.get('fail_steps') ||
+    '';
+  return ['1', 'true', 'yes'].includes(String(raw).toLowerCase());
+}
+
 /**
  * Parse optional compare kind filter from query string.
  * Accepts `kinds=a,b` and/or repeated `kind=a&kind=b`.
@@ -69,12 +84,30 @@ function parseDeepLink(raw) {
   if (action === 'open') {
     const filePath = url.searchParams.get('path') || url.searchParams.get('file') || '';
     const dir = url.searchParams.get('dir') || '';
-    if (!filePath && !dir) return { ok: false, error: 'open requires path or dir' };
+    const run =
+      url.searchParams.get('run') ||
+      url.searchParams.get('runId') ||
+      url.searchParams.get('id') ||
+      '';
+    const hub = url.searchParams.get('hub') || '';
+    const focus =
+      url.searchParams.get('focus') ||
+      url.searchParams.get('scn') ||
+      url.searchParams.get('node') ||
+      '';
+    const failSteps = parseFailStepsParam(url.searchParams);
+    if (!filePath && !dir && !run) {
+      return { ok: false, error: 'open requires path, dir, or run' };
+    }
     return {
       ok: true,
       action: 'open',
       path: filePath || undefined,
       dir: dir || undefined,
+      run: run || undefined,
+      hub: hub || undefined,
+      focus: focus || undefined,
+      failSteps: failSteps || undefined,
     };
   }
 
@@ -142,7 +175,7 @@ function extractDeepLinkFromArgv(argv) {
 
 /**
  * Build a shareable compare deep link for two history run ids.
- * @param {{ base: string, target: string, hub?: string }} opts
+ * @param {{ base: string, target: string, hub?: string, kinds?: string[]|null }} opts
  * @returns {string}
  */
 function buildCompareDeepLink(opts = {}) {
@@ -163,6 +196,37 @@ function buildCompareDeepLink(opts = {}) {
   const kinds = normalizeScenarioCompareKinds(opts.kinds);
   if (kinds && kinds.length) params.set('kinds', kinds.join(','));
   return `${PROTOCOL}://compare?${params.toString()}`;
+}
+
+/**
+ * Build a shareable open deep link (report dir/path or history run + optional focus).
+ * @param {{
+ *   path?: string,
+ *   dir?: string,
+ *   run?: string,
+ *   hub?: string,
+ *   focus?: string,
+ *   failSteps?: boolean,
+ * }} opts
+ * @returns {string}
+ */
+function buildOpenDeepLink(opts = {}) {
+  const filePath = String(opts.path || '').trim();
+  const dir = String(opts.dir || '').trim();
+  const run = String(opts.run || opts.runId || opts.id || '').trim();
+  if (!filePath && !dir && !run) {
+    throw new Error('open deep link requires path, dir, or run');
+  }
+  const params = new URLSearchParams();
+  if (filePath) params.set('path', filePath);
+  else if (dir) params.set('dir', dir);
+  if (run) params.set('run', run);
+  const hub = String(opts.hub || '').trim();
+  if (hub) params.set('hub', hub);
+  const focus = String(opts.focus || opts.scn || opts.node || '').trim();
+  if (focus) params.set('focus', focus);
+  if (opts.failSteps) params.set('failSteps', '1');
+  return `${PROTOCOL}://open?${params.toString()}`;
 }
 
 /**
@@ -235,7 +299,9 @@ module.exports = {
   PROTOCOL,
   parseDeepLink,
   parseCompareKindsParam,
+  parseFailStepsParam,
   extractDeepLinkFromArgv,
   buildCompareDeepLink,
+  buildOpenDeepLink,
   createDeepLinkQueue,
 };

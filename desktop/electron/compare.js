@@ -5,7 +5,7 @@
  * Duration format: HH:MM:SS.mmm
  */
 
-const { buildCompareDeepLink } = require('./deeplink.js');
+const { buildCompareDeepLink, buildOpenDeepLink } = require('./deeplink.js');
 
 /**
  * Best-effort compare deep link for share payloads (empty string if ids missing).
@@ -27,6 +27,48 @@ function resolveCompareShareDeepLink(cmp, opts = {}) {
   } catch {
     return '';
   }
+}
+
+/**
+ * Best-effort open deep links for one scenario diff row (base/target report focus).
+ * @param {object} d scenario diff
+ * @param {{ hub?: string, baseRunId?: string, targetRunId?: string, base?: {id?: string}, target?: {id?: string} }} [opts]
+ * @returns {{ base?: string, target?: string }}
+ */
+function resolveScenarioDiffOpenLinks(d, opts = {}) {
+  const hub = String(opts.hub != null ? opts.hub : '').trim();
+  const baseRun = String(opts.baseRunId || opts.base?.id || '').trim();
+  const targetRun = String(opts.targetRunId || opts.target?.id || '').trim();
+  /** @type {{ base?: string, target?: string }} */
+  const out = {};
+  if (!d || typeof d !== 'object') return out;
+  const baseScn = String(d.baseScnId || '').trim();
+  const targetScn = String(d.targetScnId || '').trim();
+  if (d.kind !== 'added' && baseScn && baseRun) {
+    try {
+      out.base = buildOpenDeepLink({
+        run: baseRun,
+        hub,
+        focus: baseScn,
+        failSteps: String(d.baseVerdict || '').toLowerCase() === 'fail',
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+  if (d.kind !== 'removed' && targetScn && targetRun) {
+    try {
+      out.target = buildOpenDeepLink({
+        run: targetRun,
+        hub,
+        focus: targetScn,
+        failSteps: String(d.targetVerdict || '').toLowerCase() === 'fail',
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+  return out;
 }
 
 function parseReportDuration(s) {
@@ -167,6 +209,13 @@ function formatScenarioCompareMarkdown(sc, opts = {}) {
   const changed = Array.isArray(sc.changed) ? sc.changed : [];
   const kinds = normalizeScenarioCompareKinds(opts.kinds);
   const filterNote = kinds ? `（已筛：${kinds.map((k) => scenarioDiffKindLabel(k)).join('、')}）` : '';
+  const openOpts = {
+    hub: opts.hub,
+    baseRunId: opts.baseRunId || opts.base?.id,
+    targetRunId: opts.targetRunId || opts.target?.id,
+    base: opts.base,
+    target: opts.target,
+  };
   const lines = [
     '## 场景级差异',
     '',
@@ -195,6 +244,11 @@ function formatScenarioCompareMarkdown(sc, opts = {}) {
     ) {
       line += ` — ${reason}`;
     }
+    const links = resolveScenarioDiffOpenLinks(d, openOpts);
+    const openBits = [];
+    if (links.target) openBits.push(`[目标报告](${links.target})`);
+    if (links.base) openBits.push(`[基线报告](${links.base})`);
+    if (openBits.length) line += ` · ${openBits.join(' · ')}`;
     lines.push(line);
   }
   if (changed.length > limit) {
@@ -203,11 +257,6 @@ function formatScenarioCompareMarkdown(sc, opts = {}) {
   return lines.join('\n');
 }
 
-/**
- * HTML section for optional cmp.scenarioCompare inside the share card.
- * @param {object|null|undefined} sc
- * @param {{ limit?: number, kinds?: string[]|null }} [opts]
- */
 function formatScenarioCompareHtml(sc, opts = {}) {
   if (!sc) return '';
   sc = filterScenarioCompare(sc, opts) || sc;
@@ -218,6 +267,13 @@ function formatScenarioCompareHtml(sc, opts = {}) {
   const filterNote = kinds
     ? ` · 已筛 ${kinds.map((k) => scenarioDiffKindLabel(k)).join('、')}`
     : '';
+  const openOpts = {
+    hub: opts.hub,
+    baseRunId: opts.baseRunId || opts.base?.id,
+    targetRunId: opts.targetRunId || opts.target?.id,
+    base: opts.base,
+    target: opts.target,
+  };
   const head = `<section class="scenario-diff">
     <h2>场景级差异 <span class="muted">${changed.length} 变 · ${Number(sc.unchangedCount) || 0} 不变 · ${Number(sc.baseCount) || 0}→${Number(sc.targetCount) || 0}${filterNote}</span></h2>`;
   if (!changed.length) {
@@ -238,10 +294,23 @@ function formatScenarioCompareHtml(sc, opts = {}) {
       } else if (d.kind === 'removed') {
         reason = d.baseReason || '';
       }
+      const links = resolveScenarioDiffOpenLinks(d, openOpts);
+      const openHtml = [];
+      if (links.target) {
+        openHtml.push(
+          `<a class="scenario-diff-open" href="${escapeHtml(links.target)}">目标报告</a>`
+        );
+      }
+      if (links.base) {
+        openHtml.push(
+          `<a class="scenario-diff-open" href="${escapeHtml(links.base)}">基线报告</a>`
+        );
+      }
       return `<li class="scenario-diff-item kind-${escapeHtml(d.kind || '')}">
       <span class="scenario-diff-kind">${escapeHtml(kind)}</span>
       <span class="scenario-diff-name">${escapeHtml(name)}</span>
       <span class="scenario-diff-verdict muted">${escapeHtml(verdict)}</span>
+      ${openHtml.length ? `<span class="scenario-diff-opens">${openHtml.join(' ')}</span>` : ''}
       ${reason ? `<span class="scenario-diff-reason muted" title="${escapeHtml(reason)}">${escapeHtml(reason)}</span>` : ''}
     </li>`;
     })
@@ -287,9 +356,7 @@ function buildCompareShareMarkdown(cmp, opts = {}) {
     `- 步骤 ${formatCountsDelta(cmp.steps)}`,
     '',
   ];
-  const scMd = formatScenarioCompareMarkdown(cmp.scenarioCompare, {
-    kinds: opts.kinds,
-  });
+  const scMd = formatScenarioCompareMarkdown(cmp.scenarioCompare, { kinds: opts.kinds, hub: opts.hub, base: cmp.base, target: cmp.target });
   if (scMd) {
     lines.push(scMd, '');
   } else if (cmp.scenarioCompareWarning) {
@@ -521,6 +588,21 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
   .scenario-diff-item.kind-fixed .scenario-diff-kind { color: var(--ok); }
   .scenario-diff-item.kind-added .scenario-diff-kind,
   .scenario-diff-item.kind-removed .scenario-diff-kind { color: var(--skip); }
+  .scenario-diff-opens {
+    grid-column: 3;
+    grid-row: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .scenario-diff-open {
+    color: var(--accent, #5b9fd4);
+    text-decoration: none;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .scenario-diff-open:hover { text-decoration: underline; }
   .scenario-diff-reason {
     grid-column: 2 / -1;
     overflow: hidden;
@@ -562,7 +644,7 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
       <div class="delta"><span class="k">场景</span><span class="v">${escapeHtml(formatCountsDelta(cmp.scenarios))}</span></div>
       <div class="delta"><span class="k">步骤</span><span class="v">${escapeHtml(formatCountsDelta(cmp.steps))}</span></div>
     </div>
-    ${formatScenarioCompareHtml(cmp.scenarioCompare, { kinds: opts.kinds }) || (cmp.scenarioCompareWarning
+    ${formatScenarioCompareHtml(cmp.scenarioCompare, { kinds: opts.kinds, hub: opts.hub, base: cmp.base, target: cmp.target }) || (cmp.scenarioCompareWarning
       ? `<section class="scenario-diff"><h2>场景级差异</h2><p class="muted">${escapeHtml(cmp.scenarioCompareWarning)}</p></section>`
       : '')}
     <footer>${(() => {
@@ -697,12 +779,20 @@ function buildCompareShareJson(cmp, opts = {}) {
   if (cmp.scenarioCompare) {
     const filtered = filterScenarioCompare(cmp.scenarioCompare, { kinds: opts.kinds }) || cmp.scenarioCompare;
     const kinds = normalizeScenarioCompareKinds(opts.kinds);
+    const openOpts = {
+      hub: opts.hub,
+      base: cmp.base,
+      target: cmp.target,
+    };
     payload.scenarioCompare = {
       changedCount: Array.isArray(filtered.changed) ? filtered.changed.length : 0,
       unchangedCount: Number(filtered.unchangedCount) || 0,
       baseCount: Number(filtered.baseCount) || 0,
       targetCount: Number(filtered.targetCount) || 0,
-      changed: (filtered.changed || []).slice(0, 50),
+      changed: (filtered.changed || []).slice(0, 50).map((d) => {
+        const openLinks = resolveScenarioDiffOpenLinks(d, openOpts);
+        return Object.keys(openLinks).length ? { ...d, openLinks } : d;
+      }),
     };
     if (kinds) payload.scenarioCompare.kindsFilter = kinds;
   } else if (cmp.scenarioCompareWarning) {
@@ -734,6 +824,7 @@ module.exports = {
   buildCompareShareMarkdown,
   buildCompareShareCardHtml,
   resolveCompareShareDeepLink,
+  resolveScenarioDiffOpenLinks,
   COMPARE_CARD_TEMPLATES,
   normalizeCompareCardTemplate,
   normalizeCompareCardTitle,

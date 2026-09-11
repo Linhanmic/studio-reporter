@@ -18,6 +18,7 @@ const {
   filterScenarioCompare,
   normalizeScenarioCompareKinds,
   SCENARIO_COMPARE_KIND_FILTERS,
+  resolveScenarioDiffOpenLinks,
 } = require('./compare.js');
 
 function sampleEntries() {
@@ -284,5 +285,53 @@ describe('scenario compare kind filter', () => {
     assert.match(html, /变差/);
     assert.match(html, /已筛/);
     assert.doesNotMatch(html, />修复</);
+  });
+
+  it('share card scenario diffs include open deep links when hub+scn ids present', () => {
+    const { base, target } = sampleEntries();
+    const cmp = compareHistoryRuns(base, target);
+    cmp.scenarioCompare = {
+      changed: [
+        {
+          kind: 'regressed',
+          specName: 'Login',
+          scnName: 'valid user',
+          baseScnId: 'scn:login',
+          targetScnId: 'scn:login',
+          baseVerdict: 'pass',
+          targetVerdict: 'fail',
+          targetReason: 'timeout after 30s',
+        },
+      ],
+      unchangedCount: 1,
+      baseCount: 2,
+      targetCount: 2,
+    };
+    const hub = '/tmp/report-hub';
+    const md = buildCompareShareMarkdown(cmp, { hub });
+    assert.match(md, /studio-reporter:\/\/open\?run=/);
+    assert.match(md, /focus=scn%3Alogin|focus=scn:login/);
+    assert.match(md, /目标报告/);
+
+    const html = buildCompareShareCardHtml(cmp, { hub });
+    assert.match(html, /scenario-diff-open/);
+    assert.match(html, /studio-reporter:\/\/open\?run=/);
+    assert.match(html, /failSteps=1/);
+
+    const json = JSON.parse(buildCompareShareJson(cmp, { hub }));
+    const links = json.scenarioCompare.changed[0].openLinks;
+    assert.ok(links && links.target && links.base);
+    assert.match(links.target, /failSteps=1/);
+    assert.equal(decodeURIComponent(new URL(links.target).searchParams.get('run')), cmp.target.id);
+    assert.equal(decodeURIComponent(new URL(links.base).searchParams.get('run')), cmp.base.id);
+    assert.equal(decodeURIComponent(new URL(links.target).searchParams.get('focus')), 'scn:login');
+
+    const built = resolveScenarioDiffOpenLinks(cmp.scenarioCompare.changed[0], {
+      hub,
+      base: cmp.base,
+      target: cmp.target,
+    });
+    assert.equal(built.target, links.target);
+    assert.equal(built.base, links.base);
   });
 });
