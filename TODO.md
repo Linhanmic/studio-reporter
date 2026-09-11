@@ -76,6 +76,7 @@
 - [x] Desktop 大纲分栏宽度记忆（可拖拽分隔条；`outlinePaneWidth` 持久化）
 - [x] Desktop 安装包冒烟（`pack:dir` + 解包布局校验；CI `desktop-pack-smoke`）
 - [x] Desktop 历史对比 UX 深化（交换方向 / 复制 JSON / 导出后打开与显示文件夹）
+- [x] Desktop 统一大纲搜索（live/终态同步过滤、`/` 聚焦、查询/结论过滤持久化）
 
 ## 迭代日志
 
@@ -125,7 +126,8 @@
 | 2026-09-11 | Desktop 大纲分栏宽度记忆 | 可拖拽/键盘调整大纲宽度；`outlinePaneWidth` 写入 settings（180–480px）；与窗口 bounds 解耦 |
 | 2026-09-11 | Desktop 安装包冒烟 | `verify-pack-dir.js` 校验 electron-builder `--dir` 产物（app + extraResources）；`make desktop-pack-smoke`；CI job `desktop-pack-smoke` |
 | 2026-09-11 | Desktop 历史对比 UX 深化 | 对比面板：交换基线/目标、复制 JSON（`studio-reporter.compare/v1`）、导出后打开卡片/显示文件夹 |
+| 2026-09-11 | Desktop 统一大纲搜索 | 大纲 query/verdict 持久化；切页与 iframe load 重放 `studio-reporter:filter`；`/` 聚焦搜索框 |
 
 ## 下一任务（选定）
 
-**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或报告搜索跨 live/终态统一体验。
+**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或报告失败路径一键跳转增强。

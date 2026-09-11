@@ -36,7 +36,7 @@ npm run pack               # 平台安装包（Linux → AppImage 等）
 
 ## 用法
 
-1. **运行 Gauge**：在运行栏选择 Gauge 项目（支持最近项目下拉）、specs、可选 env →「运行 Gauge」。可并行多个会话，会话条切换 live viewer；Desktop 解析 stdout discover 并自动连接。左侧共享大纲（规格书→场景）支持搜索与 pass/fail/skip 过滤，在 live / 终态均可点击定位。
+1. **运行 Gauge**：在运行栏选择 Gauge 项目（支持最近项目下拉）、specs、可选 env →「运行 Gauge」。可并行多个会话，会话条切换 live viewer；Desktop 解析 stdout discover 并自动连接。左侧共享大纲（规格书→场景）支持搜索与 pass/fail/skip 过滤（`/` 聚焦；过滤同步到 live/终态并持久化），在 live / 终态均可点击定位。
 2. **手动连接**：也可粘贴 `studio-reporter websocket: ws://127.0.0.1:<port>` → 连接 → 嵌入 live viewer。
 3. **报告**：收到 `ReportGenerated` 后跳转静态 `index.html`（可在设置中关闭自动跳转）；窗口未聚焦时发系统通知（可关）；打开报告目录时从 `report.json` 填充大纲。也可 **文件 → 打开 .uhilreport…**（`Cmd/Ctrl+Shift+O`）或深链 `studio-reporter://open?path=*.uhilreport` 离线再生并打开。支持深链 `studio-reporter://open|connect|hub`。快捷键：`Ctrl/Cmd+1…4` 切页，`Ctrl/Cmd+Enter` 连接，`Ctrl/Cmd+Shift+H`/`F5` 刷新历史。设置支持 system/light/dark 主题。窗口位置/尺寸/最大化写入 `window-state.json`（离屏自动回正）。左侧大纲宽度可拖拽/键盘调整，并持久化为 `outlinePaneWidth`。
 4. **历史**：设置报告根目录（含 `history.json`）后列出归档；可用「最近 hub」下拉切换；搜索 / pass/fail/skip 过滤；点击打开；勾选 1 次可打开所在文件夹 / 复制路径；勾选两次可对比（可交换方向），并可导出离线 HTML 分享卡片、复制 Markdown/JSON；导出后可打开卡片或显示文件夹；勾选后可删除（确认框；删除持有与 Go 对齐的 `.hub.lock`）。

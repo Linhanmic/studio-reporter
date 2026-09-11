@@ -24,6 +24,7 @@ const state = {
 
 const VALID_TABS = new Set(['run', 'report', 'history', 'settings']);
 let lastTabSaveTimer = null;
+let outlineFilterSaveTimer = null;
 
 const OUTLINE_WIDTH_MIN = 180;
 const OUTLINE_WIDTH_MAX = 480;
@@ -144,6 +145,60 @@ function setTab(name, opts = {}) {
   if (name === 'settings') {
     fillSettingsForm();
     refreshPluginDetect();
+  }
+  if (name === 'run' || name === 'report') {
+    applyOutlineFilterToUi();
+    postFilterToFrames();
+  }
+}
+
+
+function persistOutlineFilter() {
+  clearTimeout(outlineFilterSaveTimer);
+  outlineFilterSaveTimer = setTimeout(async () => {
+    try {
+      state.settings = await window.desktopAPI.saveSettings({
+        outlineQuery: state.outlineQuery || '',
+        outlineVerdict: state.outlineVerdict || 'all',
+      });
+    } catch {
+      /* ignore */
+    }
+  }, 300);
+}
+
+function applyOutlineFilterToUi() {
+  const input = $('outlineQuery');
+  if (input && input.value !== (state.outlineQuery || '')) {
+    input.value = state.outlineQuery || '';
+  }
+  document.querySelectorAll('.outline-filter-btn').forEach((btn) => {
+    btn.classList.toggle('active', (btn.dataset.verdict || 'all') === (state.outlineVerdict || 'all'));
+  });
+}
+
+function focusOutlineSearch() {
+  const input = $('outlineQuery');
+  if (!input) return;
+  // Ensure outline chrome is visible (run/report tabs).
+  if (state.activeTab === 'history' || state.activeTab === 'settings') {
+    setTab('run', { persist: false });
+  }
+  input.focus();
+  input.select();
+}
+
+function wireFrameFilterReplay() {
+  for (const id of ['liveFrame', 'reportFrame']) {
+    const frame = $(id);
+    if (!frame || frame.dataset.filterReplayWired === '1') continue;
+    frame.dataset.filterReplayWired = '1';
+    frame.addEventListener('load', () => {
+      // Live/report documents may boot async; retry briefly so host filter sticks.
+      postFilterToFrames();
+      setTimeout(() => postFilterToFrames(), 200);
+      setTimeout(() => postFilterToFrames(), 800);
+    });
   }
 }
 
@@ -1052,6 +1107,7 @@ function applyDesktopShortcut(action) {
 }
 
 function wire() {
+  wireFrameFilterReplay();
   wireOutlineSplitter();
   document.querySelectorAll('.tab').forEach((btn) => {
     btn.addEventListener('click', () => setTab(btn.dataset.tab));
@@ -1069,6 +1125,13 @@ function wire() {
     document.querySelector(`.tab[data-tab="${next}"]`)?.focus();
   });
   window.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (!window.desktopAPI.shouldIgnoreShortcutTarget(e.target)) {
+        e.preventDefault();
+        focusOutlineSearch();
+        return;
+      }
+    }
     if (window.desktopAPI.shouldIgnoreShortcutTarget(e.target)) return;
     const action = window.desktopAPI.matchShortcut(e);
     if (!action || action.type === 'open-report') return;
@@ -1224,6 +1287,7 @@ function wire() {
     state.outlineQuery = $('outlineQuery').value || '';
     renderOutline();
     postFilterToFrames();
+    persistOutlineFilter();
   });
   document.querySelectorAll('.outline-filter-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1233,6 +1297,7 @@ function wire() {
       });
       renderOutline();
       postFilterToFrames();
+      persistOutlineFilter();
     });
   });
   window.desktopAPI.onGaugeLog((data) => {
@@ -1286,8 +1351,15 @@ function wire() {
   try {
     await loadSettings();
     const s = state.settings;
+    state.outlineQuery = s?.outlineQuery || '';
+    state.outlineVerdict = s?.outlineVerdict || 'all';
+    applyOutlineFilterToUi();
+    renderOutline();
+    postFilterToFrames();
     if (s?.restoreSession !== false && VALID_TABS.has(s.lastTab) && s.lastTab !== state.activeTab) {
       setTab(s.lastTab, { persist: false });
+    } else if (state.activeTab === 'run' || state.activeTab === 'report') {
+      postFilterToFrames();
     }
   } catch {
     /* ignore */

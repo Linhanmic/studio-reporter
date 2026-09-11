@@ -146,6 +146,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 运行/报告页左侧大纲宽度可拖拽调整，并会记住上次宽度。
 打包冒烟：`make desktop-pack-smoke`（构建 CLI → `electron-builder --dir` → 校验解包布局）。
 历史对比支持交换基线/目标、复制 JSON，导出卡片后可直接打开或在文件夹中显示。
+大纲搜索与结论过滤会同步到 live/终态页面，按 `/` 可快速聚焦搜索框，并在重启后恢复。
 
 共享 discover 辅助包：`packages/studio-reporter-discover`（`@studio-reporter/discover`），供 Desktop / GaugeStudio 复用同一 stdout 契约。
 

@@ -118,6 +118,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 大纲分栏宽度记忆 | 拖拽分隔条调整大纲宽度；`outlinePaneWidth` 持久化；键盘左右键微调 |
 | 2026-09-11 | Desktop 安装包冒烟 | `verify-pack-dir` 校验 unpacked app + extraResources；CI 独立 job，失败上传 dist |
 | 2026-09-11 | Desktop 历史对比 UX 深化 | `invertCompareResult` + `buildCompareShareJson`；导出后 openPath/revealPath；面板交换方向 |
+| 2026-09-11 | Desktop 统一大纲搜索 | host `studio-reporter:filter` 在切页/iframe load 重放；`outlineQuery`/`outlineVerdict` 持久化；`/` 聚焦 |
 | 2026-09-11 | 共享 discover | 抽出 `@studio-reporter/discover`（`packages/studio-reporter-discover`）；Desktop 经 file: 依赖消费 |
 | 2026-09-11 | 插件版本门闸 | Desktop 对 ServerHello 校验 semver ≥ 0.5.0 与必需 capabilities；状态栏提示 ok/warn/error |
 | 2026-09-11 | 本机插件检测 | 扫描 Gauge plugins 目录；设置页展示安装版本；discover 超时结合安装态提示 |

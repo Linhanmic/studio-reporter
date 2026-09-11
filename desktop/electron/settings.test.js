@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -174,6 +174,30 @@ describe('settings outline pane width', () => {
     assert.equal(loadSettings(dir).outlinePaneWidth, 320);
     assert.equal(saveSettings(dir, { outlinePaneWidth: 12 }).outlinePaneWidth, OUTLINE_PANE_WIDTH_MIN);
     assert.equal(DEFAULTS.outlinePaneWidth, 240);
+  });
+});
+
+describe('settings outline search persistence', () => {
+  it('normalizeOutlineQuery trims and caps', () => {
+    assert.equal(normalizeOutlineQuery('  login  '), 'login');
+    assert.equal(normalizeOutlineQuery('x'.repeat(300)).length, 200);
+  });
+
+  it('normalizeOutlineVerdict accepts known values', () => {
+    assert.equal(normalizeOutlineVerdict('FAIL'), 'fail');
+    assert.equal(normalizeOutlineVerdict('nope'), 'all');
+  });
+
+  it('load/save round-trips outlineQuery and outlineVerdict', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-outline-q-'));
+    const saved = saveSettings(dir, { outlineQuery: '  smoke  ', outlineVerdict: 'fail' });
+    assert.equal(saved.outlineQuery, 'smoke');
+    assert.equal(saved.outlineVerdict, 'fail');
+    const loaded = loadSettings(dir);
+    assert.equal(loaded.outlineQuery, 'smoke');
+    assert.equal(loaded.outlineVerdict, 'fail');
+    assert.equal(DEFAULTS.outlineQuery, '');
+    assert.equal(DEFAULTS.outlineVerdict, 'all');
   });
 });
 

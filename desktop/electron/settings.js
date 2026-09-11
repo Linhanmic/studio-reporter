@@ -19,6 +19,8 @@ const DEFAULTS = {
   notifyOnSuiteEnd: true,
   theme: 'system',
   outlinePaneWidth: 240,
+  outlineQuery: '',
+  outlineVerdict: 'all',
 };
 
 
@@ -36,6 +38,29 @@ function normalizeOutlinePaneWidth(width, fallback = OUTLINE_PANE_WIDTH_DEFAULT)
   const base = Number.isFinite(Number(fallback)) ? Number(fallback) : OUTLINE_PANE_WIDTH_DEFAULT;
   if (!Number.isFinite(n)) return Math.round(base);
   return Math.round(Math.min(OUTLINE_PANE_WIDTH_MAX, Math.max(OUTLINE_PANE_WIDTH_MIN, n)));
+}
+
+
+const OUTLINE_VERDICTS = new Set(['all', 'pass', 'fail', 'skip']);
+
+/**
+ * Normalize outline verdict filter.
+ * @param {unknown} verdict
+ * @param {string} [fallback='all']
+ */
+function normalizeOutlineVerdict(verdict, fallback = 'all') {
+  const v = String(verdict || '').trim().toLowerCase();
+  if (OUTLINE_VERDICTS.has(v)) return v;
+  const fb = String(fallback || 'all').trim().toLowerCase();
+  return OUTLINE_VERDICTS.has(fb) ? fb : 'all';
+}
+
+/**
+ * Normalize outline search query (trim, cap length).
+ * @param {unknown} query
+ */
+function normalizeOutlineQuery(query) {
+  return String(query ?? '').replace(/\s+/g, ' ').trim().slice(0, 200);
 }
 
 /** Valid Desktop renderer tab ids (must match index.html data-tab). */
@@ -65,6 +90,8 @@ function loadSettings(userDataDir) {
     merged.lastTab = normalizeLastTab(merged.lastTab);
     merged.restoreSession = merged.restoreSession !== false;
     merged.outlinePaneWidth = normalizeOutlinePaneWidth(merged.outlinePaneWidth);
+    merged.outlineQuery = normalizeOutlineQuery(merged.outlineQuery);
+    merged.outlineVerdict = normalizeOutlineVerdict(merged.outlineVerdict);
     return merged;
   } catch {
     return { ...DEFAULTS };
@@ -82,11 +109,19 @@ function saveSettings(userDataDir, partial) {
   if (Object.prototype.hasOwnProperty.call(patch, 'outlinePaneWidth')) {
     patch.outlinePaneWidth = normalizeOutlinePaneWidth(patch.outlinePaneWidth);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'outlineQuery')) {
+    patch.outlineQuery = normalizeOutlineQuery(patch.outlineQuery);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'outlineVerdict')) {
+    patch.outlineVerdict = normalizeOutlineVerdict(patch.outlineVerdict);
+  }
   const next = { ...loadSettings(userDataDir), ...patch };
   next.recentProjects = Array.isArray(next.recentProjects) ? next.recentProjects : [];
   next.recentHubs = Array.isArray(next.recentHubs) ? next.recentHubs : [];
   next.lastTab = normalizeLastTab(next.lastTab);
   next.outlinePaneWidth = normalizeOutlinePaneWidth(next.outlinePaneWidth);
+  next.outlineQuery = normalizeOutlineQuery(next.outlineQuery);
+  next.outlineVerdict = normalizeOutlineVerdict(next.outlineVerdict);
   fs.mkdirSync(userDataDir, { recursive: true });
   fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(next, null, 2));
   return next;
@@ -312,6 +347,9 @@ module.exports = {
   saveSettings,
   normalizeLastTab,
   normalizeOutlinePaneWidth,
+  normalizeOutlineQuery,
+  normalizeOutlineVerdict,
+  OUTLINE_VERDICTS,
   OUTLINE_PANE_WIDTH_MIN,
   OUTLINE_PANE_WIDTH_MAX,
   OUTLINE_PANE_WIDTH_DEFAULT,
