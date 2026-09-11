@@ -20,6 +20,12 @@ const {
 const { filterHistoryRuns } = require('./settings.js');
 const { buildCompareDeepLink } = require('./deeplink.js');
 const {
+  parseShareHash,
+  formatShareHash,
+  reportOpenHashFromOutline,
+  appendShareHash,
+} = require('./share-hash.js');
+const {
   listFailScenarioIds,
   nextFailScenarioId,
   prepareFailJumpFilter,
@@ -87,6 +93,10 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   copyCompareJson: (cmp, opts) => ipcRenderer.invoke('desktop:copy-compare-json', cmp, opts),
   copyCompareDeepLink: (payload) => ipcRenderer.invoke('desktop:copy-compare-deeplink', payload),
   buildCompareDeepLink,
+  parseShareHash,
+  formatShareHash,
+  reportOpenHashFromOutline,
+  appendShareHash,
   openPath: (p) => ipcRenderer.invoke('desktop:open-path', p),
   revealPath: (p) => ipcRenderer.invoke('desktop:reveal-path', p),
   filterHistoryRuns,

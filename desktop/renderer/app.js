@@ -478,8 +478,22 @@ function wireOutlineVirtualScroll() {
 }
 
 
+function reportOpenShareHash() {
+  if (typeof window.desktopAPI.reportOpenHashFromOutline === 'function') {
+    return window.desktopAPI.reportOpenHashFromOutline({
+      query: state.outlineQuery || state.settings?.outlineQuery || '',
+      verdict: state.outlineVerdict || state.settings?.outlineVerdict || 'all',
+    });
+  }
+  return 'overview';
+}
+
 function showReport(url) {
-  $('reportFrame').src = url;
+  let finalUrl = url;
+  if (url && typeof window.desktopAPI.appendShareHash === 'function') {
+    finalUrl = window.desktopAPI.appendShareHash(url, reportOpenShareHash());
+  }
+  $('reportFrame').src = finalUrl;
   $('reportEmpty').classList.add('hidden');
   setTab('report');
 }
