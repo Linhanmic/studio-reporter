@@ -29,6 +29,7 @@ Studio Reporter ships today as a [Gauge](https://gauge.org/) reporter plugin (WS
 |-----|---------|
 | [QUICKSTART.md](QUICKSTART.md) | Install, first run, regenerate |
 | [DESIGN.md](DESIGN.md) | Architecture and decisions |
+| [DESKTOP.md](DESKTOP.md) | Desktop App architecture & roadmap |
 | [TODO.md](TODO.md) | Backlog and iteration log |
 | [REPORT_FORMAT.md](REPORT_FORMAT.md) | On-disk format contract |
 | [API.md](API.md) | WebSocket / event protocol |
