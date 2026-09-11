@@ -1,10 +1,10 @@
 # Studio Reporter Plugin
 
-A **standalone test report tool** (with an optional Gauge plugin mode) that generates CANoe-style HTML/PDF reports, serves a local report hub, and can forward Gauge execution events to Gauge Studio over WebSocket.
+A **desktop-bound test report system**: Gauge reporter plugin (headless bridge) + CANoe-style HTML/PDF artifacts + engineering CLI. The product UX target is a **Desktop App** that connects to the plugin over WebSocket (see [DESKTOP.md](DESKTOP.md)).
 
 ## Overview
 
-Studio Reporter is primarily a **CLI report tool**. Install the binary and use `generate` / `serve` without Gauge. When installed as a [Gauge](https://gauge.org/) plugin it also monitors execution, forwards events to [Gauge Studio](https://github.com/gaugestudio/gauge-studio), and writes the report at suite end.
+Studio Reporter ships today as a [Gauge](https://gauge.org/) reporter plugin (WS bridge + on-disk reports) plus a small CLI for regenerate/serve. The **intended product surface is a Desktop App** that discovers `studio-reporter websocket:` and shows live + final reports ([DESKTOP.md](DESKTOP.md)). GaugeStudio already consumes the same bridge; Reporter Desktop will own the report workbench UX.
 
 ## Features
 
@@ -86,7 +86,7 @@ unzip studio-reporter-0.5.0-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter
 
 ## Usage
 
-### Standalone CLI (primary)
+### Engineering CLI (optional)
 
 ```bash
 # Rebuild HTML (+ optional PDF / single-file) from a portable .uhilreport
@@ -101,7 +101,7 @@ studio-reporter help
 
 Legacy flat flags (`--input`, `--serve`, `--start`) remain supported.
 
-### Gauge plugin mode
+### Gauge plugin bridge (current runtime)
 
 
 The plugin starts automatically when you run Gauge tests. It binds a random local WebSocket port and prints:

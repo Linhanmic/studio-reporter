@@ -4,23 +4,24 @@
 
 ## 产品目标
 
-**Studio Reporter 是独立的测试报告工具**；Gauge 插件模式是其一种数据接入方式，不是产品边界。
+**Studio Reporter 的产品形态是 Desktop App（报告工作台）**；Gauge reporter **插件是无头桥接**；CLI / 静态 HTML 是工程与归档能力，不是主 UX。
 
-核心能力：
+详细设计见 **[DESKTOP.md](DESKTOP.md)**。
 
-1. 从可移植报告文件（`.uhilreport`）生成 / 再生 HTML、单文件 HTML、PDF
-2. 提供本地报告 hub（浏览 / 历史 / 管理）
-3. （可选）作为 Gauge reporter 插件：实时 WS 转发 + 套件结束落盘
+分层：
 
-Gauge 执行期（plugin 模式）仍覆盖：
+1. **Desktop**：实时运行、终态阅读、历史对比、导出（主产品面）
+2. **Plugin**：Gauge gRPC → WS 广播 → 落盘（桥接）
+3. **产物**：`index.html` / PDF / 单文件 HTML / `.uhilreport`（可离线分享）
+4. **CLI**：`generate` / `serve` / `plugin`（CI 与无 UI 环境）
 
-1. 把生命周期事件实时转发到 Gauge Studio（WebSocket）
-2. 在本地生成可读、可归档、可再生成的测试报告
+Gauge 执行期插件仍负责：实时事件转发 + 套件结束写报告。Desktop 通过解析 `studio-reporter websocket:` 发现并连接。
 
 报告产品形态：
 
 | 场景 | 入口 | 技术 |
 |------|------|------|
+| **Desktop 工作台** | Electron 壳（设计中） | 见 [DESKTOP.md](DESKTOP.md)；WS discover + 嵌入 `viewer`/`index`/`manage` |
 | 终态阅读 / 分享 / 归档 | `index.html` | Go 端预渲染静态 HTML（CANoe 风：左导航 + Overview + 结果树；无内嵌 JSON、无 Vue） |
 | 单文件分享 | `report.single.html`（可选） | 将相对 `images/` 内联为 data URI；目录版仍为默认真源 |
 | 可打印/分享 PDF | `report.pdf`（可选） | Chrome headless `--print-to-pdf`；与 HTML 同源结构化文档，非截图拼贴 |
@@ -62,7 +63,7 @@ Gauge (gRPC)
 | `orchestrate.go` | Suite 结束单路径 |
 | `assets.go` | embed `viewer.html` / `manage.html` / assets |
 
-主包负责：CLI 路由（`generate`/`serve`/`plugin`）、gRPC 插件模式、WebSocket forwarder、history、浏览器打开回调。
+主包负责：gRPC 插件桥接、WebSocket forwarder、history、落盘引擎；CLI 为工程入口。Desktop 壳见 `DESKTOP.md` / 规划中的 `desktop/`。
 
 ## 决策原则
 
@@ -102,7 +103,8 @@ Gauge (gRPC)
 | 2026-09-11 | 交互主体验 = HTML；PDF = 同源打印 | 「可交互 PDF」在业界多为 HTML Viewer + 打印；真正交互保留左导航/Overview/lightbox；PDF 用 Chrome print 保留文字链接图片，避免栅格拼贴 |
 | 2026-09-11 | Overview + 左右分栏 + 截图策略 | 对齐 CANoe Test Report Viewer：首页环境配置、左树跳转；步骤全量截图 + 失败标注 + hook 截图 + dialog 放大 |
 | 2026-09-11 | 单文件 HTML 为可选导出，不替换目录版 | 分享场景需要自包含文件；`index.html`+`images/` 仍是默认真源与 uhileport 可移植单元；内联用 data URI，缺图 best-effort |
-| 2026-09-11 | 产品升级为独立报告工具（v0.5） | CLI 子命令为用户面；Gauge `--start` 降为兼容接入；避免“只会当插件跑”的认知锁死；对照 Allure/ReportPortal CLI 工具形态 |
+| 2026-09-11 | CLI 子命令落地（工程入口） | 便于 CI/再生/serve；**不是**产品终点 |
+| 2026-09-11 | 独立化终点 = Desktop App | 用户纠偏：主 UX 为桌面工作台；插件桥接 WS；详见 DESKTOP.md |
 
 ## 前端资源布局（SSoT）
 

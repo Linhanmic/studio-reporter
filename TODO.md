@@ -5,8 +5,9 @@
 
 ## 当前版本
 
-- 工具：**0.5.0**（本 PR；独立报告 CLI，Gauge 插件为一种模式）
-- 主干能力：独立 CLI（generate/serve/plugin）+ 静态终态报告（CANoe 风）+ 可选 PDF / 单文件 HTML + WS 实时 viewer + 归档/管理 + `.uhilreport` 再生
+- 版本：**0.5.0**（本 PR）
+- 产品目标：**Desktop App 报告工作台**（设计见 [DESKTOP.md](DESKTOP.md)）；插件 = 桥接；CLI = 工程入口
+- 已有能力：静态 CANoe 报告 + PDF/单文件 + WS live + 归档/管理 + `.uhilreport` + CLI 子命令
 
 ## P0 — 工程基建
 
@@ -49,7 +50,9 @@
 - [x] CANoe 风 Overview + 左右分栏 + 截图画廊/lightbox
 - [x] 结构化 PDF 导出（`--pdf` / `GAUGE_STUDIO_WRITE_PDF`；Chrome print，非拼图）
 - [x] 单文件 HTML（内联截图；`--single` / `GAUGE_STUDIO_WRITE_SINGLE` → `report.single.html`；目录版 `index.html` 仍为默认真源）
-- [x] 独立报告工具 CLI（`generate` / `serve` / `plugin` / `version`；保留 `--start`/`--input` 兼容；产品定位 v0.5）
+- [x] 工程 CLI 子命令（`generate` / `serve` / `plugin` / `version`；兼容扁平 flag）— **非产品终点**
+- [ ] Desktop App P0 壳（Electron + WS discover + live/终态）；详见 DESKTOP.md
+- [ ] 插件控制通道（`ClientHello` / `RequestSnapshot`）
 
 ## 迭代日志
 
@@ -70,8 +73,9 @@
 | 2026-09-11 | CANoe Overview / 分栏 / PDF | 交互在 HTML；PDF 为 Chrome 结构化打印；截图：步骤全量 + 失败标注 + hook + lightbox；`meta` 附加字段不升 formatVersion |
 | 2026-09-11 | 单文件 HTML | 默认仍写目录版；可选 `report.single.html` 把 `images/` 内联为 data URI；分享单文件、不替代可移植 uhileport 单元 |
 
-| 2026-09-11 | 独立报告工具 CLI | 产品身份改为 standalone tool；Gauge 插件降为 `plugin`/`--start` 接入；子命令 `generate`/`serve`/`plugin`；legacy 扁平 flag 保留 |
+| 2026-09-11 | 工程 CLI 子命令 | `generate`/`serve`/`plugin`；legacy flag 保留；定位为工程入口而非产品面 |
+| 2026-09-11 | Desktop 详细设计 | 产品终点改为 Desktop App；插件 WS 桥接；终态嵌入 index.html；短中期 Electron；见 DESKTOP.md |
 
 ## 下一任务（选定）
 
-**多 suite hub 写入竞态审计**，或 **极轻量静态交互评估**。
+**Desktop App P0 壳**（`desktop/` + discover + live/终态），并行可做插件 `RequestSnapshot`。

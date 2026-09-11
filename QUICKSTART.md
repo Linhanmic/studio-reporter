@@ -2,7 +2,12 @@
 
 面向首次接入与本地验证。对应插件版本 **0.5.0**。
 
-## 0. 作为独立报告工具（推荐入口）
+## 0. 产品方向
+
+主产品目标是 **Desktop App**（见 [DESKTOP.md](DESKTOP.md)）：桌面工作台通过 WebSocket 连接 reporter 插件看实时/终态报告。  
+当前仓库已提供：**插件桥接 + 静态报告 + 工程 CLI**。Desktop 壳按 DESKTOP.md P0 落地。
+
+工程 CLI（无 UI / CI）：
 
 ```bash
 studio-reporter generate --input path/to/run.uhilreport --out /tmp/out --single
@@ -10,9 +15,7 @@ studio-reporter serve --dir reports/studio-report
 studio-reporter version
 ```
 
-Gauge 插件模式仍可用（`plugin` / `--start`），但产品身份是报告工具，不是“只能当插件”。
-
-## 1. 安装插件（可选）
+## 1. 安装 Gauge 插件（桥接）
 
 
 从 [Releases](https://github.com/Linhanmic/studio-reporter/releases) 下载对应平台 zip，例如：
