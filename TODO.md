@@ -30,7 +30,7 @@
 
 - [x] 运行结束自动提示跳转静态 `index.html`（横幅 + 可取消倒计时；不内嵌终态 SPA）
 - [x] 根目录 `manage.html` / `report-assets` 与 embed 同步的开发体验（`make sync-assets` / `check-assets` / `.githooks`）
-- [ ] viewer 结束态与静态报告视觉一致性抽样对比
+- [x] viewer 结束态与静态报告视觉一致性抽样对比（frag 着色、verdict 色、行底色、步骤统计卡、中文类型标签）
 
 ## P3 — 工程化与质量
 
@@ -60,7 +60,8 @@
 | 2026-09-11 | 与 GaugeStudio 同步：插件监听 + Studio discover 客户端 | Studio 0.1.1 默认解析 stdout 连接本插件；`GAUGE_STUDIO_WS` 仅作可选 outbound / Studio 兼容注入 |
 | 2026-09-11 | 打印 CSS + `--input` smoke | 打印尊重 `filter-hidden`（所见即所打）；再生路径断言 `images/` 相对路径与 CLI `--input` |
 | 2026-09-11 | uhileport 截图可移植 | 写入时重写 proto 为 `images/`；`GenerateFromJSON` 以输入文件目录为基路径；smoke 删除绝对源后再 regen |
+| 2026-09-11 | viewer / 静态视觉对齐 | 共享 frag/行底色/统计卡/字号间距；live el-tag 映射到 `--pass/--fail/--skip`；类型标签统一中文 |
 
 ## 下一任务（选定）
 
-**viewer / 静态报告视觉一致性抽样**（P2）。
+**历史对比（两次归档 verdict / 时长 diff）**（P4），或 PDF/单文件 HTML 导出评估。

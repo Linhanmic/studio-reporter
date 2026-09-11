@@ -20,7 +20,14 @@
       --fail-row-hover: #fed7d7;
       --skip-row: #edf2f7;
     }
-    html, body { margin: 0; height: 100%; background: #d9e2ec; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #d9e2ec;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 12px;
+      color: #1a202c;
+    }
     #app { height: 100%; }
     [v-cloak] { display: none !important; }
     .app-shell { height: 100%; display: flex; flex-direction: column; }
@@ -78,7 +85,32 @@
       box-sizing: border-box;
     }
     .dense-table .el-table__expand-icon--expanded::before { content: "\2212"; }
-    .dense-table .el-tag { height: 18px; line-height: 16px; padding: 0 5px; }
+    .dense-table .el-tag { height: 18px; line-height: 16px; padding: 0 5px; border: none; }
+    /* Align Element Plus verdict chips with static .badge brand tokens. */
+    .el-tag.el-tag--success {
+      --el-tag-bg-color: var(--pass);
+      --el-tag-border-color: var(--pass);
+      --el-tag-text-color: #fff;
+      background-color: var(--pass) !important;
+      border-color: var(--pass) !important;
+      color: #fff !important;
+    }
+    .el-tag.el-tag--danger {
+      --el-tag-bg-color: var(--fail);
+      --el-tag-border-color: var(--fail);
+      --el-tag-text-color: #fff;
+      background-color: var(--fail) !important;
+      border-color: var(--fail) !important;
+      color: #fff !important;
+    }
+    .el-tag.el-tag--info {
+      --el-tag-bg-color: var(--skip);
+      --el-tag-border-color: var(--skip);
+      --el-tag-text-color: #fff;
+      background-color: var(--skip) !important;
+      border-color: var(--skip) !important;
+      color: #fff !important;
+    }
     .dense-table .el-table__body tr.el-table__row { cursor: pointer; }
     .dense-table .el-table__body tr.no-expand { cursor: default; }
     .el-table .no-expand .el-table__expand-icon { visibility: hidden; pointer-events: none; }
@@ -156,17 +188,17 @@
           <div class="stat-card">
             <div class="label">规格书</div>
             <div class="value">{{ store.report.summary.specs.passed }}/{{ store.report.summary.specs.total }}</div>
-            <div class="sub">通过 / 共 {{ store.report.summary.specs.total }} · 失败 {{ store.report.summary.specs.failed }}</div>
+            <div class="sub">通过 {{ store.report.summary.specs.passed }} · 失败 {{ store.report.summary.specs.failed }} · 跳过 {{ store.report.summary.specs.skipped }}</div>
           </div>
           <div class="stat-card">
             <div class="label">场景</div>
             <div class="value">{{ store.report.summary.scenarios.passed }}/{{ store.report.summary.scenarios.total }}</div>
-            <div class="sub">通过 / 共 {{ store.report.summary.scenarios.total }} · 失败 {{ store.report.summary.scenarios.failed }}</div>
+            <div class="sub">通过 {{ store.report.summary.scenarios.passed }} · 失败 {{ store.report.summary.scenarios.failed }} · 跳过 {{ store.report.summary.scenarios.skipped }}</div>
           </div>
           <div class="stat-card">
             <div class="label">步骤</div>
             <div class="value">{{ store.report.summary.steps.passed }}/{{ store.report.summary.steps.total }}</div>
-            <div class="sub">通过 / 共 {{ store.report.summary.steps.total }} · 失败 {{ store.report.summary.steps.failed }}</div>
+            <div class="sub">通过 {{ store.report.summary.steps.passed }} · 失败 {{ store.report.summary.steps.failed }} · 跳过 {{ store.report.summary.steps.skipped }}</div>
           </div>
           <div class="stat-card">
             <div class="label">运行时间</div>

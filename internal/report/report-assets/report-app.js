@@ -521,8 +521,8 @@ const reportDataEl = document.getElementById('report-data');
       methods: {
         tagType, verdictLabel, itemVerdict, itemDuration, itemHasDetail, stepHTML, stepOutputs, assetHref,
         typeLabel(row) {
-          if (row.phase === 'Context') return 'Context';
-          if (row.phase === 'Teardown') return 'Teardown';
+          if (row.phase === 'Context') return '前置';
+          if (row.phase === 'Teardown') return '清理';
           if (row.kind === 'concept') return '概念';
           if (row.kind === 'comment') return '注释';
           return '步骤';

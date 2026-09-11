@@ -66,6 +66,7 @@ func writeStaticHeader(b *bytes.Buffer, r *Report) {
 	b.WriteString("</div>\n<div class=\"stat-row\">\n")
 	writeStatCard(b, "规格书", r.Summary.Specs)
 	writeStatCard(b, "场景", r.Summary.Scenarios)
+	writeStatCard(b, "步骤", r.Summary.Steps)
 	b.WriteString("<div class=\"stat-card\"><div class=\"label\">运行时间</div><div class=\"value\">")
 	b.WriteString(html.EscapeString(r.Duration))
 	b.WriteString("</div><div class=\"sub\">成功率 ")
