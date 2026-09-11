@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -117,5 +118,43 @@ func TestRunDigestCmd(t *testing.T) {
 	}
 	if !strings.Contains(out, `"openLinksLatest"`) || !strings.Contains(out, "studio-reporter://open?") {
 		t.Fatalf("json missing open links: %s", out)
+	}
+}
+
+func TestRunDigestCmdWriteSidecars(t *testing.T) {
+	dir := t.TempDir()
+	hist := &HistoryFile{
+		FormatVersion: 1,
+		Runs:          []HistoryEntry{{ID: "a", Verdict: "fail", TopFailReason: "boom"}},
+	}
+	if err := writeHistoryFile(dir, hist); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr strings.Builder
+	code := runDigestCmd([]string{"--dir", dir, "--write"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "boom") {
+		t.Fatalf("stdout=%s", stdout.String())
+	}
+	mdPath := filepath.Join(dir, "fail-digest.md")
+	jsonPath := filepath.Join(dir, "fail-digest.json")
+	md, err := os.ReadFile(mdPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(md), "boom") {
+		t.Fatalf("md=%s", md)
+	}
+	js, err := os.ReadFile(jsonPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(js), `"reason": "boom"`) {
+		t.Fatalf("json=%s", js)
+	}
+	if !strings.Contains(stderr.String(), "fail-digest.md") {
+		t.Fatalf("stderr=%s", stderr.String())
 	}
 }

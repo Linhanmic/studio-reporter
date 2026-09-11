@@ -75,6 +75,7 @@ EXAMPLES
   studio-reporter serve --dir reports/studio-report --addr 127.0.0.1:8765
   studio-reporter digest --dir reports/studio-report
   studio-reporter digest --dir reports/studio-report --format json
+  studio-reporter digest --dir reports/studio-report --write
   studio-reporter plugin          # same as: studio-reporter --start
   studio-reporter version
 
@@ -180,6 +181,8 @@ func runDigestCmd(args []string, stdout, stderr io.Writer) int {
 	dir := fs.String("dir", "", "Report hub directory containing history.json (required)")
 	limit := fs.Int("limit", 15, "Max distinct fail reasons to include")
 	format := fs.String("format", "markdown", "Output format: markdown|json")
+	writeHub := fs.Bool("write", false, "Also write fail-digest.md and fail-digest.json into the hub directory")
+	outPath := fs.String("out", "", "Optional output file path (in addition to stdout)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -197,6 +200,19 @@ func runDigestCmd(args []string, stdout, stderr io.Writer) int {
 	if err := writeHistoryFailDigest(stdout, d, *format); err != nil {
 		fmt.Fprintf(stderr, "studio-reporter digest: %v\n", err)
 		return 1
+	}
+	if path := strings.TrimSpace(*outPath); path != "" {
+		if err := writeHistoryFailDigestFile(path, d, *format); err != nil {
+			fmt.Fprintf(stderr, "studio-reporter digest: --out: %v\n", err)
+			return 1
+		}
+	}
+	if *writeHub {
+		if err := writeHistoryFailDigestSidecars(d.HubDir, d); err != nil {
+			fmt.Fprintf(stderr, "studio-reporter digest: --write: %v\n", err)
+			return 1
+		}
+		fmt.Fprintf(stderr, "studio-reporter digest: wrote fail-digest.md and fail-digest.json under %s\n", d.HubDir)
 	}
 	return 0
 }

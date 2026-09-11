@@ -112,6 +112,7 @@ studio-reporter generate --input run.uhilreport --out /tmp/out --pdf --single
 # Serve the report hub (history / manage console)
 studio-reporter digest --dir reports/studio-report
 studio-reporter digest --dir reports/studio-report --format json
+studio-reporter digest --dir reports/studio-report --write
 studio-reporter serve --dir reports/studio-report --addr 127.0.0.1:8765
 
 studio-reporter version

@@ -127,6 +127,7 @@
 - [x] manage.html 历史失败摘要（`report-assets/history-digest.js` 与 Desktop/CLI 同源；面板 + 复制 Markdown/深链；表格展示 topFailReason）
 - [x] 静态报告 Overview 失败原因一键定位（点击次数/原因跳到该类首个可见失败场景；尊重过滤与仅失败步骤）
 - [x] Desktop 打开 manage 失败摘要深链联调（无 hub 时回退当前/最近 hub；failSteps 无 focus 时写 `#overview?failSteps=1`）
+- [x] CLI `digest --write` 旁路文件（hub 下写入 `fail-digest.md` / `fail-digest.json` 供 CI 工件）
 
 ## 迭代日志
 
@@ -258,6 +259,8 @@
 
 | 2026-09-11 | Desktop 打开 manage 失败摘要深链联调 | 无 hub 深链回退当前/最近 hub；failSteps 无 focus 时应用 overview 仅失败步骤 hash |
 
+| 2026-09-11 | CLI digest --write 旁路文件 | `--write` 在 hub 写入 fail-digest.md/json；可选 `--out`；stdout 仍输出所选 format |
+
 ## 下一任务（选定）
 
-**Digest JSON 写入 hub 旁路文件供 CI 工件**（`digest --dir --write`），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
+**Digest 旁路纳入 Desktop 导出包**（导出 hub 时附带 fail-digest.*），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。

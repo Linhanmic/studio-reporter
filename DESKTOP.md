@@ -322,7 +322,7 @@ Desktop 通过 `electron-updater` 读取 GitHub Releases 上的 `latest-linux.ym
 
 ### 历史失败摘要
 
-历史工具栏「复制失败摘要」「复制摘要深链」与趋势面板「复制摘要」将当前过滤窗口的 `topFailReason` 聚合成 Markdown；有 hub 时附带各类原因最近一次失败的 `studio-reporter://open?run=&hub=&failSteps=1`（表格打开列 + 深链块）。工程入口：`studio-reporter digest --dir <hub> [--format json|markdown]`（JSON 含 `openLinksLatest` / `openLinksAll`）。
+历史工具栏「复制失败摘要」「复制摘要深链」与趋势面板「复制摘要」将当前过滤窗口的 `topFailReason` 聚合成 Markdown；有 hub 时附带各类原因最近一次失败的 `studio-reporter://open?run=&hub=&failSteps=1`（表格打开列 + 深链块）。工程入口：`studio-reporter digest --dir <hub> [--format json|markdown] [--write]`（`--write` 在 hub 写入 `fail-digest.md`/`fail-digest.json`；JSON 含 `openLinksLatest` / `openLinksAll`）。
 
 静态报告 Overview「失败原因聚合」支持点击次数/原因跳到该类首个可见失败场景（过滤与仅失败步骤感知）。
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -272,11 +273,41 @@ func writeHistoryFailDigest(w io.Writer, d HistoryFailDigest, format string) err
 	}
 }
 
+func writeHistoryFailDigestFile(path string, d HistoryFailDigest, format string) error {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+		return err
+	}
+	f, err := os.Create(abs)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return writeHistoryFailDigest(f, d, format)
+}
+
+// writeHistoryFailDigestSidecars writes fail-digest.md + fail-digest.json beside the hub history.
+func writeHistoryFailDigestSidecars(hubDir string, d HistoryFailDigest) error {
+	abs, err := filepath.Abs(hubDir)
+	if err != nil {
+		return err
+	}
+	if err := writeHistoryFailDigestFile(filepath.Join(abs, "fail-digest.md"), d, "markdown"); err != nil {
+		return err
+	}
+	return writeHistoryFailDigestFile(filepath.Join(abs, "fail-digest.json"), d, "json")
+}
+
 func newDigestFlagSet(errOut io.Writer) *flag.FlagSet {
 	fs := flag.NewFlagSet("digest", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	fs.String("dir", "", "report hub directory containing history.json")
 	fs.Int("limit", 15, "max distinct fail reasons to include")
 	fs.String("format", "markdown", "output format: markdown|json")
+	fs.Bool("write", false, "also write fail-digest.md and fail-digest.json into the hub")
+	fs.String("out", "", "optional output file path (in addition to stdout)")
 	return fs
 }
