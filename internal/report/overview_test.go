@@ -74,6 +74,9 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`操作系统`,
 		`失败原因聚合`,
 		`fail-reason-table`,
+		`data-stat-kind="specs"`,
+		`data-count-kind="scenarios"`,
+		`overview-count-row`,
 		`fail-reason-ref`,
 		`data-fail-ref-kind="scenario"`,
 		`data-scn-id="scn:fail"`,
@@ -178,6 +181,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`wantFailStepsFromURL`,
 		`fail-steps`,
 		`syncFailReasonOverview`,
+		`syncOverviewCounts`,
+		`isNodeVisuallyCounted`,
 		`visibleFailScenarioIdSet`,
 		`FilterFailReasonGroups`,
 	} {

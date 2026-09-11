@@ -43,9 +43,9 @@ func writeOverviewPanel(b *bytes.Buffer, r *Report) {
 
 	b.WriteString("<h3 class=\"overview-subtitle\">统计</h3>\n")
 	b.WriteString("<table class=\"overview-table\"><thead><tr><th>层级</th><th>总计</th><th>通过</th><th>失败</th><th>跳过</th></tr></thead><tbody>\n")
-	writeOverviewCountRow(b, "规格书", r.Summary.Specs)
-	writeOverviewCountRow(b, "场景", r.Summary.Scenarios)
-	writeOverviewCountRow(b, "步骤", r.Summary.Steps)
+	writeOverviewCountRow(b, "规格书", "specs", r.Summary.Specs)
+	writeOverviewCountRow(b, "场景", "scenarios", r.Summary.Scenarios)
+	writeOverviewCountRow(b, "步骤", "steps", r.Summary.Steps)
 	b.WriteString("</tbody></table>\n")
 
 	writeFailReasonSection(b, AggregateFailReasons(r))
@@ -92,16 +92,18 @@ func writeOverviewKV(b *bytes.Buffer, k, v string) {
 	b.WriteString("</div></div>\n")
 }
 
-func writeOverviewCountRow(b *bytes.Buffer, label string, c Counts) {
-	b.WriteString("<tr><td>")
+func writeOverviewCountRow(b *bytes.Buffer, label, kind string, c Counts) {
+	b.WriteString("<tr class=\"overview-count-row\" data-count-kind=\"")
+	b.WriteString(html.EscapeString(kind))
+	b.WriteString("\"><td>")
 	b.WriteString(html.EscapeString(label))
-	b.WriteString("</td><td>")
+	b.WriteString("</td><td data-count=\"total\">")
 	b.WriteString(strconv.Itoa(c.Total))
-	b.WriteString("</td><td>")
+	b.WriteString("</td><td data-count=\"passed\">")
 	b.WriteString(strconv.Itoa(c.Passed))
-	b.WriteString("</td><td>")
+	b.WriteString("</td><td data-count=\"failed\">")
 	b.WriteString(strconv.Itoa(c.Failed))
-	b.WriteString("</td><td>")
+	b.WriteString("</td><td data-count=\"skipped\">")
 	b.WriteString(strconv.Itoa(c.Skipped))
 	b.WriteString("</td></tr>\n")
 }
@@ -226,7 +228,7 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 		return
 	}
 	b.WriteString("<h3 class=\"overview-subtitle\">失败原因聚合</h3>\n")
-	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击场景名跳转到结果树。过滤或「仅失败步骤」开启时，聚合与复制摘要仅统计结果树中当前可见的失败场景。</p>\n")
+	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击场景名跳转到结果树。过滤或「仅失败步骤」开启时，上方汇总计数、失败原因聚合与复制摘要均仅统计结果树中当前可见的节点。</p>\n")
 	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th></tr></thead><tbody>\n")
 	for _, g := range groups {
 		b.WriteString("<tr class=\"fail-reason-row\" data-fail-reason=\"")

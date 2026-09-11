@@ -2,7 +2,6 @@ package report
 
 import (
 	"bytes"
-	"fmt"
 	"html"
 	"strconv"
 )
@@ -79,16 +78,14 @@ func writeReportBlockOpen(b *bytes.Buffer, tone, verdict, kind, id, name string,
 	}
 }
 
-func writeStatCard(b *bytes.Buffer, label string, c Counts) {
-	b.WriteString("<div class=\"stat-card\"><div class=\"label\">")
+func writeStatCard(b *bytes.Buffer, label, kind string, c Counts) {
+	b.WriteString("<div class=\"stat-card\" data-stat-kind=\"")
+	b.WriteString(html.EscapeString(kind))
+	b.WriteString("\"><div class=\"label\">")
 	b.WriteString(html.EscapeString(label))
-	b.WriteString("</div><div class=\"value\">")
-	b.WriteString(html.EscapeString(fmt.Sprintf("%d/%d", c.Passed, c.Total)))
-	b.WriteString("</div><div class=\"sub\">通过 ")
-	b.WriteString(html.EscapeString(strconv.Itoa(c.Passed)))
-	b.WriteString(" · 失败 ")
-	b.WriteString(html.EscapeString(strconv.Itoa(c.Failed)))
-	b.WriteString(" · 跳过 ")
-	b.WriteString(html.EscapeString(strconv.Itoa(c.Skipped)))
+	b.WriteString("</div><div class=\"value\" data-stat-value>")
+	b.WriteString(html.EscapeString(FormatCountsRatio(c)))
+	b.WriteString("</div><div class=\"sub\" data-stat-sub>")
+	b.WriteString(html.EscapeString(FormatCountsSub(c)))
 	b.WriteString("</div></div>\n")
 }

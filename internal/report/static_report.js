@@ -102,6 +102,79 @@
     });
   }
 
+
+  function emptyCounts() {
+    return { total: 0, passed: 0, failed: 0, skipped: 0 };
+  }
+
+  function bumpCounts(c, verdict) {
+    c.total++;
+    if (verdict === 'pass') c.passed++;
+    else if (verdict === 'fail') c.failed++;
+    else if (verdict === 'skip') c.skipped++;
+  }
+
+  function formatCountsRatio(c) {
+    return String(c.passed) + '/' + String(c.total);
+  }
+
+  function formatCountsSub(c) {
+    return '通过 ' + c.passed + ' · 失败 ' + c.failed + ' · 跳过 ' + c.skipped;
+  }
+
+  function isNodeVisuallyCounted(el) {
+    if (!el || el.classList.contains('filter-hidden')) return false;
+    var p = el.parentElement;
+    while (p) {
+      if (p.classList && p.classList.contains('filter-hidden')) return false;
+      if (p.classList && p.classList.contains('result-pane')) break;
+      p = p.parentElement;
+    }
+    if (document.documentElement.classList.contains('fail-steps-mode')) {
+      var kind = el.getAttribute('data-kind') || '';
+      if (kind === 'scenario' || kind === 'step' || kind === 'concept') {
+        return el.getAttribute('data-verdict') === 'fail';
+      }
+      if (kind === 'spec') {
+        return !!el.querySelector('.report-block[data-kind="scenario"][data-verdict="fail"]:not(.filter-hidden)');
+      }
+    }
+    return true;
+  }
+
+  // Keep header stat cards + Overview count table aligned with the visible tree.
+  function syncOverviewCounts() {
+    var specs = emptyCounts();
+    var scenarios = emptyCounts();
+    var steps = emptyCounts();
+    document.querySelectorAll('.result-pane .report-block[data-kind="spec"]').forEach(function (el) {
+      if (isNodeVisuallyCounted(el)) bumpCounts(specs, el.getAttribute('data-verdict') || '');
+    });
+    document.querySelectorAll('.result-pane .report-block[data-kind="scenario"]').forEach(function (el) {
+      if (isNodeVisuallyCounted(el)) bumpCounts(scenarios, el.getAttribute('data-verdict') || '');
+    });
+    document.querySelectorAll('.result-pane .report-block[data-kind="step"], .result-pane .report-block[data-kind="concept"]').forEach(function (el) {
+      if (isNodeVisuallyCounted(el)) bumpCounts(steps, el.getAttribute('data-verdict') || '');
+    });
+    var byKind = { specs: specs, scenarios: scenarios, steps: steps };
+    Object.keys(byKind).forEach(function (kind) {
+      var c = byKind[kind];
+      document.querySelectorAll('.stat-card[data-stat-kind="' + kind + '"]').forEach(function (card) {
+        var valueEl = card.querySelector('[data-stat-value]');
+        var subEl = card.querySelector('[data-stat-sub]');
+        if (valueEl) valueEl.textContent = formatCountsRatio(c);
+        if (subEl) subEl.textContent = formatCountsSub(c);
+      });
+      document.querySelectorAll('.overview-count-row[data-count-kind="' + kind + '"]').forEach(function (row) {
+        var map = { total: c.total, passed: c.passed, failed: c.failed, skipped: c.skipped };
+        Object.keys(map).forEach(function (key) {
+          var cell = row.querySelector('[data-count="' + key + '"]');
+          if (cell) cell.textContent = String(map[key]);
+        });
+      });
+    });
+  }
+
   function applyFilter() {
     syncButtons();
     persist();
@@ -165,6 +238,7 @@
       spec.classList.toggle('filter-hidden', !anyVisibleScenario || !specVerdictMatch || !specQueryMatch);
     });
     syncFailReasonOverview();
+    syncOverviewCounts();
   }
 
   document.querySelectorAll('.filter-group').forEach(function (group) {
@@ -237,6 +311,7 @@
     if (failStepsOnly) openFailStepsAncestors();
     try { sessionStorage.setItem(FAIL_STEPS_KEY, failStepsOnly ? '1' : '0'); } catch (e) {}
     syncFailReasonOverview();
+    syncOverviewCounts();
     if (opts.silent) return;
     if (typeof flashStatus === 'function') {
       flashStatus(failStepsOnly ? '已开启：仅显示失败场景与失败步骤' : '已关闭：仅失败步骤');

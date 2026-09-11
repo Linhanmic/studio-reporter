@@ -97,6 +97,7 @@
 - [x] Desktop 对比分享卡片附带 compare 深链（Markdown/HTML/JSON；`resolveCompareShareDeepLink`）
 - [x] Desktop 深链冷启动队列加固（`createDeepLinkQueue` + `did-finish-load` 后再 flush；连续重复去重；单测覆盖）
 - [x] 静态报告失败步骤模式下 Overview 失败摘要与可见树一致（`syncFailReasonOverview` / `FilterFailReasonGroups`；过滤或仅失败步骤时聚合与复制摘要仅统计可见失败场景）
+- [x] 静态报告 Overview 汇总计数与过滤可见树对齐（顶栏 stat-card + Overview 计数表随过滤/仅失败步骤重算；`syncOverviewCounts`）
 
 ## 迭代日志
 
@@ -189,6 +190,8 @@
 
 | 2026-09-11 | Overview 失败摘要对齐可见树 | 过滤/fail-steps-mode 下 `syncFailReasonOverview` 隐藏不可见场景引用并重算次数；`FilterFailReasonGroups` 镜像契约；复制失败摘要同步 |
 
+| 2026-09-11 | Overview 汇总计数对齐可见树 | 顶栏 stat-card 与 Overview 计数表在过滤/仅失败步骤时按可见节点重算；Go `FormatCountsRatio/Sub` + `data-stat-kind`/`data-count-kind` |
+
 ## 下一任务（选定）
 
-**静态报告 Overview 汇总计数与过滤可见树对齐**（过滤/仅失败步骤开启时，Overview 规格书·场景·步骤计数与可见结果一致），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**静态报告工具栏过滤徽标与可见树实时对齐**（规格书/场景过滤器上的数量徽标随搜索与仅失败步骤更新），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
