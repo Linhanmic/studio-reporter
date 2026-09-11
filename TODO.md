@@ -66,6 +66,7 @@
 - [x] Desktop 大纲搜索 / 结果过滤（query + pass/fail/skip；同步 postMessage 到 live viewer 与静态报告）
 - [x] Desktop 历史列表搜索 / 结果过滤 + 勾选导出（`filterHistoryRuns`；勾选 1 次导出该次 `.uhilreport`，否则最新）
 - [x] Desktop 历史删除 / 批量导出（原生 FS：`deleteHistoryRuns` + 确认框；多选导出 PDF/单文件）
+- [x] Desktop 历史打开所在文件夹 / 复制路径 + 删除时 hub 锁（`showItemInFolder` / clipboard；`withHubLock` 对齐 Go `.hub.lock`）
 
 ## 迭代日志
 
@@ -102,7 +103,8 @@
 | 2026-09-11 | Desktop 大纲过滤 | 侧栏搜索 + pass/fail/skip；`filterOutline` 单测；filter postMessage 同步 viewer/静态报告 |
 | 2026-09-11 | Desktop 历史过滤/导出 | `filterHistoryRuns` + 搜索/verdict chips；`resolveRunUhilreport`；勾选 1 次导出该次 |
 | 2026-09-11 | Desktop 历史删除/批量导出 | `deleteHistoryRuns` 对齐 Go 删除语义；确认框；多选批量导出；单测覆盖 |
+| 2026-09-11 | Desktop 历史定位/ hub 锁 | 打开所在文件夹 + 复制路径；删除经 `withHubLock`（python fcntl 对齐 Go flock） |
 
 ## 下一任务（选定）
 
-**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或 Desktop 历史「打开所在文件夹 / 复制路径」与删除后 hub 锁对齐。
+**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或 Desktop 深链 / 系统通知（套件结束）。
