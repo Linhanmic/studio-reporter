@@ -6,6 +6,7 @@ const PROTOCOL = 'studio-reporter';
  * Parse a studio-reporter:// deep link into a normalized action.
  * Supported:
  *   studio-reporter://open?path=/abs/index.html
+ *   studio-reporter://open?path=/abs/run.uhilreport
  *   studio-reporter://open?dir=/abs/report-dir
  *   studio-reporter://connect?url=ws://127.0.0.1:1234
  *   studio-reporter://hub?dir=/abs/hub

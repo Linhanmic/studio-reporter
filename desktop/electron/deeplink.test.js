@@ -22,6 +22,10 @@ describe('deeplink', () => {
     const b = parseDeepLink('studio-reporter://open?dir=/tmp/r');
     assert.equal(b.ok, true);
     assert.equal(b.dir, '/tmp/r');
+
+    const c = parseDeepLink('studio-reporter://open?path=/tmp/r/run.uhilreport');
+    assert.equal(c.ok, true);
+    assert.equal(c.path, '/tmp/r/run.uhilreport');
   });
 
   it('parses connect ws url', () => {

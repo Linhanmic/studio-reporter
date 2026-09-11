@@ -107,6 +107,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 自定义协议深链 | `studio-reporter://open|connect|hub`；单实例转发；builder `protocols.schemes` |
 | 2026-09-11 | Desktop 键盘快捷键 | Cmd/Ctrl+1–4 切页；Enter 连接；Shift+H/F5 刷新历史；tablist 方向键 |
 | 2026-09-11 | Desktop 明暗主题 | 设置 `theme=system|light|dark`；CSS `[data-theme]` token；跟随系统可监听 |
+| 2026-09-11 | Desktop 打开 .uhilreport | 离线入口：菜单/IPC/深链 → CLI generate → 报告页；不改 uhileport schema |
 | 2026-09-11 | 静态报告极轻量交互 | 在静态 `index.html` 增加 hash 深链 / 复制失败摘要 / sticky 工具栏 / 键盘导航；明确不引入 SPA，避免与 Desktop 双真源 |
 | 2026-09-11 | Desktop 对比分享卡片 | 对比结果可导出自包含 HTML 卡片或复制 Markdown；非完整报告真源，便于 IM/邮件粘贴 |
 | 2026-09-11 | Desktop 打包 | electron-builder + extraResources；dev/packaged 双路径 bundle root；CLI 随包分发供导出 |

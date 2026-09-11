@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   disconnect: () => ipcRenderer.invoke('desktop:disconnect'),
   openReportPath: (p) => ipcRenderer.invoke('desktop:open-report-path', p),
   pickReportDir: () => ipcRenderer.invoke('desktop:pick-report-dir'),
+  openUhilreport: (p) => ipcRenderer.invoke('desktop:open-uhilreport', p),
+  pickUhilreport: () => ipcRenderer.invoke('desktop:pick-uhilreport'),
   showInFolder: (p) => ipcRenderer.invoke('desktop:show-in-folder', p),
   getSettings: () => ipcRenderer.invoke('desktop:get-settings'),
   saveSettings: (partial) => ipcRenderer.invoke('desktop:save-settings', partial),

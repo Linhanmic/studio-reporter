@@ -48,6 +48,10 @@ const {
   missingBundleResources,
 } = require('./paths.js');
 const {
+  isUhilreportPath,
+  regenerateFromUhilreport,
+} = require('./uhil-open.js');
+const {
   rememberRecentProject,
   GaugeSessionManager,
 } = require('./sessions.js');
@@ -331,6 +335,17 @@ function buildMenu() {
           },
         },
         {
+          label: '打开 .uhilreport…',
+          accelerator: 'CmdOrCtrl+Shift+O',
+          click: async () => {
+            try {
+              await pickAndOpenUhilreport();
+            } catch (err) {
+              dialog.showErrorBox('打开 .uhilreport 失败', String(err.message || err));
+            }
+          },
+        },
+        {
           label: '打开仓库 viewer（开发）',
           visible: !app.isPackaged,
           click: async () => {
@@ -434,6 +449,37 @@ async function openReportDir(dir) {
   }
 }
 
+/**
+ * Regenerate HTML from a portable .uhilreport and open the report tab.
+ * @param {string} uhilPath
+ */
+async function openUhilreport(uhilPath) {
+  const bin = resolveStudioReporterBin(BUNDLE_ROOT);
+  if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
+  const result = regenerateFromUhilreport({ bin, uhilPath });
+  await openReportDir(result.outDir);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('navigate-tab', { tab: 'report' });
+  }
+  return result;
+}
+
+async function pickAndOpenUhilreport() {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    title: '选择 .uhilreport（将再生 HTML 并打开）',
+    filters: [
+      { name: 'Studio Reporter', extensions: ['uhilreport'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  });
+  if (result.canceled || !result.filePaths[0]) {
+    return { ok: false, canceled: true };
+  }
+  const opened = await openUhilreport(result.filePaths[0]);
+  return { ok: true, ...opened };
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -475,10 +521,21 @@ function registerIpc() {
   ipcMain.handle('desktop:open-report-path', async (_evt, reportPath) => {
     if (!reportPath) throw new Error('empty reportPath');
     const abs = path.resolve(reportPath);
+    if (isUhilreportPath(abs)) {
+      const opened = await openUhilreport(abs);
+      return { dir: opened.outDir, uhilreport: opened.input, regenerated: true };
+    }
     const dir = path.extname(abs).toLowerCase() === '.html' ? path.dirname(abs) : abs;
     await openReportDir(dir);
     return { dir };
   });
+
+  ipcMain.handle('desktop:open-uhilreport', async (_evt, uhilPath) => {
+    if (!uhilPath) throw new Error('empty uhilPath');
+    return openUhilreport(uhilPath);
+  });
+
+  ipcMain.handle('desktop:pick-uhilreport', async () => pickAndOpenUhilreport());
 
   ipcMain.handle('desktop:pick-report-dir', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -804,6 +861,10 @@ async function handleDeepLinkAction(action) {
   if (!action || !action.ok) return { ok: false, error: action?.error || 'invalid' };
   focusMainWindow();
   if (action.action === 'open') {
+    if (action.path && isUhilreportPath(action.path)) {
+      const opened = await openUhilreport(action.path);
+      return { ok: true, action: 'open', dir: opened.outDir, uhilreport: opened.input, regenerated: true };
+    }
     let dir = action.dir || '';
     if (action.path) {
       const abs = path.resolve(action.path);

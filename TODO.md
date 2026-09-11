@@ -65,7 +65,9 @@
 - [x] Desktop 原生大纲侧栏（live + 终态）：`outline.js` 从 ReportSnapshot / `report.json` 抽 spec→scenario；共享侧栏；点击 postMessage 选中 viewer 或静态报告节点
 - [x] Desktop 大纲搜索 / 结果过滤（query + pass/fail/skip；同步 postMessage 到 live viewer 与静态报告）
 - [x] Desktop 历史列表搜索 / 结果过滤 + 勾选导出（`filterHistoryRuns`；勾选 1 次导出该次 `.uhilreport`，否则最新）
+- [x] Desktop 历史删除 / 批量导出
 - [x] Desktop 历史删除 / 批量导出（原生 FS：`deleteHistoryRuns` + 确认框；多选导出 PDF/单文件）
+- [x] Desktop 打开 `.uhilreport`（菜单/IPC/深链；CLI generate 再生后打开报告页）
 - [x] Desktop 历史打开所在文件夹 / 复制路径 + 删除时 hub 锁（`showItemInFolder` / clipboard；`withHubLock` 对齐 Go `.hub.lock`）
 - [x] Desktop 套件结束系统通知（窗口未聚焦时；设置可关；点击聚焦并打开终态）
 - [x] Desktop 自定义协议深链（`studio-reporter://open|connect|hub`；单实例；electron-builder protocols）
@@ -110,9 +112,10 @@
 | 2026-09-11 | Desktop 自定义协议深链 | `deeplink.js`：`open`/`connect`/`hub`；单实例 + protocol client；builder schemes |
 | 2026-09-11 | Desktop 键盘快捷键 | 菜单加速键 + 渲染进程监听；tablist 方向键；输入框内忽略 |
 | 2026-09-11 | Desktop 明暗主题 | `theme.js` resolve system/light/dark；CSS tokens；设置下拉即时预览 |
+| 2026-09-11 | Desktop 打开 .uhilreport | 文件菜单 / IPC / 深链 `open?path=*.uhilreport` → CLI generate 再生 HTML → 报告页；`uhil-open.js` 纯函数可单测 |
 | 2026-09-11 | 静态报告极轻量交互 | hash 深链 `#scn:`/`#spec:`/`#overview`；工具栏「复制失败摘要」；sticky toolbar；`/`/`j`/`k`/`Esc`；决策：轻交互不 SPA |
 | 2026-09-11 | Desktop 对比分享卡片 | `compare.js` 生成离线 HTML 卡片 + Markdown；历史对比面板「导出对比卡片 / 复制 Markdown」；Save Dialog 落盘 |
 
 ## 下一任务（选定）
 
-**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`。
+**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或 Desktop 会话恢复 / 最近 hub。

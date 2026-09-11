@@ -162,3 +162,6 @@ npm run pack       # 平台安装包（Linux → AppImage 等）
 - [DESKTOP.md](DESKTOP.md) — Desktop 产品设计
 - [REPORT_FORMAT.md](REPORT_FORMAT.md) — 磁盘格式契约
 - [API.md](API.md) — WebSocket / 事件协议
+
+
+Desktop 也可通过 **文件 → 打开 .uhilreport…**（`Cmd/Ctrl+Shift+O`）或深链 `studio-reporter://open?path=*.uhilreport` 离线打开便携包（需同级 `images/`）。
