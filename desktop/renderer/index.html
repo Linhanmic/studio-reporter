@@ -183,6 +183,14 @@
             <span>监视报告根目录，自动刷新历史列表</span>
           </label>
           <label class="field">
+            <span>运行趋势窗口（最近 N 次）</span>
+            <input id="settingHistoryTrendLimit" type="number" min="3" max="50" value="12" title="历史「运行趋势」分析的最近运行数量">
+          </label>
+          <label class="field">
+            <span>不稳定场景列表上限</span>
+            <input id="settingHistoryTrendFlakyLimit" type="number" min="5" max="50" value="20" title="趋势面板最多列出的翻转场景数">
+          </label>
+          <label class="field">
             <span>界面主题</span>
             <select id="settingTheme" aria-label="界面主题">
               <option value="system">跟随系统</option>

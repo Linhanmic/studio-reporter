@@ -150,6 +150,8 @@ Gauge (gRPC)
 | 2026-09-11 | 历史失败运行快速筛选强化 | history 写入 topFailReason；Desktop 按失败原因关键字过滤；一键复制当前列表失败 open 深链 |
 | 2026-09-11 | 对比分享卡片模板预览 | 导出前 iframe 预览 default/light/compact；模板/标题变更即时刷新；与导出同源 HTML |
 | 2026-09-11 | Desktop hub 历史文件监视 | `fs.watch` history.json/archives；设置 `watchHubHistory`；IPC `history-changed`；刷新保留勾选 |
+| 2026-09-11 | Desktop 历史过滤与趋势窗口持久化 | `historyQuery`/`historyVerdict`/`historyFailReasonQuery`/`historyTrendLimit`/`historyTrendFlakyLimit` 写入 desktop-settings.json；趋势分析读设置而非硬编码 |
+| 2026-09-11 | Release 无签名可发 | tag Release 分 plugin/linux/win；SHA256SUMS；`CSC_IDENTITY_AUTO_DISCOVERY=false`；签名 secrets 仍为可选 |
 | 2026-09-11 | Desktop 历史趋势 / 不稳定场景 | 过滤窗口 suite 趋势（history.json）+ report.json 场景翻转检测；与 pairwise compare 共用 scenarioKey |
 | 2026-09-11 | 分享卡片导出一致性抽检 | 卡片 meta 写入 template/title/kinds；导出后 `inspectCompareShareCardHtml` 对照 UI 选项；默认 `openPath` 打开预览 |
 | 2026-09-11 | 历史多选批量复制打开深链 | 工具栏复制多条 `open` 深链（换行）；与单条右键复制同源；失败默认 failSteps |

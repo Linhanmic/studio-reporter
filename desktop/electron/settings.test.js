@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, listFailedHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, normalizeDiscoverTimeoutMs, normalizeCompareCardTemplate, normalizeCompareCardTitle, normalizeCompareScenarioKindsPref, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX, DISCOVER_TIMEOUT_MS_MIN, DISCOVER_TIMEOUT_MS_MAX, DISCOVER_TIMEOUT_MS_DEFAULT } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, listFailedHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, normalizeDiscoverTimeoutMs, normalizeCompareCardTemplate, normalizeCompareCardTitle, normalizeCompareScenarioKindsPref, normalizeHistoryVerdict, normalizeHistoryQuery, normalizeHistoryTrendLimit, normalizeHistoryTrendFlakyLimit, DEFAULTS, HISTORY_TREND_LIMIT_MIN, HISTORY_TREND_LIMIT_MAX, HISTORY_TREND_FLAKY_LIMIT_MIN, HISTORY_TREND_FLAKY_LIMIT_MAX, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX, DISCOVER_TIMEOUT_MS_MIN, DISCOVER_TIMEOUT_MS_MAX, DISCOVER_TIMEOUT_MS_DEFAULT } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -256,6 +256,35 @@ describe('settings compare card prefs', () => {
   });
 });
 
+describe('settings history trend + filter prefs', () => {
+  it('normalizes and persists history trend + filter prefs', () => {
+    assert.equal(normalizeHistoryVerdict('FAIL'), 'fail');
+    assert.equal(normalizeHistoryVerdict('nope'), 'all');
+    assert.equal(normalizeHistoryQuery('  a   b  '), 'a b');
+    assert.equal(normalizeHistoryTrendLimit(2), HISTORY_TREND_LIMIT_MIN);
+    assert.equal(normalizeHistoryTrendLimit(999), HISTORY_TREND_LIMIT_MAX);
+    assert.equal(normalizeHistoryTrendFlakyLimit(1), HISTORY_TREND_FLAKY_LIMIT_MIN);
+    assert.equal(DEFAULTS.historyTrendLimit, 12);
+    assert.equal(DEFAULTS.historyTrendFlakyLimit, 20);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-settings-trend-'));
+    const saved = saveSettings(dir, {
+      historyQuery: '  smoke  ',
+      historyFailReasonQuery: ' timeout ',
+      historyVerdict: 'fail',
+      historyTrendLimit: 24,
+      historyTrendFlakyLimit: 8,
+    });
+    assert.equal(saved.historyQuery, 'smoke');
+    assert.equal(saved.historyFailReasonQuery, 'timeout');
+    assert.equal(saved.historyVerdict, 'fail');
+    assert.equal(saved.historyTrendLimit, 24);
+    assert.equal(saved.historyTrendFlakyLimit, 8);
+    const loaded = loadSettings(dir);
+    assert.equal(loaded.historyTrendLimit, 24);
+    assert.equal(loaded.historyVerdict, 'fail');
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+});
 
 describe('settings compare scenario kinds', () => {
   it('normalizeCompareScenarioKindsPref collapses all/empty to null', () => {

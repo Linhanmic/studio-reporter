@@ -18,7 +18,16 @@ const {
   normalizeScenarioCompareKinds,
   SCENARIO_COMPARE_KIND_FILTERS,
 } = require('./compare.js');
-const { filterHistoryRuns, listFailedHistoryRuns } = require('./settings.js');
+const {
+  filterHistoryRuns,
+  listFailedHistoryRuns,
+  normalizeHistoryVerdict,
+  normalizeHistoryQuery,
+  normalizeHistoryTrendLimit,
+  normalizeHistoryTrendFlakyLimit,
+  HISTORY_TREND_LIMIT_DEFAULT,
+  HISTORY_TREND_FLAKY_LIMIT_DEFAULT,
+} = require('./settings.js');
 const {
   buildHistoryTrend,
   listFlakyScenarios,
@@ -138,6 +147,10 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   formatTrendDuration,
   DEFAULT_TREND_LIMIT,
   DEFAULT_FLAKY_LIMIT,
+  normalizeHistoryVerdict,
+  normalizeHistoryQuery,
+  normalizeHistoryTrendLimit,
+  normalizeHistoryTrendFlakyLimit,
   loadHistoryTrendBundle: (opts) => ipcRenderer.invoke('desktop:history-trend-bundle', opts || {}),
   compareScenariosForRuns: (base, target) =>
     ipcRenderer.invoke('desktop:compare-scenarios', base, target),

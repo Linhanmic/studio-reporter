@@ -39,7 +39,7 @@ Studio Reporter ships today as a [Gauge](https://gauge.org/) reporter plugin (WS
 
 ### Download Pre-built Binaries
 
-Download the latest release from the [Releases](https://github.com/Linhanmic/studio-reporter/releases) page.
+Download the latest release (plugin zips + Desktop packages + `SHA256SUMS-*.txt`) from the [Releases](https://github.com/Linhanmic/studio-reporter/releases) page.
 
 ### Build from Source
 

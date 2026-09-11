@@ -26,6 +26,11 @@ const DEFAULTS = {
   compareCardTemplate: 'default',
   compareCardTitle: '',
   compareScenarioKinds: null,
+  historyQuery: '',
+  historyVerdict: 'all',
+  historyFailReasonQuery: '',
+  historyTrendLimit: 12,
+  historyTrendFlakyLimit: 20,
 };
 
 
@@ -139,6 +144,59 @@ function settingsPath(userDataDir) {
   return path.join(userDataDir, 'desktop-settings.json');
 }
 
+const HISTORY_VERDICTS = new Set(['all', 'pass', 'fail', 'skip']);
+const HISTORY_TREND_LIMIT_MIN = 3;
+const HISTORY_TREND_LIMIT_MAX = 50;
+const HISTORY_TREND_LIMIT_DEFAULT = 12;
+const HISTORY_TREND_FLAKY_LIMIT_MIN = 5;
+const HISTORY_TREND_FLAKY_LIMIT_MAX = 50;
+const HISTORY_TREND_FLAKY_LIMIT_DEFAULT = 20;
+
+/**
+ * Normalize history verdict chip.
+ * @param {unknown} verdict
+ * @param {string} [fallback='all']
+ */
+function normalizeHistoryVerdict(verdict, fallback = 'all') {
+  const v = String(verdict || '').trim().toLowerCase();
+  if (HISTORY_VERDICTS.has(v)) return v;
+  const fb = String(fallback || 'all').trim().toLowerCase();
+  return HISTORY_VERDICTS.has(fb) ? fb : 'all';
+}
+
+/**
+ * Normalize history search / fail-reason query.
+ * @param {unknown} query
+ */
+function normalizeHistoryQuery(query) {
+  return String(query ?? '').replace(/\s+/g, ' ').trim().slice(0, 200);
+}
+
+/**
+ * Clamp history trend window size.
+ * @param {unknown} n
+ * @param {number} [fallback=HISTORY_TREND_LIMIT_DEFAULT]
+ */
+function normalizeHistoryTrendLimit(n, fallback = HISTORY_TREND_LIMIT_DEFAULT) {
+  const v = Number(n);
+  const base = Number.isFinite(Number(fallback)) ? Number(fallback) : HISTORY_TREND_LIMIT_DEFAULT;
+  if (!Number.isFinite(v)) return Math.round(base);
+  return Math.round(Math.min(HISTORY_TREND_LIMIT_MAX, Math.max(HISTORY_TREND_LIMIT_MIN, v)));
+}
+
+/**
+ * Clamp flaky list size for history trend panel.
+ * @param {unknown} n
+ * @param {number} [fallback=HISTORY_TREND_FLAKY_LIMIT_DEFAULT]
+ */
+function normalizeHistoryTrendFlakyLimit(n, fallback = HISTORY_TREND_FLAKY_LIMIT_DEFAULT) {
+  const v = Number(n);
+  const base = Number.isFinite(Number(fallback)) ? Number(fallback) : HISTORY_TREND_FLAKY_LIMIT_DEFAULT;
+  if (!Number.isFinite(v)) return Math.round(base);
+  return Math.round(Math.min(HISTORY_TREND_FLAKY_LIMIT_MAX, Math.max(HISTORY_TREND_FLAKY_LIMIT_MIN, v)));
+}
+
+
 function loadSettings(userDataDir) {
   try {
     const raw = fs.readFileSync(settingsPath(userDataDir), 'utf8');
@@ -154,6 +212,11 @@ function loadSettings(userDataDir) {
     merged.compareCardTemplate = normalizeCompareCardTemplate(merged.compareCardTemplate);
     merged.compareCardTitle = normalizeCompareCardTitle(merged.compareCardTitle);
     merged.compareScenarioKinds = normalizeCompareScenarioKindsPref(merged.compareScenarioKinds);
+    merged.historyQuery = normalizeHistoryQuery(merged.historyQuery);
+    merged.historyFailReasonQuery = normalizeHistoryQuery(merged.historyFailReasonQuery);
+    merged.historyVerdict = normalizeHistoryVerdict(merged.historyVerdict);
+    merged.historyTrendLimit = normalizeHistoryTrendLimit(merged.historyTrendLimit);
+    merged.historyTrendFlakyLimit = normalizeHistoryTrendFlakyLimit(merged.historyTrendFlakyLimit);
     return merged;
   } catch {
     return { ...DEFAULTS };
@@ -189,6 +252,21 @@ function saveSettings(userDataDir, partial) {
   if (Object.prototype.hasOwnProperty.call(patch, 'compareScenarioKinds')) {
     patch.compareScenarioKinds = normalizeCompareScenarioKindsPref(patch.compareScenarioKinds);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'historyQuery')) {
+    patch.historyQuery = normalizeHistoryQuery(patch.historyQuery);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'historyFailReasonQuery')) {
+    patch.historyFailReasonQuery = normalizeHistoryQuery(patch.historyFailReasonQuery);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'historyVerdict')) {
+    patch.historyVerdict = normalizeHistoryVerdict(patch.historyVerdict);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'historyTrendLimit')) {
+    patch.historyTrendLimit = normalizeHistoryTrendLimit(patch.historyTrendLimit);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'historyTrendFlakyLimit')) {
+    patch.historyTrendFlakyLimit = normalizeHistoryTrendFlakyLimit(patch.historyTrendFlakyLimit);
+  }
   const next = { ...loadSettings(userDataDir), ...patch };
   next.recentProjects = Array.isArray(next.recentProjects) ? next.recentProjects : [];
   next.recentHubs = Array.isArray(next.recentHubs) ? next.recentHubs : [];
@@ -200,6 +278,11 @@ function saveSettings(userDataDir, partial) {
   next.compareCardTemplate = normalizeCompareCardTemplate(next.compareCardTemplate);
   next.compareCardTitle = normalizeCompareCardTitle(next.compareCardTitle);
   next.compareScenarioKinds = normalizeCompareScenarioKindsPref(next.compareScenarioKinds);
+  next.historyQuery = normalizeHistoryQuery(next.historyQuery);
+  next.historyFailReasonQuery = normalizeHistoryQuery(next.historyFailReasonQuery);
+  next.historyVerdict = normalizeHistoryVerdict(next.historyVerdict);
+  next.historyTrendLimit = normalizeHistoryTrendLimit(next.historyTrendLimit);
+  next.historyTrendFlakyLimit = normalizeHistoryTrendFlakyLimit(next.historyTrendFlakyLimit);
   fs.mkdirSync(userDataDir, { recursive: true });
   fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(next, null, 2));
   return next;
@@ -453,6 +536,17 @@ module.exports = {
   normalizeCompareCardTemplate,
   normalizeCompareCardTitle,
   normalizeCompareScenarioKindsPref,
+  normalizeHistoryVerdict,
+  normalizeHistoryQuery,
+  normalizeHistoryTrendLimit,
+  normalizeHistoryTrendFlakyLimit,
+  HISTORY_VERDICTS,
+  HISTORY_TREND_LIMIT_MIN,
+  HISTORY_TREND_LIMIT_MAX,
+  HISTORY_TREND_LIMIT_DEFAULT,
+  HISTORY_TREND_FLAKY_LIMIT_MIN,
+  HISTORY_TREND_FLAKY_LIMIT_MAX,
+  HISTORY_TREND_FLAKY_LIMIT_DEFAULT,
   COMPARE_CARD_TEMPLATES,
   OUTLINE_VERDICTS,
   OUTLINE_PANE_WIDTH_MIN,

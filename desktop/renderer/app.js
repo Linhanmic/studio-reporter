@@ -606,6 +606,63 @@ function filteredHistoryRuns() {
   });
 }
 
+function historyTrendLimitsFromSettings() {
+  const s = state.settings || {};
+  const api = window.desktopAPI || {};
+  const limitRaw = Number(s.historyTrendLimit);
+  const flakyRaw = Number(s.historyTrendFlakyLimit);
+  const limit =
+    typeof api.normalizeHistoryTrendLimit === 'function'
+      ? api.normalizeHistoryTrendLimit(limitRaw)
+      : Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(50, Math.max(3, Math.round(limitRaw)))
+        : api.DEFAULT_TREND_LIMIT || 12;
+  const flakyLimit =
+    typeof api.normalizeHistoryTrendFlakyLimit === 'function'
+      ? api.normalizeHistoryTrendFlakyLimit(flakyRaw)
+      : Number.isFinite(flakyRaw) && flakyRaw > 0
+        ? Math.min(50, Math.max(5, Math.round(flakyRaw)))
+        : api.DEFAULT_FLAKY_LIMIT || 20;
+  return { trendLimit: limit, flakyLimit };
+}
+
+let historyFilterPersistTimer = null;
+
+function schedulePersistHistoryFilters() {
+  clearTimeout(historyFilterPersistTimer);
+  historyFilterPersistTimer = setTimeout(() => {
+    historyFilterPersistTimer = null;
+    void persistHistoryFilters();
+  }, 400);
+}
+
+async function persistHistoryFilters() {
+  if (typeof window.desktopAPI?.saveSettings !== 'function') return;
+  try {
+    const next = await window.desktopAPI.saveSettings({
+      historyQuery: state.historyQuery || '',
+      historyFailReasonQuery: state.historyFailReasonQuery || '',
+      historyVerdict: state.historyVerdict || 'all',
+    });
+    state.settings = next;
+  } catch {
+    /* filters still work in-session */
+  }
+}
+
+function applyHistoryFiltersToUi() {
+  if ($('historyQuery') && $('historyQuery').value !== (state.historyQuery || '')) {
+    $('historyQuery').value = state.historyQuery || '';
+  }
+  if ($('historyFailReasonQuery') && $('historyFailReasonQuery').value !== (state.historyFailReasonQuery || '')) {
+    $('historyFailReasonQuery').value = state.historyFailReasonQuery || '';
+  }
+  const verdict = state.historyVerdict || 'all';
+  document.querySelectorAll('.history-filter-btn').forEach((btn) => {
+    btn.classList.toggle('active', (btn.dataset.verdict || 'all') === verdict);
+  });
+}
+
 function setExportBusy(busy) {
   state.exporting = Boolean(busy);
   const pdf = $('btnExportPdf');
@@ -1527,10 +1584,11 @@ async function showHistoryTrend() {
   }
   try {
     setStatus('正在分析运行趋势…', 'ok');
+    const limits = historyTrendLimitsFromSettings();
     const bundle = await window.desktopAPI.loadHistoryTrendBundle({
       runs,
-      trendLimit: window.desktopAPI.DEFAULT_TREND_LIMIT || 12,
-      flakyLimit: window.desktopAPI.DEFAULT_FLAKY_LIMIT || 20,
+      trendLimit: limits.trendLimit,
+      flakyLimit: limits.flakyLimit,
     });
     renderHistoryTrendPanel(bundle);
     setStatus(
@@ -2033,6 +2091,18 @@ function fillSettingsForm() {
   if ($('settingWatchHubHistory')) {
     $('settingWatchHubHistory').checked = s.watchHubHistory !== false;
   }
+  if ($('settingHistoryTrendLimit')) {
+    const n = Number(s.historyTrendLimit);
+    $('settingHistoryTrendLimit').value = String(
+      Number.isFinite(n) && n > 0 ? Math.round(n) : 12,
+    );
+  }
+  if ($('settingHistoryTrendFlakyLimit')) {
+    const n = Number(s.historyTrendFlakyLimit);
+    $('settingHistoryTrendFlakyLimit').value = String(
+      Number.isFinite(n) && n > 0 ? Math.round(n) : 20,
+    );
+  }
   if ($('settingTheme')) {
     $('settingTheme').value = window.desktopAPI.normalizeTheme(s.theme);
   }
@@ -2178,6 +2248,8 @@ async function saveSettings() {
     watchHubHistory: $('settingWatchHubHistory')
       ? $('settingWatchHubHistory').checked
       : true,
+    historyTrendLimit: Number($('settingHistoryTrendLimit')?.value || 12),
+    historyTrendFlakyLimit: Number($('settingHistoryTrendFlakyLimit')?.value || 20),
     theme: $('settingTheme')
       ? window.desktopAPI.normalizeTheme($('settingTheme').value)
       : 'system',
@@ -2405,6 +2477,7 @@ function wire() {
     historyQueryTimer = setTimeout(() => {
       renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
       updateHistoryActionButtons();
+      schedulePersistHistoryFilters();
     }, 120);
   });
   $('historyFailReasonQuery')?.addEventListener('input', () => {
@@ -2413,6 +2486,7 @@ function wire() {
     historyQueryTimer = setTimeout(() => {
       renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
       updateHistoryActionButtons();
+      schedulePersistHistoryFilters();
     }, 120);
   });
   document.querySelectorAll('.history-filter-btn').forEach((btn) => {
@@ -2422,6 +2496,7 @@ function wire() {
         b.classList.toggle('active', b === btn);
       });
       renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
+      schedulePersistHistoryFilters();
     });
   });
 
@@ -2581,7 +2656,11 @@ function wire() {
     const s = state.settings;
     state.outlineQuery = s?.outlineQuery || '';
     state.outlineVerdict = s?.outlineVerdict || 'all';
+    state.historyQuery = s?.historyQuery || '';
+    state.historyFailReasonQuery = s?.historyFailReasonQuery || '';
+    state.historyVerdict = s?.historyVerdict || 'all';
     applyOutlineFilterToUi();
+    applyHistoryFiltersToUi();
     renderOutline();
     postFilterToFrames();
     if (s?.restoreSession !== false && VALID_TABS.has(s.lastTab) && s.lastTab !== state.activeTab) {
