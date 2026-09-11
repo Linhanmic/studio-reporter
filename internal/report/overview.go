@@ -226,11 +226,13 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 		return
 	}
 	b.WriteString("<h3 class=\"overview-subtitle\">失败原因聚合</h3>\n")
-	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击场景名跳转到结果树。</p>\n")
-	b.WriteString("<table class=\"overview-table fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th></tr></thead><tbody>\n")
+	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击场景名跳转到结果树。过滤或「仅失败步骤」开启时，聚合与复制摘要仅统计结果树中当前可见的失败场景。</p>\n")
+	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th></tr></thead><tbody>\n")
 	for _, g := range groups {
 		b.WriteString("<tr class=\"fail-reason-row\" data-fail-reason=\"")
 		b.WriteString(html.EscapeString(g.Reason))
+		b.WriteString("\" data-fail-count-total=\"")
+		b.WriteString(strconv.Itoa(g.Count))
 		b.WriteString("\"><td><span class=\"fail-reason-count\">")
 		b.WriteString(strconv.Itoa(g.Count))
 		b.WriteString("</span></td><td><code class=\"fail-reason-text\" title=\"")
@@ -238,32 +240,35 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(g.Reason))
 		b.WriteString("</code></td><td class=\"fail-reason-refs\">")
-		for i, ref := range g.Refs {
-			if i > 0 {
-				b.WriteString(" · ")
-			}
+		for _, ref := range g.Refs {
 			label := ref.ScnName
 			if label == "" {
 				label = ref.SpecName
 			}
 			if ref.ScnID != "" {
-				b.WriteString("<a href=\"#")
+				b.WriteString("<span class=\"fail-reason-ref\" data-fail-ref-kind=\"scenario\" data-scn-id=\"")
+				b.WriteString(html.EscapeString(ref.ScnID))
+				b.WriteString("\"><a href=\"#")
 				b.WriteString(html.EscapeString(ref.ScnID))
 				b.WriteString("\" data-nav-target=\"")
 				b.WriteString(html.EscapeString(ref.ScnID))
 				b.WriteString("\">")
 				b.WriteString(html.EscapeString(label))
-				b.WriteString("</a>")
+				b.WriteString("</a></span>")
 			} else if ref.SpecID != "" {
-				b.WriteString("<a href=\"#")
+				b.WriteString("<span class=\"fail-reason-ref\" data-fail-ref-kind=\"hook\" data-spec-id=\"")
+				b.WriteString(html.EscapeString(ref.SpecID))
+				b.WriteString("\"><a href=\"#")
 				b.WriteString(html.EscapeString(ref.SpecID))
 				b.WriteString("\" data-nav-target=\"")
 				b.WriteString(html.EscapeString(ref.SpecID))
 				b.WriteString("\">")
 				b.WriteString(html.EscapeString(label))
-				b.WriteString("</a>")
+				b.WriteString("</a></span>")
 			} else {
+				b.WriteString("<span class=\"fail-reason-ref\" data-fail-ref-kind=\"hook\">")
 				b.WriteString(html.EscapeString(label))
+				b.WriteString("</span>")
 			}
 		}
 		b.WriteString("</td></tr>\n")

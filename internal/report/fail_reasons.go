@@ -195,3 +195,35 @@ func AggregateFailReasons(r *Report) []FailReasonGroup {
 	})
 	return out
 }
+
+// FilterFailReasonGroups keeps refs that match the visible result tree.
+// Scenario refs require ScnID ∈ visibleScnIDs; suite/spec hook refs (empty ScnID)
+// are always kept so Overview stays aligned with non-scenario failure sources.
+// Rows with no remaining refs are dropped. Mirrors static_report.js syncFailReasonOverview.
+func FilterFailReasonGroups(groups []FailReasonGroup, visibleScnIDs map[string]bool) []FailReasonGroup {
+	if len(groups) == 0 {
+		return nil
+	}
+	out := make([]FailReasonGroup, 0, len(groups))
+	for _, g := range groups {
+		refs := make([]FailReasonRef, 0, len(g.Refs))
+		for _, ref := range g.Refs {
+			if ref.ScnID == "" {
+				refs = append(refs, ref)
+				continue
+			}
+			if visibleScnIDs[ref.ScnID] {
+				refs = append(refs, ref)
+			}
+		}
+		if len(refs) == 0 {
+			continue
+		}
+		out = append(out, FailReasonGroup{
+			Reason: g.Reason,
+			Count:  len(refs),
+			Refs:   refs,
+		})
+	}
+	return out
+}

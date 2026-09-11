@@ -64,6 +64,44 @@
     return false;
   }
 
+  function visibleFailScenarios() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll('.result-pane .report-block[data-kind="scenario"][data-verdict="fail"]')
+    ).filter(function (el) {
+      if (el.classList.contains('filter-hidden')) return false;
+      // fail-steps-mode hides non-fail scenarios via CSS; fail rows stay.
+      return true;
+    });
+  }
+
+  function visibleFailScenarioIdSet() {
+    var ids = Object.create(null);
+    visibleFailScenarios().forEach(function (el) {
+      if (el.id) ids[el.id] = true;
+    });
+    return ids;
+  }
+
+  // Keep Overview fail-reason table aligned with the visible result tree.
+  // Mirrors Go FilterFailReasonGroups: scenario refs need a visible fail scenario;
+  // suite/spec hook refs (no data-scn-id) always stay.
+  function syncFailReasonOverview() {
+    var visible = visibleFailScenarioIdSet();
+    document.querySelectorAll('.fail-reason-row').forEach(function (row) {
+      var n = 0;
+      row.querySelectorAll('.fail-reason-ref').forEach(function (ref) {
+        var scnId = ref.getAttribute('data-scn-id') || '';
+        var keep = !scnId || !!visible[scnId];
+        ref.classList.toggle('ref-hidden', !keep);
+        if (keep) n++;
+      });
+      var countEl = row.querySelector('.fail-reason-count');
+      if (countEl) countEl.textContent = String(n);
+      row.classList.toggle('filter-hidden', n === 0);
+      row.setAttribute('data-fail-count-visible', String(n));
+    });
+  }
+
   function applyFilter() {
     syncButtons();
     persist();
@@ -126,6 +164,7 @@
       }
       spec.classList.toggle('filter-hidden', !anyVisibleScenario || !specVerdictMatch || !specQueryMatch);
     });
+    syncFailReasonOverview();
   }
 
   document.querySelectorAll('.filter-group').forEach(function (group) {
@@ -197,6 +236,7 @@
     });
     if (failStepsOnly) openFailStepsAncestors();
     try { sessionStorage.setItem(FAIL_STEPS_KEY, failStepsOnly ? '1' : '0'); } catch (e) {}
+    syncFailReasonOverview();
     if (opts.silent) return;
     if (typeof flashStatus === 'function') {
       flashStatus(failStepsOnly ? '已开启：仅显示失败场景与失败步骤' : '已关闭：仅失败步骤');
@@ -323,47 +363,48 @@
     }
   }
 
-  function visibleFailScenarios() {
-    return Array.prototype.slice.call(
-      document.querySelectorAll('.result-pane .report-block[data-kind="scenario"][data-verdict="fail"]')
-    ).filter(function (el) { return !el.classList.contains('filter-hidden'); });
-  }
-
   function blockLabel(el) {
     var cell = el.querySelector(':scope > summary .name-cell, :scope > .leaf-summary .name-cell');
     return cell ? (cell.textContent || '').trim() : (el.id || '');
   }
 
   function collectFailSummary() {
+    syncFailReasonOverview();
     var fails = visibleFailScenarios();
-    if (!fails.length) return '';
+    var reasonRows = Array.prototype.slice.call(
+      document.querySelectorAll('.fail-reason-row:not(.filter-hidden)')
+    );
+    if (!fails.length && !reasonRows.length) return '';
     var lines = ['# Studio Reporter — 失败摘要', ''];
-    var reasonRows = document.querySelectorAll('.fail-reason-row');
     if (reasonRows.length) {
       lines.push('## 失败原因聚合');
       reasonRows.forEach(function (row) {
         var count = (row.querySelector('.fail-reason-count') || {}).textContent || '';
         var reason = row.getAttribute('data-fail-reason') || '';
         var refs = [];
-        row.querySelectorAll('.fail-reason-refs a').forEach(function (a) {
-          refs.push((a.textContent || '').trim());
+        row.querySelectorAll('.fail-reason-ref:not(.ref-hidden)').forEach(function (ref) {
+          var a = ref.querySelector('a');
+          var label = a ? (a.textContent || '').trim() : (ref.textContent || '').trim();
+          if (label) refs.push(label);
         });
         lines.push('- (' + String(count).trim() + ') ' + reason + (refs.length ? ' — ' + refs.join(', ') : ''));
       });
       lines.push('');
     }
-    lines.push('## 失败场景');
-    fails.forEach(function (scn, idx) {
-      lines.push((idx + 1) + '. ' + blockLabel(scn) + (scn.id ? ' (`' + scn.id + '`)' : ''));
-      var bits = [];
-      scn.querySelectorAll('.err, .stack, .hook-alert').forEach(function (node) {
-        var text = (node.textContent || '').replace(/\s+/g, ' ').trim();
-        if (text) bits.push(text);
+    if (fails.length) {
+      lines.push('## 失败场景');
+      fails.forEach(function (scn, idx) {
+        lines.push((idx + 1) + '. ' + blockLabel(scn) + (scn.id ? ' (`' + scn.id + '`)' : ''));
+        var bits = [];
+        scn.querySelectorAll('.err, .stack, .hook-alert').forEach(function (node) {
+          var text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+          if (text) bits.push(text);
+        });
+        if (bits.length) lines.push('   - ' + bits.slice(0, 4).join(' | '));
       });
-      if (bits.length) lines.push('   - ' + bits.slice(0, 4).join(' | '));
-    });
-    lines.push('');
-    lines.push('_由静态报告轻交互复制 · 非完整报告真源_');
+      lines.push('');
+    }
+    lines.push('_由静态报告轻交互复制 · 与结果树可见失败对齐 · 非完整报告真源_');
     return lines.join('\n');
   }
 

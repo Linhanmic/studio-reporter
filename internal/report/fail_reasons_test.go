@@ -107,3 +107,44 @@ func TestAggregateFailReasonsHookAndConcept(t *testing.T) {
 		t.Fatalf("missing groups: %+v", groups)
 	}
 }
+
+func TestFilterFailReasonGroupsVisibleScenarios(t *testing.T) {
+	groups := []FailReasonGroup{
+		{
+			Reason: "invalid credentials",
+			Count:  2,
+			Refs: []FailReasonRef{
+				{ScnID: "scn:1", ScnName: "Login A"},
+				{ScnID: "scn:2", ScnName: "Login B"},
+			},
+		},
+		{
+			Reason: "card declined",
+			Count:  1,
+			Refs:   []FailReasonRef{{ScnID: "scn:3", ScnName: "Pay"}},
+		},
+		{
+			Reason: "before suite: env missing",
+			Count:  1,
+			Refs:   []FailReasonRef{{SpecName: "Suite", ScnName: "Hook"}},
+		},
+	}
+	got := FilterFailReasonGroups(groups, map[string]bool{"scn:1": true})
+	if len(got) != 2 {
+		t.Fatalf("want credentials(1)+hook, got %+v", got)
+	}
+	if got[0].Reason != "invalid credentials" || got[0].Count != 1 || got[0].Refs[0].ScnID != "scn:1" {
+		t.Fatalf("first: %+v", got[0])
+	}
+	if got[1].Reason != "before suite: env missing" || got[1].Count != 1 {
+		t.Fatalf("hook should remain: %+v", got[1])
+	}
+	empty := FilterFailReasonGroups(groups, map[string]bool{})
+	if len(empty) != 1 || empty[0].Refs[0].ScnID != "" {
+		t.Fatalf("only hook when no scenarios visible: %+v", empty)
+	}
+	all := FilterFailReasonGroups(groups, map[string]bool{"scn:1": true, "scn:2": true, "scn:3": true})
+	if len(all) != 3 || all[0].Count != 2 {
+		t.Fatalf("all visible: %+v", all)
+	}
+}

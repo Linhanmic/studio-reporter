@@ -74,6 +74,10 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`操作系统`,
 		`失败原因聚合`,
 		`fail-reason-table`,
+		`fail-reason-ref`,
+		`data-fail-ref-kind="scenario"`,
+		`data-scn-id="scn:fail"`,
+		`data-fail-count-total=`,
 		`boom`,
 		`data-nav-target="scn:fail"`,
 	} {
@@ -173,9 +177,18 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`prepareFailStepsForPrint`,
 		`wantFailStepsFromURL`,
 		`fail-steps`,
+		`syncFailReasonOverview`,
+		`visibleFailScenarioIdSet`,
+		`FilterFailReasonGroups`,
 	} {
 		if !strings.Contains(js, want) {
 			t.Fatalf("static JS missing %q", want)
 		}
+	}
+	if !strings.Contains(staticReportCSS, `.fail-reason-row.filter-hidden`) {
+		t.Fatal("CSS missing fail-reason-row filter-hidden")
+	}
+	if !strings.Contains(staticReportCSS, `.fail-reason-ref.ref-hidden`) {
+		t.Fatal("CSS missing fail-reason-ref ref-hidden")
 	}
 }
