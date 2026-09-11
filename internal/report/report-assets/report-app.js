@@ -737,19 +737,12 @@ const reportDataEl = document.getElementById('report-data');
         collapseAll() { this.store.collapseAll(); },
         printReport() { window.print(); },
         async pollLive() {
-          if (this._liveBusy) return;
+          if (this._liveBusy || this._wsConnected) return;
           this._liveBusy = true;
           try {
             const payload = await fetchLive();
             if (!payload || !payload.report) return;
-            if (payload.rev && this.store.rev && Number(payload.rev) <= this.store.rev) {
-              this.store.running = !!payload.running;
-              if (payload.currentSpecId) this.store.currentSpecId = payload.currentSpecId;
-              if (payload.currentScenarioId) this.store.currentScenarioId = payload.currentScenarioId;
-              return;
-            }
-            const scroll = captureScroll();
-            this.store.applyLive(payload, scroll);
+            applyLivePayload(this.store, payload, captureScroll());
           } finally {
             this._liveBusy = false;
           }
@@ -770,15 +763,25 @@ const reportDataEl = document.getElementById('report-data');
         'store.filter'() { this.store.persistView(); }
       },
       mounted() {
-        this.pollLive();
+        const store = this.store;
+        this._ws = connectReportWebSocket(store);
+        this._wsConnected = !!this._ws;
+        if (!this._wsConnected) {
+          this.pollLive();
+        }
         if (!this.store.archiveDir) {
-          this._liveTimer = setInterval(() => this.pollLive(), 700);
+          if (!this._wsConnected) {
+            this._liveTimer = setInterval(() => this.pollLive(), 700);
+          }
           this._tickTimer = setInterval(() => { this.store.clock = Date.now(); }, 250);
         }
       },
       beforeUnmount() {
         if (this._liveTimer) clearInterval(this._liveTimer);
         if (this._tickTimer) clearInterval(this._tickTimer);
+        if (this._ws) {
+          try { this._ws.onclose = null; this._ws.close(); } catch (e) {}
+        }
       }
     });
     const pinia = createPinia();

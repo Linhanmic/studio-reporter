@@ -19,8 +19,9 @@ import (
 	"strconv"
 
 	// 第三方库（GitHub）：Gauge 测试框架的 gRPC 消息定义
-	"github.com/getgauge/gauge-proto/go/gauge_messages"
 	"github.com/gaugestudio/studio-reporter/internal/report"
+	"github.com/getgauge/gauge-proto/go/gauge_messages"
+
 	// 第三方库（Google）：gRPC 通信框架
 	"google.golang.org/grpc"
 )

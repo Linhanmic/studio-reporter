@@ -49,15 +49,45 @@ Gauge (gRPC)
 
 主包负责：gRPC、WebSocket forwarder、history、`--serve`、浏览器打开回调。
 
+## 决策原则
+
+每次架构 / 设计变更须同时满足：
+
+1. **可验证**：相对当前代码与用户可观察行为，说明解决什么问题、不解决什么问题  
+2. **单一真源（SSoT）**：同一职责只保留一处可编辑来源；生成/嵌入副本由脚本同步，CI 校验漂移  
+3. **可演进**：变更不破坏 `*.uhilreport` 再生、`report.json` 信封、`--start` 契约（除非明确升 `formatVersion`）  
+4. **外部实践对照**：重大决策对照公开工程实践后再落盘（例如 Go `embed` 去重、golangci-lint v2 显式 opt-in）
+
+参考实践（本轮采用）：
+
+- Go `embed`：可编辑文件为真源，嵌入包只持有同步后的副本，避免双份 YAML/HTML 静默漂移（见 go-micro CRD embed 等案例）  
+- golangci-lint v2：`linters.default: none` + 显式 enable；CI 钉死版本，避免本机/CI 漂移  
+
 ## 关键决策记录
 
-| 日期 | 决策 | 理由 |
-|------|------|------|
+| 日期 | 决策 | 理由 / 依据 |
+|------|------|-------------|
 | 2026-08 | 终态改为静态 HTML，不再内嵌 JSON SPA | 归档/离线可读；Vue 仅用于实时 |
 | 2026-08 | 运行中不落盘，仅 WS 推送；结束时一次写入 | 减少 IO；单一真源在内存 |
 | 2026-08 | Live 树停在 Spec→Scenario | 实时体积与刷新成本 |
-| 2026-08 | 过滤按规格书 / 场景分组，场景命中则展示完整步骤 | 失败上下文完整，避免只露失败步 |
-| 2026-09-11 | 无内容通过步骤改为 `leaf-row` | 减少空 `<details>` 噪音，失败/有输出步骤仍可折叠 |
+| 2026-08 | 过滤按规格书 / 场景分组，场景命中则展示完整步骤 | 失败上下文完整 |
+| 2026-09-11 | 无内容通过步骤改为 `leaf-row` | 减少空 `<details>` 噪音 |
+| 2026-09-11 | 前端真源在仓库根，`make sync-assets` → `internal/report` embed | 发现 `report-app.js` 已漂移且 embed 副本丢失 WS 连接；对齐 embed SSoT 实践 |
+| 2026-09-11 | 废弃根/`internal` 下无用的 `report.html` | 运行时只发布 `viewer.html`；死文件制造双名认知负担 |
+| 2026-09-11 | 引入 golangci-lint v2 显式规则集 + CI 钉版本 | README 已承诺 lint；按 v2 推荐避免 `enable-all` 噪音 |
+
+## 前端资源布局（SSoT）
+
+```
+viewer.html          # 可编辑真源（实时壳）
+manage.html          # 可编辑真源
+report-assets/       # 可编辑真源（Vue/JS/CSS）
+internal/report/     # go:embed 副本（由 make sync-assets 生成/同步）
+scripts/sync-assets.sh
+scripts/check-assets.sh   # CI：漂移则失败
+```
+
+不要手改 `internal/report/viewer.html`、`manage.html`、`report-assets/`；改根目录后执行 `make sync-assets`。
 
 ## 非目标（当前）
 
@@ -71,12 +101,13 @@ Gauge (gRPC)
 - 发布：打 tag → `.github/workflows/release.yml` 构建多平台 zip
 - PR：`cursor/<name>-a6c3`；合并后按需发版
 - 文档四件套：`README` / `DESIGN` / `TODO` / `QUICKSTART` 必须反映真实状态
-- 测试：`GOTOOLCHAIN=go1.27.0 go test ./...`（CI 同）
+- 本地/CI：`make ci`（含 assets 校验、vet、test、build）；`make lint` 跑 golangci-lint
+- 测试：`GOTOOLCHAIN=go1.27.0 go test ./...`
 
 ## 演进方向
 
 见 [TODO.md](TODO.md)。架构允许在迭代中重构包边界、替换实时查看实现、增强静态报告交互，只要保持：
 
-1. `*.uhilreport` 可再生 HTML
-2. `report.json` 信封兼容（`formatVersion`）
+1. `*.uhilreport` 可再生 HTML  
+2. `report.json` 信封兼容（`formatVersion`）  
 3. Gauge 插件启动契约（`--start` / gRPC / WS 端口打印）

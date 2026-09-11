@@ -160,15 +160,14 @@ The plugin also writes the portable report file `<project>-<timestamp>.uhilrepor
 ./build.sh linux amd64
 ```
 
-### Testing
+### Testing / lint
 
 ```bash
-make test
-# or
-GOTOOLCHAIN=go1.27.0 go test ./...
-
-make ci   # vet + test + build
+make ci      # check-assets + vet + test + build
+make lint    # golangci-lint v2 (install matching CI pin locally)
+make sync-assets
 ```
+
 
 ### Project Structure
 
@@ -176,15 +175,20 @@ make ci   # vet + test + build
 studio-reporter/
 ├── main.go / reporter.go / report_bridge.go / forwarder.go
 ├── history.go / serve.go
-├── internal/report/     # model, live, writer, static HTML render (embedded assets)
-├── report-assets/       # live viewer JS/CSS source (synced into internal/report)
+├── viewer.html / manage.html / report-assets/   # live UI sources (SSoT)
+├── internal/report/     # embed copies + static HTML renderer (make sync-assets)
+├── scripts/sync-assets.sh / scripts/check-assets.sh
 ├── plugin.json
 ├── README.md / QUICKSTART.md / DESIGN.md / TODO.md
 ├── REPORT_FORMAT.md / API.md
+├── .golangci.yml
 ├── .github/workflows/   # ci.yml + release.yml
+├── Makefile
 ├── build.sh / build-all.sh / build.ps1
 └── LICENSE
 ```
+
+Edit live UI under the repo root, then run `make sync-assets` before committing. CI runs `make check-assets` so embed copies cannot silently drift.
 
 ## API Documentation
 

@@ -209,4 +209,3 @@ func rewriteStepScreenshots(step *StepReport, mapList func([]string) []string, m
 		step.FailureScreenshot = mapped[0]
 	}
 }
-

@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/getgauge/gauge-proto/go/gauge_messages"
 	"github.com/gaugestudio/studio-reporter/internal/report"
+	"github.com/getgauge/gauge-proto/go/gauge_messages"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )

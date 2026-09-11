@@ -203,7 +203,8 @@ func (p *LivePublisher) OnStepStarting(_ *gauge_messages.ExecutionInfo) {}
 
 func (p *LivePublisher) OnConceptStarting(_ *gauge_messages.ExecutionInfo) {}
 
-func (p *LivePublisher) OnStepOrConceptEnding(_ *gauge_messages.ProtoStepResult, _ *gauge_messages.ExecutionInfo) {}
+func (p *LivePublisher) OnStepOrConceptEnding(_ *gauge_messages.ProtoStepResult, _ *gauge_messages.ExecutionInfo) {
+}
 
 func liveScenarioOnly(scn *ScenarioReport) {
 	if scn == nil {
