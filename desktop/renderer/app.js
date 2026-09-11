@@ -524,6 +524,9 @@ function fillSettingsForm() {
   const s = state.settings || {};
   $('settingHubDir').value = s.reportHubDir || '';
   $('settingAutoJump').checked = s.autoJumpToReport !== false;
+  if ($('settingNotifySuiteEnd')) {
+    $('settingNotifySuiteEnd').checked = s.notifyOnSuiteEnd !== false;
+  }
   $('settingJumpSeconds').value = s.autoJumpSeconds ?? 5;
   $('settingGaugeBin').value = s.gaugeBin || 'gauge';
   $('settingAutoCheckUpdates').checked = Boolean(s.autoCheckUpdates);
@@ -645,6 +648,9 @@ async function saveSettings() {
   const partial = {
     reportHubDir: $('settingHubDir').value.trim(),
     autoJumpToReport: $('settingAutoJump').checked,
+    notifyOnSuiteEnd: $('settingNotifySuiteEnd')
+      ? $('settingNotifySuiteEnd').checked
+      : true,
     autoJumpSeconds: Number($('settingJumpSeconds').value) || 0,
     gaugeBin: $('settingGaugeBin').value.trim() || 'gauge',
     gaugeProjectDir: $('gaugeProjectDir').value.trim(),

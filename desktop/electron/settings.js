@@ -13,6 +13,7 @@ const DEFAULTS = {
   gaugeBin: 'gauge',
   recentProjects: [],
   autoCheckUpdates: false,
+  notifyOnSuiteEnd: true,
 };
 
 function settingsPath(userDataDir) {

@@ -13,6 +13,7 @@ const {
   ipcMain,
   shell,
   clipboard,
+  Notification,
 } = require('electron');
 const { normalizeWsInput } = require('./discover.js');
 const { checkPluginHello } = require('./compat.js');
@@ -27,6 +28,10 @@ const {
   deleteHistoryRuns,
 } = require('./settings.js');
 const { withHubLock } = require('./hublock.js');
+const {
+  shouldNotifySuiteEnd,
+  formatSuiteEndNotification,
+} = require('./notify.js');
 const {
   resolveBundleRoot,
   resolveStudioReporterBin,
@@ -136,6 +141,38 @@ function startAssetServer(rootDir) {
   });
 }
 
+
+function maybeNotifySuiteEnd(payload) {
+  try {
+    const settings = loadSettings(app.getPath('userData'));
+    const focused = Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused());
+    if (!shouldNotifySuiteEnd({ enabled: settings.notifyOnSuiteEnd !== false, windowFocused: focused })) {
+      return;
+    }
+    if (!Notification.isSupported()) return;
+    const { title, body, reportPath, reportDir } = formatSuiteEndNotification(payload || {});
+    const note = new Notification({ title, body });
+    note.on('click', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+        const target = reportPath || reportDir;
+        if (target) {
+          const abs = path.resolve(target);
+          const url = pathToFileURL(
+            abs.endsWith('.html') ? abs : path.join(abs, 'index.html')
+          ).href;
+          mainWindow.webContents.send('navigate-report', { path: abs, url });
+        }
+      }
+    });
+    note.show();
+  } catch (err) {
+    console.warn('suite-end notification failed:', err);
+  }
+}
+
 /** Minimal WS client for control + ReportGenerated (Node 22+ global WebSocket). */
 class ReporterBridge {
   constructor() {
@@ -192,6 +229,7 @@ class ReporterBridge {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send('report-generated', msg.payload);
           }
+          maybeNotifySuiteEnd(msg.payload);
         }
         if (msg.type === 'ReportSnapshot' && mainWindow && !mainWindow.isDestroyed()) {
           const payload = msg.payload || {};
