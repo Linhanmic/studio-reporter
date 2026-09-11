@@ -20,6 +20,10 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   listHistory: (hubDir) => ipcRenderer.invoke('desktop:list-history', hubDir),
   openHistoryRun: (entry) => ipcRenderer.invoke('desktop:open-history-run', entry),
   exportReport: (kind) => ipcRenderer.invoke('desktop:export-report', kind),
+  pickGaugeProject: () => ipcRenderer.invoke('desktop:pick-gauge-project'),
+  gaugeStatus: () => ipcRenderer.invoke('desktop:gauge-status'),
+  startGauge: (opts) => ipcRenderer.invoke('desktop:start-gauge', opts),
+  stopGauge: () => ipcRenderer.invoke('desktop:stop-gauge'),
   compareHistoryRuns,
   formatDurationDelta,
   formatCountsDelta,
@@ -47,5 +51,20 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('report-snapshot-meta', handler);
     return () => ipcRenderer.removeListener('report-snapshot-meta', handler);
+  },
+  onGaugeLog: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('gauge-log', handler);
+    return () => ipcRenderer.removeListener('gauge-log', handler);
+  },
+  onGaugeDiscover: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('gauge-discover', handler);
+    return () => ipcRenderer.removeListener('gauge-discover', handler);
+  },
+  onGaugeStatus: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('gauge-status', handler);
+    return () => ipcRenderer.removeListener('gauge-status', handler);
   },
 });

@@ -7,6 +7,10 @@ const DEFAULTS = {
   reportHubDir: '',
   autoJumpToReport: true,
   autoJumpSeconds: 5,
+  gaugeProjectDir: '',
+  gaugeSpecs: 'specs',
+  gaugeEnv: '',
+  gaugeBin: 'gauge',
 };
 
 function settingsPath(userDataDir) {

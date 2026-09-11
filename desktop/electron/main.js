@@ -25,6 +25,7 @@ const {
   resolveStudioReporterBin,
   missingBundleResources,
 } = require('./paths.js');
+const { GaugeRunner } = require('./gauge-run.js');
 
 const DESKTOP_VERSION = '0.5.2';
 /** Dev: repo root. Packaged: Electron extraResources (viewer + report-assets + bin). */
@@ -39,6 +40,26 @@ let mainWindow = null;
 let assetServer = null;
 let assetPort = 0;
 let bridge = null;
+const gaugeRunner = new GaugeRunner();
+
+function sendToRenderer(channel, payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, payload);
+  }
+}
+
+async function connectLiveWs(input) {
+  const url = normalizeWsInput(input);
+  if (!url) {
+    throw new Error('无法解析 WebSocket 地址。请粘贴 ws://127.0.0.1:<port> 或 discover 整行。');
+  }
+  if (!bridge) bridge = new ReporterBridge();
+  await bridge.connect(url);
+  await startAssetServer(BUNDLE_ROOT);
+  const liveUrl = `http://127.0.0.1:${assetPort}/viewer.html?ws=${encodeURIComponent(url)}`;
+  sendToRenderer('navigate-live', { url: liveUrl });
+  return { url, liveUrl };
+}
 
 function createAssetServer(rootDir) {
   const root = path.resolve(rootDir);
@@ -289,17 +310,7 @@ function registerIpc() {
     assetPort,
   }));
 
-  ipcMain.handle('desktop:connect-ws', async (_evt, input) => {
-    const url = normalizeWsInput(input);
-    if (!url) {
-      throw new Error('无法解析 WebSocket 地址。请粘贴 ws://127.0.0.1:<port> 或 discover 整行。');
-    }
-    if (!bridge) bridge = new ReporterBridge();
-    await bridge.connect(url);
-    await startAssetServer(BUNDLE_ROOT);
-    const liveUrl = `http://127.0.0.1:${assetPort}/viewer.html?ws=${encodeURIComponent(url)}`;
-    return { url, liveUrl };
-  });
+  ipcMain.handle('desktop:connect-ws', async (_evt, input) => connectLiveWs(input));
 
   ipcMain.handle('desktop:disconnect', async () => {
     if (bridge) bridge.close();
@@ -382,6 +393,86 @@ function registerIpc() {
     }
     return { ok: true, input, out: hub, kind, log: result.stdout };
   });
+
+  ipcMain.handle('desktop:pick-gauge-project', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: '选择 Gauge 项目目录（含 manifest.json 或 specs/）',
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const projectDir = result.filePaths[0];
+    saveSettings(app.getPath('userData'), { gaugeProjectDir: projectDir });
+    return projectDir;
+  });
+
+  ipcMain.handle('desktop:gauge-status', async () => ({
+    running: gaugeRunner.running,
+    discoveredUrl: gaugeRunner.discoveredUrl,
+  }));
+
+  ipcMain.handle('desktop:start-gauge', async (_evt, opts = {}) => {
+    if (gaugeRunner.running) throw new Error('Gauge 已在运行');
+    const settings = loadSettings(app.getPath('userData'));
+    const projectDir = opts.projectDir || settings.gaugeProjectDir;
+    const specs = opts.specs || settings.gaugeSpecs || 'specs';
+    const env = opts.env != null ? opts.env : settings.gaugeEnv || '';
+    const gaugeBin = opts.gaugeBin || settings.gaugeBin || 'gauge';
+    saveSettings(app.getPath('userData'), {
+      gaugeProjectDir: projectDir || '',
+      gaugeSpecs: specs,
+      gaugeEnv: env,
+      gaugeBin,
+    });
+    let autoConnected = false;
+    const started = gaugeRunner.start({
+      projectDir,
+      specs,
+      env,
+      gaugeBin,
+      onLog: (text, stream) => sendToRenderer('gauge-log', { text, stream }),
+      onDiscover: async (url) => {
+        sendToRenderer('gauge-discover', { url });
+        if (autoConnected) return;
+        autoConnected = true;
+        try {
+          const live = await connectLiveWs(url);
+          sendToRenderer('gauge-status', {
+            running: true,
+            discoveredUrl: url,
+            autoConnected: true,
+            liveUrl: live.liveUrl,
+          });
+        } catch (err) {
+          sendToRenderer('gauge-status', {
+            running: true,
+            discoveredUrl: url,
+            autoConnected: false,
+            error: String(err.message || err),
+          });
+        }
+      },
+      onExit: (code, signal) => {
+        sendToRenderer('gauge-status', {
+          running: false,
+          code,
+          signal,
+          discoveredUrl: gaugeRunner.discoveredUrl,
+        });
+      },
+    });
+    sendToRenderer('gauge-status', {
+      running: true,
+      pid: started.pid,
+      bin: started.bin,
+      args: started.args,
+    });
+    return { ok: true, ...started };
+  });
+
+  ipcMain.handle('desktop:stop-gauge', async () => {
+    const stopped = gaugeRunner.stop();
+    return { ok: true, stopped };
+  });
 }
 
 app.whenReady().then(async () => {
@@ -400,6 +491,7 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   if (bridge) bridge.close();
+  if (gaugeRunner.running) gaugeRunner.stop();
   if (assetServer) assetServer.close();
   if (process.platform !== 'darwin') app.quit();
 });

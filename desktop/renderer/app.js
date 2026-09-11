@@ -21,7 +21,10 @@ function setTab(name) {
   document.querySelectorAll('.pane').forEach((pane) => {
     pane.classList.toggle('active', pane.id === `pane-${name}`);
   });
-  $('connectBar').classList.toggle('hidden', name === 'history' || name === 'settings');
+  const hideChrome = name === 'history' || name === 'settings';
+  $('connectBar').classList.toggle('hidden', hideChrome);
+  $('runBar').classList.toggle('hidden', hideChrome);
+  if (hideChrome) $('gaugeLog').classList.add('hidden');
   if (name === 'history') refreshHistory();
   if (name === 'settings') fillSettingsForm();
 }
@@ -238,6 +241,10 @@ function fillSettingsForm() {
   $('settingHubDir').value = s.reportHubDir || '';
   $('settingAutoJump').checked = s.autoJumpToReport !== false;
   $('settingJumpSeconds').value = s.autoJumpSeconds ?? 5;
+  $('settingGaugeBin').value = s.gaugeBin || 'gauge';
+  $('gaugeProjectDir').value = s.gaugeProjectDir || $('gaugeProjectDir').value || '';
+  $('gaugeSpecs').value = s.gaugeSpecs || $('gaugeSpecs').value || 'specs';
+  $('gaugeEnv').value = s.gaugeEnv || '';
 }
 
 async function loadSettings() {
@@ -252,12 +259,65 @@ async function saveSettings() {
     reportHubDir: $('settingHubDir').value.trim(),
     autoJumpToReport: $('settingAutoJump').checked,
     autoJumpSeconds: Number($('settingJumpSeconds').value) || 0,
+    gaugeBin: $('settingGaugeBin').value.trim() || 'gauge',
+    gaugeProjectDir: $('gaugeProjectDir').value.trim(),
+    gaugeSpecs: $('gaugeSpecs').value.trim() || 'specs',
+    gaugeEnv: $('gaugeEnv').value.trim(),
   };
   state.settings = await window.desktopAPI.saveSettings(partial);
   state.autoJump = state.settings.autoJumpToReport;
   state.jumpSeconds = state.settings.autoJumpSeconds;
   $('settingsStatus').textContent = '已保存';
   setTimeout(() => { $('settingsStatus').textContent = ''; }, 1500);
+}
+
+function appendGaugeLog(text) {
+  const el = $('gaugeLog');
+  el.classList.remove('hidden');
+  el.textContent += text;
+  if (el.textContent.length > 200_000) {
+    el.textContent = el.textContent.slice(-150_000);
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+function setGaugeRunning(running) {
+  $('btnStartGauge').disabled = running;
+  $('btnStopGauge').disabled = !running;
+  $('btnPickGaugeProject').disabled = running;
+}
+
+async function startGauge() {
+  const projectDir = $('gaugeProjectDir').value.trim();
+  if (!projectDir) {
+    setStatus('请先选择 Gauge 项目目录', 'warn');
+    return;
+  }
+  $('gaugeLog').textContent = '';
+  $('gaugeLog').classList.remove('hidden');
+  setGaugeRunning(true);
+  try {
+    await window.desktopAPI.startGauge({
+      projectDir,
+      specs: $('gaugeSpecs').value.trim() || 'specs',
+      env: $('gaugeEnv').value.trim(),
+      gaugeBin: $('settingGaugeBin').value.trim() || state.settings?.gaugeBin || 'gauge',
+    });
+    setStatus('Gauge 已启动，等待 discover…', 'ok');
+    setTab('run');
+  } catch (err) {
+    setGaugeRunning(false);
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+async function stopGauge() {
+  try {
+    await window.desktopAPI.stopGauge();
+    setStatus('正在停止 Gauge…', 'warn');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
 }
 
 function wire() {
@@ -314,6 +374,16 @@ function wire() {
     }
   });
 
+  $('btnPickGaugeProject').addEventListener('click', async () => {
+    const dir = await window.desktopAPI.pickGaugeProject();
+    if (dir) {
+      $('gaugeProjectDir').value = dir;
+      await loadSettings();
+    }
+  });
+  $('btnStartGauge').addEventListener('click', startGauge);
+  $('btnStopGauge').addEventListener('click', stopGauge);
+
   window.desktopAPI.onBridgeStatus((data) => {
     if (data?.hello?.version) {
       setStatus(`已连接 · 插件 ${data.hello.version}`, 'ok');
@@ -337,6 +407,30 @@ function wire() {
     if (!meta) return;
     if (meta.running === false) setStatus('运行结束（等待落盘）', 'warn');
     else if (meta.projectName) setStatus(`运行中 · ${meta.projectName}`, 'ok');
+  });
+  window.desktopAPI.onGaugeLog((data) => {
+    if (data?.text) appendGaugeLog(data.text);
+  });
+  window.desktopAPI.onGaugeDiscover((data) => {
+    if (data?.url) {
+      $('wsInput').value = data.url;
+      setStatus(`已发现 ${data.url}，正在连接…`, 'ok');
+    }
+  });
+  window.desktopAPI.onGaugeStatus((data) => {
+    if (!data) return;
+    setGaugeRunning(Boolean(data.running));
+    if (data.autoConnected && data.liveUrl) {
+      showLive(data.liveUrl);
+      setTab('run');
+      setStatus(`已自动连接 ${data.discoveredUrl || ''}`.trim(), 'ok');
+      $('btnDisconnect').disabled = false;
+    } else if (data.running === false) {
+      const code = data.code != null ? ` code=${data.code}` : '';
+      setStatus(`Gauge 已退出${code}`, data.code ? 'warn' : 'ok');
+    } else if (data.error) {
+      setStatus(data.error, 'warn');
+    }
   });
 }
 

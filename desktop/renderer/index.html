@@ -35,6 +35,17 @@
       <button type="button" id="btnOpenDir" class="btn">打开报告目录…</button>
     </section>
 
+    <section class="run-bar" id="runBar">
+      <label class="connect-label" for="gaugeProjectDir">Gauge 项目</label>
+      <input id="gaugeProjectDir" type="text" spellcheck="false" placeholder="选择含 specs/ 的 Gauge 工程目录">
+      <button type="button" id="btnPickGaugeProject" class="btn">浏览…</button>
+      <input id="gaugeSpecs" type="text" spellcheck="false" value="specs" title="规格路径" placeholder="specs">
+      <input id="gaugeEnv" type="text" spellcheck="false" placeholder="env（可选）" title="--env">
+      <button type="button" id="btnStartGauge" class="btn primary">运行 Gauge</button>
+      <button type="button" id="btnStopGauge" class="btn" disabled>停止</button>
+    </section>
+    <pre id="gaugeLog" class="gauge-log hidden" aria-label="Gauge 输出"></pre>
+
     <div class="banner hidden" id="endBanner">
       <span id="endBannerText">套件已结束</span>
       <button type="button" id="btnOpenFinal" class="btn primary">打开终态报告</button>
@@ -89,6 +100,10 @@
           <label class="field">
             <span>自动跳转倒计时（秒）</span>
             <input id="settingJumpSeconds" type="number" min="0" max="60" value="5">
+          </label>
+          <label class="field">
+            <span>Gauge 可执行文件（默认 PATH 中的 gauge）</span>
+            <input id="settingGaugeBin" type="text" spellcheck="false" placeholder="gauge">
           </label>
           <div class="field-row">
             <button type="button" id="btnSaveSettings" class="btn primary">保存设置</button>

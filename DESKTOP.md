@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0/P1 已落地（v0.5.2）；打包骨架（electron-builder + extraResources）已落地；P2+ 仍为路线图   
+状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」封装 gauge 已落地；多会话/签名仍为路线图   
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -247,9 +247,9 @@ studio-reporter/
 4. ~~对比两次运行~~（`desktop/electron/compare.js` 移植 `CompareHistoryRuns`；历史页勾选）。
 5. （已提前）控制消息 — 见 P0。
 
-### P2 — 体验
+### P2 — 体验 — **部分完成（0.5.2）**
 
-1. Desktop「运行」按钮封装 gauge（选规格、环境）。
+1. ~~Desktop「运行」按钮封装 gauge（选规格、环境）~~（`gauge-run.js` + 运行栏；discover 自动连接）。
 2. 多项目 / 多会话。
 3. 与 GaugeStudio 模块边界清晰化（共享 discover 包）。
 
@@ -295,4 +295,4 @@ studio-reporter/
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
 5. ~~Desktop 历史对比~~。
 6. ~~安装器 / 打包骨架~~（`desktop/` + electron-builder；`npm run pack:dir` / `pack`；bundle root 区分 dev/packaged）。
-7. 下一步：P2「运行」封装 gauge，或完善各平台签名/自动更新。
+7. ~~P2「运行」封装 gauge~~；下一步：多会话 / 多项目，或完善各平台签名/自动更新。

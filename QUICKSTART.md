@@ -129,7 +129,8 @@ npm install
 npm start
 ```
 
-Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.1:<port>` 粘贴进 Desktop 连接栏。  
+Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.1:<port>` 粘贴进 Desktop 连接栏；  
+或在运行栏选择 Gauge 项目后点「运行 Gauge」，Desktop 会解析 discover 并自动连接。  
 「运行」页嵌入 `viewer.html`；收到 `ReportGenerated` 后跳「报告」页打开静态 `index.html`。
 
 打包（先 `make build` 产出 CLI）：
