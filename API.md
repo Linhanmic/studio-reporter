@@ -375,6 +375,8 @@ Stdout discover helpers are shared as `@studio-reporter/discover` (`packages/stu
 
 While connected, each `ReportSnapshot` is reduced to a native outline (`desktop/electron/outline.js`) for the Desktop sidebar. Opening a final report directory also loads sibling `report.json` into the same outline. Clicking a node posts `{type:'studio-reporter:select-node', id}` into the active iframe (live viewer or static `index.html`). Sidebar search / verdict chips post `{type:'studio-reporter:filter', query, verdict}` so the iframe filter stays in sync.
 
+History tab filters `history.json` runs client-side (`filterHistoryRuns`: query + verdict). Export PDF / single HTML resolves a portable `.uhilreport` via `resolveRunUhilreport` when exactly one run is selected; otherwise uses the newest `.uhilreport` under the hub root.
+
 ## HTML Report
 
 On `SuiteResult`, the plugin generates a **static HTML report** at `index.html` (fully rendered, no embedded JSON) plus `report.json` for debugging and live viewing:

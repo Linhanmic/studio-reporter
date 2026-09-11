@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件门闸/本机检测/自动更新骨架/原生大纲（live+终态）/大纲搜索过滤已落地；代码签名仍为路线图   
+状态：P0/P1 已落地（v0.5.2）；打包骨架已落地；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件门闸/本机检测/自动更新骨架/原生大纲（live+终态）/大纲搜索过滤/历史搜索过滤与勾选导出已落地；代码签名仍为路线图   
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -159,8 +159,8 @@ Desktop 在无 Gauge 进程时仍应可用：
 |----|------|
 | **运行** | 连接状态、live 树、当前失败、日志条、结束 CTA |
 | **报告** | 嵌入终态报告（优先加载磁盘 `index.html`；CANoe 左右栏已在静态页） |
-| **历史** | `history.json` 列表、对比、打开归档、删除（需 serve 或原生 FS） |
-| **导出** | PDF / 单文件 HTML / 在访达/资源管理器中显示 / 复制路径 |
+| **历史** | `history.json` 列表、搜索/结果过滤、对比、打开归档、删除（需 serve 或原生 FS） |
+| **导出** | PDF / 单文件 HTML（默认最新；勾选 1 次导出该次）/ 在访达/资源管理器中显示 / 复制路径 |
 | **设置** | 报告根目录、是否自动打开终态、主题、发现超时、兼容模式 |
 
 ### 5.2 「报告」页策略（关键）
@@ -241,8 +241,8 @@ studio-reporter/
 
 ### P1 — 工作台 — **已完成（0.5.2）**
 
-1. ~~历史页（读 `history.json`）+ 打开归档~~（Desktop 已落地）。
-2. ~~导出：触发 PDF / single HTML（调 CLI）~~（历史页按钮）。
+1. ~~历史页（读 `history.json`）+ 打开归档~~（Desktop 已落地；含搜索 / pass/fail/skip 过滤）。
+2. ~~导出：触发 PDF / single HTML（调 CLI）~~（历史页按钮；勾选 1 次导出该次 `.uhilreport`，否则最新）。
 3. ~~设置：报告根目录、自动跳转~~（Electron `userData`）。
 4. ~~对比两次运行~~（`desktop/electron/compare.js` 移植 `CompareHistoryRuns`；历史页勾选）。
 5. （已提前）控制消息 — 见 P0。
@@ -295,4 +295,4 @@ studio-reporter/
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
 5. ~~Desktop 历史对比~~。
 6. ~~安装器 / 打包骨架~~（`desktop/` + electron-builder；`npm run pack:dir` / `pack`；bundle root 区分 dev/packaged）。
-7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态 + 搜索过滤）~~；下一步：代码签名 secrets，或 GaugeStudio 消费 `@studio-reporter/discover`，或历史列表搜索/导出。
+7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态 + 搜索过滤）~~；~~历史搜索过滤与勾选导出~~；下一步：代码签名 secrets，或 GaugeStudio 消费 `@studio-reporter/discover`，或历史删除/批量导出。

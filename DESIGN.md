@@ -100,6 +100,7 @@ Gauge (gRPC)
 | 2026-09-11 | viewer 与静态报告视觉对齐 | 终态跳转后色板/密度一致优先于完全同构 DOM；静态补 frag/行底色/步骤卡；live tag 用品牌 token |
 | 2026-09-11 | manage 历史对比 | 对比信息已在 history.json；客户端勾选两次即可，无需新 API；时长变慢标红、变快标绿 |
 | 2026-09-11 | Desktop 历史对比 | 同语义移植到 `desktop/electron/compare.js`；历史页勾选 UI |
+| 2026-09-11 | Desktop 历史过滤/导出 | `filterHistoryRuns` + `resolveRunUhilreport`；搜索/verdict chips；勾选 1 次导出该次 |
 | 2026-09-11 | Desktop 打包 | electron-builder + extraResources；dev/packaged 双路径 bundle root；CLI 随包分发供导出 |
 | 2026-09-11 | Desktop 启动 Gauge | Desktop 可 spawn `gauge run` 并解析 stdout discover；仍允许外部附着；单一 discover 契约 |
 | 2026-09-11 | Desktop 多会话 | 主进程会话管理器允许多 Gauge 并行（上限 3）；UI 会话条切换 active live；最近项目持久化 |
