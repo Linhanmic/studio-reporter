@@ -43,9 +43,10 @@
 ## P4 — 产品演进（可改架构）
 
 - [ ] 评估静态报告是否引入极轻量客户端交互（不过度 SPA 化）
-- [ ] 导出 PDF / 单文件 HTML（内联截图）选项
 - [x] 历史对比（两次归档的 verdict / 时长 / 计数 diff；`manage.html` 勾选 + `CompareHistoryRuns`）
+- [x] 复杂 Gauge 测试夹具（`testdata/complex-gauge` + `internal/complexsuite`；`make demo-complex` / `smoke-complex`）
 - [ ] 多 suite / 并行执行下的 hub 写入竞态审计
+- [ ] 导出 PDF / 单文件 HTML（内联截图）选项
 
 ## 迭代日志
 
@@ -62,6 +63,7 @@
 | 2026-09-11 | uhileport 截图可移植 | 写入时重写 proto 为 `images/`；`GenerateFromJSON` 以输入文件目录为基路径；smoke 删除绝对源后再 regen |
 | 2026-09-11 | viewer / 静态视觉对齐 | 共享 frag/行底色/统计卡/字号间距；live el-tag 映射到 `--pass/--fail/--skip`；类型标签统一中文 |
 | 2026-09-11 | 历史对比 | manage 勾选两次运行；对比 verdict / 时长 delta / 规格书·场景·步骤计数；纯函数 `CompareHistoryRuns` 可单测 |
+| 2026-09-11 | 复杂 Gauge 夹具 | 真实 `.spec`/`.cpt` 树 + Go 合成 SuiteResult（无需 Gauge 运行时）；覆盖嵌套概念、表驱动、截图、CJK、skip、multiline |
 
 ## 下一任务（选定）
 

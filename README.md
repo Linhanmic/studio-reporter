@@ -168,10 +168,14 @@ The plugin also writes the portable report file `<project>-<timestamp>.uhilrepor
 make ci      # check-assets + vet + test + build
 make cover   # go test -coverprofile + function/package summary
 make smoke-input  # --input regeneration + screenshot relative paths
+make smoke-complex  # dense fixture (nested concepts / shots / CJK / skip)
+make demo-complex   # write .demo/complex-hub for manual browsing
 make lint    # golangci-lint v2 (install matching CI pin locally)
 make sync-assets
 make hooks   # once per clone: core.hooksPath=.githooks (pre-commit check-assets)
 ```
+
+See also [`testdata/complex-gauge/`](testdata/complex-gauge/) for the readable Gauge specs mirrored by `internal/complexsuite`.
 
 CI runs `./scripts/cover-summary.sh` and uploads `cover.out` as an artifact (no hard threshold yet).
 

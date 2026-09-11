@@ -1,4 +1,4 @@
-.PHONY: test vet build lint sync-assets check-assets cover hooks smoke-input ci all
+.PHONY: test vet build lint sync-assets check-assets cover hooks smoke-input smoke-complex demo-complex ci all
 
 GO ?= go
 GOTOOLCHAIN ?= go1.27.0
@@ -24,6 +24,12 @@ cover:
 
 smoke-input:
 	./scripts/smoke-input.sh
+
+smoke-complex:
+	./scripts/smoke-complex.sh
+
+demo-complex:
+	./scripts/gen-complex-demo.sh
 
 vet:
 	$(GO) vet ./...

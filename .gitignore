@@ -30,3 +30,6 @@ Thumbs.db
 # Build artifacts
 *.zip
 *.tar.gz
+
+# Local demo hubs
+.demo/
