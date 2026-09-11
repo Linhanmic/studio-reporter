@@ -57,6 +57,8 @@ func main() {
 	out := flag.String("out", "", "Output directory for regenerated HTML report")
 	pdf := flag.Bool("pdf", false, "Also export report.pdf via headless Chrome (structured print, not a screenshot collage)")
 	pdfOut := flag.String("pdf-out", "", "PDF output path (default: <out>/report.pdf)")
+	single := flag.Bool("single", false, "Also export report.single.html with screenshots inlined as data URIs")
+	singleOut := flag.String("single-out", "", "Single-file HTML output path (default: <out>/report.single.html)")
 	serve := flag.Bool("serve", false, "Serve the studio-report directory over HTTP for history management")
 	serveDir := flag.String("dir", "", "Directory for --serve (default: reports/studio-report)")
 	serveAddr := flag.String("addr", "127.0.0.1:8765", "Listen address for --serve")
@@ -71,16 +73,22 @@ func main() {
 
 	if *input != "" {
 		writePDF := *pdf
+		writeSingle := *single
 		generated, err := report.GenerateFromJSON(*input, *out, &report.FinalWriter{
 			OnIndexHTMLWritten: openReportPage,
 			History:            historyRecorder{},
 			WritePDF:           &writePDF,
 			PDFPath:            *pdfOut,
+			WriteSingleHTML:    &writeSingle,
+			SingleHTMLPath:     *singleOut,
 		})
 		if err != nil {
 			log.Fatalf("studio-reporter: %v", err)
 		}
 		fmt.Printf("HTML report written to %s\n", generated.IndexPath)
+		if generated.SingleHTMLPath != "" {
+			fmt.Printf("Single-file HTML written to %s\n", generated.SingleHTMLPath)
+		}
 		if generated.PDFPath != "" {
 			fmt.Printf("PDF report written to %s\n", generated.PDFPath)
 		}

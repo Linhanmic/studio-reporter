@@ -5,8 +5,8 @@
 
 ## 当前版本
 
-- 插件：**0.4.9**（本 PR）
-- 主干能力：静态终态报告（CANoe 风 Overview/左右栏）+ 可选 PDF + WS 实时 viewer + 归档/管理 + `.uhilreport` 再生
+- 插件：**0.4.10**（本 PR）
+- 主干能力：静态终态报告（CANoe 风 Overview/左右栏）+ 可选 PDF / 单文件 HTML + WS 实时 viewer + 归档/管理 + `.uhilreport` 再生
 
 ## P0 — 工程基建
 
@@ -48,7 +48,7 @@
 - [ ] 多 suite / 并行执行下的 hub 写入竞态审计
 - [x] CANoe 风 Overview + 左右分栏 + 截图画廊/lightbox
 - [x] 结构化 PDF 导出（`--pdf` / `GAUGE_STUDIO_WRITE_PDF`；Chrome print，非拼图）
-- [ ] 单文件 HTML（内联截图）选项
+- [x] 单文件 HTML（内联截图；`--single` / `GAUGE_STUDIO_WRITE_SINGLE` → `report.single.html`；目录版 `index.html` 仍为默认真源）
 
 ## 迭代日志
 
@@ -67,7 +67,8 @@
 | 2026-09-11 | 历史对比 | manage 勾选两次运行；对比 verdict / 时长 delta / 规格书·场景·步骤计数；纯函数 `CompareHistoryRuns` 可单测 |
 | 2026-09-11 | 复杂 Gauge 夹具 | 真实 `.spec`/`.cpt` 树 + Go 合成 SuiteResult（无需 Gauge 运行时）；覆盖嵌套概念、表驱动、截图、CJK、skip、multiline |
 | 2026-09-11 | CANoe Overview / 分栏 / PDF | 交互在 HTML；PDF 为 Chrome 结构化打印；截图：步骤全量 + 失败标注 + hook + lightbox；`meta` 附加字段不升 formatVersion |
+| 2026-09-11 | 单文件 HTML | 默认仍写目录版；可选 `report.single.html` 把 `images/` 内联为 data URI；分享单文件、不替代可移植 uhileport 单元 |
 
 ## 下一任务（选定）
 
-**多 suite hub 写入竞态审计**，或 **单文件 HTML（内联截图）**。
+**多 suite hub 写入竞态审计**，或 **极轻量静态交互评估**。

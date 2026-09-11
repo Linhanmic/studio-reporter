@@ -30,6 +30,11 @@ type FinalWriter struct {
 	WritePDF *bool
 	// PDFPath overrides the default <dir>/report.pdf when writing PDF.
 	PDFPath string
+	// WriteSingleHTML, when true, also writes report.single.html with inlined screenshots.
+	// Defaults to env GAUGE_STUDIO_WRITE_SINGLE=true when unset (see wantSingleHTML).
+	WriteSingleHTML *bool
+	// SingleHTMLPath overrides the default <dir>/report.single.html.
+	SingleHTMLPath string
 }
 
 func (w *FinalWriter) wantPDF() bool {
@@ -37,6 +42,14 @@ func (w *FinalWriter) wantPDF() bool {
 		return *w.WritePDF
 	}
 	v := strings.TrimSpace(strings.ToLower(os.Getenv(WritePDFEnv)))
+	return v == "1" || v == "true" || v == "yes"
+}
+
+func (w *FinalWriter) wantSingleHTML() bool {
+	if w != nil && w.WriteSingleHTML != nil {
+		return *w.WriteSingleHTML
+	}
+	v := strings.TrimSpace(strings.ToLower(os.Getenv(WriteSingleHTMLEnv)))
 	return v == "1" || v == "true" || v == "yes"
 }
 
@@ -89,6 +102,18 @@ func (w *FinalWriter) Write(dir string, r *Report, src proto.Message) (*Generate
 
 	w.logf("HTML report written to %s", indexPath)
 	out := &GeneratedReport{Dir: dir, IndexPath: indexPath, JSONPath: jsonPath}
+	if w.wantSingleHTML() {
+		singlePath := w.SingleHTMLPath
+		if singlePath == "" {
+			singlePath = filepath.Join(dir, SingleHTMLFile)
+		}
+		if err := WriteSingleHTML(indexPath, singlePath); err != nil {
+			w.logf("single-html: %v", err)
+		} else {
+			out.SingleHTMLPath = singlePath
+			w.logf("single-file HTML written to %s", singlePath)
+		}
+	}
 	if w.wantPDF() {
 		pdfPath := w.PDFPath
 		if pdfPath == "" {

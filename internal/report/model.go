@@ -18,8 +18,9 @@ const (
 	ViewerFile               = "viewer.html"
 	ManageIndexFile          = "manage.html"
 	FormatVersion            = 1
-	PluginVersion            = "0.4.9"
+	PluginVersion            = "0.4.10"
 	WritePDFEnv              = "GAUGE_STUDIO_WRITE_PDF"
+	WriteSingleHTMLEnv       = "GAUGE_STUDIO_WRITE_SINGLE"
 	UhilReportExt            = ".uhilreport"
 	LiveReportJSONFile       = "report.json"
 	LiveReportJSFile         = "report-live.js"
@@ -185,10 +186,11 @@ type LiveSnapshot struct {
 
 // GeneratedReport paths returned after a final write.
 type GeneratedReport struct {
-	Dir       string
-	IndexPath string
-	JSONPath  string
-	PDFPath   string // set when PDF export succeeds
+	Dir            string
+	IndexPath      string
+	JSONPath       string
+	PDFPath        string // set when PDF export succeeds
+	SingleHTMLPath string // set when single-file HTML export succeeds
 }
 
 // HistoryRecorder archives completed runs (implemented by main/history).

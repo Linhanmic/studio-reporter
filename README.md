@@ -17,6 +17,7 @@ The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https
 - **CANoe-style layout**: left navigation tree + right content, with an **Overview** page (env / host / plugin / stats)
 - Screenshot galleries at suite / spec / scenario / step (hook + failure shots; click-to-enlarge lightbox)
 - Optional **structured PDF** export via headless Chrome (`--pdf` / `GAUGE_STUDIO_WRITE_PDF`) — text + links + images, not a screenshot collage
+- Optional **single-file HTML** (`--single` / `GAUGE_STUDIO_WRITE_SINGLE` → `report.single.html`) with screenshots inlined as data URIs; directory `index.html` remains the default source of truth
 - Versioned report file format (see [REPORT_FORMAT.md](REPORT_FORMAT.md))
 - Standalone report management console (`manage.html`): list, open, and delete archived runs
 - Cross-platform (Windows, Linux, macOS)
@@ -68,6 +69,7 @@ go build -o bin/studio-reporter ./...
 | `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Kept for compatibility; the reporter no longer opens a browser by default |
 | `GAUGE_STUDIO_OPEN_BROWSER` | No | - | Set to `true` to restore opening `index.html` in the default browser |
 | `GAUGE_STUDIO_WRITE_PDF` | No | - | Set to `true` to also write `report.pdf` (requires Chrome/Chromium; or set `CHROME_PATH`) |
+| `GAUGE_STUDIO_WRITE_SINGLE` | No | - | Set to `true` to also write `report.single.html` (screenshots inlined as data URIs) |
 | `GAUGE_STUDIO_REPORT_META` | No | - | Extra Overview KV pairs: `k=v,k2=v2` |
 | `CHROME_PATH` | No | - | Absolute path to Chrome/Chromium for PDF export |
 
@@ -75,11 +77,11 @@ go build -o bin/studio-reporter ./...
 
 ```bash
 # Install the plugin (match the release version)
-gauge install studio-reporter --file studio-reporter-0.4.9-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.4.10-linux.x86_64.zip
 
 # Or unzip into the Gauge plugin directory
-mkdir -p ~/.gauge/plugins/studio-reporter/0.4.9
-unzip studio-reporter-0.4.9-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.4.9
+mkdir -p ~/.gauge/plugins/studio-reporter/0.4.10
+unzip studio-reporter-0.4.10-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.4.10
 ```
 
 ## Usage
@@ -154,9 +156,13 @@ The plugin also writes the portable report file `<project>-<timestamp>.uhilrepor
 # Optional: structured PDF twin (Chrome headless print — not a raster collage)
 ./bin/studio-reporter --input …/run.uhilreport --out /tmp/studio-report --pdf
 # or: --pdf-out /tmp/studio-report/custom.pdf
+
+# Optional: self-contained HTML (screenshots inlined as data URIs)
+./bin/studio-reporter --input …/run.uhilreport --out /tmp/studio-report --single
+# or: --single-out /tmp/studio-report/custom.single.html
 ```
 
-In the HTML report, **导出 PDF** uses the browser print dialog (Overview included; nav hidden). Interactive navigation remains HTML-first; PDF is the shareable/printable twin.
+In the HTML report, **导出 PDF** uses the browser print dialog (Overview included; nav hidden). Interactive navigation remains HTML-first; PDF is the shareable/printable twin. `report.single.html` is the email-/chat-friendly twin that does not need the `images/` folder.
 
 `make smoke-input` verifies regeneration still copies screenshots after the original absolute Gauge paths are deleted.
 

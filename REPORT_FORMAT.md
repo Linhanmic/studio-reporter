@@ -18,6 +18,7 @@ The report hub is always `<gauge_reports_dir>/studio-report/` (default `reports/
 reports/studio-report/
 ├── index.html            # Static HTML report (CANoe-like: Overview + left nav + results; no embedded JSON)
 ├── report.pdf            # Optional structured PDF twin (Chrome print; enable via --pdf / GAUGE_STUDIO_WRITE_PDF)
+├── report.single.html    # Optional self-contained HTML (images inlined; --single / GAUGE_STUDIO_WRITE_SINGLE)
 ├── viewer.html           # Live Vue viewer (WebSocket / poll report.json)
 ├── manage.html           # Report management console (history list / open / delete)
 ├── assets/               # Live viewer assets (vue, element-plus, pinia, report-app.js)
