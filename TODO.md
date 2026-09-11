@@ -55,6 +55,7 @@
 - [x] 插件控制通道（`ClientHello` / `ServerHello` / `Ping`/`Pong` / `RequestSnapshot`）
 - [x] Desktop P1 工作台骨架（历史 / 设置 / 导出入口）
 - [x] Desktop 历史对比（移植 `CompareHistoryRuns` → `desktop/electron/compare.js`）
+- [x] Desktop 安装器 / 打包骨架（electron-builder；`extraResources` 打入 viewer + report-assets + CLI；`paths.js` 解析 bundle root）
 
 ## 迭代日志
 
@@ -81,7 +82,8 @@
 | 2026-09-11 | Hub 写入竞态 hardening | 跨进程 `WithHubLock`（flock）；uhilreport 先原子写再清旧文件；archives 排他 `Mkdir`；Engine finalize 互斥 |
 | 2026-09-11 | Desktop P1 工作台骨架 | 历史页读 `history.json`、设置持久化、导出 PDF/单文件入口（调 CLI） |
 | 2026-09-11 | Desktop 历史对比 | 历史页勾选两次运行；`compare.js` 对齐 Go `CompareHistoryRuns`（verdict / 时长 / 计数 delta） |
+| 2026-09-11 | Desktop 打包骨架 | electron-builder；`pack:dir`/`pack`；extraResources 含 viewer/report-assets/CLI；packaged 态 `BUNDLE_ROOT=resourcesPath` |
 
 ## 下一任务（选定）
 
-**Desktop 安装器 / 打包**（electron-builder 等），或 P2「运行」按钮封装 gauge。
+**P2「运行」按钮封装 gauge**（选规格/环境、解析 discover 自动连接），或完善安装包签名 / 自动更新。

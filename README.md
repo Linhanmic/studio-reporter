@@ -86,13 +86,15 @@ mkdir -p ~/.gauge/plugins/studio-reporter/0.5.2
 unzip studio-reporter-0.5.2-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.2
 ```
 
-### Desktop App (P0)
+### Desktop App
 
 ```bash
 cd desktop
 npm install
 npm start
 # Paste: studio-reporter websocket: ws://127.0.0.1:<port>
+
+make build && cd desktop && npm run pack:dir   # unpacked smoke build
 ```
 
 See [desktop/README.md](desktop/README.md) and [DESKTOP.md](DESKTOP.md).

@@ -1,4 +1,4 @@
-.PHONY: test vet build lint sync-assets check-assets cover hooks smoke-input smoke-complex demo-complex ci all
+.PHONY: test vet build lint sync-assets check-assets cover hooks smoke-input smoke-complex demo-complex desktop-test desktop-pack ci all
 
 GO ?= go
 GOTOOLCHAIN ?= go1.27.0
@@ -39,6 +39,13 @@ build:
 
 lint:
 	$(GOLANGCI_LINT) run ./...
+
+desktop-test:
+	cd desktop && npm test
+
+# Unpacked dir build (smoke). Requires: make build && cd desktop && npm install
+desktop-pack: build
+	cd desktop && npm run pack:dir
 
 ci: check-assets vet test build
 

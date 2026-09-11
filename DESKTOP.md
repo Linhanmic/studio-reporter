@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0 已落地；P1 工作台（历史 / 设置 / 导出 / 对比）已落地（v0.5.2）；P2+ 仍为路线图   
+状态：P0/P1 已落地（v0.5.2）；打包骨架（electron-builder + extraResources）已落地；P2+ 仍为路线图   
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -293,4 +293,6 @@ studio-reporter/
 2. ~~`ClientHello` / `RequestSnapshot`~~（插件 0.5.2）。
 3. ~~Hub 跨进程写入锁~~（0.5.2：`WithHubLock`）。
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
-5. ~~Desktop 历史对比~~；下一步：安装器 / 打包，或 P2「运行」封装 gauge。
+5. ~~Desktop 历史对比~~。
+6. ~~安装器 / 打包骨架~~（`desktop/` + electron-builder；`npm run pack:dir` / `pack`；bundle root 区分 dev/packaged）。
+7. 下一步：P2「运行」封装 gauge，或完善各平台签名/自动更新。

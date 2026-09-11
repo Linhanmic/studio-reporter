@@ -4,6 +4,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const http = require('node:http');
 const { pathToFileURL } = require('node:url');
+const { spawnSync } = require('node:child_process');
 const {
   app,
   BrowserWindow,
@@ -19,10 +20,19 @@ const {
   readHistory,
   resolveRunIndex,
 } = require('./settings.js');
+const {
+  resolveBundleRoot,
+  resolveStudioReporterBin,
+  missingBundleResources,
+} = require('./paths.js');
 
 const DESKTOP_VERSION = '0.5.2';
-/** Repo root (parent of desktop/) — viewer.html / report-assets live here in dev. */
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
+/** Dev: repo root. Packaged: Electron extraResources (viewer + report-assets + bin). */
+const BUNDLE_ROOT = resolveBundleRoot(
+  app.isPackaged,
+  process.resourcesPath,
+  path.join(__dirname, '..')
+);
 const RENDERER = path.join(__dirname, '..', 'renderer', 'index.html');
 
 let mainWindow = null;
@@ -36,7 +46,6 @@ function createAssetServer(rootDir) {
     try {
       const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
       let rel = urlPath === '/' ? '/viewer.html' : urlPath;
-      // Map /assets/* to report-assets for hub-style URLs
       if (rel.startsWith('/assets/')) {
         rel = '/report-assets/' + rel.slice('/assets/'.length);
       }
@@ -183,6 +192,18 @@ class ReporterBridge {
 }
 
 function buildMenu() {
+  const helpItems = [];
+  if (!app.isPackaged) {
+    helpItems.push({
+      label: 'DESKTOP.md',
+      click: () => shell.openPath(path.join(BUNDLE_ROOT, 'DESKTOP.md')),
+    });
+  }
+  helpItems.push({
+    label: `Studio Reporter Desktop ${DESKTOP_VERSION}`,
+    enabled: false,
+  });
+
   const template = [
     {
       label: '文件',
@@ -201,11 +222,14 @@ function buildMenu() {
         },
         {
           label: '打开仓库 viewer（开发）',
+          visible: !app.isPackaged,
           click: async () => {
-            await startAssetServer(REPO_ROOT);
-            mainWindow.webContents.send('navigate-live', {
-              url: `http://127.0.0.1:${assetPort}/viewer.html`,
-            });
+            await startAssetServer(BUNDLE_ROOT);
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-live', {
+                url: `http://127.0.0.1:${assetPort}/viewer.html`,
+              });
+            }
           },
         },
         { type: 'separator' },
@@ -221,12 +245,7 @@ function buildMenu() {
     },
     {
       label: '帮助',
-      submenu: [
-        {
-          label: 'DESKTOP.md',
-          click: () => shell.openPath(path.join(REPO_ROOT, 'DESKTOP.md')),
-        },
-      ],
+      submenu: helpItems,
     },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
@@ -239,7 +258,6 @@ async function openReportDir(dir) {
     return;
   }
   await startAssetServer(dir);
-  // Prefer hub assets: if dir is a gauge hub it may have viewer + assets copied
   const url = `http://127.0.0.1:${assetPort}/index.html`;
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('navigate-report', { url, dir });
@@ -266,7 +284,8 @@ function createWindow() {
 function registerIpc() {
   ipcMain.handle('desktop:info', async () => ({
     version: DESKTOP_VERSION,
-    repoRoot: REPO_ROOT,
+    bundleRoot: BUNDLE_ROOT,
+    packaged: app.isPackaged,
     assetPort,
   }));
 
@@ -277,8 +296,7 @@ function registerIpc() {
     }
     if (!bridge) bridge = new ReporterBridge();
     await bridge.connect(url);
-    // Live viewer needs plugin hub assets OR repo root assets; serve repo for Vue/CSS
-    await startAssetServer(REPO_ROOT);
+    await startAssetServer(BUNDLE_ROOT);
     const liveUrl = `http://127.0.0.1:${assetPort}/viewer.html?ws=${encodeURIComponent(url)}`;
     return { url, liveUrl };
   });
@@ -353,13 +371,7 @@ function registerIpc() {
     if (!matches.length) throw new Error('报告根目录下没有 .uhilreport');
     matches.sort();
     const input = path.join(hub, matches[matches.length - 1]);
-    const binCandidates = [
-      path.join(REPO_ROOT, 'bin', 'studio-reporter'),
-      path.join(REPO_ROOT, 'bin', 'studio-reporter.exe'),
-      'studio-reporter',
-    ];
-    const { spawnSync } = require('node:child_process');
-    let bin = binCandidates.find((c) => c === 'studio-reporter' || fs.existsSync(c));
+    const bin = resolveStudioReporterBin(BUNDLE_ROOT);
     if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
     const args = ['generate', '--input', input, '--out', hub];
     if (kind === 'pdf') args.push('--pdf');
@@ -370,13 +382,16 @@ function registerIpc() {
     }
     return { ok: true, input, out: hub, kind, log: result.stdout };
   });
-
 }
 
 app.whenReady().then(async () => {
+  const missing = missingBundleResources(BUNDLE_ROOT);
+  if (missing.length && !app.isPackaged) {
+    console.warn('[desktop] missing bundle resources:', missing.join(', '));
+  }
   registerIpc();
   buildMenu();
-  await startAssetServer(REPO_ROOT);
+  await startAssetServer(BUNDLE_ROOT);
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

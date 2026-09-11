@@ -121,7 +121,7 @@ GOTOOLCHAIN=go1.27.0 go build -o bin/studio-reporter .
 | `CHROME_PATH` | 指定 headless Chrome 可执行文件 |
 | `GAUGE_STUDIO_WS` | 额外再推一份事件的 WebSocket URL（可选） |
 
-## 6. Desktop P0（可选）
+## 6. Desktop（可选）
 
 ```bash
 cd desktop
@@ -131,6 +131,15 @@ npm start
 
 Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.1:<port>` 粘贴进 Desktop 连接栏。  
 「运行」页嵌入 `viewer.html`；收到 `ReportGenerated` 后跳「报告」页打开静态 `index.html`。
+
+打包（先 `make build` 产出 CLI）：
+
+```bash
+cd desktop
+npm run pack:dir   # 未打包目录 smoke
+npm run pack       # 平台安装包（Linux → AppImage 等）
+# 或：make desktop-pack
+```
 
 详见 [desktop/README.md](desktop/README.md) / [DESKTOP.md](DESKTOP.md)。
 

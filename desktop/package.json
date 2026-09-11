@@ -3,16 +3,69 @@
   "version": "0.5.2",
   "private": true,
   "description": "Studio Reporter Desktop — Electron workbench for live + final reports",
+  "author": "Studio Reporter",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test electron/discover.test.js electron/settings.test.js electron/compare.test.js",
-    "pack": "echo \"Packaging not configured yet; use npm start for P0/P1\""
+    "test": "node --test electron/discover.test.js electron/settings.test.js electron/compare.test.js electron/paths.test.js",
+    "pack:check": "node scripts/prepare-pack-resources.js",
+    "pack:dir": "npm run pack:check && electron-builder --dir --publish never",
+    "pack": "npm run pack:check && electron-builder --publish never",
+    "dist": "npm run pack"
   },
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
-    "electron": "^37.2.0"
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.gaugestudio.studio-reporter",
+    "productName": "Studio Reporter",
+    "copyright": "Copyright © Studio Reporter contributors",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "renderer/**/*",
+      "package.json",
+      "!electron/**/*.test.js",
+      "!**/node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../viewer.html",
+        "to": "viewer.html"
+      },
+      {
+        "from": "../report-assets",
+        "to": "report-assets"
+      },
+      {
+        "from": "../bin/studio-reporter",
+        "to": "bin/studio-reporter"
+      }
+    ],
+    "linux": {
+      "target": ["AppImage", "dir"],
+      "category": "Development",
+      "artifactName": "studio-reporter-desktop-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "target": ["dmg", "dir"],
+      "category": "public.app-category.developer-tools",
+      "artifactName": "studio-reporter-desktop-${version}-${arch}.${ext}"
+    },
+    "win": {
+      "target": ["nsis", "dir"],
+      "artifactName": "studio-reporter-desktop-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
