@@ -120,7 +120,9 @@ func writeNavPane(b *bytes.Buffer, r *Report) {
 	b.WriteString("<a class=\"nav-item nav-overview is-active\" href=\"#overview\" data-nav-target=\"overview\">Overview</a>\n")
 	for i := range r.Specs {
 		sp := &r.Specs[i]
-		b.WriteString("<details class=\"nav-spec\" open>\n<summary class=\"nav-item nav-spec-sum tone-")
+		b.WriteString("<details class=\"nav-spec\" data-spec-id=\"")
+		b.WriteString(html.EscapeString(sp.ID))
+		b.WriteString("\" open>\n<summary class=\"nav-item nav-spec-sum tone-")
 		b.WriteString(html.EscapeString(sp.Verdict))
 		b.WriteString("\"><a href=\"#")
 		b.WriteString(html.EscapeString(sp.ID))
@@ -128,7 +130,9 @@ func writeNavPane(b *bytes.Buffer, r *Report) {
 		b.WriteString(html.EscapeString(sp.ID))
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(sp.Heading))
-		b.WriteString("</a><span class=\"nav-badge ")
+		b.WriteString("</a><span class=\"nav-count\" data-nav-scn-count>")
+		b.WriteString(html.EscapeString(fmt.Sprintf("%d/%d", sp.Summary.Passed, sp.Summary.Total)))
+		b.WriteString("</span><span class=\"nav-badge ")
 		b.WriteString(html.EscapeString(sp.Verdict))
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(verdictLabel(sp.Verdict)))

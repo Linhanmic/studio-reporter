@@ -519,3 +519,12 @@ html, body {
   .report-block { break-inside: avoid; page-break-inside: avoid; }
   .shot-thumb img, .shots img { max-width: 100%; max-height: none; }
 }
+
+.nav-pane .nav-count {
+  margin-left: 6px;
+  font-size: 10px;
+  color: #5a6a7a;
+  font-variant-numeric: tabular-nums;
+}
+
+.nav-pane .nav-spec.filter-hidden { display: none !important; }

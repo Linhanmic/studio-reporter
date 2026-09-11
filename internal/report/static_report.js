@@ -191,6 +191,23 @@
   }
 
 
+
+  function syncNavCounts() {
+    document.querySelectorAll('.nav-pane .nav-spec[data-spec-id]').forEach(function (navSpec) {
+      var specId = navSpec.getAttribute('data-spec-id') || '';
+      var specEl = specId ? document.getElementById(specId) : null;
+      var counts = emptyCounts();
+      if (specEl) {
+        specEl.querySelectorAll('.report-block[data-kind="scenario"]').forEach(function (scn) {
+          if (isNodeVisuallyCounted(scn)) bumpCounts(counts, scn.getAttribute('data-verdict') || '');
+        });
+      }
+      var el = navSpec.querySelector('[data-nav-scn-count]');
+      if (el) el.textContent = formatCountsRatio(counts);
+      navSpec.classList.toggle('filter-hidden', counts.total === 0);
+    });
+  }
+
   function syncOverviewSpecList() {
     document.querySelectorAll('.overview-spec-row[data-spec-id]').forEach(function (row) {
       var specId = row.getAttribute('data-spec-id') || '';
@@ -309,6 +326,7 @@
     syncOverviewCounts();
     syncFilterBadges();
     syncOverviewSpecList();
+    syncNavCounts();
   }
 
   document.querySelectorAll('.filter-group').forEach(function (group) {
@@ -384,6 +402,7 @@
     syncOverviewCounts();
     syncFilterBadges();
     syncOverviewSpecList();
+    syncNavCounts();
     if (opts.silent) return;
     if (typeof flashStatus === 'function') {
       flashStatus(failStepsOnly ? '已开启：仅显示失败场景与失败步骤' : '已关闭：仅失败步骤');

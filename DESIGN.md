@@ -138,6 +138,7 @@ Gauge (gRPC)
 | 2026-09-11 | Overview 汇总计数对齐可见树 | 过滤与 fail-steps-mode 下顶栏/Overview 计数按可见节点重算；与失败摘要同步同一可见性规则 |
 | 2026-09-11 | 工具栏过滤徽标对齐可见树 | 过滤器徽标按搜索/交叉过滤/fail-steps 重算；表示「点选后可见量」而非静态全量 |
 | 2026-09-11 | Overview 规格书清单对齐可见树 | 过滤后隐藏不可见规格书行并刷新场景计数；与汇总/摘要同一可见性规则 |
+| 2026-09-11 | 导航树场景计数对齐可见树 | 左侧导航规格书旁显示可见场景计数；无可见子场景时隐藏该导航节点 |
 | 2026-09-11 | 场景级运行对比 | 从两侧 `report.json` 提取 ScenarioLite；按 file+heading+row 对齐；分类 regressed/fixed/added/removed/reason_changed；Desktop 历史对比面板展示 |
 | 2026-09-11 | Desktop 导出进度条 UI | 历史页可视进度条；`formatExportProgress` 统一状态文案（百分比 + basename）；取消仍走 cancel-export |
 | 2026-09-11 | 截图灯箱 ←/→ | 打开后收集 `[data-shot-src]`；←/→ 与前后按钮环绕切换；`#shot-lightbox-pos`；Go/JS 步进契约对齐 |
