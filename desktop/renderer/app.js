@@ -293,6 +293,7 @@ function fillSettingsForm() {
   $('settingAutoJump').checked = s.autoJumpToReport !== false;
   $('settingJumpSeconds').value = s.autoJumpSeconds ?? 5;
   $('settingGaugeBin').value = s.gaugeBin || 'gauge';
+  $('settingAutoCheckUpdates').checked = Boolean(s.autoCheckUpdates);
   $('gaugeProjectDir').value = s.gaugeProjectDir || $('gaugeProjectDir').value || '';
   $('gaugeSpecs').value = s.gaugeSpecs || $('gaugeSpecs').value || 'specs';
   $('gaugeEnv').value = s.gaugeEnv || '';
@@ -344,6 +345,40 @@ async function refreshPluginDetect() {
   }
 }
 
+function renderUpdaterStatus(status) {
+  const el = $('updaterStatus');
+  const installBtn = $('btnQuitInstall');
+  if (!el) return;
+  el.classList.remove('ok', 'warn', 'error', 'muted');
+  if (!status) {
+    el.textContent = '尚未检查';
+    el.classList.add('muted');
+    installBtn?.classList.add('hidden');
+    return;
+  }
+  el.textContent = status.message || status.state || '';
+  if (status.state === 'current' || status.state === 'ready') el.classList.add('ok');
+  else if (status.state === 'error') el.classList.add('error');
+  else if (status.state === 'available' || status.state === 'downloading' || status.state === 'checking') {
+    el.classList.add('warn');
+  } else el.classList.add('muted');
+  if (installBtn) {
+    installBtn.classList.toggle('hidden', status.state !== 'ready');
+  }
+}
+
+async function checkUpdates() {
+  renderUpdaterStatus({ state: 'checking', message: '正在检查更新…' });
+  try {
+    const status = await window.desktopAPI.checkUpdates();
+    renderUpdaterStatus(status);
+    return status;
+  } catch (err) {
+    renderUpdaterStatus({ state: 'error', message: String(err.message || err) });
+    return null;
+  }
+}
+
 function clearDiscoverWatch() {
   if (state.discoverTimer) {
     clearTimeout(state.discoverTimer);
@@ -382,6 +417,7 @@ async function saveSettings() {
     gaugeProjectDir: $('gaugeProjectDir').value.trim(),
     gaugeSpecs: $('gaugeSpecs').value.trim() || 'specs',
     gaugeEnv: $('gaugeEnv').value.trim(),
+    autoCheckUpdates: $('settingAutoCheckUpdates').checked,
   };
   state.settings = await window.desktopAPI.saveSettings(partial);
   state.autoJump = state.settings.autoJumpToReport;
@@ -486,6 +522,16 @@ function wire() {
   $('btnRefreshPlugin')?.addEventListener('click', () => {
     refreshPluginDetect();
   });
+  $('btnCheckUpdates')?.addEventListener('click', () => {
+    checkUpdates();
+  });
+  $('btnQuitInstall')?.addEventListener('click', async () => {
+    try {
+      await window.desktopAPI.quitAndInstall();
+    } catch (err) {
+      setStatus(String(err.message || err), 'warn');
+    }
+  });
   $('btnExportPdf').addEventListener('click', async () => {
     try {
       await window.desktopAPI.exportReport('pdf');
@@ -577,6 +623,9 @@ function wire() {
     const runningN = (data?.sessions || []).filter((s) => s.status === 'running').length;
     setGaugeRunning(runningN);
   });
+  window.desktopAPI.onUpdaterStatus((data) => {
+    renderUpdaterStatus(data);
+  });
 }
 
 (async function init() {
@@ -594,6 +643,12 @@ function wire() {
   }
   try {
     await refreshPluginDetect();
+  } catch {
+    /* ignore */
+  }
+  try {
+    const st = await window.desktopAPI.getUpdaterStatus();
+    renderUpdaterStatus(st);
   } catch {
     /* ignore */
   }

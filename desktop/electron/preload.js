@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   getSettings: () => ipcRenderer.invoke('desktop:get-settings'),
   saveSettings: (partial) => ipcRenderer.invoke('desktop:save-settings', partial),
   detectPlugin: () => ipcRenderer.invoke('desktop:detect-plugin'),
+  getUpdaterStatus: () => ipcRenderer.invoke('desktop:updater-status'),
+  checkUpdates: () => ipcRenderer.invoke('desktop:check-updates'),
+  quitAndInstall: () => ipcRenderer.invoke('desktop:quit-and-install'),
   pickHubDir: () => ipcRenderer.invoke('desktop:pick-hub-dir'),
   listHistory: (hubDir) => ipcRenderer.invoke('desktop:list-history', hubDir),
   openHistoryRun: (entry) => ipcRenderer.invoke('desktop:open-history-run', entry),
@@ -74,5 +77,10 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('sessions-updated', handler);
     return () => ipcRenderer.removeListener('sessions-updated', handler);
+  },
+  onUpdaterStatus: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('updater-status', handler);
+    return () => ipcRenderer.removeListener('updater-status', handler);
   },
 });

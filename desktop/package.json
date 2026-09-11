@@ -7,7 +7,7 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test electron/discover.test.js electron/compat.test.js electron/plugin-detect.test.js electron/settings.test.js electron/compare.test.js electron/paths.test.js electron/gauge-run.test.js electron/sessions.test.js",
+    "test": "node --test electron/discover.test.js electron/compat.test.js electron/plugin-detect.test.js electron/updater.test.js electron/settings.test.js electron/compare.test.js electron/paths.test.js electron/gauge-run.test.js electron/sessions.test.js",
     "pack:check": "node scripts/prepare-pack-resources.js",
     "pack:dir": "npm run pack:check && electron-builder --dir --publish never",
     "pack": "npm run pack:check && electron-builder --publish never",
@@ -17,7 +17,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@studio-reporter/discover": "file:../packages/studio-reporter-discover"
+    "@studio-reporter/discover": "file:../packages/studio-reporter-discover",
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "electron": "^37.2.0",
@@ -31,13 +32,18 @@
       "output": "dist",
       "buildResources": "build"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Linhanmic",
+        "repo": "studio-reporter"
+      }
+    ],
     "files": [
       "electron/**/*",
       "renderer/**/*",
       "package.json",
-      "!electron/**/*.test.js",
-      "!**/node_modules/**/*",
-      "node_modules/@studio-reporter/discover/**/*"
+      "!electron/**/*.test.js"
     ],
     "extraResources": [
       {

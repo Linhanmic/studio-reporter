@@ -31,6 +31,7 @@ const {
   rememberRecentProject,
   GaugeSessionManager,
 } = require('./sessions.js');
+const { createUpdater } = require('./updater.js');
 
 const DESKTOP_VERSION = '0.5.2';
 /** Dev: repo root. Packaged: Electron extraResources (viewer + report-assets + bin). */
@@ -46,6 +47,14 @@ let assetServer = null;
 let assetPort = 0;
 let bridge = null;
 const sessionManager = new GaugeSessionManager();
+const updater = createUpdater({
+  isPackaged: app.isPackaged,
+  autoDownload: true,
+  logger: console,
+});
+updater.setStatusListener((status) => {
+  sendToRenderer('updater-status', status);
+});
 
 function sendToRenderer(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -235,6 +244,19 @@ function buildMenu() {
     label: `Studio Reporter Desktop ${DESKTOP_VERSION}`,
     enabled: false,
   });
+  helpItems.push({
+    label: '检查更新…',
+    click: async () => {
+      const status = await updater.checkForUpdates();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        dialog.showMessageBox(mainWindow, {
+          type: status.state === 'error' ? 'error' : 'info',
+          message: '检查更新',
+          detail: status.message,
+        });
+      }
+    },
+  });
 
   const template = [
     {
@@ -322,6 +344,10 @@ function registerIpc() {
   }));
 
   ipcMain.handle('desktop:detect-plugin', async () => detectInstalledPlugin());
+
+  ipcMain.handle('desktop:updater-status', async () => updater.getStatus());
+  ipcMain.handle('desktop:check-updates', async () => updater.checkForUpdates());
+  ipcMain.handle('desktop:quit-and-install', async () => updater.quitAndInstall());
 
   ipcMain.handle('desktop:connect-ws', async (_evt, input) => connectLiveWs(input));
 
@@ -557,6 +583,16 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+  try {
+    const settings = loadSettings(app.getPath('userData'));
+    if (app.isPackaged && settings.autoCheckUpdates) {
+      setTimeout(() => {
+        updater.checkForUpdates().catch(() => {});
+      }, 2500);
+    }
+  } catch {
+    /* ignore */
+  }
 });
 
 app.on('window-all-closed', () => {

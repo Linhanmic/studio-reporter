@@ -12,6 +12,7 @@ const DEFAULTS = {
   gaugeEnv: '',
   gaugeBin: 'gauge',
   recentProjects: [],
+  autoCheckUpdates: false,
 };
 
 function settingsPath(userDataDir) {

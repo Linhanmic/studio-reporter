@@ -61,6 +61,7 @@
 - [x] 共享 discover 包（`packages/studio-reporter-discover` / `@studio-reporter/discover`）
 - [x] Desktop 插件版本门闸（ServerHello ≥ 0.5.0 + 必需 capabilities）
 - [x] Desktop 本机插件安装检测（扫描 `~/.gauge/plugins/studio-reporter`；设置页 + discover 超时提示）
+- [x] Desktop 自动更新骨架（electron-updater → GitHub Releases；设置/菜单；Release workflow 上传 AppImage）
 
 ## 迭代日志
 
@@ -91,7 +92,8 @@
 | 2026-09-11 | Desktop 多项目/多会话 | `sessions.js`：最近项目列表 + 最多 3 路并行 Gauge；会话条切换 live；CI 增加 desktop unit tests |
 | 2026-09-11 | 共享 discover + 版本门闸 | `@studio-reporter/discover`；Desktop `compat.js` 校验 ServerHello；CI 跑共享包测试 |
 | 2026-09-11 | 本机插件安装检测 | `plugin-detect.js` 扫描 `GAUGE_HOME`/`~/.gauge`/`%APPDATA%/Gauge`；设置页 + discover 20s 超时引导 |
+| 2026-09-11 | Desktop 自动更新骨架 | `electron-updater` + GitHub publish；设置/菜单检查更新；Release 增加 Desktop AppImage 上传；签名 secrets 仍缺 |
 
 ## 下一任务（选定）
 
-**安装包签名 / 自动更新**，或原生报告树（若 WebView 不足），或 GaugeStudio 真正消费 `@studio-reporter/discover`。
+**代码签名（macOS/Windows secrets）**，或原生报告树，或 GaugeStudio 真正消费 `@studio-reporter/discover`。

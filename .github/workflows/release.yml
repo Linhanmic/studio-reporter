@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  release-plugin:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,10 +18,42 @@ jobs:
           go-version: "1.27"
       - name: Build plugin zips
         run: ./build-all.sh
-      - name: Publish GitHub Release
+      - name: Upload plugin zips
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.zip
           generate_release_notes: true
           fail_on_unmatched_files: true
+          overwrite_files: true
+
+  release-desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Build CLI for Desktop extraResources
+        run: make build
+      - name: Pack Desktop (Linux AppImage + dir)
+        run: |
+          cd desktop
+          npm ci
+          npm run pack
+        env:
+          # Unsigned draft artifacts; code signing certs are optional secrets.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Upload Desktop artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/dist/*.AppImage
+            desktop/dist/latest*.yml
+          generate_release_notes: true
+          fail_on_unmatched_files: false
           overwrite_files: true

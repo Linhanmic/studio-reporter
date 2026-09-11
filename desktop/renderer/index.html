@@ -115,6 +115,19 @@
             </div>
             <p id="pluginDetectHint" class="hint muted"></p>
           </div>
+          <label class="field check">
+            <input id="settingAutoCheckUpdates" type="checkbox">
+            <span>启动时检查 Desktop 更新（仅打包安装包；来源 GitHub Releases）</span>
+          </label>
+          <div class="field">
+            <span>Desktop 更新</span>
+            <div class="field-row">
+              <span id="updaterStatus" class="plugin-status muted">尚未检查</span>
+              <button type="button" id="btnCheckUpdates" class="btn">检查更新</button>
+              <button type="button" id="btnQuitInstall" class="btn hidden">重启并安装</button>
+            </div>
+            <p class="hint muted">签名证书未配置时，部分平台可能无法完成静默校验；可仍从 Releases 手动下载。</p>
+          </div>
           <div class="field-row">
             <button type="button" id="btnSaveSettings" class="btn primary">保存设置</button>
             <span id="settingsStatus" class="muted"></span>
