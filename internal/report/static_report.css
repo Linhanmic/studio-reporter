@@ -470,3 +470,15 @@ html, body {
   .report-block { break-inside: avoid; page-break-inside: avoid; }
   .shot-thumb img, .shots img { max-width: 100%; max-height: none; }
 }
+
+
+/* Fail-steps-only mode: hide non-fail step/concept rows inside the result tree. */
+.fail-steps-mode .result-pane .report-block[data-kind="step"]:not([data-verdict="fail"]),
+.fail-steps-mode .result-pane .report-block[data-kind="concept"]:not([data-verdict="fail"]) {
+  display: none !important;
+}
+.action-btn[data-action="fail-steps-only"][aria-pressed="true"] {
+  border-color: var(--fail, #e85d5d);
+  color: var(--fail, #e85d5d);
+  background: rgba(232, 93, 93, 0.12);
+}

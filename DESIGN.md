@@ -125,6 +125,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 失败跳转可见性 | `prepareFailJumpFilter` 在跳转前清除遮挡 query / 切 fail；重放 `studio-reporter:filter` 后再 select |
 | 2026-09-11 | Desktop 历史对比导出模板 | `compareCardTemplate`（default/light/compact）+ `compareCardTitle`；分享 HTML 带 data-template |
 | 2026-09-11 | Desktop Discover 超时可配置 | `discoverTimeoutMs`（默认 20s，钳制 5–120s）；设置页秒级输入；启动 Gauge 使用该值 |
+| 2026-09-11 | 静态报告仅失败步骤 | 工具栏 `fail-steps-only` 切换；隐藏非失败 step/concept；展开失败步骤与祖先；sessionStorage 记忆 |
 | 2026-09-11 | 场景级运行对比 | 从两侧 `report.json` 提取 ScenarioLite；按 file+heading+row 对齐；分类 regressed/fixed/added/removed/reason_changed；Desktop 历史对比面板展示 |
 | 2026-09-11 | Desktop 导出进度条 UI | 历史页可视进度条；`formatExportProgress` 统一状态文案（百分比 + basename）；取消仍走 cancel-export |
 | 2026-09-11 | 截图灯箱 ←/→ | 打开后收集 `[data-shot-src]`；←/→ 与前后按钮环绕切换；`#shot-lightbox-pos`；Go/JS 步进契约对齐 |

@@ -43,6 +43,7 @@ func TestRenderReportHTMLStaticShape(t *testing.T) {
 		`data-name="Fail path"`,
 		`leaf-row`,
 		`expand-all`,
+		`fail-steps-only`,
 		`copy-fail-summary`,
 		`search-input`,
 		`class="err">nope`,

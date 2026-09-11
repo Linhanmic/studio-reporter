@@ -87,6 +87,7 @@
 - [x] Desktop Windows 打包 CLI（`make build-windows`；`pack:check:win`/`pack:dir:win`/`pack:win`；平台级 `extraResources` 打入 `studio-reporter.exe`）
 - [x] Desktop 导出进度条 UI（百分比 + 当前 `.uhilreport` 文件名；`formatExportProgress`）
 - [x] Desktop/报告 场景级对比（verdict + 失败原因 diff；`CompareScenarios` / `scenario-compare.js`）
+- [x] 静态报告「仅失败步骤」模式（工具栏切换；隐藏 pass/skip step/concept；sessionStorage 记忆）
 
 ## 迭代日志
 
@@ -159,6 +160,8 @@
 
 | 2026-09-11 | 场景级运行对比 | `CompareScenarios` + Desktop `scenario-compare`；历史对比面板展示变差/修复/新增/消失与失败原因 |
 
+| 2026-09-11 | 静态报告仅失败步骤 | 工具栏切换 `fail-steps-only`；CSS 隐藏非失败 step/concept；自动展开失败步骤与祖先 |
+
 ## 下一任务（选定）
 
-**静态报告「仅失败步骤」快速折叠**，或对比分享卡片纳入场景级 diff，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**对比分享卡片纳入场景级 diff**，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限），或 Desktop 深链打开对比两侧运行。
