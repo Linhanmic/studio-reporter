@@ -146,8 +146,8 @@ Hub sidecars written by `studio-reporter digest --write`, Desktop export/refresh
 | `generatedAt` | string | RFC3339 UTC timestamp when the digest was built |
 | `hubDir` | string | Absolute hub path when known |
 | `runCount` / `failRunCount` / … | int | Window counters |
-| `groups` | array | Aggregated `topFailReason` groups |
-| `openLinksLatest` / `openLinksAll` | string[] | Optional deep links when hub is known |
+| `groups` | array | Aggregated `topFailReason` groups (`lastRunFocus` = path-style DOM id when known) |
+| `openLinksLatest` / `openLinksAll` | string[] | Optional deep links when hub is known; last-run links include `focus=` (query encodes `/` as `%2F`) when `lastRunFocus` is set |
 
 Markdown includes the same `formatVersion` / `generatedAt` meta lines for human/CI grepping.
 

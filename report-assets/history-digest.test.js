@@ -108,6 +108,11 @@ describe('report-assets/history-digest', () => {
     assert.equal(u.searchParams.get('focus'), focus);
     const md = formatHistoryFailDigestMarkdown(digest, { hubDir: hub, title: 'focus-e2e' });
     assert.match(md, /focus=spec%3Aspecs%2Fauth%2Flogin\.spec-scn-0/);
+    const json = formatHistoryFailDigestJson(digest, { hubDir: hub });
+    assert.equal(json.groups[0].lastRunFocus, focus);
+    assert.ok(Array.isArray(json.openLinksLatest) && json.openLinksLatest.length >= 1);
+    assert.ok(String(json.openLinksLatest[0]).includes('%2F'));
+    assert.equal(new URL(json.openLinksLatest[0]).searchParams.get('focus'), focus);
   });
 
 });

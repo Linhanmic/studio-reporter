@@ -252,7 +252,11 @@ func historyFailDigestOpenLinks(d HistoryFailDigest, mode string) []string {
 				continue
 			}
 			seen[id] = struct{}{}
-			if link := openDeepLinkForRun(id, d.HubDir); link != "" {
+			focus := ""
+			if id == g.LastRunID {
+				focus = g.LastRunFocus
+			}
+			if link := openDeepLink(id, d.HubDir, focus, true); link != "" {
 				out = append(out, link)
 			}
 		}

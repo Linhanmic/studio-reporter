@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -332,5 +333,64 @@ func TestHistoryFailDigestPathStyleFocusDeepLink(t *testing.T) {
 	}
 	if got := u.Query().Get("focus"); got != entry.TopFailFocus {
 		t.Fatalf("focus round-trip: want %q got %q link=%s", entry.TopFailFocus, got, link)
+	}
+}
+
+func TestWriteHistoryFailDigestSidecarsPathStyleFocus(t *testing.T) {
+	rpt := report.FromSuite(sampleSuite())
+	entry := historyEntryFromReport(rpt)
+	if entry.TopFailFocus == "" || !strings.Contains(entry.TopFailFocus, "/") {
+		t.Fatalf("path-style TopFailFocus required, got %q", entry.TopFailFocus)
+	}
+	entry.ID = "run-sidecar-1"
+	entry.Verdict = "fail"
+	entry.Failed = true
+	entry.TimestampISO = "2026-09-11T13:00:00Z"
+
+	dir := t.TempDir()
+	hist := &HistoryFile{FormatVersion: report.FormatVersion, Runs: []HistoryEntry{entry}}
+	if err := writeHistoryFile(dir, hist); err != nil {
+		t.Fatal(err)
+	}
+	d, err := loadHistoryFailDigestFromHub(dir, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeHistoryFailDigestSidecars(dir, d); err != nil {
+		t.Fatal(err)
+	}
+	md, err := os.ReadFile(filepath.Join(dir, "fail-digest.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(md), "focus=") || !strings.Contains(string(md), "%2F") {
+		t.Fatalf("fail-digest.md missing path-style focus:\n%s", md)
+	}
+	js, err := os.ReadFile(filepath.Join(dir, "fail-digest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(js)
+	if !strings.Contains(body, `"lastRunFocus"`) {
+		t.Fatalf("json missing lastRunFocus: %s", body)
+	}
+	if !strings.Contains(body, "openLinksLatest") || !strings.Contains(body, "%2F") {
+		t.Fatalf("json openLinksLatest missing path-style focus encoding: %s", body)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(js, &payload); err != nil {
+		t.Fatal(err)
+	}
+	links, _ := payload["openLinksLatest"].([]any)
+	if len(links) < 1 {
+		t.Fatalf("openLinksLatest empty: %+v", payload)
+	}
+	link, _ := links[0].(string)
+	u, err := url.Parse(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := u.Query().Get("focus"); got != entry.TopFailFocus {
+		t.Fatalf("sidecar open link focus: want %q got %q (%s)", entry.TopFailFocus, got, link)
 	}
 }

@@ -89,20 +89,34 @@ describe('history-digest', () => {
     const before = probeHistoryFailDigestSidecars(hub);
     assert.equal(before.md, false);
     assert.equal(before.json, false);
+    const focus = 'spec:specs/auth/login.spec-scn-0';
     const runs = [
-      { id: 'r1', verdict: 'fail', topFailReason: 'timeout', timestampISO: '2026-09-02T10:00:00Z' },
+      {
+        id: 'r1',
+        verdict: 'fail',
+        topFailReason: 'timeout',
+        topFailFocus: focus,
+        timestampISO: '2026-09-02T10:00:00Z',
+      },
       { id: 'r2', verdict: 'pass' },
     ];
     const written = writeHistoryFailDigestSidecars(hub, runs);
     assert.equal(written.digest.failRunCount, 1);
     assert.ok(fs.existsSync(written.mdPath));
     assert.ok(fs.existsSync(written.jsonPath));
-    assert.match(fs.readFileSync(written.mdPath, 'utf8'), /timeout/);
+    const md = fs.readFileSync(written.mdPath, 'utf8');
+    assert.match(md, /timeout/);
+    assert.match(md, /focus=spec%3Aspecs%2Fauth%2Flogin\.spec-scn-0/);
     const json = JSON.parse(fs.readFileSync(written.jsonPath, 'utf8'));
     assert.equal(json.format, 'studio-reporter.historyFailDigest/v1');
     assert.equal(json.formatVersion, 1);
     assert.ok(json.generatedAt);
     assert.equal(json.groups[0].reason, 'timeout');
+    assert.equal(json.groups[0].lastRunFocus, focus);
+    assert.ok(Array.isArray(json.openLinksLatest) && json.openLinksLatest.length >= 1);
+    assert.ok(String(json.openLinksLatest[0]).includes('%2F'));
+    const u = new URL(json.openLinksLatest[0]);
+    assert.equal(u.searchParams.get('focus'), focus);
     const after = probeHistoryFailDigestSidecars(hub);
     assert.equal(after.md, true);
     assert.equal(after.json, true);
