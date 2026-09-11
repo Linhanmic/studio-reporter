@@ -103,7 +103,7 @@ scripts/check-assets.sh   # CI：漂移则失败
 - 发布：打 tag → `.github/workflows/release.yml` 构建多平台 zip
 - PR：`cursor/<name>-a6c3`；合并后按需发版
 - 文档四件套：`README` / `DESIGN` / `TODO` / `QUICKSTART` 必须反映真实状态
-- 本地/CI：`make ci`（含 assets 校验、vet、test、build）；`make lint` 跑 golangci-lint
+- 本地/CI：`make ci`（含 assets 校验、vet、test、build）；`make cover` / CI `cover-summary.sh` 输出覆盖率摘要；`make lint` 跑 golangci-lint
 - 测试：`GOTOOLCHAIN=go1.27.0 go test ./...`
 
 ## 演进方向
