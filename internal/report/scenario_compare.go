@@ -34,22 +34,22 @@ const (
 
 // ScenarioDiff is one matched/unmatched scenario change (target vs base).
 type ScenarioDiff struct {
-	Key          string           `json:"key"`
-	SpecName     string           `json:"specName"`
-	ScnName      string           `json:"scnName"`
-	Kind         ScenarioDiffKind `json:"kind"`
-	BaseVerdict  string           `json:"baseVerdict,omitempty"`
-	TargetVerdict string          `json:"targetVerdict,omitempty"`
-	BaseReason   string           `json:"baseReason,omitempty"`
-	TargetReason string           `json:"targetReason,omitempty"`
+	Key           string           `json:"key"`
+	SpecName      string           `json:"specName"`
+	ScnName       string           `json:"scnName"`
+	Kind          ScenarioDiffKind `json:"kind"`
+	BaseVerdict   string           `json:"baseVerdict,omitempty"`
+	TargetVerdict string           `json:"targetVerdict,omitempty"`
+	BaseReason    string           `json:"baseReason,omitempty"`
+	TargetReason  string           `json:"targetReason,omitempty"`
 }
 
 // ScenarioCompare is the scenario-level diff between two reports.
 type ScenarioCompare struct {
-	Changed         []ScenarioDiff `json:"changed"`
-	UnchangedCount  int            `json:"unchangedCount"`
-	BaseCount       int            `json:"baseCount"`
-	TargetCount     int            `json:"targetCount"`
+	Changed        []ScenarioDiff `json:"changed"`
+	UnchangedCount int            `json:"unchangedCount"`
+	BaseCount      int            `json:"baseCount"`
+	TargetCount    int            `json:"targetCount"`
 }
 
 // ScenarioKey builds a stable match key across runs (prefers file+heading+row indexes).
