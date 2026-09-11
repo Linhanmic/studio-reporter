@@ -324,6 +324,8 @@ Desktop 通过 `electron-updater` 读取 GitHub Releases 上的 `latest-linux.ym
 
 历史工具栏「复制失败摘要」「复制摘要深链」与趋势面板「复制摘要」将当前过滤窗口的 `topFailReason` 聚合成 Markdown；有 hub 时附带各类原因最近一次失败的 `studio-reporter://open?run=&hub=&failSteps=1`（表格打开列 + 深链块）。工程入口：`studio-reporter digest --dir <hub> [--format json|markdown]`（JSON 含 `openLinksLatest` / `openLinksAll`）。
 
+浏览器侧 `manage.html` 使用同源 `report-assets/history-digest.js`：可展开失败摘要面板、复制 Markdown/深链，并在历史表展示 `topFailReason`（无绝对 hub 时深链仅带 `run` + `failSteps`）。
+
 ### 历史趋势与过滤偏好
 
 设置页可配置 `historyTrendLimit`（默认 12）与 `historyTrendFlakyLimit`（默认 20）。历史页的搜索（`historyQuery`）、结论 chips（`historyVerdict`）、失败原因关键字（`historyFailReasonQuery`）防抖写入 `desktop-settings.json`，重启后恢复；「运行趋势」读取上述窗口上限而非硬编码。

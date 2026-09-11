@@ -124,6 +124,7 @@
 - [x] Desktop 自动更新 feed 离线校验 + 代码签名 secrets 文档（`update-feed.js`；DESKTOP 签名表；updater 下载/就绪/安装路径单测）
 - [x] 历史失败摘要 digest（跨运行聚合 topFailReason；Desktop 复制 Markdown；CLI `digest --dir`；JSON/Markdown）
 - [x] Desktop/CLI 失败摘要附带打开深链（`studio-reporter://open?run=&hub=&failSteps=1`；工具栏「复制摘要深链」；Markdown/JSON 同源）
+- [x] manage.html 历史失败摘要（`report-assets/history-digest.js` 与 Desktop/CLI 同源；面板 + 复制 Markdown/深链；表格展示 topFailReason）
 
 ## 迭代日志
 
@@ -247,6 +248,10 @@
 
 | 2026-09-11 | 失败摘要附带打开深链 | digest Markdown/JSON 含 `studio-reporter://open`；Desktop「复制摘要深链」；CLI 与趋势面板同源；复用 deeplink 契约 |
 
+| 2026-09-11 | 失败摘要附带打开深链 | digest Markdown/JSON 含 `studio-reporter://open`；Desktop「复制摘要深链」；CLI 与趋势面板同源；复用 deeplink 契约 |
+
+| 2026-09-11 | manage.html 历史失败摘要 | 嵌入 `history-digest.js`；失败摘要面板 + 复制 Markdown/深链；列表展示 topFailReason；与 Desktop/CLI 契约对齐 |
+
 ## 下一任务（选定）
 
-**manage.html 历史失败摘要**（浏览器侧与 Desktop/CLI 同源 digest，便于无 Desktop 时的 hub 审阅），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
+**静态报告 Overview 失败原因一键定位**（从聚合行跳到场景 / 附带打开深链），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。

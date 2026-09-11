@@ -29,6 +29,20 @@
       padding: 6px 8px; background: #eef3f8; border-bottom: 1px solid #c5d0dc;
     }
     .toolbar .hint { font-size: 11px; color: #8a9aab; margin-left: 4px; }
+    .digest-pane {
+      flex: 0 0 auto;
+      background: #fff;
+      border-bottom: 1px solid #c5d0dc;
+      padding: 8px 10px;
+      max-height: 220px;
+      overflow: auto;
+    }
+    .digest-pane h2 { margin: 0 0 6px; font-size: 12px; color: #1f4668; }
+    .digest-pane table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .digest-pane th, .digest-pane td { border: 1px solid #c5d0dc; padding: 3px 6px; text-align: left; }
+    .digest-pane th { background: #f7fafc; color: #5a6a7a; }
+    .digest-pane .muted { color: #8a9aab; }
+    .digest-pane a { color: #1f4668; }
     .compare-pane {
       flex: 0 0 auto;
       background: #fff;
@@ -76,9 +90,34 @@
         <el-button size="small" type="primary" @click="openCurrent">打开当前报告</el-button>
         <el-button size="small" @click="reload">刷新</el-button>
         <el-button size="small" :disabled="selected.length !== 2" @click="clearSelection">清除对比</el-button>
+        <el-button size="small" :disabled="!runs.length" @click="toggleDigest" :type="showDigest ? 'primary' : 'default'">{{ showDigest ? '隐藏失败摘要' : '失败摘要' }}</el-button>
+        <el-button size="small" :disabled="!failDigest.groups.length" @click="copyFailDigest">复制失败摘要</el-button>
+        <el-button size="small" :disabled="!failDigest.groups.length" @click="copyFailDigestLinks">复制摘要深链</el-button>
         <span v-if="!canDelete" class="hint">删除操作需要通过 studio-reporter --serve 打开本页</span>
         <span v-else-if="selected.length < 2" class="hint">再选 {{ 2 - selected.length }} 次运行以对比</span>
       </div>
+      <section v-if="showDigest" class="digest-pane">
+        <h2>历史失败摘要（{{ failDigest.failRunCount }} 次失败 / {{ failDigest.groups.length }} 类原因）</h2>
+        <p v-if="!failDigest.groups.length" class="muted">{{ failDigest.failRunCount ? '失败运行未写入 topFailReason。' : '窗口内无失败运行。' }}</p>
+        <table v-else>
+          <thead>
+            <tr><th>#</th><th>次数</th><th>最近运行</th><th>打开</th><th>失败原因</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="(g, i) in failDigest.groups" :key="g.reason">
+              <td>{{ i + 1 }}</td>
+              <td>{{ g.count }}</td>
+              <td><code>{{ g.lastRunId || '—' }}</code></td>
+              <td>
+                <a v-if="openLinkFor(g.lastRunId)" :href="openLinkFor(g.lastRunId)">open</a>
+                <span v-else>—</span>
+              </td>
+              <td>{{ g.reason }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-if="failDigest.runsWithoutReason && failDigest.runsWithoutReason.length" class="muted">另有 {{ failDigest.runsWithoutReason.length }} 次失败无原因文本。</p>
+      </section>
       <section v-if="compare" class="compare-pane">
         <h2>对比：{{ compare.base.timestamp || compare.base.id }} → {{ compare.target.timestamp || compare.target.id }}</h2>
         <div class="compare-grid">
@@ -122,6 +161,9 @@
             <template #default="{ row }">{{ counts(row, 'steps') }}</template>
           </el-table-column>
           <el-table-column label="运行时间" width="112" prop="duration"></el-table-column>
+          <el-table-column label="失败原因" min-width="160" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.topFailReason || row.failReason || '—' }}</template>
+          </el-table-column>
           <el-table-column label="操作" width="150">
             <template #default="{ row }">
               <el-button size="small" @click="openRun(row)">打开</el-button>
@@ -139,6 +181,7 @@
   </div>
   <script src="assets/vue.global.prod.js"></script>
   <script src="assets/element-plus.full.min.js"></script>
+  <script src="assets/history-digest.js"></script>
   <script>
     (function () {
       function loadScriptData(src, key) {
@@ -202,10 +245,18 @@
             runs: [],
             selected: [],
             formatVersion: '-',
+            showDigest: false,
             canDelete: window.location.protocol === 'http:' || window.location.protocol === 'https:'
           };
         },
         computed: {
+          failDigest: function () {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api || typeof api.buildHistoryFailDigest !== 'function') {
+              return { runCount: 0, failRunCount: 0, groups: [], runsWithoutReason: [] };
+            }
+            return api.buildHistoryFailDigest(this.runs, { limit: 15 });
+          },
           compare: function () {
             if (this.selected.length !== 2) return null;
             // Newer selection is target; keep chronological base→target by timestamp when possible.
@@ -217,6 +268,54 @@
           }
         },
         methods: {
+          openLinkFor: function (runId) {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api || !runId) return '';
+            return api.buildOpenDeepLinkForRun(runId, '');
+          },
+          toggleDigest: function () {
+            this.showDigest = !this.showDigest;
+          },
+          copyText: async function (text, okMsg) {
+            try {
+              await navigator.clipboard.writeText(text);
+              ElementPlus.ElMessage.success(okMsg);
+            } catch (e) {
+              ElementPlus.ElMessage.error('复制失败：' + e);
+            }
+          },
+          copyFailDigest: function () {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api) {
+              ElementPlus.ElMessage.error('当前页面未加载失败摘要模块');
+              return;
+            }
+            var md = api.formatHistoryFailDigestMarkdown(this.failDigest, {
+              title: '历史失败摘要',
+              hubDir: '',
+              includeOpenLinks: true,
+            });
+            this.copyText(md, this.failDigest.failRunCount
+              ? ('已复制失败摘要：' + this.failDigest.groups.length + ' 类原因')
+              : '已复制失败摘要（无失败）');
+          },
+          copyFailDigestLinks: function () {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api) {
+              ElementPlus.ElMessage.error('当前页面未加载失败摘要模块');
+              return;
+            }
+            var links = api.buildHistoryFailDigestOpenLinks(this.failDigest, {
+              hubDir: '',
+              mode: 'latest',
+            });
+            if (!String(links || '').trim()) {
+              ElementPlus.ElMessage.warning('没有可复制的失败打开深链');
+              return;
+            }
+            var n = links.split('\n').filter(Boolean).length;
+            this.copyText(links, '已复制 ' + n + ' 条失败摘要打开深链');
+          },
           verdictLabel: function (v) { return { pass: '通过', fail: '失败', skip: '跳过' }[v] || '—'; },
           tagType: function (v) { return { pass: 'success', fail: 'danger', skip: 'info' }[v] || 'info'; },
           rowClass: function (scope) {
