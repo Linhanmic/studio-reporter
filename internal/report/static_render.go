@@ -231,12 +231,69 @@ func writeStepBlock(b *bytes.Buffer, phase string, item ItemReport) {
 	verdict := step.Verdict
 	tone := toneClass(verdict)
 	name := stepTextHTML(step)
+	dur := itemDurationStr(item)
+	label := itemTypeLabel(phase, item)
+	if !stepHasExtras(step) {
+		writeLeafRow(b, tone, verdict, "step", name, label, dur)
+		return
+	}
 	open := verdict == VerdictFail
 	writeReportBlockOpen(b, tone, verdict, "step", open)
-	writeBlockSummary(b, name, itemTypeLabel(phase, item), verdict, itemDurationStr(item))
+	writeBlockSummary(b, name, label, verdict, dur)
 	b.WriteString("<div class=\"block-body\">\n")
 	writeStepExtras(b, step)
 	b.WriteString("</div></details>\n")
+}
+
+func writeLeafRow(b *bytes.Buffer, tone, verdict, kind, name, typeLabel, duration string) {
+	b.WriteString("<div class=\"report-block leaf-row ")
+	b.WriteString(tone)
+	b.WriteString("\" data-verdict=\"")
+	b.WriteString(html.EscapeString(verdict))
+	b.WriteString("\" data-kind=\"")
+	b.WriteString(html.EscapeString(kind))
+	b.WriteString("\"><div class=\"leaf-summary\"><span class=\"summary-left\"><span class=\"name-cell\">")
+	b.WriteString(name)
+	b.WriteString("</span></span><span class=\"summary-meta\"><span class=\"type-label\">")
+	b.WriteString(html.EscapeString(typeLabel))
+	b.WriteString("</span><span class=\"badge ")
+	b.WriteString(html.EscapeString(verdict))
+	b.WriteString("\">")
+	b.WriteString(html.EscapeString(verdictLabel(verdict)))
+	b.WriteString("</span></span><span class=\"dur\">")
+	b.WriteString(html.EscapeString(duration))
+	b.WriteString("</span></div></div>\n")
+}
+
+func stepHasExtras(step *StepReport) bool {
+	if step == nil {
+		return false
+	}
+	if step.ErrorMessage != "" || step.StackTrace != "" || step.SkippedReason != "" {
+		return true
+	}
+	if step.PreHookFailure != nil || step.PostHookFailure != nil {
+		return true
+	}
+	if step.FailureScreenshot != "" || len(step.Screenshots) > 0 {
+		return true
+	}
+	for _, m := range step.PreHookMessages {
+		if m != "" {
+			return true
+		}
+	}
+	for _, m := range step.Messages {
+		if m != "" {
+			return true
+		}
+	}
+	for _, m := range step.PostHookMessages {
+		if m != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func writeStepExtras(b *bytes.Buffer, step *StepReport) {

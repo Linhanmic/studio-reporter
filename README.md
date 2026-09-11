@@ -11,12 +11,23 @@ The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https
 - Real-time event forwarding via WebSocket (plugin listens on a random port and prints the URL)
 - Auto-reconnect with exponential backoff
 - Supports all Gauge execution lifecycle events
-- HTML report generation (Vue 3 + Element Plus, CANoe-style layout)
-- Live result polling while Gauge is still running
+- **Static HTML report** at suite end (`index.html`, Go-rendered — no embedded JSON / no Vue required to read)
+- **Live viewer** (`viewer.html`) via WebSocket `ReportSnapshot` while the suite runs (disk writes only on finalize)
+- Spec / scenario filter toolbar on the static report (pass / fail / skip)
 - Versioned report file format (see [REPORT_FORMAT.md](REPORT_FORMAT.md))
 - Standalone report management console (`manage.html`): list, open, and delete archived runs
 - Cross-platform (Windows, Linux, macOS)
 - Configurable message size limits
+
+## Docs
+
+| Doc | Purpose |
+|-----|---------|
+| [QUICKSTART.md](QUICKSTART.md) | Install, first run, regenerate |
+| [DESIGN.md](DESIGN.md) | Architecture and decisions |
+| [TODO.md](TODO.md) | Backlog and iteration log |
+| [REPORT_FORMAT.md](REPORT_FORMAT.md) | On-disk format contract |
+| [API.md](API.md) | WebSocket / event protocol |
 
 ## Installation
 
@@ -57,11 +68,12 @@ go build -o bin/studio-reporter ./...
 ### Gauge Plugin Installation
 
 ```bash
-# Install the plugin
-gauge install studio-reporter --file studio-reporter-0.3.2-linux.x86_64.zip
+# Install the plugin (match the release version)
+gauge install studio-reporter --file studio-reporter-0.4.7-linux.x86_64.zip
 
-# Or copy to Gauge plugin directory
-cp -r studio-reporter ~/.gauge/plugins/studio-reporter/0.3.2/
+# Or unzip into the Gauge plugin directory
+mkdir -p ~/.gauge/plugins/studio-reporter/0.4.7
+unzip studio-reporter-0.4.7-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.4.7
 ```
 
 ## Usage
@@ -163,29 +175,16 @@ go tool cover -html=coverage.out
 
 ```
 studio-reporter/
-├── main.go              # Entry point
-├── reporter.go          # gRPC handler implementation
-├── report_bridge.go     # Wires history + browser into report.Engine
-├── events.go            # Event types and structures
-├── forwarder.go         # WebSocket forwarder
-├── internal/report/     # Report generation module (model, live, writer, static render)
-├── viewer.html          # Live report viewer shell (embedded into internal/report)
-├── manage.html          # Standalone report management console
-├── report-assets/       # Vue / Element Plus / report-app.js (live viewer only)
-├── history.go           # Historical run index and archives
-├── serve.go             # Optional HTTP server for history management
-├── REPORT_FORMAT.md     # Report file format specification
-├── go.mod               # Go module definition
-├── go.sum               # Go module checksums
-├── plugin.json          # Gauge plugin configuration
-├── README.md            # This file
-├── API.md               # API documentation
-├── LICENSE              # MIT License
-├── bin/                 # Compiled binaries
-├── build.sh             # Linux/macOS build script
-├── build.ps1            # Windows build script
-├── build-all.sh         # Cross-platform build script
-└── .gitignore           # Git ignore rules
+├── main.go / reporter.go / report_bridge.go / forwarder.go
+├── history.go / serve.go
+├── internal/report/     # model, live, writer, static HTML render (embedded assets)
+├── report-assets/       # live viewer JS/CSS source (synced into internal/report)
+├── plugin.json
+├── README.md / QUICKSTART.md / DESIGN.md / TODO.md
+├── REPORT_FORMAT.md / API.md
+├── .github/workflows/   # ci.yml + release.yml
+├── build.sh / build-all.sh / build.ps1
+└── LICENSE
 ```
 
 ## API Documentation

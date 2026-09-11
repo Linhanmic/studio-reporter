@@ -130,6 +130,19 @@ html, body {
   flex-shrink: 0;
 }
 .report-block[open] > summary::before { content: "\2212"; }
+.leaf-row > .leaf-summary {
+  padding: 5px 10px 5px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.leaf-row > .leaf-summary::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
 .summary-left {
   flex: 1;
   min-width: 0;
