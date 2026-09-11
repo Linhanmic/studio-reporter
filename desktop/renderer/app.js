@@ -799,6 +799,48 @@ function wireScenarioDiffViewButtons() {
       void openScenarioDiffInReport(side, scnId, failSteps);
     });
   });
+  document.querySelectorAll('.scenario-diff-actions [data-copy-side]').forEach((btn) => {
+    btn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const side = btn.getAttribute('data-copy-side');
+      const scnId = btn.getAttribute('data-scn-id');
+      const failSteps = btn.getAttribute('data-fail-steps') === '1';
+      void copyScenarioOpenDeepLink(side, scnId, failSteps);
+    });
+  });
+}
+
+async function copyScenarioOpenDeepLink(side, scnId, failSteps) {
+  const cmp = state.lastCompare;
+  if (!cmp) {
+    setStatus('请先对比两次运行', 'warn');
+    return;
+  }
+  const runId = side === 'base' ? cmp.base?.id : cmp.target?.id;
+  if (!runId) {
+    setStatus(`找不到${side === 'base' ? '基线' : '目标'}运行 id`, 'warn');
+    return;
+  }
+  const focus = String(scnId || '').trim();
+  if (!focus) {
+    setStatus('该差异缺少场景 id，无法复制深链', 'warn');
+    return;
+  }
+  try {
+    const result = await window.desktopAPI.copyOpenDeepLink({
+      run: runId,
+      hub: state.settings?.reportHubDir || '',
+      focus,
+      failSteps: !!failSteps,
+    });
+    setStatus(
+      `已复制${side === 'base' ? '基线' : '目标'}打开深链：${result?.url || 'studio-reporter://open…'}`,
+      'ok'
+    );
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
 }
 
 function renderScenarioCompareSection(cmp) {
@@ -836,8 +878,10 @@ function renderScenarioCompareSection(cmp) {
       const canBase = d.kind !== 'added' && d.baseScnId;
       const canTarget = d.kind !== 'removed' && d.targetScnId;
       const actions = `<span class="scenario-diff-actions">
-        ${canTarget ? `<button type="button" class="btn linkish" data-view-side="target" data-scn-id="${escapeHtml(d.targetScnId)}" data-fail-steps="${d.targetVerdict === 'fail' ? '1' : '0'}">目标报告</button>` : ''}
-        ${canBase ? `<button type="button" class="btn linkish" data-view-side="base" data-scn-id="${escapeHtml(d.baseScnId)}" data-fail-steps="${d.baseVerdict === 'fail' ? '1' : '0'}">基线报告</button>` : ''}
+        ${canTarget ? `<button type="button" class="btn linkish" data-view-side="target" data-scn-id="${escapeHtml(d.targetScnId)}" data-fail-steps="${d.targetVerdict === 'fail' ? '1' : '0'}">目标报告</button>
+        <button type="button" class="btn linkish" data-copy-side="target" data-scn-id="${escapeHtml(d.targetScnId)}" data-fail-steps="${d.targetVerdict === 'fail' ? '1' : '0'}" title="复制目标报告打开深链">复制深链</button>` : ''}
+        ${canBase ? `<button type="button" class="btn linkish" data-view-side="base" data-scn-id="${escapeHtml(d.baseScnId)}" data-fail-steps="${d.baseVerdict === 'fail' ? '1' : '0'}">基线报告</button>
+        <button type="button" class="btn linkish" data-copy-side="base" data-scn-id="${escapeHtml(d.baseScnId)}" data-fail-steps="${d.baseVerdict === 'fail' ? '1' : '0'}" title="复制基线报告打开深链">复制深链</button>` : ''}
       </span>`;
       return `<li class="scenario-diff-item kind-${escapeHtml(d.kind)}">
         <span class="scenario-diff-kind">${escapeHtml(kindLabel(d.kind))}</span>

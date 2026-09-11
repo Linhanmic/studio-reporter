@@ -37,6 +37,7 @@ const {
   parseDeepLink,
   extractDeepLinkFromArgv,
   buildCompareDeepLink,
+  buildOpenDeepLink,
   createDeepLinkQueue,
 } = require('./deeplink.js');
 const { appendShareHash, reportFocusHash, reportOpenHashFromOutline } = require('./share-hash.js');
@@ -724,6 +725,20 @@ function registerIpc() {
       target: payload.target,
       hub: payload.hub,
       kinds: payload.kinds,
+    });
+    clipboard.writeText(url);
+    return { ok: true, url };
+  });
+
+
+  ipcMain.handle('desktop:copy-open-deeplink', async (_evt, payload = {}) => {
+    const url = buildOpenDeepLink({
+      run: payload.run,
+      path: payload.path,
+      dir: payload.dir,
+      hub: payload.hub,
+      focus: payload.focus,
+      failSteps: payload.failSteps,
     });
     clipboard.writeText(url);
     return { ok: true, url };

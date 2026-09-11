@@ -110,7 +110,8 @@
 - [x] 静态报告过滤状态写入可分享 URL（`#focus?q=&spec=&scenario=&failSteps=1`；工具栏双向同步；Go `ParseShareHash`/`FormatShareHash`）
 - [x] 静态报告「复制可见范围链接」工具栏按钮（`copy-share-link`；复制当前 share hash 完整 URL）
 - [x] 静态报告分享链接复制后展示可读过滤摘要（状态栏附带 q/scenario/failSteps/定位）
-- [x] Desktop 对比分享卡片场景 diff 一键打开报告定位（HTML/MD/JSON 写入 `studio-reporter://open?run=&hub=&focus=`；主进程按 run 打开历史并 hash 定位）
+- [x] Desktop 对比分享卡片场景 diff 一键打开报告定位
+- [x] Desktop 对比面板复制场景打开深链（场景 diff「复制深链」→ `studio-reporter://open?run=&hub=&focus=`）（HTML/MD/JSON 写入 `studio-reporter://open?run=&hub=&focus=`；主进程按 run 打开历史并 hash 定位）
 
 ## 迭代日志
 
