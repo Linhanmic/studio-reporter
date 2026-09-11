@@ -55,5 +55,10 @@ describe('report-assets/history-digest', () => {
     const json = formatHistoryFailDigestJson(digest, { hubDir: '/hub' });
     assert.equal(json.format, 'studio-reporter.historyFailDigest/v1');
     assert.ok(json.openLinksLatest.length >= 2);
+
+    const hubless = buildHistoryFailDigestOpenLinks(digest, { hubDir: '', mode: 'latest' });
+    assert.match(hubless, /studio-reporter:\/\/open\?run=/);
+    assert.match(hubless, /failSteps=1/);
+    assert.ok(!/hub=/.test(hubless));
   });
 });

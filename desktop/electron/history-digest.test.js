@@ -71,6 +71,10 @@ describe('history-digest', () => {
     const md = formatHistoryFailDigestMarkdown(digest, { hubDir: '/hub', includeOpenLinks: true });
     assert.match(md, /\[open\]\(studio-reporter:\/\/open/);
     assert.match(md, /最近失败打开深链/);
+
+    const hubless = buildHistoryFailDigestOpenLinks(digest, { hubDir: '', mode: 'latest' });
+    assert.match(hubless, /studio-reporter:\/\/open\?run=r2&failSteps=1/);
+    assert.ok(!/hub=/.test(hubless));
   });
 
 });

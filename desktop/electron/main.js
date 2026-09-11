@@ -45,7 +45,12 @@ const {
 const {
   popupHistoryContextMenu,
 } = require('./history-menu.js');
-const { appendShareHash, reportFocusHash, reportOpenHashFromOutline } = require('./share-hash.js');
+const {
+  appendShareHash,
+  reportFocusHash,
+  reportOpenHashFromOutline,
+  resolveReportOpenHash,
+} = require('./share-hash.js');
 const {
   buildCompareShareCardHtml,
   inspectCompareShareCardHtml,
@@ -515,10 +520,9 @@ async function openReportDir(dir, opts = {}) {
   await startAssetServer(dir);
   let url = `http://127.0.0.1:${assetPort}/index.html`;
   const focus = String(opts.focus || '').trim();
-  if (focus) {
-    url = appendShareHash(url, reportFocusHash(focus, { failSteps: !!opts.failSteps }));
-  } else if (opts.hash) {
-    url = appendShareHash(url, opts.hash);
+  const hash = resolveReportOpenHash(opts);
+  if (hash) {
+    url = appendShareHash(url, hash);
   }
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('navigate-report', { url, dir, focus: focus || undefined });
@@ -1150,9 +1154,20 @@ async function handleDeepLinkAction(action) {
           mainWindow.webContents.send('settings-updated', settings);
         }
       }
-      const hub = settings.reportHubDir;
+      let hub = String(settings.reportHubDir || '').trim();
       if (!hub) {
-        throw new Error('open?run= 需要 hub 参数或已配置的报告根目录');
+        const recent = Array.isArray(settings.recentHubs) ? settings.recentHubs : [];
+        const fallback = String(recent[0] || '').trim();
+        if (fallback) {
+          settings = persistReportHub(path.resolve(fallback)) || settings;
+          hub = String(settings.reportHubDir || fallback).trim();
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('settings-updated', settings);
+          }
+        }
+      }
+      if (!hub) {
+        throw new Error('open?run= 需要 hub 参数、已配置的报告根目录，或最近使用的 hub');
       }
       const hist = readHistory(hub);
       const runs = Array.isArray(hist?.runs) ? hist.runs : Array.isArray(hist) ? hist : [];

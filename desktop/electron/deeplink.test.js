@@ -60,6 +60,14 @@ describe('deeplink', () => {
     const bare = buildOpenDeepLink({ dir: '/tmp/r' });
     assert.equal(bare, 'studio-reporter://open?dir=%2Ftmp%2Fr');
     assert.throws(() => buildOpenDeepLink({}), /requires/);
+
+    const noHub = parseDeepLink('studio-reporter://open?run=r9&failSteps=1');
+    assert.equal(noHub.ok, true);
+    assert.equal(noHub.run, 'r9');
+    assert.equal(noHub.hub, undefined);
+    assert.equal(noHub.failSteps, true);
+    const built = buildOpenDeepLink({ run: 'r9', failSteps: true });
+    assert.equal(built, 'studio-reporter://open?run=r9&failSteps=1');
   });
 
   it('parses connect ws url', () => {

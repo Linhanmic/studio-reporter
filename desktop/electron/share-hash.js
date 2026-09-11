@@ -107,11 +107,26 @@ function reportFocusHash(focusId, opts = {}) {
   });
 }
 
+/**
+ * Resolve the share hash to apply when opening a report directory.
+ * Prefer explicit focus; otherwise honor failSteps-only opens (digest deep links).
+ * @param {{ focus?: string, failSteps?: boolean, hash?: string }} opts
+ * @returns {string} hash without leading '#'
+ */
+function resolveReportOpenHash(opts = {}) {
+  const focus = String(opts.focus || '').trim();
+  if (focus) return reportFocusHash(focus, { failSteps: !!opts.failSteps });
+  if (opts.hash) return String(opts.hash).replace(/^#/, '').trim();
+  if (opts.failSteps) return reportFocusHash('overview', { failSteps: true });
+  return '';
+}
+
 module.exports = {
   parseShareHash,
   formatShareHash,
   reportOpenHashFromOutline,
   reportFocusHash,
+  resolveReportOpenHash,
   appendShareHash,
   normalizeVerdict,
 };

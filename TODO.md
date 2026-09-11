@@ -126,6 +126,7 @@
 - [x] Desktop/CLI 失败摘要附带打开深链（`studio-reporter://open?run=&hub=&failSteps=1`；工具栏「复制摘要深链」；Markdown/JSON 同源）
 - [x] manage.html 历史失败摘要（`report-assets/history-digest.js` 与 Desktop/CLI 同源；面板 + 复制 Markdown/深链；表格展示 topFailReason）
 - [x] 静态报告 Overview 失败原因一键定位（点击次数/原因跳到该类首个可见失败场景；尊重过滤与仅失败步骤）
+- [x] Desktop 打开 manage 失败摘要深链联调（无 hub 时回退当前/最近 hub；failSteps 无 focus 时写 `#overview?failSteps=1`）
 
 ## 迭代日志
 
@@ -255,6 +256,8 @@
 
 | 2026-09-11 | Overview 失败原因一键定位 | 点击次数/原因跳到该类首个可见失败场景；尊重过滤与仅失败步骤；场景名链接行为不变 |
 
+| 2026-09-11 | Desktop 打开 manage 失败摘要深链联调 | 无 hub 深链回退当前/最近 hub；failSteps 无 focus 时应用 overview 仅失败步骤 hash |
+
 ## 下一任务（选定）
 
-**Desktop 打开 manage 失败摘要深链联调**（浏览器摘要深链 → Desktop 打开对应历史运行），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
+**Digest JSON 写入 hub 旁路文件供 CI 工件**（`digest --dir --write`），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
