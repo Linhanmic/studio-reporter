@@ -400,7 +400,8 @@ function invertCompareResult(cmp) {
     failed: -(Number(d?.failed) || 0),
     skipped: -(Number(d?.skipped) || 0),
   });
-  return {
+  const { invertScenarioCompare } = require('./scenario-compare.js');
+  const out = {
     base: cmp.target,
     target: cmp.base,
     verdictSame: Boolean(cmp.verdictSame),
@@ -413,6 +414,13 @@ function invertCompareResult(cmp) {
     scenarios: negateCounts(cmp.scenarios),
     steps: negateCounts(cmp.steps),
   };
+  if (cmp.scenarioCompare) {
+    out.scenarioCompare = invertScenarioCompare(cmp.scenarioCompare);
+  }
+  if (cmp.scenarioCompareWarning) {
+    out.scenarioCompareWarning = cmp.scenarioCompareWarning;
+  }
+  return out;
 }
 
 /**

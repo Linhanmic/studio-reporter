@@ -36,6 +36,10 @@ const {
 } = require('./shortcuts.js');
 const { normalizeTheme, resolveTheme, THEMES } = require('./theme.js');
 const {
+  scenarioDiffKindLabel,
+  invertScenarioCompare,
+} = require('./scenario-compare.js');
+const {
   exportProgressPercent,
   exportProgressBasename,
   exportKindLabel,
@@ -95,6 +99,10 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   setActiveSession: (id) => ipcRenderer.invoke('desktop:set-active-session', id),
   compareHistoryRuns,
   invertCompareResult,
+  compareScenariosForRuns: (base, target) =>
+    ipcRenderer.invoke('desktop:compare-scenarios', base, target),
+  scenarioDiffKindLabel,
+  invertScenarioCompare,
   formatDurationDelta,
   formatCountsDelta,
   buildCompareShareMarkdown,

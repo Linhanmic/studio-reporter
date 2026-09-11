@@ -694,6 +694,55 @@ function toggleSelect(id, checked) {
   updateHistoryActionButtons();
 }
 
+function renderScenarioCompareSection(cmp) {
+  const sc = cmp?.scenarioCompare;
+  if (!sc) {
+    if (cmp?.scenarioCompareWarning) {
+      return `<p class="muted compare-scenario-warn">${escapeHtml(cmp.scenarioCompareWarning)}</p>`;
+    }
+    return '';
+  }
+  const kindLabel =
+    typeof window.desktopAPI.scenarioDiffKindLabel === 'function'
+      ? window.desktopAPI.scenarioDiffKindLabel
+      : (k) => k;
+  const rows = (sc.changed || [])
+    .slice(0, 40)
+    .map((d) => {
+      const verdict =
+        d.kind === 'added'
+          ? escapeHtml(d.targetVerdict || '—')
+          : d.kind === 'removed'
+            ? escapeHtml(d.baseVerdict || '—')
+            : `${escapeHtml(d.baseVerdict || '—')} → ${escapeHtml(d.targetVerdict || '—')}`;
+      const reason =
+        d.kind === 'reason_changed' || d.kind === 'regressed' || d.kind === 'added'
+          ? escapeHtml(d.targetReason || d.baseReason || '')
+          : d.kind === 'removed'
+            ? escapeHtml(d.baseReason || '')
+            : '';
+      return `<li class="scenario-diff-item kind-${escapeHtml(d.kind)}">
+        <span class="scenario-diff-kind">${escapeHtml(kindLabel(d.kind))}</span>
+        <span class="scenario-diff-name">${escapeHtml(d.specName)} · ${escapeHtml(d.scnName)}</span>
+        <span class="scenario-diff-verdict muted">${verdict}</span>
+        ${reason ? `<span class="scenario-diff-reason muted" title="${reason}">${reason}</span>` : ''}
+      </li>`;
+    })
+    .join('');
+  const more =
+    (sc.changed || []).length > 40
+      ? `<p class="muted">另有 ${(sc.changed || []).length - 40} 条未显示</p>`
+      : '';
+  const empty =
+    !(sc.changed || []).length
+      ? '<p class="muted">场景结论与失败原因均无变化</p>'
+      : `<ul class="scenario-diff-list">${rows}</ul>${more}`;
+  return `<div class="compare-scenario-block">
+    <h4>场景级差异 <span class="muted">${sc.changed?.length || 0} 变 · ${sc.unchangedCount || 0} 不变 · ${sc.baseCount || 0}→${sc.targetCount || 0}</span></h4>
+    ${empty}
+  </div>`;
+}
+
 function renderCompare(cmp) {
   state.lastCompare = cmp;
   const panel = $('comparePanel');
@@ -747,6 +796,7 @@ function renderCompare(cmp) {
       <div>场景 ${escapeHtml(window.desktopAPI.formatCountsDelta(cmp.scenarios))}</div>
       <div>步骤 ${escapeHtml(window.desktopAPI.formatCountsDelta(cmp.steps))}</div>
     </div>
+    ${renderScenarioCompareSection(cmp)}
     ${exported}
   `;
   $('btnSwapCompare')?.addEventListener('click', swapCompareDirection);
@@ -762,7 +812,6 @@ function renderCompare(cmp) {
 function swapCompareDirection() {
   if (!state.lastCompare) return;
   const inverted = window.desktopAPI.invertCompareResult(state.lastCompare);
-  // Keep selection order aligned with new base → target.
   if (state.selectedIds.length === 2) {
     state.selectedIds = [state.selectedIds[1], state.selectedIds[0]];
   }
@@ -770,7 +819,7 @@ function swapCompareDirection() {
   setStatus('已交换对比方向（基线 ↔ 目标）', 'ok');
 }
 
-function runCompare() {
+async function runCompare() {
   if (state.selectedIds.length !== 2) return;
   const [baseId, targetId] = state.selectedIds;
   const base = state.historyRuns.find((r) => r.id === baseId);
@@ -779,9 +828,27 @@ function runCompare() {
     setStatus('所选运行已不存在，请刷新历史', 'warn');
     return;
   }
-  renderCompare(window.desktopAPI.compareHistoryRuns(base, target));
+  const cmp = window.desktopAPI.compareHistoryRuns(base, target);
+  renderCompare(cmp);
+  if (typeof window.desktopAPI.compareScenariosForRuns !== 'function') return;
+  try {
+    const result = await window.desktopAPI.compareScenariosForRuns(base, target);
+    if (result?.ok) {
+      cmp.scenarioCompare = result.compare;
+      delete cmp.scenarioCompareWarning;
+    } else {
+      const miss = (result?.missing || []).join('/');
+      cmp.scenarioCompareWarning = miss
+        ? `无法加载 ${miss} 侧 report.json，仅显示汇总对比`
+        : '无法加载 report.json，仅显示汇总对比';
+      delete cmp.scenarioCompare;
+    }
+    if (state.lastCompare === cmp) renderCompare(cmp);
+  } catch (err) {
+    cmp.scenarioCompareWarning = String(err.message || err);
+    if (state.lastCompare === cmp) renderCompare(cmp);
+  }
 }
-
 
 async function persistCompareShareOpts() {
   const template = window.desktopAPI.normalizeCompareCardTemplate(

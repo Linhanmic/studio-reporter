@@ -63,6 +63,7 @@ const {
 } = require('./sessions.js');
 const { createUpdater } = require('./updater.js');
 const { buildReportOutline, loadOutlineFromReportDir } = require('./outline.js');
+const { compareScenarioReportsFromDirs } = require('./scenario-compare.js');
 const {
   loadWindowState,
   saveWindowState,
@@ -620,6 +621,17 @@ function registerIpc() {
 
   ipcMain.handle('desktop:show-in-folder', async (_evt, targetPath) => {
     if (targetPath) shell.showItemInFolder(path.resolve(targetPath));
+  });
+
+
+  ipcMain.handle('desktop:compare-scenarios', async (_evt, baseEntry, targetEntry) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = settings.reportHubDir;
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const baseDir = resolveRunDir(hub, baseEntry);
+    const targetDir = resolveRunDir(hub, targetEntry);
+    if (!baseDir || !targetDir) throw new Error('找不到对比运行的归档目录');
+    return compareScenarioReportsFromDirs(baseDir, targetDir);
   });
 
   ipcMain.handle('desktop:reveal-history-run', async (_evt, entry) => {

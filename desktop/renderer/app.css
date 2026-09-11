@@ -602,3 +602,49 @@ iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
   min-height: 28px;
   padding: 4px 8px;
 }
+
+
+.compare-scenario-block {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.compare-scenario-block h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.compare-scenario-warn { margin: 8px 0 0; }
+.scenario-diff-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 240px;
+  overflow: auto;
+}
+.scenario-diff-item {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 6px 10px;
+  align-items: baseline;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,.03);
+}
+.scenario-diff-item .scenario-diff-reason {
+  grid-column: 2 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scenario-diff-kind { font-weight: 650; }
+.scenario-diff-item.kind-regressed .scenario-diff-kind { color: var(--err); }
+.scenario-diff-item.kind-fixed .scenario-diff-kind { color: var(--ok); }
+.scenario-diff-item.kind-added .scenario-diff-kind,
+.scenario-diff-item.kind-removed .scenario-diff-kind { color: var(--warn); }
+[data-theme="light"] .scenario-diff-item {
+  background: rgba(15, 40, 60, 0.04);
+}
