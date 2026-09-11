@@ -1,0 +1,4 @@
+# Complete payment of <amount> with card <card>
+* Validate card <card>
+* Charge <amount>
+* Persist transaction

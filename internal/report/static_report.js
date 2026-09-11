@@ -1,11 +1,15 @@
 (function () {
   var KEY = 'studio-report-filter';
-  var state = { spec: 'all', scenario: 'all' };
+  var state = { spec: 'all', scenario: 'all', query: '' };
   try {
     var saved = JSON.parse(sessionStorage.getItem(KEY) || 'null');
     if (saved && saved.spec) state.spec = saved.spec;
     if (saved && saved.scenario) state.scenario = saved.scenario;
+    if (saved && typeof saved.query === 'string') state.query = saved.query;
   } catch (e) {}
+
+  var searchInput = document.querySelector('.search-input');
+  if (searchInput) searchInput.value = state.query || '';
 
   function blockDepth(el) {
     var d = 0;
@@ -37,6 +41,21 @@
     });
   }
 
+  function blockName(el) {
+    var cell = el.querySelector(':scope > summary .name-cell, :scope > .leaf-summary .name-cell');
+    return cell ? (cell.textContent || '').toLowerCase() : '';
+  }
+
+  function matchesQuery(el, q) {
+    if (!q) return true;
+    if (blockName(el).indexOf(q) >= 0) return true;
+    var kids = el.querySelectorAll('.report-block[data-kind="scenario"], .report-block[data-kind="spec"]');
+    for (var i = 0; i < kids.length; i++) {
+      if (blockName(kids[i]).indexOf(q) >= 0) return true;
+    }
+    return false;
+  }
+
   function applyFilter() {
     syncButtons();
     persist();
@@ -46,12 +65,15 @@
 
     var specFilter = state.spec;
     var scenarioFilter = state.scenario;
+    var q = (state.query || '').trim().toLowerCase();
 
     document.querySelectorAll('.result-pane .report-block[data-kind="scenario"]').forEach(function (scn) {
-      if (scenarioFilter !== 'all' && scn.dataset.verdict !== scenarioFilter) {
-        scn.classList.add('filter-hidden');
-      } else {
+      var verdictOK = scenarioFilter === 'all' || scn.dataset.verdict === scenarioFilter;
+      var queryOK = !q || blockName(scn).indexOf(q) >= 0;
+      if (verdictOK && queryOK) {
         showSubtree(scn);
+      } else {
+        scn.classList.add('filter-hidden');
       }
     });
 
@@ -69,7 +91,8 @@
           break;
         }
       }
-      el.classList.toggle('filter-hidden', !anyVisible);
+      var selfQuery = !q || blockName(el).indexOf(q) >= 0;
+      el.classList.toggle('filter-hidden', !(anyVisible || (selfQuery && scns.length === 0)));
     });
 
     document.querySelectorAll('.result-pane .report-block[data-kind="spec"]').forEach(function (spec) {
@@ -82,7 +105,17 @@
         }
       }
       var specVerdictMatch = specFilter === 'all' || spec.dataset.verdict === specFilter;
-      spec.classList.toggle('filter-hidden', !anyVisibleScenario || !specVerdictMatch);
+      var specQueryMatch = matchesQuery(spec, q);
+      // If query matches the spec name, reveal all scenarios that still pass verdict filter.
+      if (q && blockName(spec).indexOf(q) >= 0) {
+        scns.forEach(function (scn) {
+          if (scenarioFilter === 'all' || scn.dataset.verdict === scenarioFilter) {
+            showSubtree(scn);
+            anyVisibleScenario = true;
+          }
+        });
+      }
+      spec.classList.toggle('filter-hidden', !anyVisibleScenario || !specVerdictMatch || !specQueryMatch);
     });
   }
 
@@ -97,5 +130,90 @@
     });
   });
 
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      state.query = searchInput.value || '';
+      applyFilter();
+    });
+  }
+
   applyFilter();
+
+  function setDetailsOpen(open) {
+    document.querySelectorAll('.result-pane details.report-block').forEach(function (el) {
+      if (el.classList.contains('filter-hidden')) return;
+      el.open = open;
+    });
+  }
+
+  document.querySelectorAll('.toolbar-actions').forEach(function (group) {
+    group.addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'expand-all') setDetailsOpen(true);
+      if (btn.dataset.action === 'collapse-all') setDetailsOpen(false);
+    });
+  });
+
+  var overview = document.getElementById('overview');
+  var results = document.getElementById('results');
+  function showOverview(show) {
+    if (!overview || !results) return;
+    overview.classList.toggle('is-hidden', !show);
+    if (show) {
+      overview.scrollIntoView({ block: 'start' });
+    }
+    document.querySelectorAll('.nav-item').forEach(function (el) {
+      el.classList.toggle('is-active', show ? el.dataset.navTarget === 'overview' : false);
+    });
+  }
+  function activateNav(id) {
+    document.querySelectorAll('.nav-item').forEach(function (el) {
+      el.classList.toggle('is-active', el.dataset.navTarget === id);
+    });
+  }
+  document.addEventListener('click', function (ev) {
+    var actionBtn = ev.target.closest('[data-action]');
+    if (actionBtn) {
+      if (actionBtn.dataset.action === 'show-overview') {
+        showOverview(true);
+        return;
+      }
+      if (actionBtn.dataset.action === 'export-pdf') {
+        // Structured print → PDF (text/links/images). Not a raster collage.
+        showOverview(true);
+        window.print();
+        return;
+      }
+    }
+    var nav = ev.target.closest('[data-nav-target]');
+    if (nav) {
+      var targetId = nav.dataset.navTarget;
+      if (targetId === 'overview') {
+        showOverview(true);
+        return;
+      }
+      showOverview(false);
+      activateNav(targetId);
+      var target = document.getElementById(targetId);
+      if (target) {
+        if (target.tagName === 'DETAILS') target.open = true;
+        target.scrollIntoView({ block: 'start' });
+      }
+    }
+    var thumb = ev.target.closest('[data-shot-src]');
+    if (thumb) {
+      var dlg = document.getElementById('shot-lightbox');
+      var img = document.getElementById('shot-lightbox-img');
+      var cap = document.getElementById('shot-lightbox-cap');
+      if (dlg && img) {
+        img.src = thumb.dataset.shotSrc;
+        if (cap) cap.textContent = thumb.dataset.shotCaption || '截图';
+        if (typeof dlg.showModal === 'function') dlg.showModal();
+      }
+    }
+  });
+
+  // Default: show overview first (CANoe-style home), keep results below.
+  showOverview(true);
 })();

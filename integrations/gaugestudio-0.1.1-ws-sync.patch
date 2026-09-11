@@ -1,0 +1,1142 @@
+From 195980c567082613ec6e02dde3a41b33bd873aec Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Fri, 11 Sep 2026 14:10:16 +0000
+Subject: [PATCH] feat: discover studio-reporter listen URL and consume
+ snapshots
+
+Align with studio-reporter 0.4.x polarity: parse the plugin stdout
+discovery line, connect as a WS client, and handle ReportSnapshot /
+ReportGenerated. Keep optional legacy GAUGE_STUDIO_WS inject mode.
+---
+ DESIGN.md                        |  30 ++++---
+ README.md                        |  17 +++-
+ TODO.md                          |  38 +++++++++
+ electron/main.js                 |  27 ++++++-
+ electron/preload.js              |   3 +
+ electron/services/run-manager.js | 132 +++++++++++++++++++++++++------
+ electron/services/ws-client.js   | 121 ++++++++++++++++++++++++++++
+ electron/services/ws-server.js   |  10 ++-
+ package-lock.json                |  43 +---------
+ package.json                     |   3 +-
+ scripts/ws-discovery.test.mjs    |  16 ++++
+ shared/constants.js              |  47 +++++++----
+ src/components/ChromeBar.vue     |  15 +++-
+ src/components/SettingsModal.vue |  17 +++-
+ src/stores/app.js                |   6 ++
+ src/stores/execution.js          |  98 +++++++++++++++++++++++
+ 16 files changed, 522 insertions(+), 101 deletions(-)
+ create mode 100644 TODO.md
+ create mode 100644 electron/services/ws-client.js
+ create mode 100644 scripts/ws-discovery.test.mjs
+
+diff --git a/DESIGN.md b/DESIGN.md
+index 9bb7775..35ef114 100644
+--- a/DESIGN.md
++++ b/DESIGN.md
+@@ -106,27 +106,29 @@ flowchart TB
+ sequenceDiagram
+   participant UI as Renderer
+   participant Main as Main
+-  participant WS as WsServer
++  participant Client as WsClient
+   participant Gauge as gauge_run
+   participant SR as studio_reporter
+ 
+   UI->>Main: run.start
+-  Main->>WS: listen
+-  Main->>Gauge: spawn plus GAUGE_STUDIO_WS
+-  Gauge->>SR: gRPC
+-  SR->>WS: JSON envelope
+-  WS->>UI: execution.event
+-  Note over UI: Live只渲染当前Scenario
+-  Note over UI: Results按执行项upsert卡片
++  Main->>Gauge: spawn (no GAUGE_STUDIO_WS by default)
++  Gauge->>SR: gRPC plugin start
++  SR-->>Main: stdout "studio-reporter websocket: ws://..."
++  Main->>Client: connect(url)
++  SR->>Client: ReportSnapshot / lifecycle JSON
++  Client->>UI: execution.event
++  Note over UI: Live 优先 Snapshot Spec→Scenario；步骤仍可由生命周期事件充实
++  SR->>Client: ReportGenerated
+   Gauge-->>Main: exit
+   Main->>UI: run.finished
+ ```
+ 
+ ### 环境变量与取消
+ 
+-- Main 启动 Gauge 时注入 `GAUGE_STUDIO_WS=ws://127.0.0.1:<动态端口>`（优先动态端口；默认回退 8080）。
+-- 插件在未设置该变量时**静默不转发**——Main 必须保证注入。
+-- `run.stop` → 终止 gauge 进程树（Windows：`taskkill /T`；类 Unix：进程组信号）；UI 将未结束节点标为 aborted。
++- **默认（discover）**：不注入 `GAUGE_STUDIO_WS`；解析 Gauge/插件 stdout（及 stderr）中的  
++  `studio-reporter websocket: ws://127.0.0.1:<port>`，由 Studio **主动连接** reporter 监听口（对齐 studio-reporter ≥0.4.x）。
++- **兼容模式**（设置 `legacyInjectStudioWs`）：Studio 仍启动 `WsServer` 并注入 `GAUGE_STUDIO_WS`（旧插件 / 双通道）。勿与 discover 同时依赖，以免事件重复。
++- `run.stop` → 终止 gauge 进程树（Windows：`taskkill /T`；类 Unix：进程组信号）；并关闭 WsClient / WsServer。
+ 
+ ### 执行项 ID（结果卡片主键）
+ 
+@@ -167,7 +169,7 @@ sequenceDiagram
+ { "type": "EventType", "timestamp": "ISO8601", "payload": { } }
+ ```
+ 
+-Main / WsServer 归一化为内部 `ExecutionEvent`（附加 `runId`）后经 `execution:event` 推送 Renderer。
++Main / WsClient（默认）或 WsServer（兼容）归一化为内部 `ExecutionEvent`（附加 `runId`）后经 `execution:event` 推送 Renderer。
+ 
+ | API `type` | UI / Store 作用 |
+ |------------|-----------------|
+@@ -182,8 +184,10 @@ Main / WsServer 归一化为内部 `ExecutionEvent`（附加 `runId`）后经 `e
+ | `StepExecutionStarting` | 在当前 Scenario（或 Concept 下）追加/激活 Step |
+ | `StepExecutionEnding` | 更新 Step 结果；**叶子**才计入 pass/fail；error/stack 写入详情 |
+ | `SuiteResult` | 汇总校验 / 补全未闭合状态；可驱动顶部计数最终对齐 |
++| `ReportSnapshot` | 用 Spec→Scenario 快照 upsert 结果卡 / 当前场景（保留已有步骤树） |
++| `ReportGenerated` | 记录 `reportPath`；Chrome「打开报告」 |
+ 
+-**控制台通道独立**：`console:data` 仅承载进程 stdout/stderr，不与上表 WS 事件混用。
++**控制台通道独立**：`console:data` 仅承载进程 stdout/stderr，不与上表 WS 事件混用；但 stdout/stderr **用于发现** `studio-reporter websocket:` 行。
+ 
+ 并行时若 payload 含 `Stream`：MVP 可串行跑完并忽略分列 UI；**Phase 2** 再按 stream 分列或 Tab。
+ 
+diff --git a/README.md b/README.md
+index 27380bf..d638921 100644
+--- a/README.md
++++ b/README.md
+@@ -104,13 +104,21 @@ npm run dist
+ 
+ ### 命令行对照（不经 UI）
+ 
++现代路径（推荐，studio-reporter ≥0.4.x）：
++
+ ```bash
+ cd ../gauge-js-demo
+-set GAUGE_STUDIO_WS=ws://127.0.0.1:8080
+ gauge run specs/smoke.spec
++# 注意 stdout：studio-reporter websocket: ws://127.0.0.1:<port>
++# GaugeStudio 会自动连接该 URL
+ ```
+ 
+-（PowerShell：`$env:GAUGE_STUDIO_WS="ws://127.0.0.1:8080"`）
++兼容旧路径（仅当启用设置「兼容模式」时由 Studio 注入）：
++
++```bash
++set GAUGE_STUDIO_WS=ws://127.0.0.1:8080
++gauge run specs/smoke.spec
++```
+ 
+ ## 实现状态
+ 
+@@ -118,7 +126,9 @@ gauge run specs/smoke.spec
+ |------|------|
+ | 布局对齐 mock（chrome / 树 / 四页 / 设置） | ✅ |
+ | 打开项目、Spec 树、勾选、设置持久化 userData | ✅ |
+-| WsServer + RunManager + GAUGE_STUDIO_WS | ✅ |
++| **Discover**：解析 reporter websocket 行 + WsClient | ✅ 0.1.1 |
++| 兼容：WsServer + 注入 GAUGE_STUDIO_WS | ✅ 可选 |
++| `ReportSnapshot` / `ReportGenerated` + 打开报告 | ✅ 0.1.1 |
+ | 控制台 = stdout/stderr；实时 = 当前 Scenario | ✅ |
+ | 结果卡片 + 详情；重试失败 / 重试一行（`--table-rows`） | ✅ |
+ | Spec 读/写磁盘 | ✅ |
+@@ -134,3 +144,4 @@ gauge run specs/smoke.spec
+ - `spec:read|write`
+ - `lsp:complete|restart|status`
+ - `settings:get|save`
++- `report:open`
+diff --git a/TODO.md b/TODO.md
+new file mode 100644
+index 0000000..66c0a6e
+--- /dev/null
++++ b/TODO.md
+@@ -0,0 +1,38 @@
++# GaugeStudio — TODO
++
++状态：**与 studio-reporter 同步迭代**（协议极性已对齐 0.4.x）。  
++配对仓库：[studio-reporter](https://github.com/Linhanmic/studio-reporter)（文档四件套 + API.md）。
++
++## 当前版本
++
++- GaugeStudio：**0.1.1**
++- 期望 studio-reporter：**≥ 0.4.7**（插件监听 + `ReportSnapshot` / `ReportGenerated`）
++
++## P0 — 协议对齐
++
++- [x] Discover：解析 `studio-reporter websocket:` 并 WsClient 连接
++- [x] 兼容模式：可选注入 `GAUGE_STUDIO_WS`（旧插件）
++- [x] 消费 `ReportSnapshot` / `ReportGenerated`；Chrome「打开报告」
++- [x] 设置文案与 DESIGN/README 同步
++
++## P1 — 体验
++
++- [ ] Live 页与静态报告视觉一致性抽样
++- [ ] Snapshot 与生命周期步骤树的合并策略再打磨（并行 suite）
++- [ ] 未发现 websocket 行时的更明确 UI 引导（不仅是 console）
++
++## P2 — 产品
++
++- [ ] 并行 Stream UI
++- [ ] 历史 run / 报告目录浏览
++- [ ] LSP completion 真接 JSON-RPC
++
++## 迭代日志
++
++| 日期 | 项 | 结果 / 决策 |
++|------|----|-------------|
++| 2026-09-11 | 对齐 reporter 0.4.x 极性 | 默认 Studio 主动连接；对照 API.md；兼容模式保留注入 |
++
++## 下一任务
++
++与 studio-reporter 联调 smoke（真实 gauge 项目），再决定 Snapshot 合并策略。
+diff --git a/electron/main.js b/electron/main.js
+index fe70ca9..564d4aa 100644
+--- a/electron/main.js
++++ b/electron/main.js
+@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell, Menu, nativeImage } from 'e
+ import { join } from 'path'
+ import { existsSync } from 'fs'
+ import { WsServer } from './services/ws-server.js'
++import { WsClient } from './services/ws-client.js'
+ import { RunManager } from './services/run-manager.js'
+ import { ProjectService } from './services/project-service.js'
+ import { SettingsStore } from './services/settings-store.js'
+@@ -14,6 +15,7 @@ let mainWindow = null
+ const settingsStore = new SettingsStore()
+ const projectService = new ProjectService()
+ const wsServer = new WsServer()
++const wsClient = new WsClient()
+ const specFs = new SpecFs(() => projectService.get()?.path)
+ 
+ function send(channel, payload) {
+@@ -24,6 +26,7 @@ function send(channel, payload) {
+ 
+ const runManager = new RunManager({
+   wsServer,
++  wsClient,
+   getSettings: () => settingsStore.get(),
+   getProject: () => projectService.get(),
+   send
+@@ -35,9 +38,21 @@ const lspService = new LspService({
+   send
+ })
+ 
+-wsServer.onEvent = (event) => send('execution:event', event)
++function forwardExecutionEvent(event) {
++  send('execution:event', event)
++}
++
++wsServer.onEvent = forwardExecutionEvent
++wsClient.onEvent = forwardExecutionEvent
+ wsServer.onConnectionChange = (count) =>
+-  send('ws:connection', { clients: count, port: wsServer.port })
++  send('ws:connection', { clients: count, port: wsServer.port, mode: 'server' })
++wsClient.onConnectionChange = (count, meta = {}) =>
++  send('ws:connection', {
++    clients: count,
++    port: meta.port || wsClient.port,
++    url: meta.url || wsClient.url,
++    mode: meta.mode || 'client'
++  })
+ 
+ function resolveIcon() {
+   // Prefer Windows .ico (taskbar); fall back to PNG used by in-app logo
+@@ -174,6 +189,13 @@ function registerIpc() {
+     userData: app.getPath('userData'),
+     demoHint: 'gauge-js-demo'
+   }))
++
++  ipcMain.handle('report:open', async (_e, reportPath) => {
++    if (!reportPath) return { ok: false, error: 'missing path' }
++    const err = await shell.openPath(String(reportPath))
++    if (err) return { ok: false, error: err }
++    return { ok: true }
++  })
+ }
+ 
+ app.whenReady().then(async () => {
+@@ -193,6 +215,7 @@ app.whenReady().then(async () => {
+ app.on('window-all-closed', async () => {
+   await runManager.stop()
+   await lspService.stop()
++  await wsClient.close()
+   await wsServer.stop()
+   if (process.platform !== 'darwin') app.quit()
+ })
+diff --git a/electron/preload.js b/electron/preload.js
+index 4fcbabb..8ed2128 100644
+--- a/electron/preload.js
++++ b/electron/preload.js
+@@ -40,6 +40,9 @@ contextBridge.exposeInMainWorld('gaugeStudio', {
+   app: {
+     getPaths: () => invoke('app:getPaths')
+   },
++  report: {
++    open: (reportPath) => invoke('report:open', reportPath)
++  },
+   on: (channel, handler) => {
+     if (!allowedOn.has(channel)) return () => {}
+     const listener = (_event, payload) => handler(payload)
+diff --git a/electron/services/run-manager.js b/electron/services/run-manager.js
+index 16bee6b..e4f5349 100644
+--- a/electron/services/run-manager.js
++++ b/electron/services/run-manager.js
+@@ -1,14 +1,16 @@
+ import { spawn } from 'child_process'
+-import path from 'path'
+ import { randomUUID } from 'crypto'
++import { extractReporterWsUrl } from '../../shared/constants.js'
+ 
+ /**
+- * Spawn gauge run with GAUGE_STUDIO_WS; support job queue for
+- * full run / retry failed / retry one (with --table-rows).
++ * Spawn gauge run; prefer discovering studio-reporter's listen URL from stdout
++ * (modern plugin polarity). Optional legacyInjectStudioWs keeps Studio listen
++ * + GAUGE_STUDIO_WS for older plugins.
+  */
+ export class RunManager {
+-  constructor({ wsServer, getSettings, getProject, send }) {
++  constructor({ wsServer, wsClient, getSettings, getProject, send }) {
+     this.wsServer = wsServer
++    this.wsClient = wsClient
+     this.getSettings = getSettings
+     this.getProject = getProject
+     this.send = send
+@@ -77,6 +79,7 @@ export class RunManager {
+     if (!child) {
+       this.busy = false
+       this.stopping = false
++      await this.#teardownWs()
+       this.send('run:status', { state: 'idle', text: '已中止', runId: this.runId })
+       return { ok: true }
+     }
+@@ -84,6 +87,7 @@ export class RunManager {
+     this.process = null
+     this.busy = false
+     this.stopping = false
++    await this.#teardownWs()
+     this.send('run:status', {
+       state: 'failed',
+       text: '已中止',
+@@ -94,6 +98,19 @@ export class RunManager {
+     return { ok: true }
+   }
+ 
++  async #teardownWs() {
++    try {
++      await this.wsClient?.close()
++    } catch {
++      /* ignore */
++    }
++    try {
++      await this.wsServer?.stop()
++    } catch {
++      /* ignore */
++    }
++  }
++
+   async #drainQueue() {
+     this.busy = true
+     let lastResult = null
+@@ -109,31 +126,43 @@ export class RunManager {
+   async #runOne(job) {
+     const settings = this.getSettings()
+     const project = this.getProject()
+-    const preferredPort = Number(settings.wsPort) || 0
++    const legacy = !!settings.legacyInjectStudioWs
+ 
+-    let wsInfo
+-    try {
+-      wsInfo = await this.wsServer.start(preferredPort)
+-    } catch (err) {
+-      // Port busy — fall back to ephemeral
+-      wsInfo = await this.wsServer.start(0)
+-    }
++    await this.#teardownWs()
+ 
+     this.runId = randomUUID()
+-    this.wsServer.setRunId(this.runId)
++    this.wsClient?.setRunId(this.runId)
++    this.wsServer?.setRunId(this.runId)
++
++    let legacyUrl = null
++    let legacyPort = 0
++    if (legacy) {
++      const preferredPort = Number(settings.wsPort) || 0
++      let wsInfo
++      try {
++        wsInfo = await this.wsServer.start(preferredPort)
++      } catch {
++        wsInfo = await this.wsServer.start(0)
++      }
++      legacyUrl = wsInfo.url
++      legacyPort = wsInfo.port
++    }
+ 
+     const args = this.#buildArgs(settings, job)
+     const gaugeBin = settings.gaugePath?.trim() || 'gauge'
+-    const env = {
+-      ...process.env,
+-      GAUGE_STUDIO_WS: wsInfo.url
++    const env = { ...process.env }
++    if (legacyUrl) {
++      env.GAUGE_STUDIO_WS = legacyUrl
++    } else {
++      delete env.GAUGE_STUDIO_WS
+     }
+ 
+     this.send('run:status', {
+       state: 'running',
+       text: job.label || '执行中',
+       runId: this.runId,
+-      wsPort: wsInfo.port,
++      wsPort: legacyPort || 0,
++      wsMode: legacy ? 'legacy-inject' : 'discover',
+       command: [gaugeBin, ...args].join(' '),
+       executionId: job.executionId || null
+     })
+@@ -143,9 +172,53 @@ export class RunManager {
+     })
+     this.send('console:data', {
+       stream: 'meta',
+-      text: `GAUGE_STUDIO_WS=${wsInfo.url}\n`
++      text: legacyUrl
++        ? `兼容模式 GAUGE_STUDIO_WS=${legacyUrl}\n`
++        : `WS 模式=discover（解析 studio-reporter websocket 行并主动连接）\n`
+     })
+ 
++    let discoveredUrl = null
++    let clientConnected = false
++    let stdoutBuf = ''
++
++    const tryDiscover = async (chunk) => {
++      if (clientConnected || discoveredUrl) return
++      stdoutBuf += chunk
++      // Keep a rolling window so the discovery line is not lost across chunks.
++      if (stdoutBuf.length > 8000) stdoutBuf = stdoutBuf.slice(-8000)
++      const url = extractReporterWsUrl(stdoutBuf)
++      if (!url) return
++      discoveredUrl = url
++      this.send('console:data', {
++        stream: 'meta',
++        text: `发现 studio-reporter: ${url}\n`
++      })
++      try {
++        const info = await this.wsClient.connect(url)
++        clientConnected = true
++        this.send('run:status', {
++          state: 'running',
++          text: job.label || '执行中',
++          runId: this.runId,
++          wsPort: info.port,
++          wsMode: 'client',
++          reporterWs: info.url,
++          executionId: job.executionId || null
++        })
++        this.send('ws:connection', {
++          clients: 1,
++          port: info.port,
++          url: info.url,
++          mode: 'client'
++        })
++      } catch (err) {
++        this.send('console:data', {
++          stream: 'stderr',
++          text: `连接 studio-reporter 失败: ${err.message}\n`
++        })
++      }
++    }
++
+     const exitCode = await new Promise((resolve) => {
+       const child = spawn(gaugeBin, args, {
+         cwd: project.path,
+@@ -156,10 +229,15 @@ export class RunManager {
+       this.process = child
+ 
+       child.stdout?.on('data', (buf) => {
+-        this.send('console:data', { stream: 'stdout', text: buf.toString() })
++        const text = buf.toString()
++        this.send('console:data', { stream: 'stdout', text })
++        void tryDiscover(text)
+       })
+       child.stderr?.on('data', (buf) => {
+-        this.send('console:data', { stream: 'stderr', text: buf.toString() })
++        const text = buf.toString()
++        this.send('console:data', { stream: 'stderr', text })
++        // Some Gauge hosts print plugin lines on stderr.
++        void tryDiscover(text)
+       })
+       child.on('error', (err) => {
+         this.send('console:data', {
+@@ -175,11 +253,14 @@ export class RunManager {
+       })
+     })
+ 
++    await this.#teardownWs()
++
+     const finished = {
+       runId: this.runId,
+       exitCode,
+       aborted: this.stopping,
+-      executionId: job.executionId || null
++      executionId: job.executionId || null,
++      reporterWs: discoveredUrl
+     }
+     this.send('run:finished', finished)
+ 
+@@ -203,6 +284,14 @@ export class RunManager {
+       exitCode
+     })
+ 
++    if (!legacy && !discoveredUrl && !this.stopping) {
++      this.send('console:data', {
++        stream: 'stderr',
++        text:
++          '未发现 studio-reporter websocket 行。请确认项目已安装 studio-reporter≥0.4.x，或在设置中启用「兼容模式：注入 GAUGE_STUDIO_WS」。\n'
++      })
++    }
++
+     return finished
+   }
+ 
+@@ -231,7 +320,6 @@ export class RunManager {
+     if (settings.logLevel && settings.logLevel !== 'info') {
+       args.push(`--log-level=${settings.logLevel}`)
+     }
+-    // Internal: data-driven single-row retry (hidden from UI config)
+     if (job.tableRows != null && job.tableRows > 0) {
+       args.push(`--table-rows=${job.tableRows}`)
+     }
+diff --git a/electron/services/ws-client.js b/electron/services/ws-client.js
+new file mode 100644
+index 0000000..2af9940
+--- /dev/null
++++ b/electron/services/ws-client.js
+@@ -0,0 +1,121 @@
++import WebSocket from 'ws'
++
++/**
++ * WebSocket client that dials studio-reporter's listen URL
++ * (printed as `studio-reporter websocket: ws://127.0.0.1:<port>`).
++ */
++export class WsClient {
++  constructor() {
++    this.ws = null
++    this.url = null
++    this.port = 0
++    this.runId = null
++    this.onEvent = null
++    this.onConnectionChange = null
++    this.connected = false
++    this.#closedByUs = false
++  }
++
++  #closedByUs = false
++
++  setRunId(runId) {
++    this.runId = runId
++  }
++
++  async connect(url, { timeoutMs = 8000 } = {}) {
++    await this.close()
++    this.#closedByUs = false
++    if (!url) throw new Error('missing websocket url')
++    this.url = url
++    const m = String(url).match(/:(\d+)\s*$/)
++    this.port = m ? Number(m[1]) : 0
++
++    return new Promise((resolve, reject) => {
++      let settled = false
++      const timer = setTimeout(() => {
++        if (settled) return
++        settled = true
++        try {
++          this.ws?.terminate()
++        } catch {
++          /* ignore */
++        }
++        reject(new Error(`connect timeout: ${url}`))
++      }, timeoutMs)
++
++      try {
++        const ws = new WebSocket(url)
++        this.ws = ws
++        ws.on('open', () => {
++          if (settled) return
++          settled = true
++          clearTimeout(timer)
++          this.connected = true
++          this.onConnectionChange?.(1, { url: this.url, port: this.port, mode: 'client' })
++          resolve({ url: this.url, port: this.port })
++        })
++        ws.on('message', (data) => this.#handleMessage(data))
++        ws.on('close', () => {
++          this.connected = false
++          this.onConnectionChange?.(0, { url: this.url, port: this.port, mode: 'client' })
++          if (!settled && !this.#closedByUs) {
++            settled = true
++            clearTimeout(timer)
++            reject(new Error(`websocket closed before open: ${url}`))
++          }
++        })
++        ws.on('error', (err) => {
++          if (!settled) {
++            settled = true
++            clearTimeout(timer)
++            reject(err)
++          }
++        })
++      } catch (err) {
++        clearTimeout(timer)
++        reject(err)
++      }
++    })
++  }
++
++  #handleMessage(data) {
++    let raw
++    try {
++      raw = JSON.parse(data.toString())
++    } catch {
++      return
++    }
++    if (!raw || typeof raw.type !== 'string') return
++    let payload = raw.payload
++    if (typeof payload === 'string') {
++      try {
++        payload = JSON.parse(payload)
++      } catch {
++        /* keep string */
++      }
++    }
++    this.onEvent?.({
++      runId: this.runId,
++      type: raw.type,
++      timestamp: raw.timestamp || new Date().toISOString(),
++      payload: payload || {}
++    })
++  }
++
++  async close() {
++    this.#closedByUs = true
++    const ws = this.ws
++    this.ws = null
++    this.connected = false
++    if (!ws) return
++    await new Promise((resolve) => {
++      try {
++        ws.once('close', () => resolve())
++        ws.close()
++        setTimeout(resolve, 200)
++      } catch {
++        resolve()
++      }
++    })
++  }
++}
+diff --git a/electron/services/ws-server.js b/electron/services/ws-server.js
+index 1fde596..17c470f 100644
+--- a/electron/services/ws-server.js
++++ b/electron/services/ws-server.js
+@@ -55,11 +55,19 @@ export class WsServer {
+       return
+     }
+     if (!raw || typeof raw.type !== 'string') return
++    let payload = raw.payload
++    if (typeof payload === 'string') {
++      try {
++        payload = JSON.parse(payload)
++      } catch {
++        /* keep string */
++      }
++    }
+     const event = {
+       runId: this.runId,
+       type: raw.type,
+       timestamp: raw.timestamp || new Date().toISOString(),
+-      payload: raw.payload || {}
++      payload: payload || {}
+     }
+     this.onEvent?.(event)
+   }
+diff --git a/package-lock.json b/package-lock.json
+index 9339c1a..ba44c67 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "gaugestudio",
+-  "version": "0.1.0",
++  "version": "0.1.1",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "gaugestudio",
+-      "version": "0.1.0",
++      "version": "0.1.1",
+       "license": "MIT",
+       "dependencies": {
+         "pinia": "^2.3.1",
+@@ -1520,9 +1520,6 @@
+         "arm"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1538,9 +1535,6 @@
+         "arm"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1556,9 +1550,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1574,9 +1565,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1592,9 +1580,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1610,9 +1595,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1628,9 +1610,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1646,9 +1625,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1664,9 +1640,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1682,9 +1655,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1700,9 +1670,6 @@
+         "s390x"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1718,9 +1685,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1736,9 +1700,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+diff --git a/package.json b/package.json
+index fb96855..a653966 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "gaugestudio",
+-  "version": "0.1.0",
++  "version": "0.1.1",
+   "description": "Gauge test management desktop app (Electron + Vue3)",
+   "author": "Linhanmic",
+   "license": "MIT",
+@@ -15,6 +15,7 @@
+     "dev": "electron-vite dev",
+     "build": "electron-vite build",
+     "preview": "electron-vite preview",
++    "test": "node --test scripts/*.test.mjs",
+     "dist": "npm run build && electron-builder --win zip",
+     "dist:zip": "npm run build && electron-builder --win zip",
+     "dist:setup": "npm run build && electron-builder --win nsis",
+diff --git a/scripts/ws-discovery.test.mjs b/scripts/ws-discovery.test.mjs
+new file mode 100644
+index 0000000..5ddace0
+--- /dev/null
++++ b/scripts/ws-discovery.test.mjs
+@@ -0,0 +1,16 @@
++import assert from 'node:assert/strict'
++import test from 'node:test'
++import { extractReporterWsUrl, REPORTER_WS_LINE_RE } from '../shared/constants.js'
++
++test('extractReporterWsUrl parses plugin discovery line', () => {
++  const url = extractReporterWsUrl(
++    'info\nstudio-reporter websocket: ws://127.0.0.1:45678\nmore'
++  )
++  assert.equal(url, 'ws://127.0.0.1:45678')
++  assert.ok(REPORTER_WS_LINE_RE.test('studio-reporter websocket: ws://127.0.0.1:9'))
++})
++
++test('extractReporterWsUrl ignores unrelated output', () => {
++  assert.equal(extractReporterWsUrl('gauge run specs'), null)
++  assert.equal(extractReporterWsUrl(''), null)
++})
+diff --git a/shared/constants.js b/shared/constants.js
+index d349940..5a6b395 100644
+--- a/shared/constants.js
++++ b/shared/constants.js
+@@ -1,7 +1,40 @@
++/** Match studio-reporter stdout discovery line (API.md). */
++export const REPORTER_WS_LINE_RE =
++  /studio-reporter websocket:\s*(ws:\/\/127\.0\.0\.1:\d+)/i
++
++export function extractReporterWsUrl(text) {
++  if (!text) return null
++  const m = String(text).match(REPORTER_WS_LINE_RE)
++  return m ? m[1] : null
++}
++
++export const EVENT_TYPES = [
++  'ExecutionStarting',
++  'ExecutionEnding',
++  'SpecExecutionStarting',
++  'SpecExecutionEnding',
++  'ScenarioExecutionStarting',
++  'ScenarioExecutionEnding',
++  'StepExecutionStarting',
++  'StepExecutionEnding',
++  'ConceptExecutionStarting',
++  'ConceptExecutionEnding',
++  'SuiteResult',
++  'ReportSnapshot',
++  'ReportGenerated'
++]
++
+ /** Shared defaults between main and renderer (settings shape). */
+ export const DEFAULT_SETTINGS = {
+   gaugePath: 'gauge',
++  /** @deprecated Prefer discover mode; kept for legacy inject listen port. */
+   wsPort: 8080,
++  /**
++   * When true, also start a Studio-side WS server and set GAUGE_STUDIO_WS
++   * (compat with older reporters / dual-path). Default false: Studio dials
++   * the plugin listen URL discovered from stdout.
++   */
++  legacyInjectStudioWs: false,
+   logLevel: 'info',
+   parallel: false,
+   streams: 0,
+@@ -17,17 +50,3 @@ export const DEFAULT_SETTINGS = {
+   extraArgs: '',
+   lastProjectPath: ''
+ }
+-
+-export const EVENT_TYPES = [
+-  'ExecutionStarting',
+-  'ExecutionEnding',
+-  'SpecExecutionStarting',
+-  'SpecExecutionEnding',
+-  'ScenarioExecutionStarting',
+-  'ScenarioExecutionEnding',
+-  'StepExecutionStarting',
+-  'StepExecutionEnding',
+-  'ConceptExecutionStarting',
+-  'ConceptExecutionEnding',
+-  'SuiteResult'
+-]
+diff --git a/src/components/ChromeBar.vue b/src/components/ChromeBar.vue
+index a63f6b6..eb3324d 100644
+--- a/src/components/ChromeBar.vue
++++ b/src/components/ChromeBar.vue
+@@ -59,10 +59,21 @@ function clearAll() {
+ 
+       <div class="chrome-spacer" />
+ 
+-      <span class="pill">
++      <span class="pill" :title="app.reporterWs || (app.wsMode === 'legacy-inject' ? '兼容注入 GAUGE_STUDIO_WS' : '等待发现 studio-reporter websocket')">
+         <span class="dot" :class="wsDotClass" />
+-        Studio Reporter: {{ app.wsPort }}
++        <template v-if="app.wsMode === 'client' && app.wsPort">Reporter :{{ app.wsPort }}</template>
++        <template v-else-if="app.wsMode === 'legacy-inject'">兼容 :{{ app.wsPort }}</template>
++        <template v-else>Reporter …</template>
+       </span>
++      <button
++        class="btn-ghost btn-sm"
++        type="button"
++        :disabled="!execution.lastReportPath"
++        title="打开 studio-reporter 生成的静态 index.html"
++        @click="execution.openLastReport()"
++      >
++        打开报告
++      </button>
+       <button class="btn-ghost btn-sm" type="button" @click="app.settingsOpen = true">设置</button>
+     </div>
+ 
+diff --git a/src/components/SettingsModal.vue b/src/components/SettingsModal.vue
+index eedbb9b..25bb268 100644
+--- a/src/components/SettingsModal.vue
++++ b/src/components/SettingsModal.vue
+@@ -74,7 +74,7 @@ function save() {
+         <div class="settings-panels">
+           <section v-show="app.settingsPanel === 'general'" class="settings-panel active">
+             <h3 class="panel-title">连接与路径</h3>
+-            <p class="panel-desc">配置 Gauge 主路径与 Studio Reporter 端口。</p>
++            <p class="panel-desc">默认从 stdout 发现 studio-reporter 监听地址并主动连接（与插件 0.4.x 对齐）。</p>
+             <div class="form-row">
+               <div class="row-label">
+                 <strong>Gauge 主路径</strong>
+@@ -87,9 +87,22 @@ function save() {
+             </div>
+             <div class="form-row">
+               <div class="row-label">
+-                <strong>Studio Reporter 端口</strong>
++                <strong>兼容模式</strong>
+                 <span>GAUGE_STUDIO_WS</span>
+               </div>
++              <div class="row-control">
++                <select v-model="draft.legacyInjectStudioWs">
++                  <option :value="false">关闭（推荐：主动连接 reporter）</option>
++                  <option :value="true">开启（Studio 监听并注入环境变量）</option>
++                </select>
++                <span class="hint">仅旧版 reporter 或需要双通道时开启；现代路径不要同时开，以免事件重复</span>
++              </div>
++            </div>
++            <div class="form-row" v-show="draft.legacyInjectStudioWs">
++              <div class="row-label">
++                <strong>兼容监听端口</strong>
++                <span>wsPort</span>
++              </div>
+               <div class="row-control">
+                 <input v-model.number="draft.wsPort" type="number" min="1" max="65535" />
+                 <span class="hint">优先使用此端口；占用时自动回退到临时端口</span>
+diff --git a/src/stores/app.js b/src/stores/app.js
+index 15cf25c..1ee2ddd 100644
+--- a/src/stores/app.js
++++ b/src/stores/app.js
+@@ -38,6 +38,8 @@ export const useAppStore = defineStore('app', {
+     toastTimer: null,
+     wsClients: 0,
+     wsPort: 8080,
++    wsMode: 'discover',
++    reporterWs: '',
+     status: { state: 'idle', text: '就绪' },
+     lsp: { status: 'offline', conceptCount: 0 }
+   }),
+@@ -64,10 +66,14 @@ export const useAppStore = defineStore('app', {
+       api().on('run:status', (s) => {
+         this.status = { state: s.state, text: s.text }
+         if (s.wsPort) this.wsPort = s.wsPort
++        if (s.wsMode) this.wsMode = s.wsMode
++        if (s.reporterWs) this.reporterWs = s.reporterWs
+       })
+       api().on('ws:connection', (c) => {
+         this.wsClients = c.clients || 0
+         if (c.port) this.wsPort = c.port
++        if (c.mode) this.wsMode = c.mode
++        if (c.url) this.reporterWs = c.url
+       })
+       api().on('lsp:status', (s) => {
+         this.lsp = s
+diff --git a/src/stores/execution.js b/src/stores/execution.js
+index ab61041..684c43c 100644
+--- a/src/stores/execution.js
++++ b/src/stores/execution.js
+@@ -262,6 +262,15 @@ function makeExecutionId(specPath, scenarioName, rowIndex) {
+   return `${specPath}::${scenarioName}`
+ }
+ 
++function verdictToStatus(verdict, isLiveCurrent) {
++  const v = String(verdict || '').toLowerCase()
++  if (isLiveCurrent) return 'running'
++  if (v === 'fail' || v === 'failed') return 'failed'
++  if (v === 'skip' || v === 'skipped') return 'skipped'
++  if (v === 'pass' || v === 'passed') return 'passed'
++  return 'passed'
++}
++
+ /** Format data-driven row as `key=value · key=value`. */
+ export function formatRowPreview(headers, row) {
+   if (!row || typeof row !== 'object') return ''
+@@ -376,6 +385,9 @@ export const useExecutionStore = defineStore('execution', {
+     selectedId: null,
+     resultsFilter: 'all',
+     liveFailText: '',
++    lastReportPath: null,
++    lastReportDir: null,
++    snapshotRev: 0,
+     // Track nesting for Concept during live events
+     _stack: [],
+     _currentSpec: null,
+@@ -423,6 +435,9 @@ export const useExecutionStore = defineStore('execution', {
+       this.scenarioResults = []
+       this.selectedId = null
+       this.liveFailText = ''
++      this.lastReportPath = null
++      this.lastReportDir = null
++      this.snapshotRev = 0
+       this.counts = { pass: 0, fail: 0, skip: 0, run: 0 }
+       this._stack = []
+       this._currentSpec = null
+@@ -430,6 +445,79 @@ export const useExecutionStore = defineStore('execution', {
+       this._activeId = null
+     },
+ 
++    async openLastReport() {
++      if (!this.lastReportPath) {
++        useAppStore().showToast('尚无终态报告路径')
++        return
++      }
++      const bridge = api()
++      if (!bridge?.report?.open) {
++        useAppStore().showToast('打开报告 API 不可用')
++        return
++      }
++      const res = await bridge.report.open(this.lastReportPath)
++      if (!res?.ok) useAppStore().showToast(res?.error || '打开报告失败')
++    },
++
++    applyReportSnapshot(snap) {
++      if (!snap || !snap.report) return
++      const rev = Number(snap.rev) || 0
++      if (rev && this.snapshotRev && rev < this.snapshotRev) return
++      this.snapshotRev = rev || this.snapshotRev
++      if (typeof snap.running === 'boolean') this.running = snap.running
++
++      const app = useAppStore()
++      const projectPath = app.project?.path
++      const specs = snap.report.specs || []
++      for (const spec of specs) {
++        const specPath = relativizeSpecPath(spec.fileName || spec.file || spec.heading, projectPath)
++        const specName = spec.heading || spec.name || specPath
++        for (const scen of spec.scenarios || []) {
++          const scenName = scen.heading || scen.name || 'Scenario'
++          const id = scen.id || makeExecutionId(specPath, scenName, null)
++          const status = verdictToStatus(scen.verdict, snap.running && scen.id === snap.currentScenarioId)
++          const existing = this.scenarioResults.find((r) => r.id === id)
++          this.upsertResult({
++            id,
++            name: scenName,
++            specPath,
++            specName,
++            status,
++            duration: scen.duration || existing?.duration || '',
++            // Preserve richer step trees built from lifecycle events when present.
++            steps: existing?.steps?.length ? existing.steps : [],
++            stepsDone: existing?.stepsDone || 0,
++            stepsTotal: existing?.stepsTotal || 0
++          })
++        }
++      }
++
++      if (snap.currentScenarioId) {
++        const hit = this.scenarioResults.find((r) => r.id === snap.currentScenarioId)
++        if (hit) {
++          this._activeId = hit.id
++          if (!this.currentScenario || this.currentScenario.id !== hit.id) {
++            this.currentScenario = {
++              id: hit.id,
++              name: hit.name,
++              specPath: hit.specPath,
++              specName: hit.specName,
++              status: hit.status === 'running' ? 'running' : hit.status,
++              dataDriven: !!hit.dataDriven,
++              rowIndex: hit.rowIndex || null,
++              tableHeaders: hit.tableHeaders || null,
++              tableRow: hit.tableRow || null,
++              steps: hit.steps || [],
++              tags: []
++            }
++          } else {
++            this.currentScenario.status = hit.status
++          }
++        }
++      }
++      this.recalcCounters()
++    },
++
+     upsertResult(partial) {
+       const idx = this.scenarioResults.findIndex((r) => r.id === partial.id)
+       if (idx >= 0) {
+@@ -653,6 +741,16 @@ export const useExecutionStore = defineStore('execution', {
+         case 'SuiteResult':
+           this.recalcCounters()
+           break
++        case 'ReportSnapshot':
++          this.applyReportSnapshot(payload)
++          break
++        case 'ReportGenerated':
++          this.lastReportPath = payload.reportPath || payload.report_path || null
++          this.lastReportDir = payload.reportDir || payload.report_dir || null
++          if (this.lastReportPath) {
++            useAppStore().showToast('终态报告已生成')
++          }
++          break
+         default:
+           break
+       }
+-- 
+2.43.0
+

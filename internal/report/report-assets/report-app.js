@@ -334,9 +334,28 @@ const reportDataEl = document.getElementById('report-data');
         currentSpecId: runDir ? '' : (seededEnvelope.currentSpecId || ''),
         currentScenarioId: runDir ? '' : (seededEnvelope.currentScenarioId || ''),
         startedAt: runDir ? 0 : (Number(seededEnvelope.startedAt) || 0),
-        clock: Date.now()
+        clock: Date.now(),
+        // Suite-end guide → static index.html (canonical final report).
+        suiteEndedGuide: false,
+        finalIndexReady: false,
+        finalRedirectSec: 0,
+        finalGuideDismissed: false
       }),
       actions: {
+        markSuiteEnded() {
+          if (this.archiveDir || this.finalGuideDismissed) return;
+          this.suiteEndedGuide = true;
+        },
+        markFinalIndexReady() {
+          if (this.archiveDir || this.finalGuideDismissed) return;
+          this.suiteEndedGuide = true;
+          this.finalIndexReady = true;
+        },
+        dismissFinalGuide() {
+          this.finalGuideDismissed = true;
+          this.suiteEndedGuide = false;
+          this.finalRedirectSec = 0;
+        },
         restoreView() {
           try {
             const saved = JSON.parse(sessionStorage.getItem(VIEW_KEY) || 'null');
@@ -492,7 +511,7 @@ const reportDataEl = document.getElementById('report-data');
           <el-table-column label="结果" width="70">
             <template #default="{ row: scn }"><el-tag :type="tagType(scn.verdict)" size="small">{{ verdictLabel(scn.verdict) }}</el-tag></template>
           </el-table-column>
-          <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
+          <el-table-column label="运行时间" width="112" min-width="112" class-name="col-time" label-class-name="col-time" prop="duration"></el-table-column>
         </el-table>`
     };
     const ItemTable = {
@@ -502,8 +521,8 @@ const reportDataEl = document.getElementById('report-data');
       methods: {
         tagType, verdictLabel, itemVerdict, itemDuration, itemHasDetail, stepHTML, stepOutputs, assetHref,
         typeLabel(row) {
-          if (row.phase === 'Context') return 'Context';
-          if (row.phase === 'Teardown') return 'Teardown';
+          if (row.phase === 'Context') return '前置';
+          if (row.phase === 'Teardown') return '清理';
           if (row.kind === 'concept') return '概念';
           if (row.kind === 'comment') return '注释';
           return '步骤';
@@ -563,7 +582,7 @@ const reportDataEl = document.getElementById('report-data');
           <el-table-column label="结果" width="70">
             <template #default="{ row }"><el-tag :type="tagType(itemVerdict(row))" size="small">{{ verdictLabel(itemVerdict(row)) }}</el-tag></template>
           </el-table-column>
-          <el-table-column label="运行时间" width="96">
+          <el-table-column label="运行时间" width="112" min-width="112" class-name="col-time" label-class-name="col-time">
             <template #default="{ row }">{{ itemDuration(row) }}</template>
           </el-table-column>
         </el-table>`
@@ -614,15 +633,57 @@ const reportDataEl = document.getElementById('report-data');
     }
     function applyLivePayload(store, payload, scroll) {
       if (!payload || !payload.report) return;
+      const wasRunning = !!store.running;
       if (payload.rev && store.rev && Number(payload.rev) <= store.rev) {
         store.running = !!payload.running;
         if (payload.currentSpecId) store.currentSpecId = payload.currentSpecId;
         if (payload.currentScenarioId) store.currentScenarioId = payload.currentScenarioId;
-        return;
+      } else {
+        store.applyLive(payload, scroll);
       }
-      store.applyLive(payload, scroll);
+      if (wasRunning && !store.running) store.markSuiteEnded();
     }
-    function connectReportWebSocket(store) {
+    function parseWSPayload(raw) {
+      if (raw == null) return null;
+      if (typeof raw === 'string') {
+        try { return JSON.parse(raw); } catch (e) { return null; }
+      }
+      return raw;
+    }
+    async function captureIndexMeta() {
+      const url = 'index.html?ts=' + Date.now();
+      try {
+        const head = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+        if (head.ok) {
+          return {
+            exists: true,
+            lm: head.headers.get('last-modified') || '',
+            len: head.headers.get('content-length') || ''
+          };
+        }
+      } catch (e) {}
+      try {
+        const get = await fetch(url, { method: 'GET', cache: 'no-store' });
+        if (!get || !get.ok) return { exists: false };
+        const text = await get.text();
+        return {
+          exists: true,
+          lm: get.headers.get('last-modified') || '',
+          len: get.headers.get('content-length') || String(text.length)
+        };
+      } catch (e) {
+        return { exists: false };
+      }
+    }
+    function indexMetaChanged(before, after) {
+      if (!after || !after.exists) return false;
+      if (!before || !before.exists) return true;
+      return before.lm !== after.lm || before.len !== after.len;
+    }
+    async function probeFinalIndex(baseline) {
+      return indexMetaChanged(baseline, await captureIndexMeta());
+    }
+    function connectReportWebSocket(store, onFinalGenerated) {
       const url = liveWebSocketURL();
       if (!url) return null;
       let ws;
@@ -630,13 +691,16 @@ const reportDataEl = document.getElementById('report-data');
       ws.onmessage = (ev) => {
         let msg;
         try { msg = JSON.parse(ev.data); } catch (e) { return; }
+        if (msg.type === 'ReportGenerated') {
+          if (typeof onFinalGenerated === 'function') onFinalGenerated();
+          return;
+        }
         if (msg.type !== 'ReportSnapshot' || !msg.payload) return;
-        const payload = typeof msg.payload === 'string' ? JSON.parse(msg.payload) : msg.payload;
-        applyLivePayload(store, payload, captureScroll());
+        applyLivePayload(store, parseWSPayload(msg.payload), captureScroll());
       };
       ws.onclose = () => {
         if (!store.archiveDir && store.running) {
-          window.setTimeout(() => connectReportWebSocket(store), 1000);
+          window.setTimeout(() => connectReportWebSocket(store, onFinalGenerated), 1000);
         }
       };
       return ws;
@@ -669,6 +733,9 @@ const reportDataEl = document.getElementById('report-data');
           const scn = (spec.scenarios || []).find((x) => x.id === this.store.currentScenarioId);
           return scn ? (spec.heading + ' / ' + scn.heading) : spec.heading;
         },
+        showFinalGuide() {
+          return !!(this.store.suiteEndedGuide && !this.store.finalGuideDismissed && !this.store.archiveDir);
+        },
         selectedLabel() {
           if (!this.store.selected || this.store.selected === 'folder:specs' || this.store.selected === 'suite') return this.store.report.projectName;
           const spec = (this.store.report.specs || []).find((s) => s.id === this.store.selected);
@@ -682,6 +749,74 @@ const reportDataEl = document.getElementById('report-data');
       },
       methods: {
         verdictLabel, tagType,
+        openFinalReport() {
+          window.location.href = 'index.html';
+        },
+        stayOnLiveViewer() {
+          this.clearFinalRedirect();
+          this.store.dismissFinalGuide();
+        },
+        clearFinalRedirect() {
+          if (this._finalRedirectTimer) {
+            clearInterval(this._finalRedirectTimer);
+            this._finalRedirectTimer = null;
+          }
+          this.store.finalRedirectSec = 0;
+        },
+        clearFinalProbe() {
+          if (this._finalProbeTimer) {
+            clearInterval(this._finalProbeTimer);
+            this._finalProbeTimer = null;
+          }
+        },
+        startFinalRedirectCountdown() {
+          if (this.store.finalGuideDismissed || this.store.archiveDir) return;
+          if (this._finalRedirectTimer) return;
+          this.store.finalRedirectSec = 5;
+          this._finalRedirectTimer = setInterval(() => {
+            if (this.store.finalGuideDismissed) {
+              this.clearFinalRedirect();
+              return;
+            }
+            const next = this.store.finalRedirectSec - 1;
+            this.store.finalRedirectSec = next;
+            if (next <= 0) {
+              this.clearFinalRedirect();
+              window.location.href = 'index.html';
+            }
+          }, 1000);
+        },
+        onFinalIndexReady() {
+          this.store.markFinalIndexReady();
+          this.clearFinalProbe();
+          this.startFinalRedirectCountdown();
+        },
+        beginFinalIndexWait(opts) {
+          if (this.store.archiveDir || this.store.finalGuideDismissed || this.store.finalIndexReady) return;
+          this.store.markSuiteEnded();
+          // report.json is written after index.html, so a disk poll that sees
+          // running=false already means the final report is on disk.
+          if (opts && opts.fromDiskSnapshot) {
+            this.onFinalIndexReady();
+            return;
+          }
+          this.clearFinalProbe();
+          // WS path: FinishWithReport sets running=false before index.html rewrite.
+          // Capture baseline so a leftover index from the previous run is ignored.
+          captureIndexMeta().then((baseline) => {
+            if (this.store.finalGuideDismissed || this.store.finalIndexReady) return;
+            this._finalIndexBaseline = baseline;
+            const tick = async () => {
+              if (this.store.finalGuideDismissed || this.store.finalIndexReady) {
+                this.clearFinalProbe();
+                return;
+              }
+              if (await probeFinalIndex(this._finalIndexBaseline)) this.onFinalIndexReady();
+            };
+            tick();
+            this._finalProbeTimer = setInterval(tick, 500);
+          });
+        },
         specVisible(spec) {
           if (this.store.filter === 'all' && !this.q) return true;
           if (!matchQuery(this.q, specTexts(spec))) return false;
@@ -737,19 +872,14 @@ const reportDataEl = document.getElementById('report-data');
         collapseAll() { this.store.collapseAll(); },
         printReport() { window.print(); },
         async pollLive() {
-          if (this._liveBusy) return;
+          if (this._liveBusy || this._wsConnected) return;
           this._liveBusy = true;
           try {
             const payload = await fetchLive();
             if (!payload || !payload.report) return;
-            if (payload.rev && this.store.rev && Number(payload.rev) <= this.store.rev) {
-              this.store.running = !!payload.running;
-              if (payload.currentSpecId) this.store.currentSpecId = payload.currentSpecId;
-              if (payload.currentScenarioId) this.store.currentScenarioId = payload.currentScenarioId;
-              return;
-            }
-            const scroll = captureScroll();
-            this.store.applyLive(payload, scroll);
+            const wasRunning = !!this.store.running;
+            applyLivePayload(this.store, payload, captureScroll());
+            if (wasRunning && !this.store.running) this.beginFinalIndexWait({ fromDiskSnapshot: true });
           } finally {
             this._liveBusy = false;
           }
@@ -767,18 +897,36 @@ const reportDataEl = document.getElementById('report-data');
       },
       watch: {
         'store.query'() { this.store.persistView(); },
-        'store.filter'() { this.store.persistView(); }
+        'store.filter'() { this.store.persistView(); },
+        'store.running'(now, prev) {
+          // WS snapshots flip running before index.html is rewritten.
+          if (prev === true && now === false && this._wsConnected) {
+            this.beginFinalIndexWait({ fromDiskSnapshot: false });
+          }
+        }
       },
       mounted() {
-        this.pollLive();
+        const store = this.store;
+        this._ws = connectReportWebSocket(store, () => this.onFinalIndexReady());
+        this._wsConnected = !!this._ws;
+        if (!this._wsConnected) {
+          this.pollLive();
+        }
         if (!this.store.archiveDir) {
-          this._liveTimer = setInterval(() => this.pollLive(), 700);
+          if (!this._wsConnected) {
+            this._liveTimer = setInterval(() => this.pollLive(), 700);
+          }
           this._tickTimer = setInterval(() => { this.store.clock = Date.now(); }, 250);
         }
       },
       beforeUnmount() {
         if (this._liveTimer) clearInterval(this._liveTimer);
         if (this._tickTimer) clearInterval(this._tickTimer);
+        this.clearFinalProbe();
+        this.clearFinalRedirect();
+        if (this._ws) {
+          try { this._ws.onclose = null; this._ws.close(); } catch (e) {}
+        }
       }
     });
     const pinia = createPinia();

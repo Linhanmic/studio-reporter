@@ -16,11 +16,13 @@ var staticReportCSS string
 var staticReportJS string
 
 // RenderReportHTML builds a self-contained static HTML report (no embedded JSON / no Vue).
+// Layout mirrors CANoe Test Report Viewer: left navigation + right content with an Overview page.
 func RenderReportHTML(r *Report) ([]byte, error) {
 	if r == nil {
 		r = &Report{ProjectName: "Gauge Suite", Duration: formatDuration(0), Verdict: VerdictNone}
 	}
 	Recount(r)
+	EnrichMeta(r)
 	var b bytes.Buffer
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
@@ -31,14 +33,21 @@ func RenderReportHTML(r *Report) ([]byte, error) {
 	b.WriteString("</style>\n</head>\n<body>\n<div class=\"app-shell\">\n")
 	writeStaticHeader(&b, r)
 	writeFilterToolbar(&b, r.Summary.Specs, r.Summary.Scenarios)
-	b.WriteString("<main class=\"result-pane\">\n")
+	b.WriteString("<div class=\"workspace\">\n")
+	writeNavPane(&b, r)
+	b.WriteString("<div class=\"content-pane\">\n")
+	writeOverviewPanel(&b, r)
+	b.WriteString("<section id=\"results\" class=\"result-pane\" data-pane=\"results\">\n")
 	writeHookAlert(&b, r.PreHookFailure, "Before Suite")
+	writeShotGallery(&b, "Suite before 截图", r.PreHookScreenshots, "")
 	writeHookAlert(&b, r.PostHookFailure, "After Suite")
+	writeShotGallery(&b, "Suite after 截图", r.PostHookScreenshots, "")
 	for i := range r.Specs {
-		writeSpecBlock(&b, &r.Specs[i], i == 0)
+		writeSpecBlock(&b, &r.Specs[i], i == 0 || r.Specs[i].Verdict == VerdictFail)
 	}
-	b.WriteString("</main>\n")
+	b.WriteString("</section>\n</div>\n</div>\n")
 	writeStaticFooter(&b, r)
+	writeShotLightbox(&b)
 	b.WriteString("<script>\n")
 	b.WriteString(staticReportJS)
 	b.WriteString("</script>\n")
@@ -55,17 +64,29 @@ func RenderSnapshotHTML(snap *LiveSnapshot) ([]byte, error) {
 }
 
 func writeStaticHeader(b *bytes.Buffer, r *Report) {
-	b.WriteString("<header class=\"app-header\"><h1>")
+	b.WriteString("<header class=\"app-header\"><div class=\"header-row\"><h1>")
 	b.WriteString(html.EscapeString("Test Report Viewer — " + r.ProjectName))
-	b.WriteString(" <span class=\"badge pass\">已完成</span></h1>\n<div class=\"meta\">")
+	b.WriteString(" <span class=\"badge ")
+	b.WriteString(html.EscapeString(r.Verdict))
+	b.WriteString("\">")
+	b.WriteString(html.EscapeString(verdictLabel(r.Verdict)))
+	b.WriteString("</span></h1>\n<div class=\"header-actions\">")
+	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"show-overview\">Overview</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"export-pdf\" title=\"使用浏览器打印为 PDF（保留文字与链接，非截图拼贴）\">导出 PDF</button>")
+	b.WriteString("</div></div>\n<div class=\"meta\">")
 	b.WriteString(html.EscapeString(fallback(r.Environment, "-")))
 	b.WriteString(" · ")
 	b.WriteString(html.EscapeString(r.Timestamp))
 	b.WriteString(" · 总耗时 ")
 	b.WriteString(html.EscapeString(r.Duration))
+	if r.Tags != "" {
+		b.WriteString(" · 标签 ")
+		b.WriteString(html.EscapeString(r.Tags))
+	}
 	b.WriteString("</div>\n<div class=\"stat-row\">\n")
 	writeStatCard(b, "规格书", r.Summary.Specs)
 	writeStatCard(b, "场景", r.Summary.Scenarios)
+	writeStatCard(b, "步骤", r.Summary.Steps)
 	b.WriteString("<div class=\"stat-card\"><div class=\"label\">运行时间</div><div class=\"value\">")
 	b.WriteString(html.EscapeString(r.Duration))
 	b.WriteString("</div><div class=\"sub\">成功率 ")
@@ -99,12 +120,16 @@ func writeHookAlert(b *bytes.Buffer, h *HookFailure, name string) {
 	b.WriteString(html.EscapeString(title))
 	b.WriteString(" 失败</strong><div>")
 	b.WriteString(html.EscapeString(h.ErrorMessage))
-	b.WriteString("</div></div>\n")
+	b.WriteString("</div>")
+	if h.FailureScreenshot != "" {
+		writeShotGallery(b, "Hook 失败截图", nil, h.FailureScreenshot)
+	}
+	b.WriteString("</div>\n")
 }
 
 func writeSpecBlock(b *bytes.Buffer, spec *SpecReport, open bool) {
 	tone := toneClass(spec.Verdict)
-	writeReportBlockOpen(b, tone, spec.Verdict, "spec", open)
+	writeReportBlockOpen(b, tone, spec.Verdict, "spec", spec.ID, open)
 	writeBlockSummary(b, html.EscapeString(spec.Heading), "规格书", spec.Verdict, spec.Duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	if len(spec.Folders) > 0 {
@@ -112,6 +137,8 @@ func writeSpecBlock(b *bytes.Buffer, spec *SpecReport, open bool) {
 		b.WriteString(html.EscapeString(strings.Join(spec.Folders, " / ")))
 		b.WriteString("</div>\n")
 	}
+	writeShotGallery(b, "Spec before 截图", spec.PreHookScreenshots, "")
+	writeShotGallery(b, "Spec after 截图", spec.PostHookScreenshots, "")
 	for _, row := range specBodyRows(*spec) {
 		writeBodyRow(b, row)
 	}
@@ -142,7 +169,7 @@ func writeBodyRow(b *bytes.Buffer, row bodyRow) {
 		kind = "scenario"
 	}
 	tone := toneClass(row.verdict)
-	writeReportBlockOpen(b, tone, row.verdict, kind, false)
+	writeReportBlockOpen(b, tone, row.verdict, kind, "", row.verdict == VerdictFail)
 	writeBlockSummary(b, html.EscapeString(bodyName(row)), bodyTypeLabel(row), row.verdict, row.duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	if row.kind == "datarow" && len(row.headers) > 0 {
@@ -156,11 +183,13 @@ func writeBodyRow(b *bytes.Buffer, row bodyRow) {
 
 func writeScenarioBlock(b *bytes.Buffer, scn ScenarioReport, open bool) {
 	tone := toneClass(scn.Verdict)
-	writeReportBlockOpen(b, tone, scn.Verdict, "scenario", open)
+	writeReportBlockOpen(b, tone, scn.Verdict, "scenario", scn.ID, open)
 	writeBlockSummary(b, html.EscapeString(scn.Heading), "场景", scn.Verdict, scn.Duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	writeHookAlert(b, scn.PreHookFailure, "Before Scenario")
+	writeShotGallery(b, "Scenario before 截图", scn.PreHookScreenshots, "")
 	writeHookAlert(b, scn.PostHookFailure, "After Scenario")
+	writeShotGallery(b, "Scenario after 截图", scn.PostHookScreenshots, "")
 	if scn.ScenarioDataTable != nil {
 		writeDataTable(b, scn.ScenarioDataTable)
 	}
@@ -211,7 +240,7 @@ func writeConceptBlock(b *bytes.Buffer, item ItemReport) {
 	tone := toneClass(verdict)
 	name := itemTextHTML(item)
 	open := verdict == VerdictFail
-	writeReportBlockOpen(b, tone, verdict, "concept", open)
+	writeReportBlockOpen(b, tone, verdict, "concept", "", open)
 	writeBlockSummary(b, name, "概念", verdict, itemDurationStr(item))
 	b.WriteString("<div class=\"block-body\">\n")
 	for _, child := range concept.Items {
@@ -231,12 +260,72 @@ func writeStepBlock(b *bytes.Buffer, phase string, item ItemReport) {
 	verdict := step.Verdict
 	tone := toneClass(verdict)
 	name := stepTextHTML(step)
+	dur := itemDurationStr(item)
+	label := itemTypeLabel(phase, item)
+	if !stepHasExtras(step) {
+		writeLeafRow(b, tone, verdict, "step", name, label, dur)
+		return
+	}
 	open := verdict == VerdictFail
-	writeReportBlockOpen(b, tone, verdict, "step", open)
-	writeBlockSummary(b, name, itemTypeLabel(phase, item), verdict, itemDurationStr(item))
+	writeReportBlockOpen(b, tone, verdict, "step", "", open)
+	writeBlockSummary(b, name, label, verdict, dur)
 	b.WriteString("<div class=\"block-body\">\n")
 	writeStepExtras(b, step)
 	b.WriteString("</div></details>\n")
+}
+
+func writeLeafRow(b *bytes.Buffer, tone, verdict, kind, name, typeLabel, duration string) {
+	b.WriteString("<div class=\"report-block leaf-row ")
+	b.WriteString(tone)
+	b.WriteString("\" data-verdict=\"")
+	b.WriteString(html.EscapeString(verdict))
+	b.WriteString("\" data-kind=\"")
+	b.WriteString(html.EscapeString(kind))
+	b.WriteString("\"><div class=\"leaf-summary\"><span class=\"summary-left\"><span class=\"name-cell\">")
+	b.WriteString(name)
+	b.WriteString("</span></span><span class=\"summary-meta\"><span class=\"type-label\">")
+	b.WriteString(html.EscapeString(typeLabel))
+	b.WriteString("</span><span class=\"badge ")
+	b.WriteString(html.EscapeString(verdict))
+	b.WriteString("\">")
+	b.WriteString(html.EscapeString(verdictLabel(verdict)))
+	b.WriteString("</span></span><span class=\"dur\">")
+	b.WriteString(html.EscapeString(duration))
+	b.WriteString("</span></div></div>\n")
+}
+
+func stepHasExtras(step *StepReport) bool {
+	if step == nil {
+		return false
+	}
+	if step.ErrorMessage != "" || step.StackTrace != "" || step.SkippedReason != "" {
+		return true
+	}
+	if step.PreHookFailure != nil || step.PostHookFailure != nil {
+		return true
+	}
+	if step.FailureScreenshot != "" || len(step.Screenshots) > 0 {
+		return true
+	}
+	if len(step.PreHookScreenshots) > 0 || len(step.PostHookScreenshots) > 0 {
+		return true
+	}
+	for _, m := range step.PreHookMessages {
+		if m != "" {
+			return true
+		}
+	}
+	for _, m := range step.Messages {
+		if m != "" {
+			return true
+		}
+	}
+	for _, m := range step.PostHookMessages {
+		if m != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func writeStepExtras(b *bytes.Buffer, step *StepReport) {
@@ -259,7 +348,9 @@ func writeStepExtras(b *bytes.Buffer, step *StepReport) {
 		b.WriteString("</div>\n")
 	}
 	writeHookAlert(b, step.PreHookFailure, "Before Step")
+	writeShotGallery(b, "Step before 截图", step.PreHookScreenshots, "")
 	writeHookAlert(b, step.PostHookFailure, "After Step")
+	writeShotGallery(b, "Step after 截图", step.PostHookScreenshots, "")
 	writeStepOutputs(b, step)
 	writeScreenshots(b, step.Screenshots, step.FailureScreenshot)
 }
@@ -303,23 +394,7 @@ func writeStepOutputs(b *bytes.Buffer, step *StepReport) {
 }
 
 func writeScreenshots(b *bytes.Buffer, shots []string, failure string) {
-	paths := append([]string{}, shots...)
-	if failure != "" {
-		paths = append(paths, failure)
-	}
-	if len(paths) == 0 {
-		return
-	}
-	b.WriteString("<div class=\"shots\">")
-	for _, p := range paths {
-		if p == "" {
-			continue
-		}
-		b.WriteString("<img src=\"")
-		b.WriteString(html.EscapeString(p))
-		b.WriteString("\" alt=\"screenshot\">")
-	}
-	b.WriteString("</div>\n")
+	writeShotGallery(b, "步骤截图", shots, failure)
 }
 
 func writeDataKV(b *bytes.Buffer, headers, cells []string) {

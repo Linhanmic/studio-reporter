@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/getgauge/gauge-proto/go/gauge_messages"
 	"github.com/gaugestudio/studio-reporter/internal/report"
+	"github.com/getgauge/gauge-proto/go/gauge_messages"
 )
 
 func sampleSuite() *gauge_messages.ProtoSuiteResult {
@@ -461,6 +461,10 @@ func TestWriteAndRegenerateReport(t *testing.T) {
 		"tone-pass",
 		"tone-fail",
 		"summary-meta",
+		"leaf-row",
+		"expand-all",
+		"collapse-all",
+		"search-input",
 		"filter-group",
 		"data-scope=\"spec\"",
 		"data-scope=\"scenario\"",

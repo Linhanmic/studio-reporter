@@ -20,7 +20,14 @@
       --fail-row-hover: #fed7d7;
       --skip-row: #edf2f7;
     }
-    html, body { margin: 0; height: 100%; background: #d9e2ec; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #d9e2ec;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 12px;
+      color: #1a202c;
+    }
     #app { height: 100%; }
     [v-cloak] { display: none !important; }
     .app-shell { height: 100%; display: flex; flex-direction: column; }
@@ -56,7 +63,7 @@
     .name-cell { word-break: break-word; overflow-wrap: anywhere; line-height: 1.25; }
     .frag.static { color: #2b6cb0; font-weight: 650; }
     .frag.dynamic { color: #805ad5; font-weight: 650; }
-    .frag.special { color: #c05621; }
+    .frag.special, .frag.multiline { color: #c05621; }
     .err { color: var(--fail); white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 11px; }
     .msg { color: #5a6a7a; white-space: pre-wrap; font-size: 11px; }
     .stack { white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 11px; background: #fff; border: 1px solid #e2e8f0; padding: 6px; }
@@ -78,7 +85,32 @@
       box-sizing: border-box;
     }
     .dense-table .el-table__expand-icon--expanded::before { content: "\2212"; }
-    .dense-table .el-tag { height: 18px; line-height: 16px; padding: 0 5px; }
+    .dense-table .el-tag { height: 18px; line-height: 16px; padding: 0 5px; border: none; }
+    /* Align Element Plus verdict chips with static .badge brand tokens. */
+    .el-tag.el-tag--success {
+      --el-tag-bg-color: var(--pass);
+      --el-tag-border-color: var(--pass);
+      --el-tag-text-color: #fff;
+      background-color: var(--pass) !important;
+      border-color: var(--pass) !important;
+      color: #fff !important;
+    }
+    .el-tag.el-tag--danger {
+      --el-tag-bg-color: var(--fail);
+      --el-tag-border-color: var(--fail);
+      --el-tag-text-color: #fff;
+      background-color: var(--fail) !important;
+      border-color: var(--fail) !important;
+      color: #fff !important;
+    }
+    .el-tag.el-tag--info {
+      --el-tag-bg-color: var(--skip);
+      --el-tag-border-color: var(--skip);
+      --el-tag-text-color: #fff;
+      background-color: var(--skip) !important;
+      border-color: var(--skip) !important;
+      color: #fff !important;
+    }
     .dense-table .el-table__body tr.el-table__row { cursor: pointer; }
     .dense-table .el-table__body tr.no-expand { cursor: default; }
     .el-table .no-expand .el-table__expand-icon { visibility: hidden; pointer-events: none; }
@@ -100,7 +132,11 @@
     .dense-table.el-table th.col-type,
     .dense-table.el-table td.col-type,
     .dense-table.el-table th.col-type .cell,
-    .dense-table.el-table td.col-type .cell {
+    .dense-table.el-table td.col-type .cell,
+    .dense-table.el-table th.col-time,
+    .dense-table.el-table td.col-time,
+    .dense-table.el-table th.col-time .cell,
+    .dense-table.el-table td.col-time .cell {
       white-space: nowrap !important;
       word-break: keep-all;
     }
@@ -122,11 +158,18 @@
       padding: 2px 10px; color: #5a6a7a; display: flex; justify-content: space-between; font-size: 11px;
     }
     .live-now { font-size: 11px; color: #cfe8f7; margin-left: 8px; }
+    .final-guide {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+      padding: 8px 10px; background: #e8f4fb; border-bottom: 1px solid #9ec5dc; color: #16324f;
+      font-size: 12px; flex: 0 0 auto;
+    }
+    .final-guide-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .final-guide strong { font-weight: 650; }
     @media (max-width: 900px) {
       .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media print {
-      .toolbar, .status { display: none !important; }
+      .toolbar, .status, .final-guide { display: none !important; }
       .workspace { display: block; overflow: visible; }
       .result-pane { overflow: visible; }
     }
@@ -149,17 +192,17 @@
           <div class="stat-card">
             <div class="label">规格书</div>
             <div class="value">{{ store.report.summary.specs.passed }}/{{ store.report.summary.specs.total }}</div>
-            <div class="sub">通过 / 共 {{ store.report.summary.specs.total }} · 失败 {{ store.report.summary.specs.failed }}</div>
+            <div class="sub">通过 {{ store.report.summary.specs.passed }} · 失败 {{ store.report.summary.specs.failed }} · 跳过 {{ store.report.summary.specs.skipped }}</div>
           </div>
           <div class="stat-card">
             <div class="label">场景</div>
             <div class="value">{{ store.report.summary.scenarios.passed }}/{{ store.report.summary.scenarios.total }}</div>
-            <div class="sub">通过 / 共 {{ store.report.summary.scenarios.total }} · 失败 {{ store.report.summary.scenarios.failed }}</div>
+            <div class="sub">通过 {{ store.report.summary.scenarios.passed }} · 失败 {{ store.report.summary.scenarios.failed }} · 跳过 {{ store.report.summary.scenarios.skipped }}</div>
           </div>
           <div class="stat-card">
             <div class="label">步骤</div>
             <div class="value">{{ store.report.summary.steps.passed }}/{{ store.report.summary.steps.total }}</div>
-            <div class="sub">通过 / 共 {{ store.report.summary.steps.total }} · 失败 {{ store.report.summary.steps.failed }}</div>
+            <div class="sub">通过 {{ store.report.summary.steps.passed }} · 失败 {{ store.report.summary.steps.failed }} · 跳过 {{ store.report.summary.steps.skipped }}</div>
           </div>
           <div class="stat-card">
             <div class="label">运行时间</div>
@@ -180,6 +223,20 @@
         <el-button size="small" @click="collapseAll">全部折叠</el-button>
         <el-switch v-if="store.running" v-model="store.followLive" size="small" active-text="跟随实时" style="margin-left: 4px"></el-switch>
         <el-button size="small" @click="printReport">打印</el-button>
+      </div>
+      <div v-if="showFinalGuide" class="final-guide" role="status">
+        <div>
+          <strong>运行已结束。</strong>
+          <span v-if="!store.finalIndexReady">正在生成终态报告 index.html…</span>
+          <span v-else>
+            终态静态报告已就绪（含完整步骤）。
+            <span v-if="store.finalRedirectSec > 0">{{ store.finalRedirectSec }} 秒后自动打开…</span>
+          </span>
+        </div>
+        <div class="final-guide-actions">
+          <el-button type="primary" size="small" :disabled="!store.finalIndexReady" @click="openFinalReport">打开终态报告</el-button>
+          <el-button size="small" @click="stayOnLiveViewer">留在实时页</el-button>
+        </div>
       </div>
       <div class="workspace">
         <main class="result-pane">
@@ -239,7 +296,7 @@
                 <el-table-column label="结果" width="70">
                   <template #default="{ row: body }"><el-tag :type="tagType(body.verdict)" size="small">{{ verdictLabel(body.verdict) }}</el-tag></template>
                 </el-table-column>
-                <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
+                <el-table-column label="运行时间" width="112" min-width="112" class-name="col-time" label-class-name="col-time" prop="duration"></el-table-column>
               </el-table>
             </div>
           </template>
@@ -253,7 +310,7 @@
         <el-table-column label="结果" width="70">
           <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
         </el-table-column>
-        <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
+        <el-table-column label="运行时间" width="112" min-width="112" class-name="col-time" label-class-name="col-time" prop="duration"></el-table-column>
       </el-table>
     </main>
       </div>

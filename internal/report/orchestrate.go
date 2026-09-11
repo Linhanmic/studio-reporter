@@ -3,6 +3,7 @@ package report
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/getgauge/gauge-proto/go/gauge_messages"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -51,6 +52,8 @@ func (e *Engine) FinalizeSuite(req *gauge_messages.SuiteExecutionResult) (*Gener
 }
 
 // GenerateFromJSON rebuilds a report from a .uhilreport file.
+// Relative screenshot paths (images/...) resolve against the directory of inputPath
+// (and any ScreenshotBaseDirs already set on writer).
 func GenerateFromJSON(inputPath, outputDir string, writer *FinalWriter) (*GeneratedReport, error) {
 	data, err := os.ReadFile(inputPath)
 	if err != nil {
@@ -74,5 +77,11 @@ func GenerateFromJSON(inputPath, outputDir string, writer *FinalWriter) (*Genera
 	if writer == nil {
 		return nil, fmt.Errorf("final writer is not configured")
 	}
+	absInput, err := filepath.Abs(inputPath)
+	if err != nil {
+		absInput = inputPath
+	}
+	base := filepath.Dir(absInput)
+	writer.ScreenshotBaseDirs = appendUniqueDirs(writer.ScreenshotBaseDirs, base)
 	return writer.Write(outputDir, FromSuite(suite.GetSuiteResult()), &suite)
 }

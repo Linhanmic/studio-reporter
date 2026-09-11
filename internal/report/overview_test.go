@@ -1,0 +1,115 @@
+package report
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
+	t.Setenv("GAUGE_STUDIO_REPORT_META", "DUT=ECU-A,Build=42")
+	r := &Report{
+		ProjectName: "canoe-like",
+		Duration:    "00:00:02.000",
+		Verdict:     VerdictFail,
+		Environment: "ci",
+		Timestamp:   "2026-09-11 12:00:00",
+		Specs: []SpecReport{{
+			ID:                 "spec:login",
+			Heading:            "Login",
+			Verdict:            VerdictFail,
+			Duration:           "00:00:02.000",
+			PreHookScreenshots: []string{"images/spec-before.png"},
+			Scenarios: []ScenarioReport{{
+				ID:       "scn:fail",
+				Heading:  "Fail path",
+				Verdict:  VerdictFail,
+				Duration: "00:00:02.000",
+				Items: []ItemReport{
+					{Kind: "step", Duration: "00:00:01.000", Step: &StepReport{
+						ActualText:          "Capture",
+						Verdict:             VerdictFail,
+						Duration:            "00:00:01.000",
+						ErrorMessage:        "boom",
+						Screenshots:         []string{"images/step-a.png", "images/step-b.png"},
+						FailureScreenshot:   "images/step-fail.png",
+						PreHookScreenshots:  []string{"images/step-before.png"},
+						PostHookScreenshots: []string{"images/step-after.png"},
+					}},
+				},
+			}},
+		}},
+	}
+	html, err := RenderReportHTML(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(html)
+	for _, want := range []string{
+		`id="overview"`,
+		`class="nav-pane"`,
+		`class="content-pane"`,
+		`class="workspace"`,
+		`data-nav-target="overview"`,
+		`data-nav-target="spec:login"`,
+		`data-nav-target="scn:fail"`,
+		`data-action="export-pdf"`,
+		`data-action="show-overview"`,
+		`id="shot-lightbox"`,
+		`data-shot-gallery`,
+		`data-shot-src="images/step-a.png"`,
+		`data-shot-src="images/step-fail.png"`,
+		`shot-fail`,
+		`Spec before 截图`,
+		`步骤截图`,
+		`DUT`,
+		`ECU-A`,
+		`Build`,
+		`截图显示策略`,
+		`插件版本`,
+		`操作系统`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q", want)
+		}
+	}
+	if !strings.Contains(body, `id="spec:login"`) {
+		t.Fatal("spec block missing id for nav anchors")
+	}
+	if !strings.Contains(body, `id="scn:fail"`) {
+		t.Fatal("scenario block missing id for nav anchors")
+	}
+	if r.Meta.PluginVersion == "" || r.Meta.FormatVersion == 0 {
+		t.Fatal("EnrichMeta should fill plugin/format version on report")
+	}
+}
+
+func TestWritePDFWithChrome(t *testing.T) {
+	if _, err := findChrome(); err != nil {
+		t.Skip(err.Error())
+	}
+	dir := t.TempDir()
+	index := filepath.Join(dir, "index.html")
+	html := `<!DOCTYPE html><html><head><meta charset="utf-8"><title>t</title>
+<style>@media print{.nav{display:none}}</style></head>
+<body><h1>Overview</h1><p>structured pdf</p><a href="#s">link</a><h2 id="s">Spec</h2></body></html>`
+	if err := os.WriteFile(index, []byte(html), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pdfPath := filepath.Join(dir, "report.pdf")
+	if err := WritePDF(index, pdfPath); err != nil {
+		t.Fatal(err)
+	}
+	st, err := os.Stat(pdfPath)
+	if err != nil || st.Size() < 100 {
+		t.Fatalf("expected non-trivial pdf, got size=%v err=%v", st, err)
+	}
+}
+
+func TestPathToFileURL(t *testing.T) {
+	got := pathToFileURL("/tmp/a b/index.html")
+	if !strings.HasPrefix(got, "file://") {
+		t.Fatalf("got %q", got)
+	}
+}

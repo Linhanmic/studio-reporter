@@ -74,7 +74,7 @@ func toReport(psr *gauge_messages.ProtoSuiteResult) *Report {
 		Environment:         psr.GetEnvironment(),
 		Tags:                psr.GetTags(),
 		TimestampISO:        psr.GetTimestampISO(),
-		Timestamp:           formatTimestamp(psr.GetTimestampISO(), psr.GetTimestamp()),
+		Timestamp:           formatTimestamp(psr.GetTimestampISO(), ""),
 		ExecutionTime:       psr.GetExecutionTime(),
 		Duration:            formatDuration(psr.GetExecutionTime()),
 		SuccessRate:         psr.GetSuccessRate(),
@@ -364,12 +364,7 @@ func scenarioVerdict(scn *gauge_messages.ProtoScenario) string {
 	case gauge_messages.ExecutionStatus_PASSED:
 		return VerdictPass
 	default:
-		if scn.GetFailed() {
-			return VerdictFail
-		}
-		if scn.GetSkipped() {
-			return VerdictSkip
-		}
+		// Prefer ExecutionStatus; deprecated Failed/Skipped flags are ignored.
 		return VerdictNone
 	}
 }
@@ -527,4 +522,3 @@ func fallback(v, def string) string {
 	}
 	return v
 }
-

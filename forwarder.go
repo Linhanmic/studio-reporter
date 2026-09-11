@@ -144,9 +144,7 @@ func (f *wsForwarder) readClient(c *wsClient) {
 
 func (f *wsForwarder) dropClient(conn net.Conn) {
 	f.mu.Lock()
-	if _, ok := f.clients[conn]; ok {
-		delete(f.clients, conn)
-	}
+	delete(f.clients, conn)
 	f.mu.Unlock()
 	_ = conn.Close()
 }

@@ -1,6 +1,6 @@
 # Studio Reporter — Report File Format
 
-This document specifies the on-disk report format written by the studio-reporter Gauge plugin. It is the contract between the three parts of the tool chain:
+This document specifies the on-disk report format written by studio-reporter (standalone tool / Gauge plugin mode). It is the contract between the three parts of the tool chain:
 
 1. **Report generation** — the Gauge plugin writes the files below while (and after) a suite runs.
 2. **Report files** — a versioned, self-describing set of JSON files plus a static HTML viewer.
@@ -16,7 +16,9 @@ The report hub is always `<gauge_reports_dir>/studio-report/` (default `reports/
 
 ```
 reports/studio-report/
-├── index.html            # Static HTML report (fully rendered, no embedded JSON)
+├── index.html            # Static HTML report (CANoe-like: Overview + left nav + results; no embedded JSON)
+├── report.pdf            # Optional structured PDF twin (Chrome print; enable via --pdf / GAUGE_STUDIO_WRITE_PDF)
+├── report.single.html    # Optional self-contained HTML (images inlined; --single / GAUGE_STUDIO_WRITE_SINGLE)
 ├── viewer.html           # Live Vue viewer (WebSocket / poll report.json)
 ├── manage.html           # Report management console (history list / open / delete)
 ├── assets/               # Live viewer assets (vue, element-plus, pinia, report-app.js)
@@ -66,6 +68,7 @@ Top-level fields:
 | `summary` | object | `{specs, scenarios, steps}`, each `{total, passed, failed, skipped}` |
 | `specs` | array | Spec reports |
 | `preHookFailure`, `postHookFailure` | object | Suite hook failures (optional) |
+| `meta` | object | Additive Overview metadata (`pluginVersion`, `hostName`, `goos`/`goarch`, `numCPU`, `projectRoot`, `generatedAt`/`generatedAtISO`, `extra`); does **not** bump `formatVersion` |
 
 Each spec contains `scenarios`; each scenario contains `contexts` / `items` / `teardowns`; items are steps, nested concepts (`concept.items`), or comments. Screenshot fields hold paths **relative to the folder containing that `report.json`** (e.g. `images/foo.png`). The authoritative field list is the Go structs in `internal/report/model.go` (`Report`, `SpecReport`, `ScenarioReport`, `ItemReport`, `StepReport`, `HookFailure`).
 
@@ -79,11 +82,13 @@ The report file uses the **`.uhilreport`** extension and is named after the run:
 
 The project name is sanitized for filesystem safety (path separators, `:*?"<>|` and spaces are replaced) and the timestamp is the suite execution time in local time. The report hub keeps only the latest run's file (stale `*.uhilreport` files are removed on each write); every archived run keeps its own copy under `archives/<project>-<timestamp>/`.
 
-Its content is the unmodified Gauge `SuiteExecutionResult` in protojson encoding (UTF-8 JSON text). It is the portable interchange format: the full HTML report can be rebuilt from this single file on any machine:
+Its content is the Gauge `SuiteExecutionResult` in protojson encoding (UTF-8 JSON text). On write, studio-reporter **rewrites screenshot file fields** from Gauge’s absolute paths to hub-relative `images/<name>` paths (matching the copied files next to the `.uhilreport`). The portable unit is therefore **`<run>.uhilreport` + sibling `images/`** (hub root or an `archives/<id>/` folder):
 
 ```bash
-studio-reporter --input demo-project-2026-08-28_10.30.00.uhilreport --out /path/to/output
+studio-reporter generate --input demo-project-2026-08-28_10.30.00.uhilreport --out /path/to/output
 ```
+
+`--input` resolves relative `images/...` paths against the directory that contains the `.uhilreport`. Older files that still store absolute paths also fall back to `<uhilreport-dir>/images/<basename>` when the absolute source is gone.
 
 Its schema is owned by Gauge (`gauge_messages.SuiteExecutionResult`), so it carries no `formatVersion` of its own. `--input` is content-based and also accepts files written by older plugin versions (`report.uhilreport` from 0.3.1, `last_run_result.json` before that — same content, older names).
 
@@ -116,7 +121,7 @@ Each entry:
 
 ## Management console and HTTP API
 
-`manage.html` is a standalone page written next to `index.html`. It lists `history.json`, opens runs via their static `index.html`, and deletes archives through the HTTP API. Deleting requires serving the hub:
+`manage.html` is a standalone page written next to `index.html`. It lists `history.json`, opens runs via their static `index.html`, **compares two selected runs** (verdict change, duration delta, specs/scenarios/steps count deltas — computed client-side from history entries), and deletes archives through the HTTP API. Deleting requires serving the hub:
 
 ```bash
 studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
