@@ -144,6 +144,8 @@
 
 | 2026-09-11 | Desktop 导出进度/取消 + 历史批量勾选 | `export-report` 异步 spawn；进度事件 + 取消；历史「全选过滤结果 / 清除勾选」；导出按钮显示数量 |
 
+| 2026-09-11 | Desktop 历史列表虚拟化 | `#historyList` 复用 `computeVirtualWindow`；固定行高 56；过滤输入 120ms 防抖 |
+
 ## 下一任务（选定）
 
-**大纲/报告性能 profiling**（虚拟列表之上的长报告渲染与交互），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限），或历史列表虚拟化。
+**大纲/报告性能 profiling**（终态报告页长列表与交互），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限）。

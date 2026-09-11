@@ -9,6 +9,7 @@ const state = {
   jumpSeconds: 5,
   autoJump: true,
   historyRuns: [],
+  historyFilteredRuns: [],
   historyQuery: '',
   historyVerdict: 'all',
   selectedIds: [],
@@ -567,6 +568,8 @@ function deltaClass(ms) {
 }
 
 const MAX_HISTORY_SELECTION = 50;
+const HISTORY_ROW_HEIGHT = 56;
+const HISTORY_OVERSCAN = 6;
 
 function filteredHistoryRuns() {
   return window.desktopAPI.filterHistoryRuns(state.historyRuns, {
@@ -863,50 +866,113 @@ async function refreshHistory() {
 function renderHistoryList(histMeta) {
   const list = $('historyList');
   const empty = $('historyEmpty');
-  list.innerHTML = '';
   const filtered = filteredHistoryRuns();
+  state.historyFilteredRuns = filtered;
   const hubHint = histMeta?.hubDir || state.settings?.reportHubDir || '';
   $('historyMeta').textContent = hubHint
     ? `${hubHint} · ${filtered.length}/${state.historyRuns.length} 次运行`
     : `${filtered.length}/${state.historyRuns.length} 次运行`;
   if (!state.historyRuns.length) {
+    list.innerHTML = '';
     empty.classList.remove('hidden');
     empty.querySelector('p').textContent = histMeta?.error || '暂无历史运行';
     return;
   }
   if (!filtered.length) {
+    list.innerHTML = '';
     empty.classList.remove('hidden');
     empty.querySelector('p').textContent = '没有匹配当前搜索 / 过滤的运行';
     return;
   }
   empty.classList.add('hidden');
-  filtered.forEach((run) => {
-    const id = run.id;
-    const row = document.createElement('div');
-    row.className = 'history-row';
-    row.innerHTML = `
-      <input class="pick" type="checkbox" data-id="${escapeHtml(id)}" title="勾选以对比、导出、打开文件夹或删除" ${state.selectedIds.includes(id) ? 'checked' : ''}>
-      <span class="verdict ${verdictClass(run.verdict)}">${escapeHtml(run.verdict || '—')}</span>
-      <span class="hist-main">
-        <strong>${escapeHtml(run.projectName || id)}</strong>
-        <span class="muted">${escapeHtml(run.timestamp || run.timestampISO || '')}</span>
-      </span>
-      <span class="muted">${escapeHtml(run.duration || '')}</span>
-    `;
-    const open = async () => {
-      try {
-        await window.desktopAPI.openHistoryRun(run);
-        setTab('report');
-      } catch (err) {
-        setStatus(String(err.message || err), 'warn');
-      }
-    };
-    row.querySelector('.hist-main').addEventListener('click', open);
-    row.querySelector('.verdict').addEventListener('click', open);
-    row.querySelector('.pick').addEventListener('change', (e) => {
-      toggleSelect(id, e.target.checked);
-    });
-    list.appendChild(row);
+  wireHistoryListInteractions();
+  wireHistoryVirtualScroll();
+  paintHistoryVirtualWindow();
+}
+
+function paintHistoryVirtualWindow() {
+  const list = $('historyList');
+  if (!list) return;
+  const rows = state.historyFilteredRuns || [];
+  if (!rows.length) {
+    list.innerHTML = '';
+    return;
+  }
+  const rowHeight = HISTORY_ROW_HEIGHT;
+  const scrollTop = list.scrollTop;
+  const win = window.desktopAPI.computeVirtualWindow({
+    scrollTop,
+    viewportHeight: list.clientHeight || 1,
+    rowCount: rows.length,
+    rowHeight,
+    overscan: HISTORY_OVERSCAN,
+  });
+  const slice = rows.slice(win.start, win.end);
+  const html = slice
+    .map((run) => {
+      const id = run.id;
+      const checked = state.selectedIds.includes(id) ? 'checked' : '';
+      return (
+        `<div class="history-row" data-id="${escapeHtml(id)}" style="height:${rowHeight}px">` +
+        `<input class="pick" type="checkbox" data-id="${escapeHtml(id)}" title="勾选以对比、导出、打开文件夹或删除" ${checked}>` +
+        `<span class="verdict ${verdictClass(run.verdict)}">${escapeHtml(run.verdict || '—')}</span>` +
+        `<span class="hist-main">` +
+        `<strong>${escapeHtml(run.projectName || id)}</strong>` +
+        `<span class="muted">${escapeHtml(run.timestamp || run.timestampISO || '')}</span>` +
+        `</span>` +
+        `<span class="muted">${escapeHtml(run.duration || '')}</span>` +
+        `</div>`
+      );
+    })
+    .join('');
+  list.innerHTML =
+    `<div class="history-virt-spacer" style="height:${win.totalHeight}px">` +
+    `<div class="history-virt-window" style="transform:translateY(${win.offsetY}px)">${html}</div>` +
+    `</div>`;
+  if (list.scrollTop !== scrollTop) list.scrollTop = scrollTop;
+}
+
+function wireHistoryVirtualScroll() {
+  const list = $('historyList');
+  if (!list || list.dataset.virtScrollWired === '1') return;
+  list.dataset.virtScrollWired = '1';
+  let ticking = false;
+  list.addEventListener(
+    'scroll',
+    () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        paintHistoryVirtualWindow();
+      });
+    },
+    { passive: true },
+  );
+}
+
+function wireHistoryListInteractions() {
+  const list = $('historyList');
+  if (!list || list.dataset.interactWired === '1') return;
+  list.dataset.interactWired = '1';
+  list.addEventListener('change', (e) => {
+    const pick = e.target.closest('input.pick');
+    if (!pick || !list.contains(pick)) return;
+    toggleSelect(pick.dataset.id, pick.checked);
+  });
+  list.addEventListener('click', async (e) => {
+    if (e.target.closest('input.pick')) return;
+    const row = e.target.closest('.history-row');
+    if (!row || !list.contains(row)) return;
+    const id = row.dataset.id;
+    const run = (state.historyFilteredRuns || state.historyRuns).find((r) => r.id === id);
+    if (!run) return;
+    try {
+      await window.desktopAPI.openHistoryRun(run);
+      setTab('report');
+    } catch (err) {
+      setStatus(String(err.message || err), 'warn');
+    }
   });
 }
 
@@ -1501,9 +1567,13 @@ function wire() {
   $('btnRevealRun')?.addEventListener('click', () => revealSelectedRun());
   $('btnCopyPath')?.addEventListener('click', () => copySelectedPath());
   $('btnDeleteRuns')?.addEventListener('click', () => deleteSelectedRuns());
+  let historyQueryTimer = null;
   $('historyQuery')?.addEventListener('input', () => {
     state.historyQuery = $('historyQuery').value || '';
-    renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
+    clearTimeout(historyQueryTimer);
+    historyQueryTimer = setTimeout(() => {
+      renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
+    }, 120);
   });
   document.querySelectorAll('.history-filter-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
