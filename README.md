@@ -233,7 +233,7 @@ See also [`testdata/complex-gauge/`](testdata/complex-gauge/) for the readable G
 
 CI runs `./scripts/cover-summary.sh` and uploads `cover.out` as an artifact (no hard threshold yet).
 
-Static `index.html` print CSS respects the current filter/search and **fail-steps-only** mode (`filter-hidden` / non-fail steps stay hidden — print what you see). Use `#fail-steps` or `GAUGE_STUDIO_PDF_FAIL_STEPS=true` for headless PDF.
+Static `index.html` print CSS respects the current filter/search and **fail-steps-only** mode (`filter-hidden` / non-fail scenarios & steps stay hidden — print what you see). Use `#fail-steps` or `GAUGE_STUDIO_PDF_FAIL_STEPS=true` for headless PDF.
 ### Project Structure
 
 ```

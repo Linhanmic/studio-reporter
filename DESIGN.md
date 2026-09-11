@@ -130,6 +130,7 @@ Gauge (gRPC)
 | 2026-09-11 | 对比分享含场景 diff | 分享 Markdown/HTML/JSON 复用 `scenarioCompare`；卡片增加场景级差异区；无 report.json 时保留警告 |
 | 2026-09-11 | 静态报告仅失败步骤 | 工具栏 `fail-steps-only` 切换；隐藏非失败 step/concept；展开失败步骤与祖先；sessionStorage 记忆 |
 | 2026-09-11 | 打印/PDF 尊重仅失败步骤 | 「所见即所打」延伸到 fail-steps：print CSS + beforeprint 展开；headless PDF 用 `#fail-steps` / `GAUGE_STUDIO_PDF_FAIL_STEPS` |
+| 2026-09-11 | 仅失败步骤场景级折叠 | 在步骤隐藏之上用 `:has()` 折叠无失败场景的结构父节点；屏显/打印同一套选择器，避免空壳场景噪声 |
 | 2026-09-11 | 场景级运行对比 | 从两侧 `report.json` 提取 ScenarioLite；按 file+heading+row 对齐；分类 regressed/fixed/added/removed/reason_changed；Desktop 历史对比面板展示 |
 | 2026-09-11 | Desktop 导出进度条 UI | 历史页可视进度条；`formatExportProgress` 统一状态文案（百分比 + basename）；取消仍走 cancel-export |
 | 2026-09-11 | 截图灯箱 ←/→ | 打开后收集 `[data-shot-src]`；←/→ 与前后按钮环绕切换；`#shot-lightbox-pos`；Go/JS 步进契约对齐 |

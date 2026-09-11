@@ -146,10 +146,23 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`html.fail-steps-mode`,
 		`data-kind="step"`,
 		`data-kind="concept"`,
+		`data-kind="scenario"`,
+		`data-kind="spec"`,
+		`:has(`,
 		`filter-hidden`,
 	} {
 		if !strings.Contains(printBlock, want) {
 			t.Fatalf("print CSS missing %q", want)
+		}
+	}
+	screenBlock := css[:printIdx]
+	for _, want := range []string{
+		`.fail-steps-mode .result-pane .report-block[data-kind="scenario"]:not([data-verdict="fail"])`,
+		`data-kind="datarow"`,
+		`data-kind="datadriven"`,
+	} {
+		if !strings.Contains(screenBlock, want) {
+			t.Fatalf("screen CSS missing scenario collapse %q", want)
 		}
 	}
 	js := staticReportJS

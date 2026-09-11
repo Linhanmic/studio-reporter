@@ -458,10 +458,18 @@ html, body {
   display: flex;
   justify-content: space-between;
 }
-/* Fail-steps-only mode: hide non-fail step/concept rows inside the result tree.
-   Screen + print share the same selectors so「所见即所打」includes this mode. */
+/* Fail-steps-only mode: hide non-fail step/concept rows, and collapse structural
+   parents that have no remaining fail scenario (cleaner screen + print). */
 .fail-steps-mode .result-pane .report-block[data-kind="step"]:not([data-verdict="fail"]),
 .fail-steps-mode .result-pane .report-block[data-kind="concept"]:not([data-verdict="fail"]) {
+  display: none !important;
+}
+.fail-steps-mode .result-pane .report-block[data-kind="scenario"]:not([data-verdict="fail"]) {
+  display: none !important;
+}
+.fail-steps-mode .result-pane .report-block[data-kind="datarow"]:not(:has(.report-block[data-kind="scenario"][data-verdict="fail"])),
+.fail-steps-mode .result-pane .report-block[data-kind="datadriven"]:not(:has(.report-block[data-kind="scenario"][data-verdict="fail"])),
+.fail-steps-mode .result-pane .report-block[data-kind="spec"]:not(:has(.report-block[data-kind="scenario"][data-verdict="fail"])) {
   display: none !important;
 }
 .action-btn[data-action="fail-steps-only"][aria-pressed="true"] {
@@ -482,7 +490,13 @@ html, body {
   .report-block.filter-hidden { display: none !important; }
   /* Reaffirm fail-steps hide inside print (same as screen; survives print UA resets). */
   html.fail-steps-mode .result-pane .report-block[data-kind="step"]:not([data-verdict="fail"]),
-  html.fail-steps-mode .result-pane .report-block[data-kind="concept"]:not([data-verdict="fail"]) {
+  html.fail-steps-mode .result-pane .report-block[data-kind="concept"]:not([data-verdict="fail"]),
+  html.fail-steps-mode .result-pane .report-block[data-kind="scenario"]:not([data-verdict="fail"]) {
+    display: none !important;
+  }
+  html.fail-steps-mode .result-pane .report-block[data-kind="datarow"]:not(:has(.report-block[data-kind="scenario"][data-verdict="fail"])),
+  html.fail-steps-mode .result-pane .report-block[data-kind="datadriven"]:not(:has(.report-block[data-kind="scenario"][data-verdict="fail"])),
+  html.fail-steps-mode .result-pane .report-block[data-kind="spec"]:not(:has(.report-block[data-kind="scenario"][data-verdict="fail"])) {
     display: none !important;
   }
   .report-block { break-inside: avoid; page-break-inside: avoid; }

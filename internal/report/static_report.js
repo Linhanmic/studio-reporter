@@ -199,7 +199,7 @@
     try { sessionStorage.setItem(FAIL_STEPS_KEY, failStepsOnly ? '1' : '0'); } catch (e) {}
     if (opts.silent) return;
     if (typeof flashStatus === 'function') {
-      flashStatus(failStepsOnly ? '已开启：仅显示失败步骤' : '已关闭：仅失败步骤');
+      flashStatus(failStepsOnly ? '已开启：仅显示失败场景与失败步骤' : '已关闭：仅失败步骤');
     }
   }
 

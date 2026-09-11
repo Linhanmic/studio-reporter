@@ -90,6 +90,7 @@
 - [x] 静态报告「仅失败步骤」模式（工具栏切换；隐藏 pass/skip step/concept；sessionStorage 记忆）
 - [x] 对比分享卡片纳入场景级 diff（Markdown/HTML/JSON；`formatScenarioCompareMarkdown/Html`）
 - [x] 静态报告打印/PDF 尊重仅失败步骤（`@media print` 重申隐藏；`beforeprint` 展开失败路径；`#fail-steps` / `GAUGE_STUDIO_PDF_FAIL_STEPS`）
+- [x] 静态报告仅失败步骤模式下场景级折叠精简（隐藏非 fail 场景及无 fail 场景的 spec/datarow/datadriven；`:has()`）
 - [x] Desktop 深链直达两侧历史对比（`studio-reporter://compare?base=&target=`；可选 `hub`；`navigate-compare` → `openCompareByIds`）
 - [x] Desktop 对比面板一键复制 compare 深链（`buildCompareDeepLink` +「复制深链」；剪贴板含可选 hub）
 
@@ -174,6 +175,8 @@
 
 | 2026-09-11 | Desktop 对比面板一键复制 compare 深链 | `buildCompareDeepLink` + 面板「复制深链」；IPC 写剪贴板；可选附带当前 `reportHubDir` |
 
+| 2026-09-11 | 仅失败步骤场景级折叠 | fail-steps-mode 额外隐藏非 fail 场景，以及无 fail 子场景的 spec/datarow/datadriven（`:has()`）；屏显与打印一致 |
+
 ## 下一任务（选定）
 
-**静态报告仅失败步骤模式下的场景级折叠精简**（隐藏无失败步骤的通过场景，使打印/阅读更干净），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**静态报告导航树与仅失败步骤模式同步**（左侧大纲在 fail-steps-mode 下同样隐藏通过场景，避免点击空壳），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
