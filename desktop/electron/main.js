@@ -39,6 +39,7 @@ const {
   buildCompareDeepLink,
   createDeepLinkQueue,
 } = require('./deeplink.js');
+const { appendShareHash, reportFocusHash, reportOpenHashFromOutline } = require('./share-hash.js');
 const {
   buildCompareShareCardHtml,
   buildCompareShareMarkdown,
@@ -466,21 +467,28 @@ function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-async function openReportDir(dir) {
+async function openReportDir(dir, opts = {}) {
   const indexPath = path.join(dir, 'index.html');
   if (!fs.existsSync(indexPath)) {
     dialog.showErrorBox('无效报告目录', `未找到 ${indexPath}`);
     return;
   }
   await startAssetServer(dir);
-  const url = `http://127.0.0.1:${assetPort}/index.html`;
+  let url = `http://127.0.0.1:${assetPort}/index.html`;
+  const focus = String(opts.focus || '').trim();
+  if (focus) {
+    url = appendShareHash(url, reportFocusHash(focus, { failSteps: !!opts.failSteps }));
+  } else if (opts.hash) {
+    url = appendShareHash(url, opts.hash);
+  }
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('navigate-report', { url, dir });
+    mainWindow.webContents.send('navigate-report', { url, dir, focus: focus || undefined });
     const outline = loadOutlineFromReportDir(dir);
     if (outline) {
       mainWindow.webContents.send('report-outline', outline);
     }
   }
+  return { url, dir, indexPath };
 }
 
 /**
@@ -771,14 +779,14 @@ function registerIpc() {
     return readHistory(dir);
   });
 
-  ipcMain.handle('desktop:open-history-run', async (_evt, entry) => {
+  ipcMain.handle('desktop:open-history-run', async (_evt, entry, opts = {}) => {
     const settings = loadSettings(app.getPath('userData'));
     const indexPath = resolveRunIndex(settings.reportHubDir, entry);
     if (!indexPath || !fs.existsSync(indexPath)) {
       throw new Error('找不到该次运行的 index.html，请检查报告根目录设置');
     }
-    await openReportDir(path.dirname(indexPath));
-    return { indexPath, dir: path.dirname(indexPath) };
+    const opened = await openReportDir(path.dirname(indexPath), opts || {});
+    return { indexPath, dir: path.dirname(indexPath), url: opened?.url };
   });
 
   ipcMain.handle('desktop:export-report', async (evt, kind, entryOrEntries) => {

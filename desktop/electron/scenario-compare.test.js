@@ -128,3 +128,26 @@ describe('scenario-compare', () => {
     assert.equal(scenarioDiffKindLabel('fixed'), '修复');
   });
 });
+
+describe('scenario compare ids for report focus', () => {
+  it('changed diffs carry base/target scn ids', () => {
+    const base = [
+      { key: 'a', specId: 'spec:a', scnId: 'scn:a', specName: 'A', scnName: 'a', verdict: 'pass' },
+      { key: 'b', specId: 'spec:b', scnId: 'scn:b', specName: 'B', scnName: 'b', verdict: 'fail', failReason: 'x' },
+    ];
+    const target = [
+      { key: 'a', specId: 'spec:a', scnId: 'scn:a', specName: 'A', scnName: 'a', verdict: 'fail', failReason: 'y' },
+      { key: 'c', specId: 'spec:c', scnId: 'scn:c', specName: 'C', scnName: 'c', verdict: 'pass' },
+    ];
+    const cmp = compareScenarios(base, target);
+    const reg = cmp.changed.find((d) => d.kind === 'regressed');
+    assert.equal(reg.baseScnId, 'scn:a');
+    assert.equal(reg.targetScnId, 'scn:a');
+    const rem = cmp.changed.find((d) => d.kind === 'removed');
+    assert.equal(rem.baseScnId, 'scn:b');
+    assert.equal(rem.targetScnId, '');
+    const add = cmp.changed.find((d) => d.kind === 'added');
+    assert.equal(add.targetScnId, 'scn:c');
+    assert.equal(add.baseScnId, '');
+  });
+});

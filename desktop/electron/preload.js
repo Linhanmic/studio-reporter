@@ -23,6 +23,7 @@ const {
   parseShareHash,
   formatShareHash,
   reportOpenHashFromOutline,
+  reportFocusHash,
   appendShareHash,
 } = require('./share-hash.js');
 const {
@@ -73,7 +74,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   quitAndInstall: () => ipcRenderer.invoke('desktop:quit-and-install'),
   pickHubDir: () => ipcRenderer.invoke('desktop:pick-hub-dir'),
   listHistory: (hubDir) => ipcRenderer.invoke('desktop:list-history', hubDir),
-  openHistoryRun: (entry) => ipcRenderer.invoke('desktop:open-history-run', entry),
+  openHistoryRun: (entry, opts) => ipcRenderer.invoke('desktop:open-history-run', entry, opts || {}),
   exportReport: (kind, entry) => ipcRenderer.invoke('desktop:export-report', kind, entry),
   cancelExport: () => ipcRenderer.invoke('desktop:cancel-export'),
   onExportProgress: (cb) => {
@@ -96,6 +97,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   parseShareHash,
   formatShareHash,
   reportOpenHashFromOutline,
+  reportFocusHash,
   appendShareHash,
   openPath: (p) => ipcRenderer.invoke('desktop:open-path', p),
   revealPath: (p) => ipcRenderer.invoke('desktop:reveal-path', p),

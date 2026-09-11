@@ -92,10 +92,26 @@ function appendShareHash(url, hash) {
   return `${without}#${frag}`;
 }
 
+/**
+ * Build a fragment that selects a report node, optionally enabling fail-steps.
+ * Omits outline search so the focused node is not accidentally filtered away.
+ */
+function reportFocusHash(focusId, opts = {}) {
+  const focus = String(focusId || '').trim() || 'overview';
+  return formatShareHash({
+    focus,
+    query: '',
+    spec: 'all',
+    scenario: 'all',
+    failSteps: !!opts.failSteps,
+  });
+}
+
 module.exports = {
   parseShareHash,
   formatShareHash,
   reportOpenHashFromOutline,
+  reportFocusHash,
   appendShareHash,
   normalizeVerdict,
 };

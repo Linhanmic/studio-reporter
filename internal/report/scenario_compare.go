@@ -38,6 +38,10 @@ type ScenarioDiff struct {
 	SpecName      string           `json:"specName"`
 	ScnName       string           `json:"scnName"`
 	Kind          ScenarioDiffKind `json:"kind"`
+	BaseSpecID    string           `json:"baseSpecId,omitempty"`
+	TargetSpecID  string           `json:"targetSpecId,omitempty"`
+	BaseScnID     string           `json:"baseScnId,omitempty"`
+	TargetScnID   string           `json:"targetScnId,omitempty"`
 	BaseVerdict   string           `json:"baseVerdict,omitempty"`
 	TargetVerdict string           `json:"targetVerdict,omitempty"`
 	BaseReason    string           `json:"baseReason,omitempty"`
@@ -170,6 +174,8 @@ func CompareScenarios(base, target []ScenarioLite) ScenarioCompare {
 		if bp != nil {
 			d.SpecName = bp.SpecName
 			d.ScnName = bp.ScnName
+			d.BaseSpecID = bp.SpecID
+			d.BaseScnID = bp.ScnID
 			d.BaseVerdict = bp.Verdict
 			d.BaseReason = bp.FailReason
 		}
@@ -180,6 +186,8 @@ func CompareScenarios(base, target []ScenarioLite) ScenarioCompare {
 			if d.ScnName == "" {
 				d.ScnName = tp.ScnName
 			}
+			d.TargetSpecID = tp.SpecID
+			d.TargetScnID = tp.ScnID
 			d.TargetVerdict = tp.Verdict
 			d.TargetReason = tp.FailReason
 		}
@@ -238,6 +246,10 @@ func InvertScenarioCompare(cmp ScenarioCompare) ScenarioCompare {
 			Key:           d.Key,
 			SpecName:      d.SpecName,
 			ScnName:       d.ScnName,
+			BaseSpecID:    d.TargetSpecID,
+			TargetSpecID:  d.BaseSpecID,
+			BaseScnID:     d.TargetScnID,
+			TargetScnID:   d.BaseScnID,
 			BaseVerdict:   d.TargetVerdict,
 			TargetVerdict: d.BaseVerdict,
 			BaseReason:    d.TargetReason,

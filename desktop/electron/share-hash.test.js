@@ -7,6 +7,7 @@ const {
   formatShareHash,
   reportOpenHashFromOutline,
   appendShareHash,
+  reportFocusHash,
 } = require('./share-hash.js');
 
 describe('share-hash', () => {
@@ -37,6 +38,11 @@ describe('share-hash', () => {
       formatShareHash({ focus: 'overview', query: 'x', scenario: 'fail', failSteps: true })
     );
     assert.equal(reportOpenHashFromOutline({ verdict: 'all' }), 'overview');
+  });
+
+  it('reportFocusHash selects node without outline query', () => {
+    assert.equal(reportFocusHash('scn:login', { failSteps: true }), 'scn:login?failSteps=1');
+    assert.equal(reportFocusHash('scn:x'), 'scn:x');
   });
 
   it('appendShareHash replaces existing fragment', () => {

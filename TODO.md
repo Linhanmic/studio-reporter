@@ -218,5 +218,5 @@
 
 ## 下一任务（选定）
 
-**Desktop 对比面板「在报告中查看」跳转并定位差异场景**（从场景 diff 一键打开目标运行并 `#scn:…`），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**对比分享卡片中的场景 diff 也可一键打开报告定位**（HTML 卡片深链/`studio-reporter://open` + focus），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
 

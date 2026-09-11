@@ -490,7 +490,8 @@ function reportOpenShareHash() {
 
 function showReport(url) {
   let finalUrl = url;
-  if (url && typeof window.desktopAPI.appendShareHash === 'function') {
+  // Preserve an explicit focus hash (e.g. compare "view in report"); otherwise apply outline filters.
+  if (url && !String(url).includes('#') && typeof window.desktopAPI.appendShareHash === 'function') {
     finalUrl = window.desktopAPI.appendShareHash(url, reportOpenShareHash());
   }
   $('reportFrame').src = finalUrl;
@@ -757,6 +758,49 @@ function renderScenarioKindFilters(sc) {
   </div>`;
 }
 
+
+async function openScenarioDiffInReport(side, scnId, failSteps) {
+  const cmp = state.lastCompare;
+  if (!cmp) {
+    setStatus('请先对比两次运行', 'warn');
+    return;
+  }
+  const runId = side === 'base' ? cmp.base?.id : cmp.target?.id;
+  const run = state.historyRuns.find((r) => r.id === runId);
+  if (!run) {
+    setStatus(`找不到${side === 'base' ? '基线' : '目标'}运行 ${runId || ''}`, 'warn');
+    return;
+  }
+  const focus = String(scnId || '').trim();
+  if (!focus) {
+    setStatus('该差异缺少场景 id，无法定位', 'warn');
+    return;
+  }
+  try {
+    await window.desktopAPI.openHistoryRun(run, {
+      focus,
+      failSteps: !!failSteps,
+    });
+    setTab('report');
+    setStatus(`已在${side === 'base' ? '基线' : '目标'}报告中定位：${focus}`, 'ok');
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
+function wireScenarioDiffViewButtons() {
+  document.querySelectorAll('.scenario-diff-actions [data-view-side]').forEach((btn) => {
+    btn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const side = btn.getAttribute('data-view-side');
+      const scnId = btn.getAttribute('data-scn-id');
+      const failSteps = btn.getAttribute('data-fail-steps') === '1';
+      void openScenarioDiffInReport(side, scnId, failSteps);
+    });
+  });
+}
+
 function renderScenarioCompareSection(cmp) {
   const raw = cmp?.scenarioCompare;
   if (!raw) {
@@ -789,11 +833,18 @@ function renderScenarioCompareSection(cmp) {
           : d.kind === 'removed'
             ? escapeHtml(d.baseReason || '')
             : '';
+      const canBase = d.kind !== 'added' && d.baseScnId;
+      const canTarget = d.kind !== 'removed' && d.targetScnId;
+      const actions = `<span class="scenario-diff-actions">
+        ${canTarget ? `<button type="button" class="btn linkish" data-view-side="target" data-scn-id="${escapeHtml(d.targetScnId)}" data-fail-steps="${d.targetVerdict === 'fail' ? '1' : '0'}">目标报告</button>` : ''}
+        ${canBase ? `<button type="button" class="btn linkish" data-view-side="base" data-scn-id="${escapeHtml(d.baseScnId)}" data-fail-steps="${d.baseVerdict === 'fail' ? '1' : '0'}">基线报告</button>` : ''}
+      </span>`;
       return `<li class="scenario-diff-item kind-${escapeHtml(d.kind)}">
         <span class="scenario-diff-kind">${escapeHtml(kindLabel(d.kind))}</span>
         <span class="scenario-diff-name">${escapeHtml(d.specName)} · ${escapeHtml(d.scnName)}</span>
         <span class="scenario-diff-verdict muted">${verdict}</span>
         ${reason ? `<span class="scenario-diff-reason muted" title="${reason}">${reason}</span>` : ''}
+        ${actions}
       </li>`;
     })
     .join('');
@@ -894,6 +945,7 @@ function renderCompare(cmp) {
     void persistCompareScenarioKinds();
     if (state.lastCompare) renderCompare(state.lastCompare);
   });
+  wireScenarioDiffViewButtons();
 }
 
 function swapCompareDirection() {

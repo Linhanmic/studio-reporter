@@ -678,3 +678,13 @@ iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
   font-size: 11px;
   padding: 0 4px;
 }
+
+.scenario-diff-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.scenario-diff-item {
+  align-items: center;
+}
