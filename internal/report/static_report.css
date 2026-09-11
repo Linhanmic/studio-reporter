@@ -395,6 +395,29 @@ html, body {
 .overview-table { width: 100%; border-collapse: collapse; font-size: 11px; background: #fff; }
 .overview-table th, .overview-table td { border: 1px solid #c5d0dc; padding: 4px 8px; text-align: left; }
 .overview-table th { background: #e8eef4; color: #16324f; }
+.fail-reason-table .fail-reason-count {
+  display: inline-block;
+  min-width: 1.75em;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fde8ea;
+  color: #a11;
+  font-weight: 600;
+  text-align: center;
+}
+.fail-reason-table .fail-reason-text {
+  display: inline-block;
+  max-width: 36rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+  font-size: 11px;
+}
+.fail-reason-table .fail-reason-refs a { color: #0b5cab; text-decoration: none; }
+.fail-reason-table .fail-reason-refs a:hover { text-decoration: underline; }
+.overview-lead { margin: 0 0 8px; color: #4a5b6a; font-size: 11px; }
+
 .overview-notes { margin: 0; padding-left: 18px; color: #4a5568; font-size: 11px; }
 .overview-notes code { font-size: 10px; }
 .result-pane { min-height: 0; }

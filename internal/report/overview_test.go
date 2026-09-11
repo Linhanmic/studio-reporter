@@ -69,6 +69,10 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`截图显示策略`,
 		`插件版本`,
 		`操作系统`,
+		`失败原因聚合`,
+		`fail-reason-table`,
+		`boom`,
+		`data-nav-target="scn:fail"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q", want)

@@ -148,6 +148,8 @@
 
 | 2026-09-11 | 静态报告过滤性能 | `applyFilter` 仅切换 structural 节点；`data-name`；搜索 120ms 防抖；展开/折叠不强制 step/concept |
 
+| 2026-09-11 | 静态报告失败原因聚合 | Overview「失败原因聚合」按首条错误归类；复制失败摘要含聚合段；`AggregateFailReasons` 单测 |
+
 ## 下一任务（选定）
 
-**导出进度条 UI 细化 / 失败原因聚合视图**，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限），或终态报告截图灯箱键盘可达性。
+**导出进度条 UI 细化**，或终态报告截图灯箱键盘可达性（←/→），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限）。

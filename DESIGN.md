@@ -125,6 +125,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 失败跳转可见性 | `prepareFailJumpFilter` 在跳转前清除遮挡 query / 切 fail；重放 `studio-reporter:filter` 后再 select |
 | 2026-09-11 | Desktop 历史对比导出模板 | `compareCardTemplate`（default/light/compact）+ `compareCardTitle`；分享 HTML 带 data-template |
 | 2026-09-11 | Desktop Discover 超时可配置 | `discoverTimeoutMs`（默认 20s，钳制 5–120s）；设置页秒级输入；启动 Gauge 使用该值 |
+| 2026-09-11 | 静态报告失败原因聚合 | Overview 按规范化首条 ErrorMessage 归类失败场景；复制摘要同步聚合段 |
 | 2026-09-11 | 静态报告过滤性能 | 过滤只动 spec/scenario/datarow/datadriven；渲染写 `data-name`；搜索防抖；展开全部不再打开 step/concept |
 | 2026-09-11 | Desktop 历史列表虚拟化 | 历史侧栏复用 `computeVirtualWindow`；固定行高；过滤防抖 |
 | 2026-09-11 | Desktop 导出进度/取消 | 批量导出改为异步 spawn；`desktop:export-progress` + `cancel-export`；历史侧全选过滤/清除勾选 |

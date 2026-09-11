@@ -48,6 +48,8 @@ func writeOverviewPanel(b *bytes.Buffer, r *Report) {
 	writeOverviewCountRow(b, "步骤", r.Summary.Steps)
 	b.WriteString("</tbody></table>\n")
 
+	writeFailReasonSection(b, AggregateFailReasons(r))
+
 	if len(r.Specs) > 0 {
 		b.WriteString("<h3 class=\"overview-subtitle\">规格书清单</h3>\n")
 		b.WriteString("<table class=\"overview-table\"><thead><tr><th>规格书</th><th>结果</th><th>场景</th><th>耗时</th></tr></thead><tbody>\n")
@@ -211,4 +213,54 @@ func writeShotLightbox(b *bytes.Buffer) {
 	b.WriteString(`<img id="shot-lightbox-img" alt="screenshot enlarged">`)
 	b.WriteString(`</dialog>`)
 	b.WriteByte('\n')
+}
+
+func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
+	if len(groups) == 0 {
+		return
+	}
+	b.WriteString("<h3 class=\"overview-subtitle\">失败原因聚合</h3>\n")
+	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击场景名跳转到结果树。</p>\n")
+	b.WriteString("<table class=\"overview-table fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th></tr></thead><tbody>\n")
+	for _, g := range groups {
+		b.WriteString("<tr class=\"fail-reason-row\" data-fail-reason=\"")
+		b.WriteString(html.EscapeString(g.Reason))
+		b.WriteString("\"><td><span class=\"fail-reason-count\">")
+		b.WriteString(strconv.Itoa(g.Count))
+		b.WriteString("</span></td><td><code class=\"fail-reason-text\" title=\"")
+		b.WriteString(html.EscapeString(g.Reason))
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(g.Reason))
+		b.WriteString("</code></td><td class=\"fail-reason-refs\">")
+		for i, ref := range g.Refs {
+			if i > 0 {
+				b.WriteString(" · ")
+			}
+			label := ref.ScnName
+			if label == "" {
+				label = ref.SpecName
+			}
+			if ref.ScnID != "" {
+				b.WriteString("<a href=\"#")
+				b.WriteString(html.EscapeString(ref.ScnID))
+				b.WriteString("\" data-nav-target=\"")
+				b.WriteString(html.EscapeString(ref.ScnID))
+				b.WriteString("\">")
+				b.WriteString(html.EscapeString(label))
+				b.WriteString("</a>")
+			} else if ref.SpecID != "" {
+				b.WriteString("<a href=\"#")
+				b.WriteString(html.EscapeString(ref.SpecID))
+				b.WriteString("\" data-nav-target=\"")
+				b.WriteString(html.EscapeString(ref.SpecID))
+				b.WriteString("\">")
+				b.WriteString(html.EscapeString(label))
+				b.WriteString("</a>")
+			} else {
+				b.WriteString(html.EscapeString(label))
+			}
+		}
+		b.WriteString("</td></tr>\n")
+	}
+	b.WriteString("</tbody></table>\n")
 }

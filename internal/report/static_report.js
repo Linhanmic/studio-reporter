@@ -265,6 +265,21 @@
     var fails = visibleFailScenarios();
     if (!fails.length) return '';
     var lines = ['# Studio Reporter — 失败摘要', ''];
+    var reasonRows = document.querySelectorAll('.fail-reason-row');
+    if (reasonRows.length) {
+      lines.push('## 失败原因聚合');
+      reasonRows.forEach(function (row) {
+        var count = (row.querySelector('.fail-reason-count') || {}).textContent || '';
+        var reason = row.getAttribute('data-fail-reason') || '';
+        var refs = [];
+        row.querySelectorAll('.fail-reason-refs a').forEach(function (a) {
+          refs.push((a.textContent || '').trim());
+        });
+        lines.push('- (' + String(count).trim() + ') ' + reason + (refs.length ? ' — ' + refs.join(', ') : ''));
+      });
+      lines.push('');
+    }
+    lines.push('## 失败场景');
     fails.forEach(function (scn, idx) {
       lines.push((idx + 1) + '. ' + blockLabel(scn) + (scn.id ? ' (`' + scn.id + '`)' : ''));
       var bits = [];
