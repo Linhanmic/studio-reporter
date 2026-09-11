@@ -13,6 +13,7 @@ Studio Reporter ships today as a [Gauge](https://gauge.org/) reporter plugin (WS
 - Supports all Gauge execution lifecycle events
 - **Static HTML report** at suite end (`index.html`, Go-rendered — no embedded JSON / no Vue required to read)
 - **Live viewer** (`viewer.html`) via WebSocket `ReportSnapshot` while the suite runs (disk writes only on finalize)
+- **Desktop P0 shell** (`desktop/`) — Electron workbench: paste/discover WS URL, embed live viewer + final `index.html`, control Hello/RequestSnapshot
 - Spec / scenario filter toolbar on the static report (pass / fail / skip)
 - **CANoe-style layout**: left navigation tree + right content, with an **Overview** page (env / host / plugin / stats)
 - Screenshot galleries at suite / spec / scenario / step (hook + failure shots; click-to-enlarge lightbox)
@@ -78,12 +79,23 @@ go build -o bin/studio-reporter ./...
 
 ```bash
 # Install the plugin (match the release version)
-gauge install studio-reporter --file studio-reporter-0.5.0-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.5.1-linux.x86_64.zip
 
 # Or unzip into the Gauge plugin directory
-mkdir -p ~/.gauge/plugins/studio-reporter/0.5.0
-unzip studio-reporter-0.5.0-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.0
+mkdir -p ~/.gauge/plugins/studio-reporter/0.5.1
+unzip studio-reporter-0.5.1-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.1
 ```
+
+### Desktop App (P0)
+
+```bash
+cd desktop
+npm install
+npm start
+# Paste: studio-reporter websocket: ws://127.0.0.1:<port>
+```
+
+See [desktop/README.md](desktop/README.md) and [DESKTOP.md](DESKTOP.md).
 
 ## Usage
 

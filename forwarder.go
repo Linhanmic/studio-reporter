@@ -31,16 +31,17 @@ type wsClient struct {
 }
 
 type wsForwarder struct {
-	url      string
-	wsURL    string
-	port     int
-	mu       sync.Mutex
-	conn     net.Conn
-	reader   *bufio.Reader
-	clients  map[net.Conn]*wsClient
-	listener net.Listener
-	httpSrv  *http.Server
-	closed   bool
+	url       string
+	wsURL     string
+	port      int
+	mu        sync.Mutex
+	conn      net.Conn
+	reader    *bufio.Reader
+	clients   map[net.Conn]*wsClient
+	listener  net.Listener
+	httpSrv   *http.Server
+	closed    bool
+	onControl controlHandler
 }
 
 func newWSForwarder() *wsForwarder {
@@ -136,9 +137,19 @@ func (f *wsForwarder) clientCount() int {
 func (f *wsForwarder) readClient(c *wsClient) {
 	defer f.dropClient(c.conn)
 	for {
-		if _, err := readWebSocketPayload(c.reader); err != nil {
+		payload, err := readWebSocketPayload(c.reader)
+		if err != nil {
 			return
 		}
+		if len(payload) == 0 {
+			continue
+		}
+		var ev StudioEvent
+		if err := json.Unmarshal(payload, &ev); err != nil {
+			log.Printf("studio-reporter: ignore non-json client frame: %v", err)
+			continue
+		}
+		f.handleInbound(c, &ev)
 	}
 }
 

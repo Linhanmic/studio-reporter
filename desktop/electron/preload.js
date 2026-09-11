@@ -1,0 +1,37 @@
+'use strict';
+
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('desktopAPI', {
+  info: () => ipcRenderer.invoke('desktop:info'),
+  connectWs: (input) => ipcRenderer.invoke('desktop:connect-ws', input),
+  disconnect: () => ipcRenderer.invoke('desktop:disconnect'),
+  openReportPath: (p) => ipcRenderer.invoke('desktop:open-report-path', p),
+  pickReportDir: () => ipcRenderer.invoke('desktop:pick-report-dir'),
+  showInFolder: (p) => ipcRenderer.invoke('desktop:show-in-folder', p),
+  onBridgeStatus: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('bridge-status', handler);
+    return () => ipcRenderer.removeListener('bridge-status', handler);
+  },
+  onReportGenerated: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('report-generated', handler);
+    return () => ipcRenderer.removeListener('report-generated', handler);
+  },
+  onNavigateLive: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('navigate-live', handler);
+    return () => ipcRenderer.removeListener('navigate-live', handler);
+  },
+  onNavigateReport: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('navigate-report', handler);
+    return () => ipcRenderer.removeListener('navigate-report', handler);
+  },
+  onSnapshotMeta: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('report-snapshot-meta', handler);
+    return () => ipcRenderer.removeListener('report-snapshot-meta', handler);
+  },
+});

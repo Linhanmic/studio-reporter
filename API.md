@@ -8,7 +8,7 @@ The on-disk report file format is specified separately in [REPORT_FORMAT.md](REP
 
 ## Version
 
-- Plugin Version: 0.4.7
+- Plugin Version: 0.5.1
 - Protocol: WebSocket
 - Format: JSON
 
@@ -357,6 +357,19 @@ Fired after the HTML report has been written (unless `GAUGE_STUDIO_SKIP_REPORT` 
   }
 }
 ```
+
+## Control messages (Desktop → Plugin)
+
+Optional bidirectional control on the same WebSocket. Unknown types are ignored (logged). Envelope shape matches events above.
+
+| type | direction | purpose |
+|------|-----------|---------|
+| `ClientHello` | client → plugin | `{app, version, capabilities[]}` handshake |
+| `ServerHello` | plugin → client | `{app, version, capabilities[]}` reply |
+| `Ping` / `Pong` | either | keepalive (`Pong` payload `{}`) |
+| `RequestSnapshot` | client → plugin | reply with a `ReportSnapshot` of the current in-memory tree (no-op if none) |
+
+Desktop P0 sends `ClientHello` + `RequestSnapshot` on connect.
 
 ## HTML Report
 

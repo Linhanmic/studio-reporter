@@ -42,6 +42,7 @@ func startGRPCServer(forwarder *wsForwarder) error {
 		server:    server,
 		forwarder: forwarder,
 	}
+	forwarder.setControlHandler(handler.handleControlMessage)
 	gauge_messages.RegisterReporterServer(server, handler)
 	fmt.Printf("%s%d\n", portPrefix, listener.Addr().(*net.TCPAddr).Port)
 	return server.Serve(listener)

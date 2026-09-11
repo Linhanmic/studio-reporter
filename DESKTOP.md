@@ -1,7 +1,7 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：设计草案（v0.5.x 起落地）  
-关联：本仓库插件/报告引擎 + 桌面端壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
+状态：P0 已落地（v0.5.1）；P1+ 仍为路线图  
+关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
 
@@ -230,12 +230,12 @@ studio-reporter/
 
 ## 8. 分阶段落地
 
-### P0 — 可演示的 Desktop 壳（最小）
+### P0 — 可演示的 Desktop 壳（最小） — **已完成（0.5.1）**
 
-1. Electron 窗口 + 加载本地 `viewer.html`。
-2. 主进程：spawn/attach `gauge run` **或** 粘贴/解析 WS URL（先做手动/解析日志文件亦可）。
+1. Electron 窗口 + 加载本地 `viewer.html`（`desktop/`）。
+2. 主进程：粘贴/解析 WS URL（discover 行 / 端口）；loopback HTTP 托管资产。
 3. 消费 `ReportSnapshot` + `ReportGenerated`；结束跳转 `index.html`。
-4. 菜单：打开报告目录、打开最近 hub。
+4. 菜单：打开报告目录；插件侧 `ClientHello` / `RequestSnapshot` / `Ping`。
 
 验收：一次 `gauge run` → Desktop 实时树 → 结束后 CANoe 终态报告。
 
@@ -244,7 +244,7 @@ studio-reporter/
 1. 历史页（读 `history.json`）+ 对比（已有 `CompareHistoryRuns` 逻辑可移植）。
 2. 导出：触发 PDF / single HTML（调引擎或 CLI）。
 3. 设置：报告根目录、自动跳转。
-4. `ClientHello` + `RequestSnapshot` 控制消息（插件侧小改）。
+4. （已提前）控制消息 — 见 P0。
 
 ### P2 — 体验
 
@@ -288,6 +288,6 @@ studio-reporter/
 
 ## 12. 下一步实现入口
 
-1. 在本仓新增 `desktop/` 骨架（Electron + preload + discover）。
-2. 核对 `ReportGenerated` 路径均为绝对路径；补 `ClientHello`/`RequestSnapshot`。
-3. 文档：README/TODO 产品句从「CLI 独立工具」改为「Desktop + 插件桥接」；CLI 降为工程附录。
+1. ~~`desktop/` 骨架~~（已有；`cd desktop && npm install && npm start`）。
+2. ~~`ClientHello` / `RequestSnapshot`~~（插件 0.5.1）。
+3. P1：历史 / 导出 / 设置；可选 Desktop 启动 `gauge run`。
