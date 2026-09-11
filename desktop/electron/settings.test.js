@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, DEFAULTS } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -158,3 +158,22 @@ describe('settings session restore fields', () => {
     assert.equal(coerced.lastTab, 'run');
   });
 });
+
+describe('settings outline pane width', () => {
+  it('normalizeOutlinePaneWidth clamps to range', () => {
+    assert.equal(normalizeOutlinePaneWidth(240), 240);
+    assert.equal(normalizeOutlinePaneWidth(50), OUTLINE_PANE_WIDTH_MIN);
+    assert.equal(normalizeOutlinePaneWidth(9999), OUTLINE_PANE_WIDTH_MAX);
+    assert.equal(normalizeOutlinePaneWidth('nope'), 240);
+  });
+
+  it('load/save round-trips outlinePaneWidth', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-outline-w-'));
+    const saved = saveSettings(dir, { outlinePaneWidth: 320 });
+    assert.equal(saved.outlinePaneWidth, 320);
+    assert.equal(loadSettings(dir).outlinePaneWidth, 320);
+    assert.equal(saveSettings(dir, { outlinePaneWidth: 12 }).outlinePaneWidth, OUTLINE_PANE_WIDTH_MIN);
+    assert.equal(DEFAULTS.outlinePaneWidth, 240);
+  });
+});
+

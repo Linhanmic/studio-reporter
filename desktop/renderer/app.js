@@ -24,6 +24,101 @@ const state = {
 const VALID_TABS = new Set(['run', 'report', 'history', 'settings']);
 let lastTabSaveTimer = null;
 
+const OUTLINE_WIDTH_MIN = 180;
+const OUTLINE_WIDTH_MAX = 480;
+const OUTLINE_WIDTH_DEFAULT = 240;
+let outlineWidthSaveTimer = null;
+
+function clampOutlineWidth(width) {
+  const n = Number(width);
+  if (!Number.isFinite(n)) return OUTLINE_WIDTH_DEFAULT;
+  return Math.round(Math.min(OUTLINE_WIDTH_MAX, Math.max(OUTLINE_WIDTH_MIN, n)));
+}
+
+function applyOutlinePaneWidth(width) {
+  const px = clampOutlineWidth(width);
+  const ws = $('workspace');
+  if (ws) ws.style.setProperty('--outline-pane-width', `${px}px`);
+  const splitter = $('outlineSplitter');
+  if (splitter) {
+    splitter.setAttribute('aria-valuenow', String(px));
+    splitter.setAttribute('aria-valuemin', String(OUTLINE_WIDTH_MIN));
+    splitter.setAttribute('aria-valuemax', String(OUTLINE_WIDTH_MAX));
+  }
+  if (state.settings) state.settings.outlinePaneWidth = px;
+  return px;
+}
+
+function persistOutlinePaneWidth(width) {
+  const px = applyOutlinePaneWidth(width);
+  clearTimeout(outlineWidthSaveTimer);
+  outlineWidthSaveTimer = setTimeout(async () => {
+    try {
+      state.settings = await window.desktopAPI.saveSettings({ outlinePaneWidth: px });
+      applyOutlinePaneWidth(state.settings.outlinePaneWidth);
+    } catch {
+      /* ignore */
+    }
+  }, 250);
+  return px;
+}
+
+function wireOutlineSplitter() {
+  const splitter = $('outlineSplitter');
+  const workspace = $('workspace');
+  if (!splitter || !workspace || splitter.dataset.wired === '1') return;
+  splitter.dataset.wired = '1';
+  let dragging = false;
+
+  const onMove = (clientX) => {
+    const rect = workspace.getBoundingClientRect();
+    const next = clampOutlineWidth(clientX - rect.left);
+    applyOutlinePaneWidth(next);
+  };
+
+  splitter.addEventListener('pointerdown', (ev) => {
+    if (ev.button !== 0) return;
+    if (window.matchMedia && window.matchMedia('(max-width: 900px)').matches) return;
+    dragging = true;
+    workspace.classList.add('outline-resizing');
+    splitter.setPointerCapture(ev.pointerId);
+    ev.preventDefault();
+  });
+  splitter.addEventListener('pointermove', (ev) => {
+    if (!dragging) return;
+    onMove(ev.clientX);
+  });
+  const endDrag = (ev) => {
+    if (!dragging) return;
+    dragging = false;
+    workspace.classList.remove('outline-resizing');
+    try {
+      splitter.releasePointerCapture(ev.pointerId);
+    } catch {
+      /* ignore */
+    }
+    const current = clampOutlineWidth(
+      state.settings?.outlinePaneWidth ||
+        parseInt(getComputedStyle(workspace).getPropertyValue('--outline-pane-width'), 10)
+    );
+    persistOutlinePaneWidth(current);
+  };
+  splitter.addEventListener('pointerup', endDrag);
+  splitter.addEventListener('pointercancel', endDrag);
+  splitter.addEventListener('keydown', (ev) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(ev.key)) return;
+    ev.preventDefault();
+    const cur = clampOutlineWidth(state.settings?.outlinePaneWidth || OUTLINE_WIDTH_DEFAULT);
+    let next = cur;
+    if (ev.key === 'ArrowLeft') next = cur - (ev.shiftKey ? 24 : 12);
+    if (ev.key === 'ArrowRight') next = cur + (ev.shiftKey ? 24 : 12);
+    if (ev.key === 'Home') next = OUTLINE_WIDTH_MIN;
+    if (ev.key === 'End') next = OUTLINE_WIDTH_MAX;
+    persistOutlinePaneWidth(next);
+  });
+}
+
+
 function setTab(name, opts = {}) {
   if (!VALID_TABS.has(name)) return;
   document.querySelectorAll('.tab').forEach((btn) => {
@@ -666,6 +761,7 @@ function fillSettingsForm() {
   $('gaugeEnv').value = s.gaugeEnv || '';
   fillRecentProjects(s.recentProjects || []);
   fillRecentHubs(s.recentHubs || [], s.reportHubDir || '');
+  applyOutlinePaneWidth(s.outlinePaneWidth);
 }
 
 function renderPluginDetect(info) {
@@ -879,6 +975,7 @@ function applyDesktopShortcut(action) {
 }
 
 function wire() {
+  wireOutlineSplitter();
   document.querySelectorAll('.tab').forEach((btn) => {
     btn.addEventListener('click', () => setTab(btn.dataset.tab));
   });

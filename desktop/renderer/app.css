@@ -127,12 +127,46 @@ html, body {
 .workspace {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(180px, 240px) 1fr;
+  grid-template-columns: var(--outline-pane-width, 240px) 5px 1fr;
   background: #0a121a;
 }
-.workspace.outline-hidden { grid-template-columns: 1fr; }
-.workspace.outline-hidden .outline-pane { display: none; }
+.workspace.outline-hidden {
+  grid-template-columns: 1fr;
+}
+.workspace.outline-hidden .outline-pane,
+.workspace.outline-hidden .outline-splitter {
+  display: none;
+}
 .panes { min-height: 0; position: relative; background: #0a121a; }
+
+.outline-splitter {
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+}
+.outline-splitter::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1px;
+  width: 3px;
+  background: transparent;
+  transition: background 0.12s ease;
+}
+.outline-splitter:hover::after,
+.outline-splitter:focus-visible::after,
+.workspace.outline-resizing .outline-splitter::after {
+  background: var(--accent, #3db8e8);
+}
+.workspace.outline-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+.workspace.outline-resizing iframe {
+  pointer-events: none;
+}
 .pane { display: none; height: 100%; position: relative; }
 .pane.active { display: block; }
 .outline-pane {
@@ -230,6 +264,7 @@ html, body {
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 1fr; }
   .outline-pane { max-height: 160px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .outline-splitter { display: none; }
 }
 iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
 .empty {

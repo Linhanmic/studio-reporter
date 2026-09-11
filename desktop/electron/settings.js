@@ -18,7 +18,25 @@ const DEFAULTS = {
   autoCheckUpdates: false,
   notifyOnSuiteEnd: true,
   theme: 'system',
+  outlinePaneWidth: 240,
 };
+
+
+const OUTLINE_PANE_WIDTH_MIN = 180;
+const OUTLINE_PANE_WIDTH_MAX = 480;
+const OUTLINE_PANE_WIDTH_DEFAULT = 240;
+
+/**
+ * Clamp outline pane width to a usable pixel range.
+ * @param {unknown} width
+ * @param {number} [fallback=OUTLINE_PANE_WIDTH_DEFAULT]
+ */
+function normalizeOutlinePaneWidth(width, fallback = OUTLINE_PANE_WIDTH_DEFAULT) {
+  const n = Number(width);
+  const base = Number.isFinite(Number(fallback)) ? Number(fallback) : OUTLINE_PANE_WIDTH_DEFAULT;
+  if (!Number.isFinite(n)) return Math.round(base);
+  return Math.round(Math.min(OUTLINE_PANE_WIDTH_MAX, Math.max(OUTLINE_PANE_WIDTH_MIN, n)));
+}
 
 /** Valid Desktop renderer tab ids (must match index.html data-tab). */
 const VALID_TABS = new Set(['run', 'report', 'history', 'settings']);
@@ -46,6 +64,7 @@ function loadSettings(userDataDir) {
     merged.recentHubs = Array.isArray(merged.recentHubs) ? merged.recentHubs : [];
     merged.lastTab = normalizeLastTab(merged.lastTab);
     merged.restoreSession = merged.restoreSession !== false;
+    merged.outlinePaneWidth = normalizeOutlinePaneWidth(merged.outlinePaneWidth);
     return merged;
   } catch {
     return { ...DEFAULTS };
@@ -60,10 +79,14 @@ function saveSettings(userDataDir, partial) {
   if (Object.prototype.hasOwnProperty.call(patch, 'restoreSession')) {
     patch.restoreSession = patch.restoreSession !== false;
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'outlinePaneWidth')) {
+    patch.outlinePaneWidth = normalizeOutlinePaneWidth(patch.outlinePaneWidth);
+  }
   const next = { ...loadSettings(userDataDir), ...patch };
   next.recentProjects = Array.isArray(next.recentProjects) ? next.recentProjects : [];
   next.recentHubs = Array.isArray(next.recentHubs) ? next.recentHubs : [];
   next.lastTab = normalizeLastTab(next.lastTab);
+  next.outlinePaneWidth = normalizeOutlinePaneWidth(next.outlinePaneWidth);
   fs.mkdirSync(userDataDir, { recursive: true });
   fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(next, null, 2));
   return next;
@@ -288,6 +311,10 @@ module.exports = {
   loadSettings,
   saveSettings,
   normalizeLastTab,
+  normalizeOutlinePaneWidth,
+  OUTLINE_PANE_WIDTH_MIN,
+  OUTLINE_PANE_WIDTH_MAX,
+  OUTLINE_PANE_WIDTH_DEFAULT,
   readHistory,
   resolveRunIndex,
   resolveRunDir,
