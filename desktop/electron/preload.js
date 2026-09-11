@@ -18,7 +18,7 @@ const {
   SCENARIO_COMPARE_KIND_FILTERS,
 } = require('./compare.js');
 const { filterHistoryRuns } = require('./settings.js');
-const { buildCompareDeepLink, buildOpenDeepLink } = require('./deeplink.js');
+const { buildCompareDeepLink, buildOpenDeepLink, buildHistoryOpenDeepLinks } = require('./deeplink.js');
 const {
   parseShareHash,
   formatShareHash,
@@ -94,9 +94,11 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   copyCompareJson: (cmp, opts) => ipcRenderer.invoke('desktop:copy-compare-json', cmp, opts),
   copyCompareDeepLink: (payload) => ipcRenderer.invoke('desktop:copy-compare-deeplink', payload),
   copyOpenDeepLink: (payload) => ipcRenderer.invoke('desktop:copy-open-deeplink', payload),
+  copyOpenDeepLinks: (payload) => ipcRenderer.invoke('desktop:copy-open-deeplinks', payload),
   popupHistoryMenu: (opts) => ipcRenderer.invoke('desktop:popup-history-menu', opts || {}),
   buildCompareDeepLink,
   buildOpenDeepLink,
+  buildHistoryOpenDeepLinks,
   parseShareHash,
   formatShareHash,
   reportOpenHashFromOutline,

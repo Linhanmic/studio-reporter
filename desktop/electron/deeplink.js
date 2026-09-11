@@ -239,6 +239,38 @@ function buildOpenDeepLink(opts = {}) {
  *   onIgnored?: (parsed: object, raw: string) => void,
  * }} options
  */
+
+/**
+ * Build newline-joined open deep links for one or more history runs.
+ * Failed runs get failSteps=1 by default.
+ * @param {Array<{id?: string, run?: string, verdict?: string, focus?: string}>} entries
+ * @param {{ hub?: string, failSteps?: boolean }} [opts]
+ * @returns {string}
+ */
+function buildHistoryOpenDeepLinks(entries, opts = {}) {
+  const list = Array.isArray(entries) ? entries : [];
+  const hub = String(opts.hub || '').trim();
+  const lines = [];
+  for (const entry of list) {
+    const run = String(entry?.id || entry?.run || '').trim();
+    if (!run) continue;
+    const failSteps =
+      opts.failSteps != null
+        ? !!opts.failSteps
+        : String(entry?.verdict || '').toLowerCase() === 'fail';
+    const focus = String(entry?.focus || '').trim();
+    lines.push(
+      buildOpenDeepLink({
+        run,
+        hub,
+        focus: focus || undefined,
+        failSteps,
+      })
+    );
+  }
+  return lines.join('\n');
+}
+
 function createDeepLinkQueue(options = {}) {
   const parse = typeof options.parse === 'function' ? options.parse : parseDeepLink;
   const handle = options.handle;
@@ -303,5 +335,6 @@ module.exports = {
   extractDeepLinkFromArgv,
   buildCompareDeepLink,
   buildOpenDeepLink,
+  buildHistoryOpenDeepLinks,
   createDeepLinkQueue,
 };

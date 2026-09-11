@@ -113,6 +113,7 @@
 - [x] Desktop 对比分享卡片场景 diff 一键打开报告定位
 - [x] Desktop 对比面板复制场景打开深链
 - [x] Desktop 历史列表右键打开定位（打开报告 / 复制 open 深链 / 显示文件夹 / 复制路径）
+- [x] Desktop 历史多选批量复制打开深链（工具栏；多条换行；失败默认 failSteps）
 
 ## 迭代日志
 
@@ -221,8 +222,9 @@
 | 2026-09-11 | 静态报告过滤状态可分享 URL | fragment `#focus?q=&spec=&scenario=&failSteps=1`；兼容 `#fail-steps`；工具栏变更 `replaceState`；Go 镜像解析 |
 | 2026-09-11 | 对比分享卡片场景打开深链 | HTML/Markdown/JSON 场景 diff 附带 `studio-reporter://open?run=&hub=&focus=&failSteps=`；主进程 open 支持 run+focus；与面板「在报告中查看」同源 |
 | 2026-09-11 | 历史列表右键打开定位 | 原生 Menu：打开报告、复制 open 深链、显示文件夹、复制路径；失败运行默认 failSteps |
+| 2026-09-11 | 历史多选批量复制打开深链 | 工具栏按钮；`buildHistoryOpenDeepLinks`；IPC `copy-open-deeplinks`；失败运行默认 failSteps |
 
 ## 下一任务（选定）
 
-**代码签名 secrets / 发布管道加固**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限时改做：历史多选批量复制 open 深链 / 分享卡片模板预览）。
+**分享卡片模板预览**（导出前预览 default/light/compact），或 **代码签名 secrets / 发布管道加固** / **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限）。
 

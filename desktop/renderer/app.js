@@ -655,6 +655,11 @@ function updateHistoryActionButtons() {
   if (revealBtn) revealBtn.disabled = state.exporting || n !== 1;
   const copyBtn = $('btnCopyPath');
   if (copyBtn) copyBtn.disabled = state.exporting || n !== 1;
+  const copyOpenBtn = $('btnCopyOpenLinks');
+  if (copyOpenBtn) {
+    copyOpenBtn.disabled = state.exporting || n < 1;
+    copyOpenBtn.textContent = n > 1 ? `复制打开深链（${n}）` : '复制打开深链';
+  }
   const deleteBtn = $('btnDeleteRuns');
   if (deleteBtn) {
     deleteBtn.disabled = state.exporting || n < 1;
@@ -1579,6 +1584,32 @@ function fillRecentHubs(list, current) {
   fillSelect($('historyRecentHubs'), '最近 hub…');
 }
 
+
+async function copySelectedOpenDeepLinks() {
+  const entries = selectedHistoryEntries();
+  if (!entries.length) {
+    setStatus('请至少勾选 1 次运行以复制打开深链', 'warn');
+    return;
+  }
+  try {
+    const result = await window.desktopAPI.copyOpenDeepLinks({
+      entries: entries.map((e) => ({
+        id: e.id,
+        verdict: e.verdict,
+      })),
+      hub: state.settings?.reportHubDir || '',
+    });
+    setStatus(
+      result.count > 1
+        ? `已复制 ${result.count} 条打开深链（换行分隔）`
+        : `已复制打开深链：${result.text || ''}`,
+      'ok',
+    );
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
 async function applyHubDir(hub) {
   const dir = String(hub || '').trim();
   if (!dir) return null;
@@ -2014,6 +2045,7 @@ function wire() {
   $('btnCancelExport')?.addEventListener('click', () => cancelActiveExport());
   $('btnRevealRun')?.addEventListener('click', () => revealSelectedRun());
   $('btnCopyPath')?.addEventListener('click', () => copySelectedPath());
+  $('btnCopyOpenLinks')?.addEventListener('click', () => copySelectedOpenDeepLinks());
   $('btnDeleteRuns')?.addEventListener('click', () => deleteSelectedRuns());
   let historyQueryTimer = null;
   $('historyQuery')?.addEventListener('input', () => {

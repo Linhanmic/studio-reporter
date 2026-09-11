@@ -38,6 +38,7 @@ const {
   extractDeepLinkFromArgv,
   buildCompareDeepLink,
   buildOpenDeepLink,
+  buildHistoryOpenDeepLinks,
   createDeepLinkQueue,
 } = require('./deeplink.js');
 const {
@@ -748,7 +749,18 @@ function registerIpc() {
   });
 
   
-  ipcMain.handle('desktop:popup-history-menu', async (evt, opts = {}) => {
+  
+  ipcMain.handle('desktop:copy-open-deeplinks', async (_evt, payload = {}) => {
+    const text = buildHistoryOpenDeepLinks(payload.entries || [], {
+      hub: payload.hub,
+      failSteps: payload.failSteps,
+    });
+    if (!text) throw new Error('没有可复制的打开深链');
+    clipboard.writeText(text);
+    return { ok: true, text, count: text.split('\n').filter(Boolean).length };
+  });
+
+ipcMain.handle('desktop:popup-history-menu', async (evt, opts = {}) => {
     const win = BrowserWindow.fromWebContents(evt.sender);
     return popupHistoryContextMenu(Menu, win, opts || {});
   });

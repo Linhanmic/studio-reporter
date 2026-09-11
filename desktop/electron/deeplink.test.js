@@ -8,6 +8,7 @@ const {
   extractDeepLinkFromArgv,
   buildCompareDeepLink,
   buildOpenDeepLink,
+  buildHistoryOpenDeepLinks,
   createDeepLinkQueue,
 } = require('./deeplink.js');
 
@@ -196,6 +197,27 @@ describe('deeplink', () => {
     const live = await q.enqueue('studio-reporter://hub?dir=/tmp/hub');
     assert.equal(live.ok, true);
     assert.deepEqual(handled, ['compare', 'hub']);
+  });
+
+
+  it('buildHistoryOpenDeepLinks joins runs and marks failSteps', () => {
+    const text = buildHistoryOpenDeepLinks(
+      [
+        { id: 'a/1', verdict: 'pass' },
+        { id: 'a/2', verdict: 'fail' },
+      ],
+      { hub: '/hub' }
+    );
+    const lines = text.split('\n');
+    assert.equal(lines.length, 2);
+    const p0 = parseDeepLink(lines[0]);
+    const p1 = parseDeepLink(lines[1]);
+    assert.equal(p0.run, 'a/1');
+    assert.equal(!!p0.failSteps, false);
+    assert.equal(p1.run, 'a/2');
+    assert.equal(p1.failSteps, true);
+    assert.equal(p1.hub, '/hub');
+    assert.equal(buildHistoryOpenDeepLinks([]), '');
   });
 
   it('createDeepLinkQueue requires handle', () => {

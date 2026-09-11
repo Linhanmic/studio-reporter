@@ -147,6 +147,7 @@ Gauge (gRPC)
 | 2026-09-11 | 静态报告过滤状态可分享 URL | `#focus?q=&spec=&scenario=&failSteps=1` 与工具栏双向同步；兼容 `#fail-steps`；Go `ParseShareHash` 契约测试 |
 | 2026-09-11 | Desktop 对比差异定位到报告 | 场景 diff 携带 scnId；对比面板一键打开基线/目标报告并 hash 定位 |
 | 2026-09-11 | Desktop 打开报告附带过滤 hash | 打开终态/历史报告时把大纲 query/verdict 写成静态 share hash；与报告内过滤契约对齐 |
+| 2026-09-11 | 历史多选批量复制打开深链 | 工具栏复制多条 `open` 深链（换行）；与单条右键复制同源；失败默认 failSteps |
 | 2026-09-11 | 历史列表右键打开定位 | 历史行原生右键菜单：打开报告 / 复制 open 深链 / 显示文件夹 / 复制路径；与分享卡片 open 契约一致 |
 | 2026-09-11 | 对比面板复制场景打开深链 | 面板场景 diff 可复制 open 深链（run+hub+focus）；与分享卡片及「在报告中查看」同契约 |
 | 2026-09-11 | 对比分享卡片场景打开深链 | 离线卡片/MD/JSON 每条场景 diff 附带 open 深链（run+hub+focus）；Desktop 处理 `open?run=` 定位历史报告，与面板内跳转同契约 |
