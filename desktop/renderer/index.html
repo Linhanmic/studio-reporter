@@ -113,6 +113,7 @@
             <button type="button" id="btnSelectFiltered" class="btn" title="勾选当前过滤结果（最多 50）">全选过滤结果</button>
             <button type="button" id="btnClearSelection" class="btn" title="清除历史勾选" disabled>清除勾选</button>
             <button type="button" id="btnCompareRuns" class="btn primary" disabled>对比所选（0/2）</button>
+            <button type="button" id="btnHistoryTrend" class="btn" title="根据当前过滤结果分析最近运行趋势与不稳定场景">运行趋势</button>
             <button type="button" id="btnExportPdf" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出 PDF</button>
             <button type="button" id="btnExportSingle" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出单文件 HTML</button>
             <button type="button" id="btnCancelExport" class="btn danger hidden" title="取消正在进行的导出">取消导出</button>
@@ -142,6 +143,7 @@
               <button type="button" class="history-filter-btn" data-verdict="skip">跳过</button>
             </div>
           </div>
+          <div id="historyTrendPanel" class="history-trend-panel hidden" aria-live="polite"></div>
           <div id="comparePanel" class="compare-panel hidden"></div>
           <div id="historyList" class="history-list"></div>
           <div class="empty" id="historyEmpty">

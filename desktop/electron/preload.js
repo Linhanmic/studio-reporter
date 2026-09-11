@@ -19,6 +19,14 @@ const {
   SCENARIO_COMPARE_KIND_FILTERS,
 } = require('./compare.js');
 const { filterHistoryRuns, listFailedHistoryRuns } = require('./settings.js');
+const {
+  buildHistoryTrend,
+  listFlakyScenarios,
+  sparkline,
+  formatTrendDuration,
+  DEFAULT_TREND_LIMIT,
+  DEFAULT_FLAKY_LIMIT,
+} = require('./history-trend.js');
 const { buildCompareDeepLink, buildOpenDeepLink, buildHistoryOpenDeepLinks } = require('./deeplink.js');
 const {
   parseShareHash,
@@ -124,6 +132,13 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   setActiveSession: (id) => ipcRenderer.invoke('desktop:set-active-session', id),
   compareHistoryRuns,
   invertCompareResult,
+  buildHistoryTrend,
+  listFlakyScenarios,
+  sparkline,
+  formatTrendDuration,
+  DEFAULT_TREND_LIMIT,
+  DEFAULT_FLAKY_LIMIT,
+  loadHistoryTrendBundle: (opts) => ipcRenderer.invoke('desktop:history-trend-bundle', opts || {}),
   compareScenariosForRuns: (base, target) =>
     ipcRenderer.invoke('desktop:compare-scenarios', base, target),
   scenarioDiffKindLabel,

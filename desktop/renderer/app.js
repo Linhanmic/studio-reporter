@@ -26,6 +26,7 @@ const state = {
   exporting: false,
   unsubExportProgress: null,
   lastCompare: null,
+  lastHistoryTrend: null,
   compareScenarioKinds: null, // null = all kinds; string[] = export/view filter
   lastExportedComparePath: null,
   discoverTimer: null,
@@ -1420,6 +1421,127 @@ async function refreshHistory(opts = {}) {
   }
 }
 
+function hideHistoryTrendPanel() {
+  const panel = $('historyTrendPanel');
+  if (panel) {
+    panel.classList.add('hidden');
+    panel.innerHTML = '';
+  }
+  state.lastHistoryTrend = null;
+}
+
+function renderHistoryTrendPanel(bundle) {
+  const panel = $('historyTrendPanel');
+  if (!panel || !bundle?.trend) return;
+  state.lastHistoryTrend = bundle;
+  const { trend, flaky = [], scenarioLoad } = bundle;
+  const stats = trend.stats || {};
+  const points = trend.points || [];
+  const spark =
+    typeof window.desktopAPI.sparkline === 'function'
+      ? window.desktopAPI.sparkline(points.map((p) => p.durationMs))
+      : '';
+  const fmt =
+    typeof window.desktopAPI.formatTrendDuration === 'function'
+      ? window.desktopAPI.formatTrendDuration
+      : (ms) => `${ms}ms`;
+  const failPct = Math.round((stats.failRate || 0) * 100);
+  const chips = points
+    .map((p) => {
+      const cls = p.failed || p.verdict === 'fail' ? 'fail' : p.verdict === 'pass' ? 'pass' : '';
+      const title = `${p.id} · ${p.timestamp || p.timestampISO || ''} · ${p.duration || fmt(p.durationMs)} · ${p.verdict || '—'}`;
+      return `<button type="button" class="history-trend-chip ${cls}" data-trend-run="${escapeHtml(p.id)}" title="${escapeHtml(title)}">${escapeHtml(p.id || '—')}</button>`;
+    })
+    .join('');
+  const flakyRows = (flaky || [])
+    .map((f) => {
+      const series = (f.verdictSeries || [])
+        .map((v) => (v.verdict === 'fail' ? '✗' : v.verdict === 'pass' ? '✓' : '·'))
+        .join('');
+      const lastRun = [...(f.verdictSeries || [])].reverse().find((v) => v.runId)?.runId || '';
+      return `<tr>
+        <td><button type="button" class="linkish" data-flaky-run="${escapeHtml(lastRun)}" data-flaky-focus="${escapeHtml(f.scnId || '')}" title="${escapeHtml(f.specFile || '')}">${escapeHtml(f.scnName || f.key)}</button>
+          <div class="muted">${escapeHtml(f.specName || '')}</div></td>
+        <td>${f.flips}/${f.seen}</td>
+        <td>${Math.round((f.failRate || 0) * 100)}%</td>
+        <td class="mono">${escapeHtml(series)}</td>
+        <td class="muted">${escapeHtml(f.lastFailReason || '—')}</td>
+      </tr>`;
+    })
+    .join('');
+  const loadNote =
+    scenarioLoad && scenarioLoad.missing
+      ? `（${scenarioLoad.loaded}/${scenarioLoad.attempted} 次运行可读 report.json）`
+      : '';
+  panel.classList.remove('hidden');
+  panel.innerHTML = `
+    <div class="history-trend-head">
+      <h3>运行趋势 · 最近 ${stats.runCount || 0} 次${escapeHtml(loadNote)}</h3>
+      <button type="button" class="btn" id="btnCloseHistoryTrend">关闭</button>
+    </div>
+    <div class="history-trend-stats">
+      <span>失败率 <strong>${failPct}%</strong>（${stats.failCount || 0}/${stats.runCount || 0}）</span>
+      <span>平均时长 <strong>${escapeHtml(fmt(stats.avgDurationMs || 0))}</strong></span>
+      <span>最长 <strong>${escapeHtml(fmt(stats.maxDurationMs || 0))}</strong></span>
+    </div>
+    <div class="history-trend-spark" title="时长 sparkline（左旧右新）">${escapeHtml(spark) || '—'}</div>
+    <div class="history-trend-points">${chips || '<span class="muted">无运行点</span>'}</div>
+    <h4 style="margin:8px 0 6px;font-size:12px;">不稳定场景 ${flaky.length ? `（${flaky.length}）` : ''}</h4>
+    ${
+      flakyRows
+        ? `<table class="history-flaky-table"><thead><tr><th>场景</th><th>翻转/出现</th><th>失败率</th><th>序列</th><th>最近失败原因</th></tr></thead><tbody>${flakyRows}</tbody></table>`
+        : '<p class="muted">窗口内未发现翻转场景（需 ≥2 次运行且可读 report.json）。</p>'
+    }
+  `;
+  $('btnCloseHistoryTrend')?.addEventListener('click', hideHistoryTrendPanel);
+  panel.querySelectorAll('[data-trend-run]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-trend-run');
+      const run = state.historyRuns.find((r) => r.id === id);
+      if (run) await openHistoryRunEntry(run);
+    });
+  });
+  panel.querySelectorAll('[data-flaky-run]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-flaky-run');
+      const focus = btn.getAttribute('data-flaky-focus') || '';
+      const run = state.historyRuns.find((r) => r.id === id);
+      if (!run) {
+        setStatus('找不到对应历史运行', 'warn');
+        return;
+      }
+      await openHistoryRunEntry(run, { focus: focus || undefined, failSteps: true });
+    });
+  });
+}
+
+async function showHistoryTrend() {
+  const runs = filteredHistoryRuns();
+  if (!runs.length) {
+    setStatus('当前过滤结果没有可分析的历史运行', 'warn');
+    return;
+  }
+  if (typeof window.desktopAPI.loadHistoryTrendBundle !== 'function') {
+    setStatus('当前版本不支持运行趋势分析', 'warn');
+    return;
+  }
+  try {
+    setStatus('正在分析运行趋势…', 'ok');
+    const bundle = await window.desktopAPI.loadHistoryTrendBundle({
+      runs,
+      trendLimit: window.desktopAPI.DEFAULT_TREND_LIMIT || 12,
+      flakyLimit: window.desktopAPI.DEFAULT_FLAKY_LIMIT || 20,
+    });
+    renderHistoryTrendPanel(bundle);
+    setStatus(
+      `趋势已更新：失败率 ${Math.round((bundle.trend?.stats?.failRate || 0) * 100)}%，不稳定场景 ${bundle.flaky?.length || 0}`,
+      'ok',
+    );
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
+
 function renderHistoryList(histMeta) {
   const list = $('historyList');
   const empty = $('historyEmpty');
@@ -2214,6 +2336,7 @@ function wire() {
   });
   $('btnRefreshHistory').addEventListener('click', refreshHistory);
   $('btnCompareRuns').addEventListener('click', runCompare);
+  $('btnHistoryTrend')?.addEventListener('click', showHistoryTrend);
   $('btnPickHub').addEventListener('click', async () => {
     const hub = await window.desktopAPI.pickHubDir();
     if (hub) {

@@ -74,6 +74,7 @@ const {
 const { createUpdater } = require('./updater.js');
 const { buildReportOutline, loadOutlineFromReportDir } = require('./outline.js');
 const { compareScenarioReportsFromDirs } = require('./scenario-compare.js');
+const { buildHistoryTrendBundle } = require('./history-trend.js');
 const {
   loadWindowState,
   saveWindowState,
@@ -675,6 +676,18 @@ function registerIpc() {
     if (targetPath) shell.showItemInFolder(path.resolve(targetPath));
   });
 
+
+  ipcMain.handle('desktop:history-trend-bundle', async (_evt, opts = {}) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = String(opts.hubDir || settings.reportHubDir || '').trim();
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const hist = readHistory(hub);
+    const runs = Array.isArray(opts.runs) && opts.runs.length ? opts.runs : hist.runs || [];
+    return buildHistoryTrendBundle(hub, runs, resolveRunDir, {
+      trendLimit: opts.trendLimit,
+      flakyLimit: opts.flakyLimit,
+    });
+  });
 
   ipcMain.handle('desktop:compare-scenarios', async (_evt, baseEntry, targetEntry) => {
     const settings = loadSettings(app.getPath('userData'));

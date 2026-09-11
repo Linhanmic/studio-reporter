@@ -118,6 +118,7 @@
 - [x] Desktop 历史失败运行快速筛选强化（topFailReason 写入 history；原因关键字过滤；一键复制全部失败 open 深链）
 - [x] Desktop 分享卡片导出后一致性抽检（模板/标题/场景过滤 meta；导出后自动打开预览；`inspectCompareShareCardHtml`）
 - [x] Desktop hub 历史文件监视自动刷新（`watchHubHistory`；`hub-watch.js`；变更时保留勾选）
+- [x] Desktop 历史多运行趋势与不稳定场景面板（`history-trend.js`；过滤窗口 sparkline + flaky 列表）
 
 ## 迭代日志
 
@@ -231,8 +232,8 @@
 | 2026-09-11 | 历史失败运行快速筛选强化 | history 写入 topFailReason；Desktop 失败原因关键字过滤；工具栏「复制失败打开深链」 |
 | 2026-09-11 | 分享卡片导出一致性抽检 | HTML meta 写入 template/title/kinds；导出后 `inspectCompareShareCardHtml`；默认自动打开预览；状态栏回报抽检结果 |
 | 2026-09-11 | Desktop hub 历史文件监视自动刷新 | `hub-watch.js` 监视 history.json/archives；设置 `watchHubHistory`；变更时保留勾选刷新列表 |
+| 2026-09-11 | Desktop 历史多运行趋势与不稳定场景 | `history-trend.js`：过滤窗口时长 sparkline + 失败率；扫描 report.json 找翻转场景；面板可点开运行 |
 
 ## 下一任务（选定）
 
-**代码签名 secrets / 发布管道加固**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 Desktop 历史多运行趋势 / 不稳定场景面板，或安装包冒烟扩展 / 自动更新端到端验证。
-
+**代码签名 secrets / 发布管道加固**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或安装包冒烟扩展 / 自动更新端到端验证，或趋势窗口大小 / 项目过滤持久化。
