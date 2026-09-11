@@ -135,7 +135,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 「设置」页可检测本机 `~/.gauge/plugins/studio-reporter` 安装版本；运行后约 20s 未见 discover 会提示检查插件。  
 打包安装包可通过「帮助 → 检查更新」或设置页对照 GitHub Releases（开发态 `npm start` 会跳过）。  
 运行页与报告页共享左侧原生大纲：live 随 `ReportSnapshot` 更新，打开终态目录时读取 `report.json`；支持搜索与 pass/fail/skip 过滤，并同步到 iframe。点击可定位 viewer / 静态报告节点。  
-「历史」页支持搜索与 pass/fail/skip 过滤；勾选 1 次运行可导出该次 PDF/单文件 HTML，勾选 2 次可对比。  
+「历史」页支持搜索与 pass/fail/skip 过滤；勾选 1+ 次可导出或删除（确认），勾选恰好 2 次可对比。  
 「运行」页嵌入 `viewer.html`；收到 `ReportGenerated` 后跳「报告」页打开静态 `index.html`。
 
 共享 discover 辅助包：`packages/studio-reporter-discover`（`@studio-reporter/discover`），供 Desktop / GaugeStudio 复用同一 stdout 契约。
