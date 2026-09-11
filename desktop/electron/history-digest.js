@@ -8,6 +8,7 @@
 
 const { buildOpenDeepLink } = require('./deeplink.js');
 
+const HISTORY_FAIL_DIGEST_FORMAT_VERSION = 1;
 const DEFAULT_DIGEST_LIMIT = 15;
 
 /**
@@ -88,6 +89,8 @@ function buildHistoryFailDigest(runs, opts = {}) {
   });
 
   return {
+    formatVersion: HISTORY_FAIL_DIGEST_FORMAT_VERSION,
+    generatedAt: new Date().toISOString(),
     runCount: list.length,
     failRunCount,
     passRunCount,
@@ -155,6 +158,8 @@ function formatHistoryFailDigestMarkdown(digest, opts = {}) {
   lines.push('');
   if (!d.groups.length) {
     lines.push(d.failRunCount ? '_失败运行未写入 topFailReason。_' : '_窗口内无失败运行。_');
+    if (d.formatVersion) lines.push('- formatVersion: ' + d.formatVersion);
+    if (d.generatedAt) lines.push('- generatedAt: `' + d.generatedAt + '`');
     lines.push('');
     return lines.join('\n');
   }
@@ -204,6 +209,8 @@ function formatHistoryFailDigestJson(digest, opts = {}) {
   const hubDir = opts.hubDir || '';
   const base = {
     format: 'studio-reporter.historyFailDigest/v1',
+    formatVersion: (digest && digest.formatVersion) || HISTORY_FAIL_DIGEST_FORMAT_VERSION,
+    generatedAt: (digest && digest.generatedAt) || new Date().toISOString(),
     hubDir,
     ...digest,
   };
@@ -280,6 +287,7 @@ function probeHistoryFailDigestSidecars(hubDir) {
 }
 
 module.exports = {
+  HISTORY_FAIL_DIGEST_FORMAT_VERSION,
   DEFAULT_DIGEST_LIMIT,
   normalizeFailReason,
   buildHistoryFailDigest,

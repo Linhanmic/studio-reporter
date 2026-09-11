@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -22,6 +23,8 @@ type FailDigestGroup struct {
 	LastTimestamp string   `json:"lastTimestamp"`
 }
 
+const historyFailDigestFormatVersion = 1
+
 // HistoryFailDigest aggregates failed history entries by normalized reason.
 type HistoryFailDigest struct {
 	RunCount          int               `json:"runCount"`
@@ -32,6 +35,8 @@ type HistoryFailDigest struct {
 	Groups            []FailDigestGroup `json:"groups"`
 	RunsWithoutReason []string          `json:"runsWithoutReason,omitempty"`
 	Format            string            `json:"format,omitempty"`
+	FormatVersion     int               `json:"formatVersion"`
+	GeneratedAt       string            `json:"generatedAt,omitempty"`
 	HubDir            string            `json:"hubDir,omitempty"`
 }
 
@@ -67,7 +72,7 @@ func buildHistoryFailDigest(runs []HistoryEntry, limit int) HistoryFailDigest {
 		lastTS string
 	}
 	byReason := map[string]*agg{}
-	out := HistoryFailDigest{RunCount: len(runs), Format: "studio-reporter.historyFailDigest/v1"}
+	out := HistoryFailDigest{RunCount: len(runs), Format: "studio-reporter.historyFailDigest/v1", FormatVersion: historyFailDigestFormatVersion, GeneratedAt: time.Now().UTC().Format(time.RFC3339)}
 	for _, run := range runs {
 		verdict := strings.ToLower(strings.TrimSpace(run.Verdict))
 		failed := run.Failed || verdict == "fail"
@@ -155,7 +160,14 @@ func formatHistoryFailDigestMarkdown(d HistoryFailDigest, title string) string {
 	if d.HubDir != "" {
 		fmt.Fprintf(&b, "- Hub: `%s`\n", d.HubDir)
 	}
-	fmt.Fprintf(&b, "- 窗口：%d 次运行（失败 %d / 通过 %d / 跳过 %d）\n\n", d.RunCount, d.FailRunCount, d.PassRunCount, d.SkipRunCount)
+	fmt.Fprintf(&b, "- 窗口：%d 次运行（失败 %d / 通过 %d / 跳过 %d）\n", d.RunCount, d.FailRunCount, d.PassRunCount, d.SkipRunCount)
+	if d.FormatVersion > 0 {
+		fmt.Fprintf(&b, "- formatVersion: %d\n", d.FormatVersion)
+	}
+	if d.GeneratedAt != "" {
+		fmt.Fprintf(&b, "- generatedAt: `%s`\n", d.GeneratedAt)
+	}
+	b.WriteByte('\n')
 	if len(d.Groups) == 0 {
 		if d.FailRunCount > 0 {
 			b.WriteString("_失败运行未写入 topFailReason。_\n")
@@ -251,6 +263,8 @@ func writeHistoryFailDigest(w io.Writer, d HistoryFailDigest, format string) err
 	case "json":
 		payload := map[string]any{
 			"format":            d.Format,
+			"formatVersion":     d.FormatVersion,
+			"generatedAt":       d.GeneratedAt,
 			"hubDir":            d.HubDir,
 			"runCount":          d.RunCount,
 			"failRunCount":      d.FailRunCount,

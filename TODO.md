@@ -134,6 +134,7 @@
 - [x] Desktop 历史页打开 fail-digest 旁路（工具栏「旁路 MD/JSON/位置」；`probeHistoryFailDigestSidecars`；导出后刷新按钮态）
 - [x] Desktop 一键刷新 fail-digest 旁路
 - [x] manage.html 一键刷新 fail-digest 旁路（`POST /api/fail-digest`；工具栏「刷新旁路」；仅 localhost serve）
+- [x] fail-digest 旁路 `formatVersion` / `generatedAt`（JSON+Markdown 元数据；Go/Desktop/浏览器同源；便于 CI 校验工件新鲜度）
 
 ## 迭代日志
 
@@ -278,6 +279,8 @@
 | 2026-09-11 | Desktop 一键刷新 fail-digest 旁路 | 工具栏「刷新旁路」；IPC 读 history.json 重写 md/json；不必先导出 |
 
 | 2026-09-11 | manage.html 一键刷新 fail-digest 旁路 | POST /api/fail-digest；工具栏「刷新旁路」；仅 localhost serve |
+
+| 2026-09-11 | fail-digest 旁路 formatVersion/generatedAt | JSON/Markdown 写入 formatVersion=1 与 RFC3339 generatedAt；Go/Desktop/report-assets 同源 |
 
 ## 下一任务（选定）
 

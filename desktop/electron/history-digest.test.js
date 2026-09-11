@@ -100,6 +100,8 @@ describe('history-digest', () => {
     assert.match(fs.readFileSync(written.mdPath, 'utf8'), /timeout/);
     const json = JSON.parse(fs.readFileSync(written.jsonPath, 'utf8'));
     assert.equal(json.format, 'studio-reporter.historyFailDigest/v1');
+    assert.equal(json.formatVersion, 1);
+    assert.ok(json.generatedAt);
     assert.equal(json.groups[0].reason, 'timeout');
     const after = probeHistoryFailDigestSidecars(hub);
     assert.equal(after.md, true);

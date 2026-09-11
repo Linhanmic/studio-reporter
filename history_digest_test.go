@@ -154,6 +154,15 @@ func TestRunDigestCmdWriteSidecars(t *testing.T) {
 	if !strings.Contains(string(js), `"reason": "boom"`) {
 		t.Fatalf("json=%s", js)
 	}
+	if !strings.Contains(string(js), `"formatVersion": 1`) {
+		t.Fatalf("json missing formatVersion: %s", js)
+	}
+	if !strings.Contains(string(js), `"generatedAt"`) {
+		t.Fatalf("json missing generatedAt: %s", js)
+	}
+	if !strings.Contains(string(md), "formatVersion: 1") || !strings.Contains(string(md), "generatedAt:") {
+		t.Fatalf("md missing meta: %s", md)
+	}
 	if !strings.Contains(stderr.String(), "fail-digest.md") {
 		t.Fatalf("stderr=%s", stderr.String())
 	}

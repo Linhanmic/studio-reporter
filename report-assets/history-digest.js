@@ -8,6 +8,7 @@
 
   var PROTOCOL = 'studio-reporter';
   var DEFAULT_DIGEST_LIMIT = 15;
+  var HISTORY_FAIL_DIGEST_FORMAT_VERSION = 1;
 
   function normalizeFailReason(msg) {
     var s = String(msg == null ? '' : msg)
@@ -90,6 +91,8 @@
       .slice(0, limit);
 
     return {
+      formatVersion: HISTORY_FAIL_DIGEST_FORMAT_VERSION,
+      generatedAt: new Date().toISOString(),
       runCount: list.length,
       failRunCount: failRunCount,
       passRunCount: passRunCount,
@@ -147,6 +150,8 @@
     lines.push('');
     if (!d.groups.length) {
       lines.push(d.failRunCount ? '_失败运行未写入 topFailReason。_' : '_窗口内无失败运行。_');
+    if (d.formatVersion) lines.push('- formatVersion: ' + d.formatVersion);
+    if (d.generatedAt) lines.push('- generatedAt: `' + d.generatedAt + '`');
       lines.push('');
       return lines.join('\n');
     }
@@ -205,6 +210,8 @@
     var hubDir = opts.hubDir || '';
     var base = {
       format: 'studio-reporter.historyFailDigest/v1',
+    formatVersion: (digest && digest.formatVersion) || HISTORY_FAIL_DIGEST_FORMAT_VERSION,
+    generatedAt: (digest && digest.generatedAt) || new Date().toISOString(),
       hubDir: hubDir,
     };
     var d = digest || buildHistoryFailDigest([]);
@@ -229,6 +236,7 @@
   }
 
   var api = {
+    HISTORY_FAIL_DIGEST_FORMAT_VERSION: HISTORY_FAIL_DIGEST_FORMAT_VERSION,
     DEFAULT_DIGEST_LIMIT: DEFAULT_DIGEST_LIMIT,
     PROTOCOL: PROTOCOL,
     normalizeFailReason: normalizeFailReason,
