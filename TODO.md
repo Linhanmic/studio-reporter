@@ -146,6 +146,7 @@
 - [x] digest 深链对含特殊字符 hub 路径的编码/打开抽检（Go/report-assets/Desktop 往返；空格/`#`/`?&=`/中文/Windows 路径）
 - [x] 静态报告分享 hash 对 Unicode/空格查询串的编码往返抽检（Go/static/Desktop；focus 百分号编码 + URL.hash 往返；锁定 `encodeShareFocus`）
 - [x] 静态报告 focus 含 `/` 的 PathEscape 与 DOM id 对齐抽检（`encodeShareFocus` 保留 `/`；legacy `%2F` 仍可解码；Chrome dump-dom 打开 `spec:specs/…`；纳入 `smoke-failsteps-hash`）
+- [x] Desktop/对比深链 `open?focus=` path-style DOM id（含 `/`）query 编码与打开抽检（query `%2F` ≠ fragment 字面 `/`；Go `openDeepLink` + Desktop/compare 单测）
 
 ## 迭代日志
 
@@ -315,6 +316,8 @@
 
 | 2026-09-11 | focus PathEscape 与 DOM id 对齐 | `specStableID` 含 `/`；`encodeShareFocus` 保留字面 `/`（与 `:`）；legacy `%2F` 靠 decode；Chrome dump-dom 断言 details open；三端单测 + smoke |
 
+| 2026-09-11 | open?focus= path-style 双轨编码 | 深链 query 用 URLSearchParams/`url.Values` 把 `/` 编成 `%2F`；打开后写入 share hash 时恢复字面 `/` 对齐 DOM；对比分享卡 + Go openDeepLink 锁定 |
+
 ## 下一任务（选定）
 
-**Desktop/对比深链 `open?focus=` 对 path-style DOM id（含 `/`）的 query 编码与打开抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**Desktop 打开深链后静态报告实际定位 path-style focus（Electron/端到端冒烟）**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

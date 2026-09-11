@@ -380,4 +380,41 @@ describe('scenario compare kind filter', () => {
     assert.equal(built.target, links.target);
     assert.equal(built.base, links.base);
   });
+
+  it('share card open deep links encode path-style scn ids (slash in focus)', () => {
+    const { parseDeepLink } = require('./deeplink.js');
+    const { base, target } = sampleEntries();
+    const pathFocus = 'spec:specs/auth/login.spec-scn-0';
+    const cmp = compareHistoryRuns(base, target);
+    cmp.scenarioCompare = {
+      changed: [
+        {
+          kind: 'regressed',
+          specName: 'Login',
+          scnName: 'valid user',
+          baseScnId: pathFocus,
+          targetScnId: pathFocus,
+          baseVerdict: 'pass',
+          targetVerdict: 'fail',
+          targetReason: 'timeout',
+        },
+      ],
+      unchangedCount: 0,
+      baseCount: 1,
+      targetCount: 1,
+    };
+    const hub = '/tmp/hub/path with#hash';
+    const json = JSON.parse(buildCompareShareJson(cmp, { hub }));
+    const links = json.scenarioCompare.changed[0].openLinks;
+    assert.ok(links.base && links.target);
+    assert.ok(links.target.includes('%2F'), 'focus slash must be query-encoded');
+    assert.match(links.target, /focus=spec%3Aspecs%2Fauth%2Flogin\.spec-scn-0/);
+    const parsed = parseDeepLink(links.target);
+    assert.equal(parsed.focus, pathFocus);
+    assert.equal(parsed.failSteps, true);
+    assert.equal(parsed.hub, hub);
+
+    const md = buildCompareShareMarkdown(cmp, { hub });
+    assert.match(md, /focus=spec%3Aspecs%2Fauth%2Flogin\.spec-scn-0/);
+  });
 });

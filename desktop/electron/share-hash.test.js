@@ -123,4 +123,18 @@ describe('share-hash', () => {
     assert.equal(parseShareHash('spec:specs%2Fauth%2Flogin.spec').focus, focus);
   });
 
+  it('deep-link focus with path slash becomes hash with literal slash (query≠fragment encoding)', () => {
+    const { buildOpenDeepLink, parseDeepLink } = require('./deeplink.js');
+    const focus = 'spec:specs/auth/login.spec-scn-0';
+    const link = buildOpenDeepLink({ run: 'r1', hub: '/hub', focus, failSteps: true });
+    assert.ok(link.includes('%2F'), 'open query encodes /');
+    const parsed = parseDeepLink(link);
+    assert.equal(parsed.focus, focus);
+    const hash = reportFocusHash(parsed.focus, { failSteps: parsed.failSteps });
+    assert.equal(hash, `${focus}?failSteps=1`);
+    assert.ok(!hash.includes('%2F'), 'fragment keeps / for getElementById');
+    assert.equal(parseShareHash(hash).focus, focus);
+    assert.equal(resolveReportOpenHash({ focus: parsed.focus, failSteps: true }), hash);
+  });
+
 });

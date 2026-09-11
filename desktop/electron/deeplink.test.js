@@ -246,6 +246,34 @@ describe('deeplink', () => {
     }
   });
 
+  it('open?focus= path-style DOM ids encode slash in query and round-trip', () => {
+    const focus = 'spec:specs/auth/login.spec-scn-0';
+    const link = buildOpenDeepLink({
+      run: 'run-9',
+      hub: '/tmp/hub with space',
+      focus,
+      failSteps: true,
+    });
+    assert.match(link, /focus=spec%3Aspecs%2Fauth%2Flogin\.spec-scn-0/);
+    assert.ok(link.includes('%2F'), 'query must percent-encode path slashes');
+    assert.ok(!link.includes('focus=spec:specs/'), 'raw slash must not appear in focus query');
+    const parsed = parseDeepLink(link);
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.focus, focus);
+    assert.equal(parsed.failSteps, true);
+    assert.equal(parsed.hub, '/tmp/hub with space');
+
+    // CJK + spaces in filepath segments.
+    const cjk = 'spec:specs/中文 目录/登录.spec';
+    const cjkLink = buildOpenDeepLink({ run: 'r', focus: cjk });
+    assert.equal(parseDeepLink(cjkLink).focus, cjk);
+    assert.ok(cjkLink.includes('%2F'));
+
+    // Legacy / hand-written links with literal slash in query still parse.
+    const raw = `studio-reporter://open?run=r1&focus=${focus}&failSteps=1`;
+    assert.equal(parseDeepLink(raw).focus, focus);
+  });
+
   it('buildHistoryOpenDeepLinks joins runs and marks failSteps', () => {
     const text = buildHistoryOpenDeepLinks(
       [

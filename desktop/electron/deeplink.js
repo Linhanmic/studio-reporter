@@ -8,7 +8,8 @@ const PROTOCOL = 'studio-reporter';
  *   studio-reporter://open?path=/abs/index.html
  *   studio-reporter://open?path=/abs/run.uhilreport
  *   studio-reporter://open?dir=/abs/report-dir
- *   studio-reporter://open?run=<runId>[&hub=/abs/hub][&focus=scn:…][&failSteps=1]
+ *   studio-reporter://open?run=<runId>[&hub=/abs/hub][&focus=spec:path/to.spec-scn-0][&failSteps=1]
+ *   Note: query `focus` percent-encodes `/` (%2F); share-hash fragments keep `/` literal for DOM ids.
  *   studio-reporter://connect?url=ws://127.0.0.1:1234
  *   studio-reporter://hub?dir=/abs/hub
  *   studio-reporter://compare?base=<runId>&target=<runId>[&hub=/abs/hub][&kinds=regressed,fixed]

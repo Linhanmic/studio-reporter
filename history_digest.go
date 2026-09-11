@@ -138,6 +138,13 @@ func buildHistoryFailDigest(runs []HistoryEntry, limit int) HistoryFailDigest {
 }
 
 func openDeepLinkForRun(runID, hub string) string {
+	return openDeepLink(runID, hub, "", true)
+}
+
+// openDeepLink builds studio-reporter://open?run=&hub=&focus=&failSteps=.
+// Query encoding percent-encodes '/' in focus (%2F); share-hash fragments keep '/'
+// literal so path-style DOM ids (spec:specs/auth/login.spec-scn-0) round-trip.
+func openDeepLink(runID, hub, focus string, failSteps bool) string {
 	runID = strings.TrimSpace(runID)
 	if runID == "" {
 		return ""
@@ -147,7 +154,12 @@ func openDeepLinkForRun(runID, hub string) string {
 	if hub = strings.TrimSpace(hub); hub != "" {
 		q.Set("hub", hub)
 	}
-	q.Set("failSteps", "1")
+	if focus = strings.TrimSpace(focus); focus != "" {
+		q.Set("focus", focus)
+	}
+	if failSteps {
+		q.Set("failSteps", "1")
+	}
 	return "studio-reporter://open?" + q.Encode()
 }
 

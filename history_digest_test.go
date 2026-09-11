@@ -206,7 +206,9 @@ func TestCheckFailDigestSidecarFreshness(t *testing.T) {
 	}
 
 	var stdout, stderr strings.Builder
-	write(fresh, 1)
+	// CLI --check uses wall clock; keep generatedAt relative to time.Now().
+	cliFresh := time.Now().UTC().Add(-30 * time.Minute).Format(time.RFC3339)
+	write(cliFresh, 1)
 	code := runDigestCmd([]string{"--dir", dir, "--check", "--max-age", "2h"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("cli check code=%d stderr=%s", code, stderr.String())
@@ -214,7 +216,8 @@ func TestCheckFailDigestSidecarFreshness(t *testing.T) {
 	if !strings.Contains(stdout.String(), "ok") {
 		t.Fatalf("stdout=%s", stdout.String())
 	}
-	write(stale, 1)
+	cliStale := time.Now().UTC().Add(-48 * time.Hour).Format(time.RFC3339)
+	write(cliStale, 1)
 	code = runDigestCmd([]string{"--file", path, "--check", "--max-age", "1h"}, &stdout, &stderr)
 	if code != 1 {
 		t.Fatalf("stale cli check code=%d want 1; stderr=%s", code, stderr.String())
@@ -254,5 +257,42 @@ func TestOpenDeepLinkForRunEncodesSpecialHubPaths(t *testing.T) {
 		if got := u.Query().Get("failSteps"); got != "1" {
 			t.Fatalf("failSteps=%q", got)
 		}
+	}
+}
+
+func TestOpenDeepLinkPathStyleFocusEncodesSlashInQuery(t *testing.T) {
+	focus := "spec:specs/auth/login.spec-scn-0"
+	link := openDeepLink("run-1", "/tmp/hub with space", focus, true)
+	if !strings.Contains(link, "focus=spec%3Aspecs%2Fauth%2Flogin.spec-scn-0") {
+		t.Fatalf("expected path slash percent-encoded in focus query, got %s", link)
+	}
+	if strings.Contains(link, "focus=spec:specs/") {
+		t.Fatalf("raw slash must not appear in focus query: %s", link)
+	}
+	u, err := url.Parse(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := u.Query().Get("focus"); got != focus {
+		t.Fatalf("focus round-trip: want %q got %q", focus, got)
+	}
+	if got := u.Query().Get("hub"); got != "/tmp/hub with space" {
+		t.Fatalf("hub=%q", got)
+	}
+	if got := u.Query().Get("failSteps"); got != "1" {
+		t.Fatalf("failSteps=%q", got)
+	}
+
+	cjk := "spec:specs/中文 目录/登录.spec"
+	cjkLink := openDeepLink("r", "", cjk, false)
+	u2, err := url.Parse(cjkLink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := u2.Query().Get("focus"); got != cjk {
+		t.Fatalf("cjk focus: want %q got %q (link=%s)", cjk, got, cjkLink)
+	}
+	if strings.Contains(cjkLink, "failSteps=") {
+		t.Fatalf("failSteps should be omitted when false: %s", cjkLink)
 	}
 }
