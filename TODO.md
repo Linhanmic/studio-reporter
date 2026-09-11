@@ -310,6 +310,8 @@
 
 | 2026-09-11 | 分享 hash Unicode/空格往返抽检 | 锁定 focus/query 百分号编码与 URL.hash 往返（中文/空格/emoji/`+`）；Go + Desktop 单测；与 static_report.js `encodeShareFocus` 对齐 |
 
+| 2026-09-11 | 修复 tip CI：lint + report-browser-smoke | ineffassign 检查 ReadAll err；Chrome dump-dom/PDF 加 `--no-sandbox` 等以适配 setup-chrome 无 setuid sandbox |
+
 ## 下一任务（选定）
 
 **静态报告 focus 含 `/` 的 PathEscape 与 DOM id 对齐抽检**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

@@ -78,6 +78,10 @@ func chromeDumpDOM(t *testing.T, chrome, url string) string {
 		"--headless=new",
 		"--disable-gpu",
 		"--no-first-run",
+		// CI runners (setup-chrome) ship chrome-sandbox without setuid root.
+		"--no-sandbox",
+		"--disable-setuid-sandbox",
+		"--disable-dev-shm-usage",
 		"--user-data-dir="+prof,
 		"--virtual-time-budget=3000",
 		"--dump-dom",

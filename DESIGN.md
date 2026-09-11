@@ -234,6 +234,8 @@ scripts/check-assets.sh   # CI：漂移则失败
 - 本地/CI：`make ci`（含 assets 校验、vet、test、build）；`make cover` / CI `cover-summary.sh` 输出覆盖率摘要；`make lint` 跑 golangci-lint；`make hooks` 启用 `.githooks`
 - 测试：`GOTOOLCHAIN=go1.27.0 go test ./...`
 
+| 2026-09-11 | CI Chrome sandbox | headless dump-dom/PDF 显式 `--no-sandbox`/`--disable-setuid-sandbox`，兼容 Actions setup-chrome |
+
 ## 演进方向
 
 见 [TODO.md](TODO.md)。架构允许在迭代中重构包边界、替换实时查看实现、增强静态报告交互，只要保持：

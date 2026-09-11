@@ -78,6 +78,9 @@ func TestManageServeFailDigestDeepLinkSmoke(t *testing.T) {
 	}
 	manageBody, err := io.ReadAll(manageRes.Body)
 	manageRes.Body.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if manageRes.StatusCode != http.StatusOK {
 		t.Fatalf("manage status=%d", manageRes.StatusCode)
 	}
@@ -102,6 +105,9 @@ func TestManageServeFailDigestDeepLinkSmoke(t *testing.T) {
 	}
 	jsBody, err := io.ReadAll(jsRes.Body)
 	jsRes.Body.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if jsRes.StatusCode != http.StatusOK {
 		t.Fatalf("history-digest.js status=%d", jsRes.StatusCode)
 	}
@@ -262,6 +268,10 @@ func chromeDumpDOMHTTP(t *testing.T, chrome, url string) string {
 		"--headless=new",
 		"--disable-gpu",
 		"--no-first-run",
+		// CI runners (setup-chrome) ship chrome-sandbox without setuid root.
+		"--no-sandbox",
+		"--disable-setuid-sandbox",
+		"--disable-dev-shm-usage",
 		"--user-data-dir="+prof,
 		"--virtual-time-budget=5000",
 		"--dump-dom",
