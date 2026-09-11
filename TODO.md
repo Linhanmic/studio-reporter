@@ -34,8 +34,8 @@
 
 ## P3 — 工程化与质量
 
-- [x] Makefile / `make test|vet|build|ci|lint|sync-assets`
-- [ ] CI 输出 cover profile 摘要
+- [x] Makefile / `make test|vet|build|ci|lint|sync-assets|cover`
+- [x] CI 输出 cover profile 摘要（`scripts/cover-summary.sh` + artifact）
 - [ ] `--input` 再生路径端到端 smoke（含截图相对路径）
 - [ ] pre-commit / make 钩子：提交前强制 `check-assets`
 
@@ -54,7 +54,8 @@
 | 2026-09-11 | 文档 + CI + leaf-row + 展开/搜索 + Makefile | PR #12 |
 | 2026-09-11 | 决策原则写入 DESIGN；assets SSoT；golangci v2 | 对照 Go embed / golangci v2 实践；修复 embed 丢失 WS 的漂移；lint 清零 |
 | 2026-09-11 | viewer 结束引导打开 `index.html` | 对照 Allure「生成后再 open」：横幅 CTA + 可取消倒计时；`ReportGenerated`/元数据探测避免旧 index 误判 |
+| 2026-09-11 | CI cover profile 摘要 | 对照常见 Go Actions：coverprofile + `go tool cover -func` 日志摘要 + artifact；暂不强阈值 / 不打扰 PR 评论权限 |
 
 ## 下一任务（选定）
 
-**CI cover profile 摘要**（P3），或 **打印样式验收**（P1）。决策时继续按 DESIGN 原则做外部实践对照。
+**打印样式验收**（P1），或 **`--input` e2e smoke**（P3），或 **pre-commit check-assets**（P3）。

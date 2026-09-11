@@ -76,6 +76,7 @@ Gauge (gRPC)
 | 2026-09-11 | 废弃根/`internal` 下无用的 `report.html` | 运行时只发布 `viewer.html`；死文件制造双名认知负担 |
 | 2026-09-11 | 引入 golangci-lint v2 显式规则集 + CI 钉版本 | README 已承诺 lint；按 v2 推荐避免 `enable-all` 噪音 |
 | 2026-09-11 | 实时 viewer 结束引导打开静态 `index.html`，不强切 SPA 终态 | Allure/Playwright 惯例是生成后再 open；`FinishWithReport` 早于落盘，故用 `ReportGenerated` + index 元数据变化探测；磁盘轮询见 `running=false` 时 index 已写完 |
+| 2026-09-11 | CI 输出 cover profile 摘要，不强阈值、不写 PR 评论 | 对照 Go Actions 常见做法先可见再治理；阈值与 sticky comment 待覆盖率基线稳定后再加 |
 
 ## 前端资源布局（SSoT）
 

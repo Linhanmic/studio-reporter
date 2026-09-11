@@ -1,4 +1,4 @@
-.PHONY: test vet build lint sync-assets check-assets ci all
+.PHONY: test vet build lint sync-assets check-assets cover ci all
 
 GO ?= go
 GOTOOLCHAIN ?= go1.27.0
@@ -14,6 +14,9 @@ check-assets:
 
 test:
 	$(GO) test ./...
+
+cover:
+	./scripts/cover-summary.sh
 
 vet:
 	$(GO) vet ./...

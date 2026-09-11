@@ -20,8 +20,15 @@ jobs:
         run: make check-assets
       - name: Vet
         run: go vet ./...
-      - name: Test
-        run: go test ./...
+      - name: Test with coverage
+        run: ./scripts/cover-summary.sh
+      - name: Upload coverage profile
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cover-profile
+          path: cover.out
+          if-no-files-found: ignore
       - name: Build
         run: go build -o /tmp/studio-reporter .
 

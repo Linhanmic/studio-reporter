@@ -77,13 +77,13 @@ git clone https://github.com/Linhanmic/studio-reporter.git
 cd studio-reporter
 
 # 测试 / 编译（推荐显式 toolchain）
-GOTOOLCHAIN=go1.27.0 go test ./...
+make ci
+make cover   # 覆盖率摘要（CI 同脚本）
 GOTOOLCHAIN=go1.27.0 go build -o bin/studio-reporter .
 
 # 打 Gauge 安装包
 ./build.sh linux amd64
 ```
-
 可选环境变量见 [README.md](README.md)。常用：
 
 | 变量 | 作用 |
