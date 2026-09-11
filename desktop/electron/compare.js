@@ -405,6 +405,8 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
   }
   const title = normalizeCompareCardTitle(opts.title);
   const template = normalizeCompareCardTemplate(opts.template);
+  const kinds = normalizeScenarioCompareKinds(opts.kinds);
+  const kindsMeta = kinds ? kinds.join(',') : '';
   const generatedAt = opts.generatedAt || new Date().toISOString();
   const project = projectLabel(cmp);
   const verdictSame = Boolean(cmp.verdictSame);
@@ -432,6 +434,8 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="studio-reporter-desktop-compare-card">
 <meta name="studio-reporter-compare-template" content="${escapeHtml(template)}">
+<meta name="studio-reporter-compare-title" content="${escapeHtml(title)}">
+${kindsMeta ? `<meta name="studio-reporter-compare-kinds" content="${escapeHtml(kindsMeta)}">` : ''}
 <title>${escapeHtml(title)}</title>
 <style>
   :root {
@@ -803,6 +807,68 @@ function buildCompareShareJson(cmp, opts = {}) {
   return JSON.stringify(payload, null, opts.pretty === false ? 0 : 2);
 }
 
+
+/**
+ * Inspect exported compare-share HTML against expected template/title/kinds.
+ * Used after export to catch drift between UI options and written file.
+ * @param {string} html
+ * @param {{ template?: string, title?: string, kinds?: string[]|null }} [expected]
+ * @returns {{ ok: boolean, template: string, title: string, kinds: string[]|null, issues: string[] }}
+ */
+function unescapeHtmlAttr(s) {
+  return String(s ?? '')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+function inspectCompareShareCardHtml(html, expected = {}) {
+  const text = String(html || '');
+  const issues = [];
+  const tplMatch = text.match(/data-template="([^"]*)"/) || text.match(/studio-reporter-compare-template"\s+content="([^"]*)"/);
+  const titleMatch =
+    text.match(/studio-reporter-compare-title"\s+content="([^"]*)"/) ||
+    text.match(/<title>([^<]*)<\/title>/i);
+  const kindsMatch = text.match(/studio-reporter-compare-kinds"\s+content="([^"]*)"/);
+  const foundTemplate = normalizeCompareCardTemplate(tplMatch ? unescapeHtmlAttr(tplMatch[1]) : '');
+  const foundTitle = normalizeCompareCardTitle(titleMatch ? unescapeHtmlAttr(titleMatch[1]) : '');
+  const foundKinds = kindsMatch && kindsMatch[1]
+    ? normalizeScenarioCompareKinds(String(unescapeHtmlAttr(kindsMatch[1])).split(','))
+    : null;
+
+  const expectTemplate = normalizeCompareCardTemplate(expected.template);
+  const expectTitle = normalizeCompareCardTitle(expected.title);
+  const expectKinds = normalizeScenarioCompareKinds(expected.kinds);
+
+  if (expectTemplate && foundTemplate !== expectTemplate) {
+    issues.push(`模板不一致：期望 ${expectTemplate}，实际 ${foundTemplate || '—'}`);
+  }
+  if (expectTitle && foundTitle !== expectTitle) {
+    issues.push(`标题不一致：期望「${expectTitle}」，实际「${foundTitle || '—'}」`);
+  }
+  if (expectKinds && expectKinds.length) {
+    const a = (expectKinds || []).slice().sort().join(',');
+    const b = (foundKinds || []).slice().sort().join(',');
+    if (a !== b) {
+      issues.push(`场景类型过滤不一致：期望 ${a}，实际 ${b || '（未写入）'}`);
+    }
+  } else if (expectKinds === null && foundKinds && foundKinds.length) {
+    issues.push(`场景类型过滤不一致：期望不过滤，实际 ${foundKinds.join(',')}`);
+  }
+  if (!foundTemplate) issues.push('缺少 data-template / template meta');
+  if (!foundTitle) issues.push('缺少 title');
+
+  return {
+    ok: issues.length === 0,
+    template: foundTemplate,
+    title: foundTitle,
+    kinds: foundKinds,
+    issues,
+  };
+}
+
 module.exports = {
   parseReportDuration,
   compareHistoryRuns,
@@ -823,6 +889,7 @@ module.exports = {
   suggestedCompareShareBasename,
   buildCompareShareMarkdown,
   buildCompareShareCardHtml,
+  inspectCompareShareCardHtml,
   resolveCompareShareDeepLink,
   resolveScenarioDiffOpenLinks,
   COMPARE_CARD_TEMPLATES,

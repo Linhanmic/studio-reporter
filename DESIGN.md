@@ -149,6 +149,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 打开报告附带过滤 hash | 打开终态/历史报告时把大纲 query/verdict 写成静态 share hash；与报告内过滤契约对齐 |
 | 2026-09-11 | 历史失败运行快速筛选强化 | history 写入 topFailReason；Desktop 按失败原因关键字过滤；一键复制当前列表失败 open 深链 |
 | 2026-09-11 | 对比分享卡片模板预览 | 导出前 iframe 预览 default/light/compact；模板/标题变更即时刷新；与导出同源 HTML |
+| 2026-09-11 | 分享卡片导出一致性抽检 | 卡片 meta 写入 template/title/kinds；导出后 `inspectCompareShareCardHtml` 对照 UI 选项；默认 `openPath` 打开预览 |
 | 2026-09-11 | 历史多选批量复制打开深链 | 工具栏复制多条 `open` 深链（换行）；与单条右键复制同源；失败默认 failSteps |
 | 2026-09-11 | 历史列表右键打开定位 | 历史行原生右键菜单：打开报告 / 复制 open 深链 / 显示文件夹 / 复制路径；与分享卡片 open 契约一致 |
 | 2026-09-11 | 对比面板复制场景打开深链 | 面板场景 diff 可复制 open 深链（run+hub+focus）；与分享卡片及「在报告中查看」同契约 |

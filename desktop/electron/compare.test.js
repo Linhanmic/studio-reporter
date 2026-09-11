@@ -10,6 +10,7 @@ const {
   suggestedCompareShareBasename,
   buildCompareShareMarkdown,
   buildCompareShareCardHtml,
+  inspectCompareShareCardHtml,
   resolveCompareShareDeepLink,
   invertCompareResult,
   buildCompareShareJson,
@@ -242,6 +243,51 @@ describe('scenario compare kind filter', () => {
     baseCount: 4,
     targetCount: 5,
   };
+
+
+  it('inspectCompareShareCardHtml validates template/title/kinds', () => {
+    const { base, target } = sampleEntries();
+    const cmp = compareHistoryRuns(base, target);
+    const html = buildCompareShareCardHtml(cmp, {
+      template: 'light',
+      title: '抽检标题',
+      kinds: ['regressed', 'fixed'],
+    });
+    const ok = inspectCompareShareCardHtml(html, {
+      template: 'light',
+      title: '抽检标题',
+      kinds: ['fixed', 'regressed'],
+    });
+    assert.equal(ok.ok, true);
+    assert.equal(ok.template, 'light');
+    assert.equal(ok.title, '抽检标题');
+    assert.deepEqual(new Set(ok.kinds), new Set(['regressed', 'fixed']));
+
+    const bad = inspectCompareShareCardHtml(html, {
+      template: 'compact',
+      title: '抽检标题',
+      kinds: ['added'],
+    });
+    assert.equal(bad.ok, false);
+    assert.ok(bad.issues.some((x) => /模板/.test(x)));
+    assert.ok(bad.issues.some((x) => /场景类型/.test(x)));
+  });
+
+  it('inspectCompareShareCardHtml decodes escaped title meta', () => {
+    const { base, target } = sampleEntries();
+    const cmp = compareHistoryRuns(base, target);
+    const html = buildCompareShareCardHtml(cmp, {
+      template: 'default',
+      title: 'A & B <diff>',
+      kinds: null,
+    });
+    const ok = inspectCompareShareCardHtml(html, {
+      template: 'default',
+      title: 'A & B <diff>',
+    });
+    assert.equal(ok.ok, true);
+    assert.equal(ok.title, 'A & B <diff>');
+  });
 
   it('normalizeScenarioCompareKinds drops unknowns and empties', () => {
     assert.equal(normalizeScenarioCompareKinds(null), null);

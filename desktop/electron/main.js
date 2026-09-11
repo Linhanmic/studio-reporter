@@ -47,6 +47,7 @@ const {
 const { appendShareHash, reportFocusHash, reportOpenHashFromOutline } = require('./share-hash.js');
 const {
   buildCompareShareCardHtml,
+  inspectCompareShareCardHtml,
   buildCompareShareMarkdown,
   buildCompareShareJson,
   suggestedCompareShareBasename,
@@ -700,7 +701,21 @@ function registerIpc() {
       kinds: opts.kinds,
     });
     fs.writeFileSync(result.filePath, html, 'utf8');
-    return { ok: true, path: result.filePath };
+    const check = inspectCompareShareCardHtml(html, {
+      template: opts.template,
+      title: opts.title,
+      kinds: opts.kinds,
+    });
+    let opened = false;
+    if (opts.openAfterExport !== false) {
+      try {
+        const err = await shell.openPath(result.filePath);
+        opened = !err;
+      } catch {
+        opened = false;
+      }
+    }
+    return { ok: true, path: result.filePath, check, opened };
   });
 
   ipcMain.handle('desktop:copy-compare-markdown', async (_evt, cmp, opts = {}) => {

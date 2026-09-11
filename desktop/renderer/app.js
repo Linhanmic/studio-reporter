@@ -1273,7 +1273,16 @@ async function exportCompareCard() {
     }
     state.lastExportedComparePath = result.path;
     renderCompare(cmp);
-    setStatus(`已导出对比卡片：${result.path}`, 'ok');
+    const check = result.check;
+    if (check && check.ok === false) {
+      setStatus(
+        `已导出但一致性抽检未通过：${(check.issues || []).join('；') || '未知问题'}（${result.path}）`,
+        'warn',
+      );
+    } else {
+      const openedNote = result.opened ? '，已自动打开预览' : '';
+      setStatus(`已导出对比卡片并完成一致性抽检${openedNote}：${result.path}`, 'ok');
+    }
   } catch (err) {
     setStatus(String(err.message || err), 'warn');
   }

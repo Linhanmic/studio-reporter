@@ -148,7 +148,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 窗口位置、尺寸与最大化状态会自动记住（换显示器时若窗口完全离屏会回正到主屏）。
 运行/报告页左侧大纲宽度可拖拽调整，并会记住上次宽度。
 打包冒烟：`make desktop-pack-smoke`（构建 CLI → `electron-builder --dir` → 校验解包布局；校验器覆盖 linux / `mac/*.app` / `win-unpacked`）。
-历史对比支持交换基线/目标、复制 JSON，导出卡片后可直接打开或在文件夹中显示。
+历史对比支持交换基线/目标、复制 JSON；导出卡片后默认自动打开预览，也可在文件夹中显示；导出时会抽检模板/标题/场景过滤与面板一致。
 大纲搜索与结论过滤会同步到 live/终态页面，按 `/` 可快速聚焦搜索框，并在重启后恢复。
 
 共享 discover 辅助包：`packages/studio-reporter-discover`（`@studio-reporter/discover`），供 Desktop / GaugeStudio 复用同一 stdout 契约。
@@ -178,4 +178,4 @@ npm run pack       # 平台安装包（Linux → AppImage 等）
 
 Desktop 也可通过 **文件 → 打开 .uhilreport…**（`Cmd/Ctrl+Shift+O`）或深链 `studio-reporter://open?path=*.uhilreport` 离线打开便携包（需同级 `images/`）。
 
-历史页对比两次运行后，可「预览卡片」后导出 HTML 分享卡片（深色 / 浅色 / 紧凑模板，可自定义标题；预览随模板/标题即时刷新），并复制 Markdown 或 JSON；场景差异区可先按类型过滤再导出；卡片内每条场景 diff 含「目标/基线报告」深链，点击可在 Desktop 打开对应历史运行并定位场景。
+历史页对比两次运行后，可「预览卡片」后导出 HTML 分享卡片（深色 / 浅色 / 紧凑模板，可自定义标题；预览随模板/标题即时刷新），并复制 Markdown 或 JSON；场景差异区可先按类型过滤再导出；导出后会自动打开预览并抽检模板/标题/场景类型过滤是否与面板一致（状态栏提示）；卡片内每条场景 diff 含「目标/基线报告」深链，点击可在 Desktop 打开对应历史运行并定位场景。
