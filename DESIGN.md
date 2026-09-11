@@ -114,6 +114,7 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 启动 Gauge | Desktop 可 spawn `gauge run` 并解析 stdout discover；仍允许外部附着；单一 discover 契约 |
 | 2026-09-11 | Desktop 多会话 | 主进程会话管理器允许多 Gauge 并行（上限 3）；UI 会话条切换 active live；最近项目持久化 |
 | 2026-09-11 | Desktop 会话恢复 / 最近 hub | `recentHubs` 与 `recentProjects` 同模式；`lastTab`/`restoreSession` 持久化；选 hub、保存设置、深链 `hub` 均写入最近列表 |
+| 2026-09-11 | Desktop 窗口布局记忆 | `window-state.js` 持久化 bounds/最大化；离屏校正；独立 `window-state.json` 与设置解耦 |
 | 2026-09-11 | 共享 discover | 抽出 `@studio-reporter/discover`（`packages/studio-reporter-discover`）；Desktop 经 file: 依赖消费 |
 | 2026-09-11 | 插件版本门闸 | Desktop 对 ServerHello 校验 semver ≥ 0.5.0 与必需 capabilities；状态栏提示 ok/warn/error |
 | 2026-09-11 | 本机插件检测 | 扫描 Gauge plugins 目录；设置页展示安装版本；discover 超时结合安装态提示 |

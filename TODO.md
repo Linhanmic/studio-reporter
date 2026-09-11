@@ -72,6 +72,7 @@
 - [x] Desktop 套件结束系统通知（窗口未聚焦时；设置可关；点击聚焦并打开终态）
 - [x] Desktop 自定义协议深链（`studio-reporter://open|connect|hub`；单实例；electron-builder protocols）
 - [x] Desktop 会话恢复 / 最近 hub（`recentHubs` + `lastTab` + `restoreSession`；设置/历史页快捷切换）
+- [x] Desktop 窗口布局记忆（位置/尺寸/最大化；离屏校正；`window-state.json`）
 
 ## 迭代日志
 
@@ -117,7 +118,8 @@
 | 2026-09-11 | 静态报告极轻量交互 | hash 深链 `#scn:`/`#spec:`/`#overview`；工具栏「复制失败摘要」；sticky toolbar；`/`/`j`/`k`/`Esc`；决策：轻交互不 SPA |
 | 2026-09-11 | Desktop 对比分享卡片 | `compare.js` 生成离线 HTML 卡片 + Markdown；历史对比面板「导出对比卡片 / 复制 Markdown」；Save Dialog 落盘 |
 | 2026-09-11 | Desktop 会话恢复 / 最近 hub | `recentHubs`（选 hub / 保存 / 深链 `hub` 写入）；`lastTab` 切页持久化；`restoreSession` 启动恢复；设置与历史页下拉切换 |
+| 2026-09-11 | Desktop 窗口布局记忆 | `window-state.js`：bounds + 最大化写入 `window-state.json`；多显示器离屏校正；resize/move/close 防抖持久化 |
 
 ## 下一任务（选定）
 
-**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或 Desktop 窗口布局/分割记忆，或安装包冒烟清单自动化。
+**代码签名（macOS/Windows secrets）**，或 GaugeStudio 真正消费 `@studio-reporter/discover`，或安装包冒烟清单自动化，或大纲/历史分栏宽度记忆。

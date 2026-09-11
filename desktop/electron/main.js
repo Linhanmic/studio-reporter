@@ -14,6 +14,7 @@ const {
   shell,
   clipboard,
   Notification,
+  screen,
 } = require('electron');
 const { normalizeWsInput } = require('./discover.js');
 const { checkPluginHello } = require('./compat.js');
@@ -58,6 +59,15 @@ const {
 } = require('./sessions.js');
 const { createUpdater } = require('./updater.js');
 const { buildReportOutline, loadOutlineFromReportDir } = require('./outline.js');
+const {
+  loadWindowState,
+  saveWindowState,
+  sanitizeWindowState,
+  captureWindowState,
+  browserWindowOptionsFromState,
+  MIN_WIDTH,
+  MIN_HEIGHT,
+} = require('./window-state.js');
 
 /**
  * Persist report hub dir and push onto recentHubs.
@@ -494,12 +504,19 @@ async function pickAndOpenUhilreport() {
   return { ok: true, ...opened };
 }
 
+function displayWorkAreas() {
+  return screen.getAllDisplays().map((d) => d.workArea);
+}
+
 function createWindow() {
+  const userData = app.getPath('userData');
+  let windowState = sanitizeWindowState(loadWindowState(userData), displayWorkAreas());
+  const bounds = browserWindowOptionsFromState(windowState);
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 840,
-    minWidth: 900,
-    minHeight: 600,
+    ...bounds,
+    minWidth: MIN_WIDTH,
+    minHeight: MIN_HEIGHT,
+    show: false,
     title: 'Studio Reporter',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -507,6 +524,39 @@ function createWindow() {
       nodeIntegration: false,
       webviewTag: true,
     },
+  });
+
+  let persistTimer = null;
+  const persist = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      try {
+        windowState = captureWindowState(mainWindow, windowState);
+        saveWindowState(userData, windowState);
+      } catch {
+        /* ignore */
+      }
+    }, 200);
+  };
+  mainWindow.on('resize', persist);
+  mainWindow.on('move', persist);
+  mainWindow.on('maximize', persist);
+  mainWindow.on('unmaximize', persist);
+  mainWindow.on('close', () => {
+    clearTimeout(persistTimer);
+    try {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        windowState = captureWindowState(mainWindow, windowState);
+        saveWindowState(userData, windowState);
+      }
+    } catch {
+      /* ignore */
+    }
+  });
+  mainWindow.once('ready-to-show', () => {
+    if (windowState.isMaximized) mainWindow.maximize();
+    mainWindow.show();
   });
   mainWindow.loadFile(RENDERER);
 }

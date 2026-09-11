@@ -38,7 +38,7 @@ npm run pack               # 平台安装包（Linux → AppImage 等）
 
 1. **运行 Gauge**：在运行栏选择 Gauge 项目（支持最近项目下拉）、specs、可选 env →「运行 Gauge」。可并行多个会话，会话条切换 live viewer；Desktop 解析 stdout discover 并自动连接。左侧共享大纲（规格书→场景）支持搜索与 pass/fail/skip 过滤，在 live / 终态均可点击定位。
 2. **手动连接**：也可粘贴 `studio-reporter websocket: ws://127.0.0.1:<port>` → 连接 → 嵌入 live viewer。
-3. **报告**：收到 `ReportGenerated` 后跳转静态 `index.html`（可在设置中关闭自动跳转）；窗口未聚焦时发系统通知（可关）；打开报告目录时从 `report.json` 填充大纲。也可 **文件 → 打开 .uhilreport…**（`Cmd/Ctrl+Shift+O`）或深链 `studio-reporter://open?path=*.uhilreport` 离线再生并打开。支持深链 `studio-reporter://open|connect|hub`。快捷键：`Ctrl/Cmd+1…4` 切页，`Ctrl/Cmd+Enter` 连接，`Ctrl/Cmd+Shift+H`/`F5` 刷新历史。设置支持 system/light/dark 主题。
+3. **报告**：收到 `ReportGenerated` 后跳转静态 `index.html`（可在设置中关闭自动跳转）；窗口未聚焦时发系统通知（可关）；打开报告目录时从 `report.json` 填充大纲。也可 **文件 → 打开 .uhilreport…**（`Cmd/Ctrl+Shift+O`）或深链 `studio-reporter://open?path=*.uhilreport` 离线再生并打开。支持深链 `studio-reporter://open|connect|hub`。快捷键：`Ctrl/Cmd+1…4` 切页，`Ctrl/Cmd+Enter` 连接，`Ctrl/Cmd+Shift+H`/`F5` 刷新历史。设置支持 system/light/dark 主题。窗口位置/尺寸/最大化写入 `window-state.json`（离屏自动回正）。
 4. **历史**：设置报告根目录（含 `history.json`）后列出归档；可用「最近 hub」下拉切换；搜索 / pass/fail/skip 过滤；点击打开；勾选 1 次可打开所在文件夹 / 复制路径；勾选两次可对比，并可导出离线 HTML 分享卡片或复制 Markdown；勾选后可删除（确认框；删除持有与 Go 对齐的 `.hub.lock`）。
 5. **导出**：历史页「导出 PDF / 单文件 HTML」调用 CLI `generate --pdf|--single`；勾选 1+ 次则批量导出所选 `.uhilreport`，否则导出根目录最新。
 6. **设置**：报告根目录与最近 hub、启动恢复上次标签、自动跳转、倒计时、Gauge 可执行文件路径（持久化到 Electron `userData`）；本机插件检测；可选启动时检查 Desktop 更新。
