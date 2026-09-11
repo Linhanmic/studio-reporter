@@ -131,5 +131,6 @@ studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 |---|---|---|
 | `/api/history` | GET | Returns `history.json` |
 | `/api/history/{id}` | DELETE | Removes `archives/<id>` and its index entry. Loopback clients only |
+| `/api/fail-digest` | POST | Rewrite hub `fail-digest.md`/`fail-digest.json` from `history.json`. Loopback clients only |
 
 Static files (viewer, manage console, archives) are served from the hub root with `Cache-Control: no-store`.

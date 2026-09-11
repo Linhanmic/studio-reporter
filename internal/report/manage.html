@@ -95,9 +95,10 @@
         <el-button size="small" :disabled="!failDigest.groups.length" @click="copyFailDigestLinks">复制摘要深链</el-button>
         <el-button size="small" :disabled="!sidecar.md" tag="a" :href="sidecar.md ? 'fail-digest.md' : undefined" target="_blank" @click="onSidecarClick($event, 'md')">旁路 MD</el-button>
         <el-button size="small" :disabled="!sidecar.json" tag="a" :href="sidecar.json ? 'fail-digest.json' : undefined" target="_blank" @click="onSidecarClick($event, 'json')">旁路 JSON</el-button>
-        <span v-if="sidecar.checked && !sidecar.md && !sidecar.json" class="hint">尚无 fail-digest 旁路（跑完套件或 digest --write 后生成）</span>
+        <el-button size="small" :disabled="!canDelete || refreshingSidecar" :loading="refreshingSidecar" @click="refreshFailDigestSidecars">刷新旁路</el-button>
+        <span v-if="sidecar.checked && !sidecar.md && !sidecar.json" class="hint">尚无 fail-digest 旁路（跑完套件、digest --write，或点「刷新旁路」）</span>
         <span v-else-if="sidecar.md || sidecar.json" class="hint">旁路：{{ sidecar.md ? 'md' : '' }}{{ sidecar.md && sidecar.json ? '+' : '' }}{{ sidecar.json ? 'json' : '' }}</span>
-        <span v-if="!canDelete" class="hint">删除操作需要通过 studio-reporter --serve 打开本页</span>
+        <span v-if="!canDelete" class="hint">删除 / 刷新旁路需要通过 studio-reporter --serve 打开本页</span>
         <span v-else-if="selected.length < 2" class="hint">再选 {{ 2 - selected.length }} 次运行以对比</span>
       </div>
       <section v-if="showDigest" class="digest-pane">
@@ -257,6 +258,7 @@
             selected: [],
             formatVersion: '-',
             showDigest: false,
+            refreshingSidecar: false,
             sidecar: { checked: false, md: false, json: false },
             canDelete: window.location.protocol === 'http:' || window.location.protocol === 'https:'
           };
@@ -301,6 +303,29 @@
             var md = await exists('fail-digest.md');
             var json = await exists('fail-digest.json');
             self.sidecar = { checked: true, md: md, json: json };
+          },
+          refreshFailDigestSidecars: async function () {
+            if (!this.canDelete) {
+              ElementPlus.ElMessage.warning('刷新旁路需要通过 studio-reporter --serve 打开本页');
+              return;
+            }
+            this.refreshingSidecar = true;
+            try {
+              var res = await fetch('api/fail-digest', { method: 'POST', cache: 'no-store' });
+              if (!res.ok) {
+                ElementPlus.ElMessage.error('刷新旁路失败：' + (await res.text()));
+                return;
+              }
+              var body = await res.json();
+              await this.probeFailDigestSidecars();
+              ElementPlus.ElMessage.success(
+                '已刷新旁路：' + (body.groupCount || 0) + ' 类原因 / ' + (body.failRunCount || 0) + ' 次失败'
+              );
+            } catch (e) {
+              ElementPlus.ElMessage.error('刷新旁路失败：' + e);
+            } finally {
+              this.refreshingSidecar = false;
+            }
           },
           onSidecarClick: function (ev, kind) {
             var ok = kind === 'json' ? this.sidecar.json : this.sidecar.md;

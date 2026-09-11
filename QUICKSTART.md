@@ -77,7 +77,7 @@ xdg-open "reports/studio-report/viewer.html?ws=ws://127.0.0.1:<port>"
 
 # 历史管理（删除归档需要 HTTP；勾选两次运行可对比；可展开失败摘要并复制 Markdown/打开深链；
 # 若 hub 已有 fail-digest.md/json，manage 与 Desktop 历史工具栏「旁路 MD/JSON」可直接打开；
-# Desktop 还可「刷新旁路」按 history.json 重写（不必先导出））
+# Desktop / manage（--serve）均可「刷新旁路」按 history.json 重写（不必先导出））
 studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 # 浏览器打开 http://127.0.0.1:8765/manage.html
 ```

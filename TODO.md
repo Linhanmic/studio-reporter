@@ -132,7 +132,8 @@
 - [x] 插件 finalize 同步刷新 fail-digest（`recordCompletedRun` / 删除历史后 best-effort 写旁路，不阻断套件结束）
 - [x] manage.html 展示/打开 fail-digest 旁路（探测 hub 旁路 md/json；工具栏「旁路 MD/JSON」+ 摘要面板链接；刷新时重探测）
 - [x] Desktop 历史页打开 fail-digest 旁路（工具栏「旁路 MD/JSON/位置」；`probeHistoryFailDigestSidecars`；导出后刷新按钮态）
-- [x] Desktop 一键刷新 fail-digest 旁路（历史工具栏「刷新旁路」；`desktop:refresh-fail-digest` 读 hub history.json 重写，等同 CLI `digest --write`）
+- [x] Desktop 一键刷新 fail-digest 旁路
+- [x] manage.html 一键刷新 fail-digest 旁路（`POST /api/fail-digest`；工具栏「刷新旁路」；仅 localhost serve）
 
 ## 迭代日志
 
@@ -276,6 +277,8 @@
 
 | 2026-09-11 | Desktop 一键刷新 fail-digest 旁路 | 工具栏「刷新旁路」；IPC 读 history.json 重写 md/json；不必先导出 |
 
+| 2026-09-11 | manage.html 一键刷新 fail-digest 旁路 | POST /api/fail-digest；工具栏「刷新旁路」；仅 localhost serve |
+
 ## 下一任务（选定）
 
-**manage.html 一键刷新旁路**（浏览器管理页在 `--serve` 下触发重写 fail-digest.*），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
+**失败摘要旁路格式版本字段**（浏览器管理页在 `--serve` 下触发重写 fail-digest.*），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
