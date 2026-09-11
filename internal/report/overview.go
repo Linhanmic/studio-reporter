@@ -52,10 +52,15 @@ func writeOverviewPanel(b *bytes.Buffer, r *Report) {
 
 	if len(r.Specs) > 0 {
 		b.WriteString("<h3 class=\"overview-subtitle\">规格书清单</h3>\n")
-		b.WriteString("<table class=\"overview-table\"><thead><tr><th>规格书</th><th>结果</th><th>场景</th><th>耗时</th></tr></thead><tbody>\n")
+		b.WriteString("<p class=\"overview-lead\">过滤或「仅失败步骤」开启时，列表与场景计数同步为结果树当前可见项。</p>\n")
+		b.WriteString("<table class=\"overview-table overview-spec-table\" id=\"overview-spec-table\"><thead><tr><th>规格书</th><th>结果</th><th>场景</th><th>耗时</th></tr></thead><tbody>\n")
 		for i := range r.Specs {
 			sp := &r.Specs[i]
-			b.WriteString("<tr><td><a href=\"#")
+			b.WriteString("<tr class=\"overview-spec-row\" data-spec-id=\"")
+			b.WriteString(html.EscapeString(sp.ID))
+			b.WriteString("\" data-verdict=\"")
+			b.WriteString(html.EscapeString(sp.Verdict))
+			b.WriteString("\"><td><a href=\"#")
 			b.WriteString(html.EscapeString(sp.ID))
 			b.WriteString("\" data-nav-target=\"")
 			b.WriteString(html.EscapeString(sp.ID))
@@ -65,7 +70,7 @@ func writeOverviewPanel(b *bytes.Buffer, r *Report) {
 			b.WriteString(html.EscapeString(sp.Verdict))
 			b.WriteString("\">")
 			b.WriteString(html.EscapeString(verdictLabel(sp.Verdict)))
-			b.WriteString("</span></td><td>")
+			b.WriteString("</span></td><td class=\"overview-spec-scn-count\" data-spec-scn-count>")
 			b.WriteString(html.EscapeString(fmt.Sprintf("%d/%d", sp.Summary.Passed, sp.Summary.Total)))
 			b.WriteString("</td><td>")
 			b.WriteString(html.EscapeString(sp.Duration))

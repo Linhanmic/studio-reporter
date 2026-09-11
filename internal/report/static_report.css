@@ -439,6 +439,7 @@ html, body {
 /* Overview aggregation tracks visible fail scenarios (filter + fail-steps-mode). */
 .fail-reason-table .fail-reason-row.filter-hidden { display: none !important; }
 .fail-reason-table .fail-reason-ref.ref-hidden { display: none !important; }
+.overview-spec-table .overview-spec-row.filter-hidden { display: none !important; }
 .fail-reason-table .fail-reason-ref:not(.ref-hidden) ~ .fail-reason-ref:not(.ref-hidden)::before {
   content: " · ";
   color: #5a6a7a;
