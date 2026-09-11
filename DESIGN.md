@@ -104,7 +104,8 @@ Gauge (gRPC)
 | 2026-09-11 | Desktop 历史删除/批量导出 | 原生 FS 删除对齐 Go `deleteHistoryRun`；多选批量 `generate` |
 | 2026-09-11 | Desktop 历史定位 + hub 锁 | `showItemInFolder` / clipboard；删除走 `withHubLock`（与 Go `.hub.lock` flock 对齐） |
 | 2026-09-11 | Desktop 套件结束系统通知 | 窗口未聚焦时发 OS Notification；设置 `notifyOnSuiteEnd`；点击回前台打开报告 |
-| 2026-09-11 | Desktop 自定义协议深链 | `studio-reporter://open|connect|hub`；单实例转发；builder `protocols.schemes` |
+| 2026-09-11 | Desktop 自定义协议深链 | `studio-reporter://open|connect|hub|compare`；单实例转发；builder `protocols.schemes` |
+| 2026-09-11 | Desktop 深链直达历史对比 | `compare?base=&target=` 打开历史页并运行对比；可选 `hub` 先切报告根；与 UI「对比」共用 `openCompareByIds`/`runCompare` |
 | 2026-09-11 | Desktop 键盘快捷键 | Cmd/Ctrl+1–4 切页；Enter 连接；Shift+H/F5 刷新历史；tablist 方向键 |
 | 2026-09-11 | Desktop 明暗主题 | 设置 `theme=system|light|dark`；CSS `[data-theme]` token；跟随系统可监听 |
 | 2026-09-11 | Desktop 打开 .uhilreport | 离线入口：菜单/IPC/深链 → CLI generate → 报告页；不改 uhileport schema |

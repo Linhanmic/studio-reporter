@@ -151,6 +151,11 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     ipcRenderer.on('navigate-tab', handler);
     return () => ipcRenderer.removeListener('navigate-tab', handler);
   },
+  onNavigateCompare: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('navigate-compare', handler);
+    return () => ipcRenderer.removeListener('navigate-compare', handler);
+  },
   onDesktopShortcut: (cb) => {
     const handler = (_e, data) => cb(data);
     ipcRenderer.on('desktop-shortcut', handler);

@@ -146,7 +146,7 @@ function setTab(name, opts = {}) {
   }
   state.activeTab = name;
   if (opts.persist !== false) persistLastTab(name);
-  if (name === 'history') refreshHistory();
+  if (name === 'history' && opts.refresh !== false) refreshHistory();
   if (name === 'settings') {
     fillSettingsForm();
     refreshPluginDetect();
@@ -848,6 +848,41 @@ async function runCompare() {
     cmp.scenarioCompareWarning = String(err.message || err);
     if (state.lastCompare === cmp) renderCompare(cmp);
   }
+}
+
+/**
+ * Open history compare for two run ids (UI button + deep link studio-reporter://compare).
+ * Refreshes history once, selects base→target, then reuses runCompare().
+ */
+async function openCompareByIds(baseId, targetId) {
+  const base = String(baseId || '').trim();
+  const target = String(targetId || '').trim();
+  if (!base || !target) {
+    setStatus('深链对比需要 base 与 target', 'warn');
+    return false;
+  }
+  if (base === target) {
+    setStatus('深链对比的两侧运行不能相同', 'warn');
+    return false;
+  }
+  setTab('history', { refresh: false });
+  await refreshHistory();
+  const baseRun = state.historyRuns.find((r) => r.id === base);
+  const targetRun = state.historyRuns.find((r) => r.id === target);
+  if (!baseRun || !targetRun) {
+    const miss = !baseRun ? base : target;
+    setStatus(`深链对比失败：当前 hub 中找不到运行 ${miss}`, 'warn');
+    return false;
+  }
+  state.selectedIds = [base, target];
+  renderHistoryList({
+    hubDir: state.settings?.reportHubDir || '',
+    runs: state.historyRuns,
+  });
+  updateHistoryActionButtons();
+  await runCompare();
+  setStatus(`已打开对比：${base} → ${target}`, 'ok');
+  return true;
 }
 
 async function persistCompareShareOpts() {
@@ -1722,13 +1757,24 @@ function wire() {
     else if (data && data.connected === false) setStatus('已断开', 'warn');
   });
   window.desktopAPI.onReportGenerated((payload) => showEndBanner(payload));
+  // When compare deep links also switch hub, main sends settings-updated then
+  // navigate-compare. Skip the intermediate history wipe so selection sticks.
+  let compareDeepLinkPending = false;
   window.desktopAPI.onSettingsUpdated?.((settings) => {
     state.settings = settings || state.settings;
     fillSettingsForm();
-    refreshHistory?.();
+    if (!compareDeepLinkPending) refreshHistory?.();
   });
   window.desktopAPI.onNavigateTab?.((data) => {
     if (data?.tab) setTab(data.tab);
+  });
+  window.desktopAPI.onNavigateCompare?.((data) => {
+    if (data?.base && data?.target) {
+      compareDeepLinkPending = true;
+      Promise.resolve(openCompareByIds(data.base, data.target)).finally(() => {
+        compareDeepLinkPending = false;
+      });
+    }
   });
   window.desktopAPI.onNavigateLive((data) => {
     if (data?.url) {

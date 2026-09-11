@@ -71,7 +71,7 @@
 - [x] Desktop 打开 `.uhilreport`（菜单/IPC/深链；CLI generate 再生后打开报告页）
 - [x] Desktop 历史打开所在文件夹 / 复制路径 + 删除时 hub 锁（`showItemInFolder` / clipboard；`withHubLock` 对齐 Go `.hub.lock`）
 - [x] Desktop 套件结束系统通知（窗口未聚焦时；设置可关；点击聚焦并打开终态）
-- [x] Desktop 自定义协议深链（`studio-reporter://open|connect|hub`；单实例；electron-builder protocols）
+- [x] Desktop 自定义协议深链（`studio-reporter://open|connect|hub|compare`；单实例；electron-builder protocols）
 - [x] Desktop 会话恢复 / 最近 hub（`recentHubs` + `lastTab` + `restoreSession`；设置/历史页快捷切换）
 - [x] Desktop 窗口布局记忆（位置/尺寸/最大化；离屏校正；`window-state.json`）
 - [x] Desktop 大纲分栏宽度记忆（可拖拽分隔条；`outlinePaneWidth` 持久化）
@@ -90,6 +90,7 @@
 - [x] 静态报告「仅失败步骤」模式（工具栏切换；隐藏 pass/skip step/concept；sessionStorage 记忆）
 - [x] 对比分享卡片纳入场景级 diff（Markdown/HTML/JSON；`formatScenarioCompareMarkdown/Html`）
 - [x] 静态报告打印/PDF 尊重仅失败步骤（`@media print` 重申隐藏；`beforeprint` 展开失败路径；`#fail-steps` / `GAUGE_STUDIO_PDF_FAIL_STEPS`）
+- [x] Desktop 深链直达两侧历史对比（`studio-reporter://compare?base=&target=`；可选 `hub`；`navigate-compare` → `openCompareByIds`）
 
 ## 迭代日志
 
@@ -168,6 +169,8 @@
 
 | 2026-09-11 | 打印/PDF 尊重仅失败步骤 | 打印 CSS 重申 `fail-steps-mode`；`beforeprint` 展开失败祖先；深链 `#fail-steps`；CLI PDF 经 `GAUGE_STUDIO_PDF_FAIL_STEPS` 附带 fragment |
 
+| 2026-09-11 | Desktop 深链直达两侧对比 | `studio-reporter://compare?base=&target=`（`a`/`b`、`from`/`to`；可选 `hub`）；主进程 `navigate-compare`；渲染层 `openCompareByIds` 复用 `runCompare` |
+
 ## 下一任务（选定）
 
-**Desktop 深链直达两侧历史对比**（`studio-reporter://compare?base=&target=`），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）。
+**代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限）**，或 Desktop 历史对比深链分享入口（从对比面板一键复制 `studio-reporter://compare` URL），或静态报告失败步骤模式下的场景级折叠精简。

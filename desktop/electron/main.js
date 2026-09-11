@@ -1022,6 +1022,27 @@ async function handleDeepLinkAction(action) {
     }
     return { ok: true, action: 'hub', dir };
   }
+  if (action.action === 'compare') {
+    let settings = null;
+    if (action.hub) {
+      const dir = path.resolve(action.hub);
+      settings = persistReportHub(dir);
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (settings) mainWindow.webContents.send('settings-updated', settings);
+      mainWindow.webContents.send('navigate-compare', {
+        base: action.base,
+        target: action.target,
+      });
+    }
+    return {
+      ok: true,
+      action: 'compare',
+      base: action.base,
+      target: action.target,
+      hub: action.hub ? path.resolve(action.hub) : undefined,
+    };
+  }
   return { ok: false, error: `unhandled action ${action.action}` };
 }
 

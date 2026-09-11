@@ -42,6 +42,38 @@ describe('deeplink', () => {
     assert.equal(a.dir, '/tmp/hub');
   });
 
+  it('parses compare base/target and optional hub', () => {
+    const a = parseDeepLink('studio-reporter://compare?base=run-1&target=run-2');
+    assert.equal(a.ok, true);
+    assert.equal(a.action, 'compare');
+    assert.equal(a.base, 'run-1');
+    assert.equal(a.target, 'run-2');
+    assert.equal(a.hub, undefined);
+
+    const b = parseDeepLink(
+      'studio-reporter://compare?a=old&b=new&hub=/tmp/hub'
+    );
+    assert.equal(b.ok, true);
+    assert.equal(b.base, 'old');
+    assert.equal(b.target, 'new');
+    assert.equal(b.hub, '/tmp/hub');
+
+    const c = parseDeepLink('studio-reporter://compare?from=x&to=y&dir=/hub');
+    assert.equal(c.ok, true);
+    assert.equal(c.base, 'x');
+    assert.equal(c.target, 'y');
+    assert.equal(c.hub, '/hub');
+  });
+
+  it('rejects compare without distinct base/target', () => {
+    assert.equal(parseDeepLink('studio-reporter://compare').ok, false);
+    assert.equal(parseDeepLink('studio-reporter://compare?base=only').ok, false);
+    assert.equal(
+      parseDeepLink('studio-reporter://compare?base=same&target=same').ok,
+      false
+    );
+  });
+
   it('rejects bad input', () => {
     assert.equal(parseDeepLink('').ok, false);
     assert.equal(parseDeepLink('https://example.com').ok, false);
