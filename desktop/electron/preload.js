@@ -13,6 +13,9 @@ const {
   COMPARE_CARD_TEMPLATES,
   normalizeCompareCardTemplate,
   normalizeCompareCardTitle,
+  filterScenarioCompare,
+  normalizeScenarioCompareKinds,
+  SCENARIO_COMPARE_KIND_FILTERS,
 } = require('./compare.js');
 const { filterHistoryRuns } = require('./settings.js');
 const { buildCompareDeepLink } = require('./deeplink.js');
@@ -106,6 +109,9 @@ contextBridge.exposeInMainWorld('desktopAPI', {
     ipcRenderer.invoke('desktop:compare-scenarios', base, target),
   scenarioDiffKindLabel,
   invertScenarioCompare,
+  filterScenarioCompare,
+  normalizeScenarioCompareKinds,
+  SCENARIO_COMPARE_KIND_FILTERS,
   formatDurationDelta,
   formatCountsDelta,
   buildCompareShareMarkdown,

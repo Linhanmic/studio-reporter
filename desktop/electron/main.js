@@ -684,6 +684,7 @@ function registerIpc() {
       template: opts.template,
       generatedAt: opts.generatedAt || new Date().toISOString(),
       hub: opts.hub != null ? opts.hub : settings.reportHubDir,
+      kinds: opts.kinds,
     });
     fs.writeFileSync(result.filePath, html, 'utf8');
     return { ok: true, path: result.filePath };

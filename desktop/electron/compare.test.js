@@ -15,6 +15,9 @@ const {
   buildCompareShareJson,
   normalizeCompareCardTemplate,
   normalizeCompareCardTitle,
+  filterScenarioCompare,
+  normalizeScenarioCompareKinds,
+  SCENARIO_COMPARE_KIND_FILTERS,
 } = require('./compare.js');
 
 function sampleEntries() {
@@ -215,5 +218,62 @@ describe('compare card templates', () => {
     const compact = buildCompareShareCardHtml(cmp, { template: 'compact' });
     assert.match(compact, /data-template="compact"/);
     assert.match(compact, /--pad:\s*16px/);
+  });
+});
+
+describe('scenario compare kind filter', () => {
+  const sc = {
+    changed: [
+      { kind: 'regressed', specName: 'A', scnName: 'a', baseVerdict: 'pass', targetVerdict: 'fail' },
+      { kind: 'fixed', specName: 'B', scnName: 'b', baseVerdict: 'fail', targetVerdict: 'pass' },
+      { kind: 'added', specName: 'C', scnName: 'c', targetVerdict: 'fail' },
+    ],
+    unchangedCount: 2,
+    baseCount: 4,
+    targetCount: 5,
+  };
+
+  it('normalizeScenarioCompareKinds drops unknowns and empties', () => {
+    assert.equal(normalizeScenarioCompareKinds(null), null);
+    assert.equal(normalizeScenarioCompareKinds([]), null);
+    assert.deepEqual(normalizeScenarioCompareKinds(['regressed', 'nope', 'fixed']), [
+      'regressed',
+      'fixed',
+    ]);
+    assert.ok(SCENARIO_COMPARE_KIND_FILTERS.includes('reason_changed'));
+  });
+
+  it('filterScenarioCompare keeps only selected kinds', () => {
+    const filtered = filterScenarioCompare(sc, { kinds: ['regressed', 'added'] });
+    assert.equal(filtered.changed.length, 2);
+    assert.deepEqual(
+      filtered.changed.map((d) => d.kind),
+      ['regressed', 'added']
+    );
+    assert.equal(filtered.unchangedCount, 2);
+  });
+
+  it('share markdown/json honor kinds filter', () => {
+    const cmp = {
+      base: { id: 'b1', verdict: 'fail', timestamp: 't', duration: '1s' },
+      target: { id: 't1', verdict: 'fail', timestamp: 't', duration: '1s' },
+      verdictSame: true,
+      durationMs: { delta: 0 },
+      specs: { base: 1, target: 1, delta: 0 },
+      scenarios: { base: 1, target: 1, delta: 0 },
+      steps: { base: 1, target: 1, delta: 0 },
+      scenarioCompare: sc,
+    };
+    const md = buildCompareShareMarkdown(cmp, { kinds: ['fixed'] });
+    assert.match(md, /修复/);
+    assert.doesNotMatch(md, /\*\*变差\*\*/);
+    const json = JSON.parse(buildCompareShareJson(cmp, { kinds: ['added'] }));
+    assert.equal(json.scenarioCompare.changedCount, 1);
+    assert.equal(json.scenarioCompare.changed[0].kind, 'added');
+    assert.deepEqual(json.scenarioCompare.kindsFilter, ['added']);
+    const html = buildCompareShareCardHtml(cmp, { kinds: ['regressed'] });
+    assert.match(html, /变差/);
+    assert.match(html, /已筛/);
+    assert.doesNotMatch(html, />修复</);
   });
 });

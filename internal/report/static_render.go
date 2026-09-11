@@ -64,7 +64,6 @@ func RenderSnapshotHTML(snap *LiveSnapshot) ([]byte, error) {
 	return RenderReportHTML(snap.Report)
 }
 
-
 func writePrintScopeBanner(b *bytes.Buffer) {
 	b.WriteString("<div class=\"print-scope-banner\" id=\"print-scope-banner\" hidden aria-hidden=\"true\"></div>\n")
 }

@@ -112,23 +112,67 @@ function projectLabel(cmp) {
  * @param {ReturnType<typeof compareHistoryRuns>} cmp
  */
 
+/** Scenario-diff kinds that can be included in share cards / clipboard. */
+const SCENARIO_COMPARE_KIND_FILTERS = [
+  'regressed',
+  'fixed',
+  'added',
+  'removed',
+  'reason_changed',
+];
+
+/**
+ * Normalize an optional kind allow-list. Null/empty ⇒ no filtering (all kinds).
+ * @param {unknown} kinds
+ * @returns {string[]|null}
+ */
+function normalizeScenarioCompareKinds(kinds) {
+  if (kinds == null) return null;
+  const allow = new Set(SCENARIO_COMPARE_KIND_FILTERS);
+  const list = (Array.isArray(kinds) ? kinds : [kinds])
+    .map((k) => String(k || '').trim())
+    .filter((k) => allow.has(k));
+  const uniq = [...new Set(list)];
+  return uniq.length ? uniq : null;
+}
+
+/**
+ * Return a shallow-cloned scenarioCompare with changed[] filtered by kinds.
+ * unchangedCount / baseCount / targetCount are preserved (suite-level context).
+ * @param {object|null|undefined} sc
+ * @param {{ kinds?: string[]|null }} [opts]
+ */
+function filterScenarioCompare(sc, opts = {}) {
+  if (!sc || typeof sc !== 'object') return sc;
+  const kinds = normalizeScenarioCompareKinds(opts.kinds);
+  if (!kinds) return sc;
+  const allow = new Set(kinds);
+  const changed = (Array.isArray(sc.changed) ? sc.changed : []).filter((d) =>
+    allow.has(String(d?.kind || ''))
+  );
+  return { ...sc, changed };
+}
+
 /**
  * Markdown bullets for optional cmp.scenarioCompare.
  * @param {object|null|undefined} sc
- * @param {{ limit?: number }} [opts]
+ * @param {{ limit?: number, kinds?: string[]|null }} [opts]
  */
 function formatScenarioCompareMarkdown(sc, opts = {}) {
   if (!sc) return '';
+  sc = filterScenarioCompare(sc, opts) || sc;
   const { scenarioDiffKindLabel } = require('./scenario-compare.js');
   const limit = Math.max(1, Number(opts.limit) || 20);
   const changed = Array.isArray(sc.changed) ? sc.changed : [];
+  const kinds = normalizeScenarioCompareKinds(opts.kinds);
+  const filterNote = kinds ? `（已筛：${kinds.map((k) => scenarioDiffKindLabel(k)).join('、')}）` : '';
   const lines = [
     '## 场景级差异',
     '',
-    `共 ${changed.length} 变 · ${Number(sc.unchangedCount) || 0} 不变 · ${Number(sc.baseCount) || 0}→${Number(sc.targetCount) || 0}`,
+    `共 ${changed.length} 变 · ${Number(sc.unchangedCount) || 0} 不变 · ${Number(sc.baseCount) || 0}→${Number(sc.targetCount) || 0}${filterNote}`,
   ];
   if (!changed.length) {
-    lines.push('', '_场景结论与失败原因均无变化_');
+    lines.push('', kinds ? '_当前类型过滤下无场景差异_' : '_场景结论与失败原因均无变化_');
     return lines.join('\n');
   }
   lines.push('');
@@ -161,17 +205,22 @@ function formatScenarioCompareMarkdown(sc, opts = {}) {
 /**
  * HTML section for optional cmp.scenarioCompare inside the share card.
  * @param {object|null|undefined} sc
- * @param {{ limit?: number }} [opts]
+ * @param {{ limit?: number, kinds?: string[]|null }} [opts]
  */
 function formatScenarioCompareHtml(sc, opts = {}) {
   if (!sc) return '';
+  sc = filterScenarioCompare(sc, opts) || sc;
   const { scenarioDiffKindLabel } = require('./scenario-compare.js');
   const limit = Math.max(1, Number(opts.limit) || 20);
   const changed = Array.isArray(sc.changed) ? sc.changed : [];
+  const kinds = normalizeScenarioCompareKinds(opts.kinds);
+  const filterNote = kinds
+    ? ` · 已筛 ${kinds.map((k) => scenarioDiffKindLabel(k)).join('、')}`
+    : '';
   const head = `<section class="scenario-diff">
-    <h2>场景级差异 <span class="muted">${changed.length} 变 · ${Number(sc.unchangedCount) || 0} 不变 · ${Number(sc.baseCount) || 0}→${Number(sc.targetCount) || 0}</span></h2>`;
+    <h2>场景级差异 <span class="muted">${changed.length} 变 · ${Number(sc.unchangedCount) || 0} 不变 · ${Number(sc.baseCount) || 0}→${Number(sc.targetCount) || 0}${filterNote}</span></h2>`;
   if (!changed.length) {
-    return `${head}<p class="muted">场景结论与失败原因均无变化</p></section>`;
+    return `${head}<p class="muted">${kinds ? '当前类型过滤下无场景差异' : '场景结论与失败原因均无变化'}</p></section>`;
   }
   const items = changed
     .slice(0, limit)
@@ -237,7 +286,9 @@ function buildCompareShareMarkdown(cmp, opts = {}) {
     `- 步骤 ${formatCountsDelta(cmp.steps)}`,
     '',
   ];
-  const scMd = formatScenarioCompareMarkdown(cmp.scenarioCompare);
+  const scMd = formatScenarioCompareMarkdown(cmp.scenarioCompare, {
+    kinds: opts.kinds,
+  });
   if (scMd) {
     lines.push(scMd, '');
   } else if (cmp.scenarioCompareWarning) {
@@ -510,7 +561,7 @@ function buildCompareShareCardHtml(cmp, opts = {}) {
       <div class="delta"><span class="k">场景</span><span class="v">${escapeHtml(formatCountsDelta(cmp.scenarios))}</span></div>
       <div class="delta"><span class="k">步骤</span><span class="v">${escapeHtml(formatCountsDelta(cmp.steps))}</span></div>
     </div>
-    ${formatScenarioCompareHtml(cmp.scenarioCompare) || (cmp.scenarioCompareWarning
+    ${formatScenarioCompareHtml(cmp.scenarioCompare, { kinds: opts.kinds }) || (cmp.scenarioCompareWarning
       ? `<section class="scenario-diff"><h2>场景级差异</h2><p class="muted">${escapeHtml(cmp.scenarioCompareWarning)}</p></section>`
       : '')}
     <footer>${(() => {
@@ -643,13 +694,16 @@ function buildCompareShareJson(cmp, opts = {}) {
     },
   };
   if (cmp.scenarioCompare) {
+    const filtered = filterScenarioCompare(cmp.scenarioCompare, { kinds: opts.kinds }) || cmp.scenarioCompare;
+    const kinds = normalizeScenarioCompareKinds(opts.kinds);
     payload.scenarioCompare = {
-      changedCount: Array.isArray(cmp.scenarioCompare.changed) ? cmp.scenarioCompare.changed.length : 0,
-      unchangedCount: Number(cmp.scenarioCompare.unchangedCount) || 0,
-      baseCount: Number(cmp.scenarioCompare.baseCount) || 0,
-      targetCount: Number(cmp.scenarioCompare.targetCount) || 0,
-      changed: (cmp.scenarioCompare.changed || []).slice(0, 50),
+      changedCount: Array.isArray(filtered.changed) ? filtered.changed.length : 0,
+      unchangedCount: Number(filtered.unchangedCount) || 0,
+      baseCount: Number(filtered.baseCount) || 0,
+      targetCount: Number(filtered.targetCount) || 0,
+      changed: (filtered.changed || []).slice(0, 50),
     };
+    if (kinds) payload.scenarioCompare.kindsFilter = kinds;
   } else if (cmp.scenarioCompareWarning) {
     payload.scenarioCompareWarning = String(cmp.scenarioCompareWarning);
   }
@@ -665,6 +719,9 @@ module.exports = {
   buildCompareShareJson,
   formatScenarioCompareMarkdown,
   formatScenarioCompareHtml,
+  filterScenarioCompare,
+  normalizeScenarioCompareKinds,
+  SCENARIO_COMPARE_KIND_FILTERS,
   formatDurationDelta,
   formatCountsDelta,
   emptyCounts,

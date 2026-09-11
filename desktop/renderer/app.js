@@ -16,6 +16,7 @@ const state = {
   exporting: false,
   unsubExportProgress: null,
   lastCompare: null,
+  compareScenarioKinds: null, // null = all kinds; string[] = export/view filter
   lastExportedComparePath: null,
   discoverTimer: null,
   pluginInstall: null,
@@ -694,14 +695,67 @@ function toggleSelect(id, checked) {
   updateHistoryActionButtons();
 }
 
+function defaultCompareScenarioKinds() {
+  const list = window.desktopAPI.SCENARIO_COMPARE_KIND_FILTERS;
+  return Array.isArray(list) ? list.slice() : ['regressed', 'fixed', 'added', 'removed', 'reason_changed'];
+}
+
+function activeCompareScenarioKinds() {
+  if (!Array.isArray(state.compareScenarioKinds) || !state.compareScenarioKinds.length) {
+    return null; // all
+  }
+  const all = defaultCompareScenarioKinds();
+  const allow = new Set(all);
+  const picked = state.compareScenarioKinds.filter((k) => allow.has(k));
+  if (!picked.length || picked.length === all.length) return null;
+  return picked;
+}
+
+function compareShareKindOpts() {
+  const kinds = activeCompareScenarioKinds();
+  return kinds ? { kinds } : {};
+}
+
+function renderScenarioKindFilters(sc) {
+  if (!sc) return '';
+  const kindLabel =
+    typeof window.desktopAPI.scenarioDiffKindLabel === 'function'
+      ? window.desktopAPI.scenarioDiffKindLabel
+      : (k) => k;
+  const all = defaultCompareScenarioKinds();
+  const active = activeCompareScenarioKinds();
+  const selected = new Set(active || all);
+  const chips = all
+    .map((kind) => {
+      const count = (sc.changed || []).filter((d) => d.kind === kind).length;
+      const checked = selected.has(kind) ? 'checked' : '';
+      return `<label class="compare-kind-chip">
+        <input type="checkbox" data-compare-kind="${escapeHtml(kind)}" ${checked}>
+        <span>${escapeHtml(kindLabel(kind))}</span>
+        <span class="muted">${count}</span>
+      </label>`;
+    })
+    .join('');
+  return `<div class="compare-kind-filters" role="group" aria-label="场景差异类型过滤（影响面板展示与导出）">
+    <span class="muted compare-kind-filters-label">导出/展示类型</span>
+    ${chips}
+    <button type="button" class="btn linkish" id="btnCompareKindsAll" title="全选类型">全选</button>
+  </div>`;
+}
+
 function renderScenarioCompareSection(cmp) {
-  const sc = cmp?.scenarioCompare;
-  if (!sc) {
+  const raw = cmp?.scenarioCompare;
+  if (!raw) {
     if (cmp?.scenarioCompareWarning) {
       return `<p class="muted compare-scenario-warn">${escapeHtml(cmp.scenarioCompareWarning)}</p>`;
     }
     return '';
   }
+  const kinds = activeCompareScenarioKinds();
+  const sc =
+    kinds && typeof window.desktopAPI.filterScenarioCompare === 'function'
+      ? window.desktopAPI.filterScenarioCompare(raw, { kinds }) || raw
+      : raw;
   const kindLabel =
     typeof window.desktopAPI.scenarioDiffKindLabel === 'function'
       ? window.desktopAPI.scenarioDiffKindLabel
@@ -735,10 +789,12 @@ function renderScenarioCompareSection(cmp) {
       : '';
   const empty =
     !(sc.changed || []).length
-      ? '<p class="muted">场景结论与失败原因均无变化</p>'
+      ? `<p class="muted">${kinds ? '当前类型过滤下无场景差异' : '场景结论与失败原因均无变化'}</p>`
       : `<ul class="scenario-diff-list">${rows}</ul>${more}`;
+  const filterNote = kinds ? ` · 已筛 ${kinds.length} 类` : '';
   return `<div class="compare-scenario-block">
-    <h4>场景级差异 <span class="muted">${sc.changed?.length || 0} 变 · ${sc.unchangedCount || 0} 不变 · ${sc.baseCount || 0}→${sc.targetCount || 0}</span></h4>
+    <h4>场景级差异 <span class="muted">${sc.changed?.length || 0} 变 · ${raw.unchangedCount || 0} 不变 · ${raw.baseCount || 0}→${raw.targetCount || 0}${filterNote}</span></h4>
+    ${renderScenarioKindFilters(raw)}
     ${empty}
   </div>`;
 }
@@ -809,6 +865,19 @@ function renderCompare(cmp) {
   $('btnRevealCompareCard')?.addEventListener('click', revealLastCompareCard);
   $('compareCardTemplate')?.addEventListener('change', persistCompareShareOpts);
   $('compareCardTitle')?.addEventListener('change', persistCompareShareOpts);
+  document.querySelectorAll('[data-compare-kind]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const picked = [...document.querySelectorAll('[data-compare-kind]:checked')].map((el) =>
+        el.getAttribute('data-compare-kind')
+      );
+      state.compareScenarioKinds = picked;
+      if (state.lastCompare) renderCompare(state.lastCompare);
+    });
+  });
+  $('btnCompareKindsAll')?.addEventListener('click', () => {
+    state.compareScenarioKinds = null;
+    if (state.lastCompare) renderCompare(state.lastCompare);
+  });
 }
 
 function swapCompareDirection() {
@@ -916,6 +985,7 @@ async function exportCompareCard() {
       template: state.settings?.compareCardTemplate || $('compareCardTemplate')?.value || 'default',
       title: state.settings?.compareCardTitle || $('compareCardTitle')?.value || '',
       hub: state.settings?.reportHubDir || '',
+      ...compareShareKindOpts(),
     });
     if (result?.canceled) {
       setStatus('已取消导出对比卡片', 'warn');
@@ -938,6 +1008,7 @@ async function copyCompareMarkdown() {
   try {
     await window.desktopAPI.copyCompareMarkdown(cmp, {
       hub: state.settings?.reportHubDir || '',
+      ...compareShareKindOpts(),
     });
     setStatus('已复制对比 Markdown 到剪贴板', 'ok');
   } catch (err) {
@@ -954,6 +1025,7 @@ async function copyCompareJson() {
   try {
     await window.desktopAPI.copyCompareJson(cmp, {
       hub: state.settings?.reportHubDir || '',
+      ...compareShareKindOpts(),
     });
     setStatus('已复制对比 JSON 到剪贴板', 'ok');
   } catch (err) {

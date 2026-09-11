@@ -648,3 +648,33 @@ iframe { border: 0; width: 100%; height: 100%; background: #d9e2ec; }
 [data-theme="light"] .scenario-diff-item {
   background: rgba(15, 40, 60, 0.04);
 }
+
+.compare-kind-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin: 6px 0 10px;
+}
+.compare-kind-filters-label { font-size: 11px; }
+.compare-kind-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #c5d0dc);
+  background: var(--panel-2, rgba(255,255,255,.04));
+  cursor: pointer;
+  user-select: none;
+}
+.compare-kind-chip input { margin: 0; }
+.btn.linkish {
+  border: none;
+  background: transparent;
+  color: var(--accent, #2b9ad4);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 4px;
+}
