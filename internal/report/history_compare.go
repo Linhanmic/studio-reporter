@@ -37,9 +37,9 @@ type HistoryRunLite struct {
 
 // HistoryCompare is a side-by-side summary of two archived runs.
 type HistoryCompare struct {
-	Base       HistoryRunLite `json:"base"`
-	Target     HistoryRunLite `json:"target"`
-	VerdictSame bool          `json:"verdictSame"`
+	Base        HistoryRunLite `json:"base"`
+	Target      HistoryRunLite `json:"target"`
+	VerdictSame bool           `json:"verdictSame"`
 	DurationMS  struct {
 		Base   int64 `json:"base"`
 		Target int64 `json:"target"`
