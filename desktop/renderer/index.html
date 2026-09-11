@@ -119,6 +119,7 @@
             <button type="button" id="btnRevealRun" class="btn" disabled title="在文件管理器中显示所选运行">打开所在文件夹</button>
             <button type="button" id="btnCopyPath" class="btn" disabled title="复制所选运行的归档目录路径">复制路径</button>
             <button type="button" id="btnCopyOpenLinks" class="btn" disabled title="复制所选运行的 studio-reporter://open 深链（多选用换行分隔）">复制打开深链</button>
+            <button type="button" id="btnCopyFailOpenLinks" class="btn" disabled title="复制当前列表中全部失败运行的打开深链（换行分隔）">复制失败打开深链</button>
             <button type="button" id="btnDeleteRuns" class="btn danger" disabled title="删除勾选的历史归档">删除所选</button>
             <span id="historyMeta" class="muted"></span>
           </div>
@@ -133,6 +134,7 @@
           </div>
           <div class="history-filters">
             <input id="historyQuery" type="search" spellcheck="false" placeholder="搜索项目 / 时间 / id…" aria-label="历史搜索">
+            <input id="historyFailReasonQuery" type="search" spellcheck="false" placeholder="失败原因关键字…" aria-label="历史失败原因过滤" title="匹配 topFailReason（新归档写入；也可被上方搜索覆盖）">
             <div class="history-verdicts" role="group" aria-label="历史结果过滤">
               <button type="button" class="history-filter-btn active" data-verdict="all">全部</button>
               <button type="button" class="history-filter-btn" data-verdict="pass">通过</button>

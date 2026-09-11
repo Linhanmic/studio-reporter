@@ -11,6 +11,7 @@ const state = {
   historyRuns: [],
   historyFilteredRuns: [],
   historyQuery: '',
+  historyFailReasonQuery: '',
   historyVerdict: 'all',
   selectedIds: [],
   exporting: false,
@@ -590,6 +591,7 @@ const HISTORY_OVERSCAN = 6;
 function filteredHistoryRuns() {
   return window.desktopAPI.filterHistoryRuns(state.historyRuns, {
     query: state.historyQuery,
+    failReasonQuery: state.historyFailReasonQuery,
     verdict: state.historyVerdict,
   });
 }
@@ -659,6 +661,13 @@ function updateHistoryActionButtons() {
   if (copyOpenBtn) {
     copyOpenBtn.disabled = state.exporting || n < 1;
     copyOpenBtn.textContent = n > 1 ? `复制打开深链（${n}）` : '复制打开深链';
+  }
+  const copyFailBtn = $('btnCopyFailOpenLinks');
+  if (copyFailBtn) {
+    const failCount = failedRunsInCurrentHistoryView().length;
+    copyFailBtn.disabled = state.exporting || failCount < 1;
+    copyFailBtn.textContent =
+      failCount > 0 ? `复制失败打开深链（${failCount}）` : '复制失败打开深链';
   }
   const deleteBtn = $('btnDeleteRuns');
   if (deleteBtn) {
@@ -1433,6 +1442,9 @@ function paintHistoryVirtualWindow() {
         `<span class="muted">${escapeHtml(run.timestamp || run.timestampISO || '')}</span>` +
         `</span>` +
         `<span class="muted">${escapeHtml(run.duration || '')}</span>` +
+        (run.topFailReason || run.failReason
+          ? `<span class="hist-fail-reason muted" title="${escapeHtml(run.topFailReason || run.failReason)}">${escapeHtml(run.topFailReason || run.failReason)}</span>`
+          : '') +
         `</div>`
       );
     })
@@ -1714,6 +1726,49 @@ function fillRecentHubs(list, current) {
   fillSelect($('historyRecentHubs'), '最近 hub…');
 }
 
+
+
+function failedRunsInCurrentHistoryView() {
+  const filtered = filteredHistoryRuns();
+  if (typeof window.desktopAPI.listFailedHistoryRuns === 'function') {
+    return window.desktopAPI.listFailedHistoryRuns(filtered);
+  }
+  return filtered.filter((run) => {
+    const v = String(run?.verdict || '').toLowerCase();
+    return v === 'fail' || run?.failed === true;
+  });
+}
+
+async function copyFailedOpenDeepLinks() {
+  const fails = failedRunsInCurrentHistoryView();
+  if (!fails.length) {
+    setStatus('当前列表没有失败运行可复制', 'warn');
+    return;
+  }
+  try {
+    // Prefer fail filter so users see what they copy.
+    if (state.historyVerdict !== 'fail') {
+      state.historyVerdict = 'fail';
+      document.querySelectorAll('.history-filter-btn').forEach((b) => {
+        b.classList.toggle('active', (b.dataset.verdict || 'all') === 'fail');
+      });
+      paintHistoryVirtualWindow();
+      updateHistoryActionButtons();
+    }
+    const result = await window.desktopAPI.copyOpenDeepLinks({
+      entries: fails.map((e) => ({ id: e.id, verdict: e.verdict || 'fail' })),
+      hub: state.settings?.reportHubDir || '',
+    });
+    setStatus(
+      result.count > 1
+        ? `已复制 ${result.count} 条失败打开深链（换行分隔）`
+        : `已复制失败打开深链：${result.text || ''}`,
+      'ok',
+    );
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
+}
 
 async function copySelectedOpenDeepLinks() {
   const entries = selectedHistoryEntries();
@@ -2176,6 +2231,7 @@ function wire() {
   $('btnRevealRun')?.addEventListener('click', () => revealSelectedRun());
   $('btnCopyPath')?.addEventListener('click', () => copySelectedPath());
   $('btnCopyOpenLinks')?.addEventListener('click', () => copySelectedOpenDeepLinks());
+  $('btnCopyFailOpenLinks')?.addEventListener('click', () => copyFailedOpenDeepLinks());
   $('btnDeleteRuns')?.addEventListener('click', () => deleteSelectedRuns());
   let historyQueryTimer = null;
   $('historyQuery')?.addEventListener('input', () => {
@@ -2183,6 +2239,15 @@ function wire() {
     clearTimeout(historyQueryTimer);
     historyQueryTimer = setTimeout(() => {
       renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
+      updateHistoryActionButtons();
+    }, 120);
+  });
+  $('historyFailReasonQuery')?.addEventListener('input', () => {
+    state.historyFailReasonQuery = $('historyFailReasonQuery').value || '';
+    clearTimeout(historyQueryTimer);
+    historyQueryTimer = setTimeout(() => {
+      renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
+      updateHistoryActionButtons();
     }, 120);
   });
   document.querySelectorAll('.history-filter-btn').forEach((btn) => {

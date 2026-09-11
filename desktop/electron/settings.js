@@ -281,12 +281,19 @@ function filterHistoryRuns(runs, opts = {}) {
   const query = String(opts.query || '')
     .trim()
     .toLowerCase();
+  const failReasonQuery = String(opts.failReasonQuery || opts.reasonQuery || '')
+    .trim()
+    .toLowerCase();
   const verdict = String(opts.verdict || 'all')
     .trim()
     .toLowerCase();
   const wantVerdict = verdict && verdict !== 'all';
   return list.filter((run) => {
     if (wantVerdict && String(run.verdict || '').toLowerCase() !== verdict) return false;
+    if (failReasonQuery) {
+      const reason = String(run.topFailReason || run.failReason || '').toLowerCase();
+      if (!reason.includes(failReasonQuery)) return false;
+    }
     if (!query) return true;
     const hay = [
       run.id,
@@ -296,10 +303,25 @@ function filterHistoryRuns(runs, opts = {}) {
       run.href,
       run.relDir,
       run.duration,
+      run.topFailReason,
+      run.failReason,
     ]
       .map((x) => String(x || '').toLowerCase())
       .join(' ');
     return hay.includes(query);
+  });
+}
+
+/**
+ * Failed runs from a history list (verdict=fail or failed=true).
+ * @param {Array<object>} runs
+ * @returns {Array<object>}
+ */
+function listFailedHistoryRuns(runs) {
+  const list = Array.isArray(runs) ? runs : [];
+  return list.filter((run) => {
+    const v = String(run?.verdict || '').toLowerCase();
+    return v === 'fail' || run?.failed === true;
   });
 }
 
@@ -443,6 +465,7 @@ module.exports = {
   resolveRunDir,
   resolveRunUhilreport,
   filterHistoryRuns,
+  listFailedHistoryRuns,
   writeHistoryFile,
   deleteHistoryRun,
   deleteHistoryRuns,

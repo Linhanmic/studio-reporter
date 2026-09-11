@@ -17,7 +17,7 @@ const {
   normalizeScenarioCompareKinds,
   SCENARIO_COMPARE_KIND_FILTERS,
 } = require('./compare.js');
-const { filterHistoryRuns } = require('./settings.js');
+const { filterHistoryRuns, listFailedHistoryRuns } = require('./settings.js');
 const { buildCompareDeepLink, buildOpenDeepLink, buildHistoryOpenDeepLinks } = require('./deeplink.js');
 const {
   parseShareHash,
@@ -107,6 +107,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   openPath: (p) => ipcRenderer.invoke('desktop:open-path', p),
   revealPath: (p) => ipcRenderer.invoke('desktop:reveal-path', p),
   filterHistoryRuns,
+  listFailedHistoryRuns,
   matchShortcut,
   shouldIgnoreShortcutTarget,
   nextTab,

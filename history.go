@@ -37,6 +37,7 @@ type HistoryEntry struct {
 	Duration     string               `json:"duration"`
 	Verdict      string               `json:"verdict"`
 	Failed       bool                 `json:"failed"`
+	TopFailReason string              `json:"topFailReason,omitempty"`
 	Summary      report.ReportSummary `json:"summary"`
 	Current      bool                 `json:"current,omitempty"`
 }
@@ -154,7 +155,7 @@ func uniqueDirName(parent, stamp string) string {
 }
 
 func historyEntryFromReport(r *report.Report) HistoryEntry {
-	return HistoryEntry{
+	entry := HistoryEntry{
 		ProjectName:  r.ProjectName,
 		Timestamp:    r.Timestamp,
 		TimestampISO: r.TimestampISO,
@@ -163,6 +164,10 @@ func historyEntryFromReport(r *report.Report) HistoryEntry {
 		Failed:       r.Failed,
 		Summary:      r.Summary,
 	}
+	if groups := report.AggregateFailReasons(r); len(groups) > 0 && groups[0].Reason != "" {
+		entry.TopFailReason = groups[0].Reason
+	}
+	return entry
 }
 
 func upsertHistory(runs []HistoryEntry, entry HistoryEntry) []HistoryEntry {

@@ -115,6 +115,7 @@
 - [x] Desktop 历史列表右键打开定位（打开报告 / 复制 open 深链 / 显示文件夹 / 复制路径）
 - [x] Desktop 历史多选批量复制打开深链（工具栏；多条换行；失败默认 failSteps）
 - [x] Desktop 对比分享卡片模板预览（导出前按 default/light/compact 预览；改模板/标题即时刷新）
+- [x] Desktop 历史失败运行快速筛选强化（topFailReason 写入 history；原因关键字过滤；一键复制全部失败 open 深链）
 
 ## 迭代日志
 
@@ -225,8 +226,9 @@
 | 2026-09-11 | 历史列表右键打开定位 | 原生 Menu：打开报告、复制 open 深链、显示文件夹、复制路径；失败运行默认 failSteps |
 | 2026-09-11 | 历史多选批量复制打开深链 | 工具栏按钮；`buildHistoryOpenDeepLinks`；IPC `copy-open-deeplinks`；失败运行默认 failSteps |
 | 2026-09-11 | 对比分享卡片模板预览 | 对比面板「预览卡片」模态 iframe srcdoc；模板/标题变更时若预览打开则即时刷新；可从预览直接导出 |
+| 2026-09-11 | 历史失败运行快速筛选强化 | history 写入 topFailReason；Desktop 失败原因关键字过滤；工具栏「复制失败打开深链」 |
 
 ## 下一任务（选定）
 
-**历史失败运行快速筛选强化**（失败原因关键字 + 一键复制全部失败 open 深链），或 **代码签名 secrets / 发布管道加固** / **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限）。
+**分享卡片导出后自动打开预览一致性抽检**（模板/标题/场景过滤），或 **代码签名 secrets / 发布管道加固** / **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限）。
 

@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, normalizeDiscoverTimeoutMs, normalizeCompareCardTemplate, normalizeCompareCardTitle, normalizeCompareScenarioKindsPref, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX, DISCOVER_TIMEOUT_MS_MIN, DISCOVER_TIMEOUT_MS_MAX, DISCOVER_TIMEOUT_MS_DEFAULT } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, listFailedHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, normalizeOutlinePaneWidth, normalizeOutlineQuery, normalizeOutlineVerdict, normalizeDiscoverTimeoutMs, normalizeCompareCardTemplate, normalizeCompareCardTitle, normalizeCompareScenarioKindsPref, DEFAULTS, OUTLINE_PANE_WIDTH_MIN, OUTLINE_PANE_WIDTH_MAX, DISCOVER_TIMEOUT_MS_MIN, DISCOVER_TIMEOUT_MS_MAX, DISCOVER_TIMEOUT_MS_DEFAULT } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -43,6 +43,23 @@ describe('settings history helpers', () => {
     assert.equal(filterHistoryRuns(runs, { verdict: 'fail' })[0].id, 'b');
     assert.equal(filterHistoryRuns(runs, { query: 'suite', verdict: 'pass' })[0].id, 'a');
     assert.deepEqual(filterHistoryRuns(null, { query: 'x' }), []);
+  });
+
+
+  it('filterHistoryRuns matches topFailReason and listFailedHistoryRuns', () => {
+    const runs = [
+      { id: 'a', projectName: 'Login', verdict: 'pass' },
+      { id: 'b', projectName: 'Pay', verdict: 'fail', topFailReason: 'timeout after 30s' },
+      { id: 'c', projectName: 'Cart', verdict: 'fail', topFailReason: 'null pointer', failed: true },
+      { id: 'd', projectName: 'Hook', failed: true, verdict: '' },
+    ];
+    assert.equal(filterHistoryRuns(runs, { verdict: 'fail', failReasonQuery: 'timeout' }).length, 1);
+    assert.equal(filterHistoryRuns(runs, { failReasonQuery: 'null' })[0].id, 'c');
+    assert.equal(filterHistoryRuns(runs, { query: 'timeout' })[0].id, 'b');
+    assert.deepEqual(
+      listFailedHistoryRuns(runs).map((r) => r.id),
+      ['b', 'c', 'd']
+    );
   });
 
   it('resolveRunUhilreport finds sibling portable report', () => {
