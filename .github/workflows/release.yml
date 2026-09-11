@@ -31,7 +31,9 @@ jobs:
           body: |
             ## Studio Reporter ${{ github.ref_name }}
 
-            Plugin zips and Desktop packages below. Desktop artifacts are **unsigned** unless repository code-signing secrets are configured (`CSC_IDENTITY_AUTO_DISCOVERY=false` in CI).
+            Plugin zips and Desktop packages below. Desktop artifacts are **unsigned**
+            (`CSC_IDENTITY_AUTO_DISCOVERY=false`; signing secrets are documented in
+            DESKTOP.md but not yet wired into this workflow).
           generate_release_notes: true
           fail_on_unmatched_files: true
           overwrite_files: true
@@ -56,8 +58,9 @@ jobs:
           npm ci
           npm run pack
         env:
-          # Unsigned draft artifacts; code signing certs are optional secrets.
+          # Unsigned artifacts only. Secrets in DESKTOP.md are not wired yet.
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          WIN_CSC_LINK: ""
       - name: Checksums (linux desktop)
         run: |
           cd desktop/dist
@@ -94,8 +97,8 @@ jobs:
           npm ci
           npm run pack:win
         env:
+          # Unsigned cross-build from Linux. DESKTOP.md lists future signing secrets.
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-          # Cross-build NSIS/portable from Linux runners without secrets.
           WIN_CSC_LINK: ""
       - name: Checksums (windows desktop)
         run: |

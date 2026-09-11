@@ -234,10 +234,27 @@ function verifyPackDist(distDir) {
     return {
       ok: false,
       unpackedRoot: '',
+      signing: resolveSigningMode(),
       errors: [`no unpacked app found under ${distDir}`],
     };
   }
-  return verifyUnpackedDesktop(unpacked);
+  const result = verifyUnpackedDesktop(unpacked);
+  return { ...result, signing: resolveSigningMode() };
+}
+
+/**
+ * Report expected signing mode from env (pack smoke / Release stay unsigned).
+ * electron-builder signs only when CSC_* / WIN_CSC_* are set and discovery is on.
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {'unsigned'|'maybe-signed'}
+ */
+function resolveSigningMode(env = process.env) {
+  const discovery = String(env.CSC_IDENTITY_AUTO_DISCOVERY || '').toLowerCase();
+  const discoveryOff = discovery === 'false' || discovery === '0' || discovery === 'no';
+  const hasCert =
+    !!(env.CSC_LINK || env.CSC_NAME || env.WIN_CSC_LINK || env.CSC_KEY_PASSWORD || env.WIN_CSC_KEY_PASSWORD);
+  if (discoveryOff || !hasCert) return 'unsigned';
+  return 'maybe-signed';
 }
 
 module.exports = {
@@ -249,4 +266,5 @@ module.exports = {
   detectUnpackedPlatform,
   verifyUnpackedDesktop,
   verifyPackDist,
+  resolveSigningMode,
 };

@@ -139,6 +139,7 @@
 - [x] Desktop `.uhilreport` 深链保留 failSteps；manage 失败行打开带 `#overview?failSteps=1`
 - [x] 静态报告 PDF/打印样式回归抽检（修复 `#fail-steps` 启动被 `applyFilter`→`syncShareHash` 冲掉；`print-color-adjust`；Chrome `--virtual-time-budget`；复杂 hub PDF 指纹差分测试）
 - [x] 静态报告 failSteps 解析大小写/别名与 Go/Desktop 对齐（`TRUE`/`failsteps`/`fail_steps`）
+- [x] Desktop 打包冒烟扩展：CI Win 交叉 `pack:dir:win` + unsigned 闸门文档对齐（`CSC_IDENTITY_AUTO_DISCOVERY=false`）
 
 ## 迭代日志
 
@@ -294,6 +295,8 @@
 
 | 2026-09-11 | failSteps 解析跨端对齐 | Go/Desktop/static 统一键名 failSteps|fail-steps|failsteps|fail_steps；真值 1/true/yes、假值 0/false/no 大小写不敏感 |
 
+| 2026-09-11 | Desktop 打包 unsigned 闸门 | CI/Release/pack-smoke 显式 `CSC_IDENTITY_AUTO_DISCOVERY=false`；新增 Win 交叉 pack smoke；DESKTOP 标明 secrets 未接线；verify 打印 signing=unsigned |
+
 ## 下一任务（选定）
 
-**Desktop 打包产物冒烟扩展（签名可选路径文档化）**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位后启用签名 job。
+**静态报告/share-hash 端到端浏览器冒烟（failSteps 别名）**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

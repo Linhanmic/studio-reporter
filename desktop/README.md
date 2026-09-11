@@ -73,4 +73,4 @@ Discover 真源：`packages/studio-reporter-discover`（`@studio-reporter/discov
 
 连接后 Desktop 根据 `ServerHello` 做版本门闸（≥ 0.5.0 + 必需 capabilities）。启动 Gauge 后若超过设置的 Discover 超时（默认约 20s）未见 discover，会结合本机插件安装检测给出安装/启用提示。Live `ReportSnapshot` 同时驱动原生大纲侧栏。
 
-代码签名：当前 Release 以 `CSC_IDENTITY_AUTO_DISCOVERY=false` 产出未签名 Linux 包；macOS/Windows 签名需配置仓库 secrets 后再开矩阵构建。
+代码签名：当前 CI / Release（Linux AppImage 与 Windows 交叉打包）一律 **unsigned**（`CSC_IDENTITY_AUTO_DISCOVERY=false`）。Secrets 清单见仓库根 `DESKTOP.md`；接线进 `release.yml` 之前配证书也不会生效。

@@ -15,5 +15,6 @@ if (!result.ok) {
 
 console.log('Pack smoke OK');
 console.log(`  platform: ${result.platform || 'unknown'}`);
+console.log(`  signing: ${result.signing || 'unknown'}`);
 console.log(`  unpacked: ${result.unpackedRoot}`);
 console.log(`  resources: ${result.resourcesDir}`);

@@ -12,6 +12,7 @@ const {
   detectUnpackedPlatform,
   verifyUnpackedDesktop,
   verifyPackDist,
+  resolveSigningMode,
 } = require('./verify-pack-dir.js');
 
 function writeExec(file) {
@@ -152,5 +153,22 @@ describe('verify-pack-dir', () => {
     seedResources(path.join(unpacked, 'resources'));
     const result = verifyPackDist(dist);
     assert.equal(result.ok, true, result.errors.join('; '));
+    assert.equal(result.signing, 'unsigned');
+  });
+
+  it('resolveSigningMode defaults to unsigned without certs', () => {
+    assert.equal(resolveSigningMode({}), 'unsigned');
+    assert.equal(
+      resolveSigningMode({ CSC_IDENTITY_AUTO_DISCOVERY: 'false', CSC_LINK: 'x' }),
+      'unsigned',
+    );
+    assert.equal(
+      resolveSigningMode({ CSC_IDENTITY_AUTO_DISCOVERY: 'true', CSC_LINK: 'file.p12' }),
+      'maybe-signed',
+    );
+    assert.equal(
+      resolveSigningMode({ WIN_CSC_LINK: 'win.p12' }),
+      'maybe-signed',
+    );
   });
 });

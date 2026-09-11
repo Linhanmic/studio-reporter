@@ -302,19 +302,23 @@ studio-reporter/
 
 ## 代码签名与自动更新（发布）
 
-Desktop 通过 `electron-updater` 读取 GitHub Releases 上的 `latest-linux.yml` / `latest.yml` / `latest-mac.yml`。Release workflow 已上传 AppImage/Windows 产物与 `SHA256SUMS-*.txt`，并设置 `CSC_IDENTITY_AUTO_DISCOVERY=false`，**无证书时仍发 unsigned 包**。
+Desktop 通过 `electron-updater` 读取 GitHub Releases 上的 `latest-linux.yml` / `latest.yml` / `latest-mac.yml`。
 
-### 可选仓库 Secrets（有证书再配）
+**当前状态（以 workflow 为准）：** Release / CI pack smoke **一律 unsigned**（`CSC_IDENTITY_AUTO_DISCOVERY=false`，且清空 `WIN_CSC_LINK`）。仓库 Secrets 表仅作未来接线清单——**尚未注入** `release.yml`，配了也不会自动签名。
+
+本地 `make desktop-pack-smoke` / `npm run pack:smoke` 同样默认 unsigned，并在 verify 日志打印 `signing=unsigned`。
+
+### 可选仓库 Secrets（有证书、且改 workflow 接线后再用）
 
 | Secret | 用途 |
 |--------|------|
-| `CSC_LINK` | macOS/通用证书（p12/p8 文件的 base64 或 path，见 electron-builder） |
+| `CSC_LINK` | macOS/通用证书（p12 等；见 electron-builder） |
 | `CSC_KEY_PASSWORD` | 证书密码 |
-| `WIN_CSC_LINK` | Windows 代码签名证书（可选；与 `CSC_LINK` 二选一或并存） |
+| `WIN_CSC_LINK` | Windows 代码签名证书 |
 | `WIN_CSC_KEY_PASSWORD` | Windows 证书密码 |
 | `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` | macOS notarization（若做 notarize） |
 
-未配置时：安装包可下载/冒烟，但 OS 可能提示「未签名」；自动更新仍可走 GitHub provider（`desktop/package.json` → `build.publish`）。
+启用签名时需同步修改 `.github/workflows/release.yml`：去掉强制 `CSC_IDENTITY_AUTO_DISCOVERY=false` / 空 `WIN_CSC_LINK`，并按平台注入 `${{ secrets.CSC_* }}`。在那之前 OS 可能提示「未签名」；自动更新仍可走 GitHub provider（`desktop/package.json` → `build.publish`）。
 
 ### 离线校验更新 feed
 
