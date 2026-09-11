@@ -6,6 +6,7 @@ const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const {
   rememberRecentProject,
+  rememberRecentHub,
   GaugeSessionManager,
 } = require('./sessions.js');
 
@@ -25,6 +26,20 @@ describe('sessions', () => {
     assert.equal(many[0], path.resolve('/p/11'));
   });
 
+  it('rememberRecentHub dedupes and caps', () => {
+    const a = path.resolve('/hubs/a');
+    const b = path.resolve('/hubs/b');
+    let list = rememberRecentHub([], a);
+    list = rememberRecentHub(list, b);
+    list = rememberRecentHub(list, a);
+    assert.deepEqual(list.slice(0, 2), [a, b]);
+    let many = [];
+    for (let i = 0; i < 12; i += 1) {
+      many = rememberRecentHub(many, `/hub/${i}`);
+    }
+    assert.equal(many.length, 8);
+    assert.equal(many[0], path.resolve('/hub/11'));
+  });
   it('GaugeSessionManager tracks multiple runs', () => {
     class FakeChild extends EventEmitter {
       constructor() {

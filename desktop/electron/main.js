@@ -53,11 +53,25 @@ const {
 } = require('./uhil-open.js');
 const {
   rememberRecentProject,
+  rememberRecentHub,
   GaugeSessionManager,
 } = require('./sessions.js');
 const { createUpdater } = require('./updater.js');
 const { buildReportOutline, loadOutlineFromReportDir } = require('./outline.js');
 
+/**
+ * Persist report hub dir and push onto recentHubs.
+ * @param {string} hubDir
+ */
+function persistReportHub(hubDir) {
+  const userData = app.getPath('userData');
+  const settings = loadSettings(userData);
+  const hub = path.resolve(String(hubDir || '').trim());
+  return saveSettings(userData, {
+    reportHubDir: hub,
+    recentHubs: rememberRecentHub(settings.recentHubs, hub),
+  });
+}
 const DESKTOP_VERSION = '0.5.2';
 /** Dev: repo root. Packaged: Electron extraResources (viewer + report-assets + bin). */
 const BUNDLE_ROOT = resolveBundleRoot(
@@ -607,9 +621,15 @@ function registerIpc() {
 
   ipcMain.handle('desktop:get-settings', async () => loadSettings(app.getPath('userData')));
 
-  ipcMain.handle('desktop:save-settings', async (_evt, partial) =>
-    saveSettings(app.getPath('userData'), partial || {})
-  );
+  ipcMain.handle('desktop:save-settings', async (_evt, partial) => {
+    const userData = app.getPath('userData');
+    const patch = { ...(partial || {}) };
+    if (patch.reportHubDir) {
+      const cur = loadSettings(userData);
+      patch.recentHubs = rememberRecentHub(cur.recentHubs, patch.reportHubDir);
+    }
+    return saveSettings(userData, patch);
+  });
 
   ipcMain.handle('desktop:pick-hub-dir', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -618,7 +638,7 @@ function registerIpc() {
     });
     if (result.canceled || !result.filePaths[0]) return null;
     const hub = result.filePaths[0];
-    saveSettings(app.getPath('userData'), { reportHubDir: hub });
+    persistReportHub(hub);
     return hub;
   });
 
@@ -880,9 +900,9 @@ async function handleDeepLinkAction(action) {
   }
   if (action.action === 'hub') {
     const dir = path.resolve(action.dir);
-    saveSettings(app.getPath('userData'), { reportHubDir: dir });
+    const settings = persistReportHub(dir);
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('settings-updated', loadSettings(app.getPath('userData')));
+      mainWindow.webContents.send('settings-updated', settings);
       mainWindow.webContents.send('navigate-tab', { tab: 'history' });
     }
     return { ok: true, action: 'hub', dir };

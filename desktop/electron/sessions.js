@@ -4,7 +4,24 @@ const path = require('node:path');
 const { GaugeRunner } = require('./gauge-run.js');
 
 const MAX_RECENT_PROJECTS = 8;
+const MAX_RECENT_HUBS = 8;
 const MAX_SESSIONS = 12;
+
+/**
+ * Push an absolute path to the front of a recent list (dedupe, cap).
+ * @param {string[]} recent
+ * @param {string} entry
+ * @param {number} [limit]
+ */
+function rememberRecentPath(recent, entry, limit) {
+  const dir = path.resolve(String(entry || '').trim());
+  if (!dir || dir === path.sep) {
+    return Array.isArray(recent) ? recent.slice(0, limit) : [];
+  }
+  const prev = Array.isArray(recent) ? recent : [];
+  const next = [dir, ...prev.filter((p) => path.resolve(p) !== dir)];
+  return next.slice(0, limit);
+}
 
 /**
  * Push projectDir to the front of recent list (dedupe, cap).
@@ -13,11 +30,17 @@ const MAX_SESSIONS = 12;
  * @param {number} [limit]
  */
 function rememberRecentProject(recent, projectDir, limit = MAX_RECENT_PROJECTS) {
-  const dir = path.resolve(String(projectDir || '').trim());
-  if (!dir) return Array.isArray(recent) ? recent.slice(0, limit) : [];
-  const prev = Array.isArray(recent) ? recent : [];
-  const next = [dir, ...prev.filter((p) => path.resolve(p) !== dir)];
-  return next.slice(0, limit);
+  return rememberRecentPath(recent, projectDir, limit);
+}
+
+/**
+ * Push hubDir to the front of recent hubs (dedupe, cap).
+ * @param {string[]} recent
+ * @param {string} hubDir
+ * @param {number} [limit]
+ */
+function rememberRecentHub(recent, hubDir, limit = MAX_RECENT_HUBS) {
+  return rememberRecentPath(recent, hubDir, limit);
 }
 
 function newSessionId() {
@@ -159,8 +182,11 @@ class GaugeSessionManager {
 
 module.exports = {
   MAX_RECENT_PROJECTS,
+  MAX_RECENT_HUBS,
   MAX_SESSIONS,
+  rememberRecentPath,
   rememberRecentProject,
+  rememberRecentHub,
   newSessionId,
   GaugeSessionManager,
 };

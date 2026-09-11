@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns } = require('./settings.js');
+const { readHistory, resolveRunIndex, resolveRunDir, resolveRunUhilreport, filterHistoryRuns, deleteHistoryRun, deleteHistoryRuns, loadSettings, saveSettings, normalizeLastTab, DEFAULTS } = require('./settings.js');
 
 describe('settings history helpers', () => {
   it('reads history.json runs', () => {
@@ -124,4 +124,37 @@ describe('settings history helpers', () => {
     );
   });
 
+});
+
+describe('settings session restore fields', () => {
+  it('normalizeLastTab accepts known tabs only', () => {
+    assert.equal(normalizeLastTab('history'), 'history');
+    assert.equal(normalizeLastTab('nope'), 'run');
+    assert.equal(normalizeLastTab('', 'settings'), 'settings');
+  });
+
+  it('defaults include recentHubs / lastTab / restoreSession', () => {
+    assert.deepEqual(DEFAULTS.recentHubs, []);
+    assert.equal(DEFAULTS.lastTab, 'run');
+    assert.equal(DEFAULTS.restoreSession, true);
+  });
+
+  it('load/save round-trips recentHubs and lastTab', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-settings-'));
+    const saved = saveSettings(dir, {
+      reportHubDir: '/tmp/hub-a',
+      recentHubs: ['/tmp/hub-a', '/tmp/hub-b'],
+      lastTab: 'history',
+      restoreSession: false,
+    });
+    assert.equal(saved.lastTab, 'history');
+    assert.equal(saved.restoreSession, false);
+    assert.deepEqual(saved.recentHubs, ['/tmp/hub-a', '/tmp/hub-b']);
+    const loaded = loadSettings(dir);
+    assert.equal(loaded.lastTab, 'history');
+    assert.equal(loaded.restoreSession, false);
+    assert.deepEqual(loaded.recentHubs, ['/tmp/hub-a', '/tmp/hub-b']);
+    const coerced = saveSettings(dir, { lastTab: 'bogus' });
+    assert.equal(coerced.lastTab, 'run');
+  });
 });

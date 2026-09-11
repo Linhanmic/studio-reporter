@@ -140,7 +140,8 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 「运行」页嵌入 `viewer.html`；收到 `ReportGenerated` 后跳「报告」页打开静态 `index.html`。窗口未聚焦时会发系统通知（设置可关），点击通知可回到 Desktop 并打开终态。
 深链：`studio-reporter://open?dir=<报告目录>`、`studio-reporter://connect?url=ws://...`、`studio-reporter://hub?dir=<hub>`（安装包注册协议；开发态也会尝试注册）。
 快捷键：`Ctrl/Cmd+1…4` 切换运行/报告/历史/设置；`Ctrl/Cmd+Enter` 连接；`Ctrl/Cmd+Shift+H` 或 `F5` 刷新历史；页签支持方向键。
-设置中可选择界面主题：跟随系统 / 深色 / 浅色。
+设置中可选择界面主题：跟随系统 / 深色 / 浅色。  
+设置可开启「启动时恢复上次标签页」；报告根目录保留最近 hub 列表，历史页与设置页可一键切换。
 
 共享 discover 辅助包：`packages/studio-reporter-discover`（`@studio-reporter/discover`），供 Desktop / GaugeStudio 复用同一 stdout 契约。
 

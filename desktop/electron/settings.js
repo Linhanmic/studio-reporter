@@ -12,10 +12,27 @@ const DEFAULTS = {
   gaugeEnv: '',
   gaugeBin: 'gauge',
   recentProjects: [],
+  recentHubs: [],
+  lastTab: 'run',
+  restoreSession: true,
   autoCheckUpdates: false,
   notifyOnSuiteEnd: true,
   theme: 'system',
 };
+
+/** Valid Desktop renderer tab ids (must match index.html data-tab). */
+const VALID_TABS = new Set(['run', 'report', 'history', 'settings']);
+
+/**
+ * Normalize lastTab to a known pane id.
+ * @param {unknown} tab
+ * @param {string} [fallback='run']
+ */
+function normalizeLastTab(tab, fallback = 'run') {
+  const t = String(tab || '').trim();
+  if (VALID_TABS.has(t)) return t;
+  return VALID_TABS.has(fallback) ? fallback : 'run';
+}
 
 function settingsPath(userDataDir) {
   return path.join(userDataDir, 'desktop-settings.json');
@@ -24,14 +41,29 @@ function settingsPath(userDataDir) {
 function loadSettings(userDataDir) {
   try {
     const raw = fs.readFileSync(settingsPath(userDataDir), 'utf8');
-    return { ...DEFAULTS, ...JSON.parse(raw) };
+    const merged = { ...DEFAULTS, ...JSON.parse(raw) };
+    merged.recentProjects = Array.isArray(merged.recentProjects) ? merged.recentProjects : [];
+    merged.recentHubs = Array.isArray(merged.recentHubs) ? merged.recentHubs : [];
+    merged.lastTab = normalizeLastTab(merged.lastTab);
+    merged.restoreSession = merged.restoreSession !== false;
+    return merged;
   } catch {
     return { ...DEFAULTS };
   }
 }
 
 function saveSettings(userDataDir, partial) {
-  const next = { ...loadSettings(userDataDir), ...partial };
+  const patch = { ...(partial || {}) };
+  if (Object.prototype.hasOwnProperty.call(patch, 'lastTab')) {
+    patch.lastTab = normalizeLastTab(patch.lastTab);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'restoreSession')) {
+    patch.restoreSession = patch.restoreSession !== false;
+  }
+  const next = { ...loadSettings(userDataDir), ...patch };
+  next.recentProjects = Array.isArray(next.recentProjects) ? next.recentProjects : [];
+  next.recentHubs = Array.isArray(next.recentHubs) ? next.recentHubs : [];
+  next.lastTab = normalizeLastTab(next.lastTab);
   fs.mkdirSync(userDataDir, { recursive: true });
   fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(next, null, 2));
   return next;
@@ -251,9 +283,11 @@ function deleteHistoryRuns(hubDir, ids) {
 
 module.exports = {
   DEFAULTS,
+  VALID_TABS,
   settingsPath,
   loadSettings,
   saveSettings,
+  normalizeLastTab,
   readHistory,
   resolveRunIndex,
   resolveRunDir,

@@ -21,7 +21,11 @@ const state = {
   activeTab: 'run',
 };
 
-function setTab(name) {
+const VALID_TABS = new Set(['run', 'report', 'history', 'settings']);
+let lastTabSaveTimer = null;
+
+function setTab(name, opts = {}) {
+  if (!VALID_TABS.has(name)) return;
   document.querySelectorAll('.tab').forEach((btn) => {
     const on = btn.dataset.tab === name;
     btn.classList.toggle('active', on);
@@ -39,11 +43,24 @@ function setTab(name) {
     $('sessionBar').classList.add('hidden');
   }
   state.activeTab = name;
+  if (opts.persist !== false) persistLastTab(name);
   if (name === 'history') refreshHistory();
   if (name === 'settings') {
     fillSettingsForm();
     refreshPluginDetect();
   }
+}
+
+function persistLastTab(name) {
+  if (!VALID_TABS.has(name)) return;
+  clearTimeout(lastTabSaveTimer);
+  lastTabSaveTimer = setTimeout(async () => {
+    try {
+      state.settings = await window.desktopAPI.saveSettings({ lastTab: name });
+    } catch {
+      /* ignore */
+    }
+  }, 250);
 }
 
 function setStatus(text, kind) {
@@ -531,6 +548,45 @@ function fillRecentProjects(list) {
   });
 }
 
+function hubBasename(hubPath) {
+  const parts = String(hubPath || '').split(/[/\\]/).filter(Boolean);
+  return parts[parts.length - 1] || hubPath;
+}
+
+function fillRecentHubs(list, current) {
+  const hubs = Array.isArray(list) ? list : [];
+  const cur = String(current || '').trim();
+  const fillSelect = (sel, placeholder) => {
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '';
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = placeholder;
+    sel.appendChild(ph);
+    hubs.forEach((hub) => {
+      const opt = document.createElement('option');
+      opt.value = hub;
+      opt.textContent = `${hubBasename(hub)} — ${hub}`;
+      if (cur && hub === cur) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    if (!cur && prev && hubs.includes(prev)) sel.value = prev;
+  };
+  fillSelect($('settingRecentHubs'), '选择最近 hub…');
+  fillSelect($('historyRecentHubs'), '最近 hub…');
+}
+
+async function applyHubDir(hub) {
+  const dir = String(hub || '').trim();
+  if (!dir) return null;
+  state.settings = await window.desktopAPI.saveSettings({ reportHubDir: dir });
+  fillSettingsForm();
+  if (state.activeTab === 'history') refreshHistory();
+  setStatus(`报告根目录：${dir}`, 'ok');
+  return dir;
+}
+
 function renderSessions(payload) {
   const bar = $('sessionBar');
   if (!bar) return;
@@ -591,6 +647,9 @@ function watchSystemTheme() {
 function fillSettingsForm() {
   const s = state.settings || {};
   $('settingHubDir').value = s.reportHubDir || '';
+  if ($('settingRestoreSession')) {
+    $('settingRestoreSession').checked = s.restoreSession !== false;
+  }
   $('settingAutoJump').checked = s.autoJumpToReport !== false;
   if ($('settingNotifySuiteEnd')) {
     $('settingNotifySuiteEnd').checked = s.notifyOnSuiteEnd !== false;
@@ -606,6 +665,7 @@ function fillSettingsForm() {
   $('gaugeSpecs').value = s.gaugeSpecs || $('gaugeSpecs').value || 'specs';
   $('gaugeEnv').value = s.gaugeEnv || '';
   fillRecentProjects(s.recentProjects || []);
+  fillRecentHubs(s.recentHubs || [], s.reportHubDir || '');
 }
 
 function renderPluginDetect(info) {
@@ -719,6 +779,9 @@ async function loadSettings() {
 async function saveSettings() {
   const partial = {
     reportHubDir: $('settingHubDir').value.trim(),
+    restoreSession: $('settingRestoreSession')
+      ? $('settingRestoreSession').checked
+      : true,
     autoJumpToReport: $('settingAutoJump').checked,
     notifyOnSuiteEnd: $('settingNotifySuiteEnd')
       ? $('settingNotifySuiteEnd').checked
@@ -732,10 +795,12 @@ async function saveSettings() {
     gaugeSpecs: $('gaugeSpecs').value.trim() || 'specs',
     gaugeEnv: $('gaugeEnv').value.trim(),
     autoCheckUpdates: $('settingAutoCheckUpdates').checked,
+    lastTab: state.activeTab || 'run',
   };
   state.settings = await window.desktopAPI.saveSettings(partial);
   state.autoJump = state.settings.autoJumpToReport;
   state.jumpSeconds = state.settings.autoJumpSeconds;
+  fillRecentHubs(state.settings.recentHubs || [], state.settings.reportHubDir || '');
   $('settingsStatus').textContent = '已保存';
   setTimeout(() => { $('settingsStatus').textContent = ''; }, 1500);
 }
@@ -859,8 +924,6 @@ function wire() {
     const hub = await window.desktopAPI.pickHubDir();
     if (hub) {
       await loadSettings();
-  applyTheme(state.settings?.theme);
-  watchSystemTheme();
       refreshHistory();
     }
   });
@@ -869,6 +932,25 @@ function wire() {
     if (hub) {
       await loadSettings();
       fillSettingsForm();
+    }
+  });
+  $('historyRecentHubs')?.addEventListener('change', async (e) => {
+    const hub = e.target.value;
+    if (!hub) return;
+    try {
+      await applyHubDir(hub);
+      refreshHistory();
+    } catch (err) {
+      setStatus(String(err.message || err), 'warn');
+    }
+  });
+  $('settingRecentHubs')?.addEventListener('change', async (e) => {
+    const hub = e.target.value;
+    if (!hub) return;
+    try {
+      await applyHubDir(hub);
+    } catch (err) {
+      setStatus(String(err.message || err), 'warn');
     }
   });
   $('btnSaveSettings').addEventListener('click', saveSettings);
@@ -1029,6 +1111,10 @@ function wire() {
   }
   try {
     await loadSettings();
+    const s = state.settings;
+    if (s?.restoreSession !== false && VALID_TABS.has(s.lastTab) && s.lastTab !== state.activeTab) {
+      setTab(s.lastTab, { persist: false });
+    }
   } catch {
     /* ignore */
   }

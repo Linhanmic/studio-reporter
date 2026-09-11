@@ -91,6 +91,12 @@
           <div class="panel-toolbar">
             <button type="button" id="btnRefreshHistory" class="btn">刷新</button>
             <button type="button" id="btnPickHub" class="btn">选择报告根目录…</button>
+            <label class="history-hub-pick">
+              <span class="sr-only">最近报告根目录</span>
+              <select id="historyRecentHubs" aria-label="最近报告根目录">
+                <option value="">最近 hub…</option>
+              </select>
+            </label>
             <button type="button" id="btnCompareRuns" class="btn primary" disabled>对比所选（0/2）</button>
             <button type="button" id="btnExportPdf" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出 PDF</button>
             <button type="button" id="btnExportSingle" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出单文件 HTML</button>
@@ -123,6 +129,16 @@
               <input id="settingHubDir" type="text" spellcheck="false" readonly placeholder="未设置">
               <button type="button" id="btnSettingPickHub" class="btn">浏览…</button>
             </div>
+            <div class="field-row recent-hubs-row">
+              <span class="muted">最近</span>
+              <select id="settingRecentHubs" aria-label="最近报告根目录">
+                <option value="">选择最近 hub…</option>
+              </select>
+            </div>
+          </label>
+          <label class="field check">
+            <input id="settingRestoreSession" type="checkbox">
+            <span>启动时恢复上次标签页</span>
           </label>
           <label class="field check">
             <input id="settingAutoJump" type="checkbox">
