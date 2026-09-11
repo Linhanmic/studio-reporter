@@ -501,6 +501,12 @@ html, body {
 
 .print-scope-banner { display: none; }
 @media print {
+  /* Keep fail/pass tone backgrounds in PDF (Chrome otherwise strips them). */
+  html, body, .report-block, .badge, .leaf-row, .nav-badge {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   .print-scope-banner {
     display: block !important;
     border: 1px solid #c5d0dc;

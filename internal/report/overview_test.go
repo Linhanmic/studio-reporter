@@ -164,6 +164,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`:has(`,
 		`filter-hidden`,
 		`print-scope-banner`,
+		`print-color-adjust: exact`,
+		`-webkit-print-color-adjust: exact`,
 	} {
 		if !strings.Contains(printBlock, want) {
 			t.Fatalf("print CSS missing %q", want)
@@ -200,6 +202,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`isNodeVisuallyCounted`,
 		`visibleFailScenarioIdSet`,
 		`FilterFailReasonGroups`,
+		`applyingHash = true`,
+		`failSteps = null`,
 	} {
 		if !strings.Contains(js, want) {
 			t.Fatalf("static JS missing %q", want)

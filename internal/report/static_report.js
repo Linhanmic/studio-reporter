@@ -1,6 +1,10 @@
 (function () {
   var KEY = 'studio-report-filter';
   var state = { spec: 'all', scenario: 'all', query: '' };
+  // Gate share-hash writes until the initial URL fragment is applied.
+  // Otherwise the first applyFilter() rewrites #fail-steps → #overview and
+  // headless PDF / deep links lose fail-steps-only before print.
+  var applyingHash = true;
   try {
     var saved = JSON.parse(sessionStorage.getItem(KEY) || 'null');
     if (saved && saved.spec) state.spec = saved.spec;
@@ -542,7 +546,7 @@
   // Shareable URL fragment: #<focus>[?q=&spec=&scenario=&failSteps=1]
   // Legacy: #fail-steps, #overview, #<nodeId>
   var currentFocusId = 'overview';
-  var applyingHash = false;
+  // applyingHash starts true (see top of IIFE) until first applyHashFromLocation.
 
   function parseShareHash(raw) {
     var input = String(raw || '').replace(/^#/, '');
@@ -550,9 +554,10 @@
     var query = '';
     var spec = 'all';
     var scenario = 'all';
-    var failSteps = false;
+    // null = not specified in fragment (preserve session / early init)
+    var failSteps = null;
     if (!input) {
-      return { focus: 'overview', query: '', spec: 'all', scenario: 'all', failSteps: false };
+      return { focus: 'overview', query: '', spec: 'all', scenario: 'all', failSteps: null };
     }
     var qIdx = input.indexOf('?');
     var head = qIdx >= 0 ? input.slice(0, qIdx) : input;
@@ -676,7 +681,7 @@ function writeHash(id) {
       } else {
         syncButtons();
       }
-      if (parsed.failSteps !== failStepsOnly) {
+      if (parsed.failSteps != null && parsed.failSteps !== failStepsOnly) {
         setFailStepsOnly(parsed.failSteps, { silent: true, skipHash: true });
       }
       currentFocusId = parsed.focus || 'overview';

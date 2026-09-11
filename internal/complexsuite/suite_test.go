@@ -1,8 +1,10 @@
 package complexsuite
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -81,5 +83,70 @@ func TestComplexSuiteCoverage(t *testing.T) {
 	}
 	if r.Summary.Steps.Total < 30 {
 		t.Fatalf("step total=%d (want denser fixture)", r.Summary.Steps.Total)
+	}
+}
+
+func TestComplexPDFFailStepsDiffersFromFull(t *testing.T) {
+	// Structural regression: complex hub full PDF vs #fail-steps PDF must diverge.
+	// Catches the boot bug where applyFilter rewrote #fail-steps → #overview before print.
+	dir := t.TempDir()
+	shots := filepath.Join(dir, "shots")
+	suite := Suite(shots)
+	psr := suite.GetSuiteResult()
+	off := false
+	generated, err := (&report.FinalWriter{WritePDF: &off}).Write(filepath.Join(dir, "hub"), report.FromSuite(psr), suite)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fullPDF := filepath.Join(dir, "full.pdf")
+	failPDF := filepath.Join(dir, "fail-steps.pdf")
+
+	t.Setenv("GAUGE_STUDIO_PDF_FAIL_STEPS", "")
+	if err := report.WritePDF(generated.IndexPath, fullPDF); err != nil {
+		if strings.Contains(err.Error(), "Chrome") || strings.Contains(err.Error(), "Chromium") {
+			t.Skip(err.Error())
+		}
+		t.Fatal(err)
+	}
+	t.Setenv("GAUGE_STUDIO_PDF_FAIL_STEPS", "true")
+	if err := report.WritePDF(generated.IndexPath, failPDF); err != nil {
+		t.Fatal(err)
+	}
+
+	fullRaw, err := os.ReadFile(fullPDF)
+	if err != nil {
+		t.Fatal(err)
+	}
+	failRaw, err := os.ReadFile(failPDF)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fullRaw) < 1000 || len(failRaw) < 1000 {
+		t.Fatalf("pdf too small full=%d fail=%d", len(fullRaw), len(failRaw))
+	}
+	strip := func(b []byte) []byte {
+		for _, re := range []*regexp.Regexp{
+			regexp.MustCompile(`/CreationDate\s*\([^\)]*\)`),
+			regexp.MustCompile(`/ModDate\s*\([^\)]*\)`),
+			regexp.MustCompile(`/ID\s*\[[^\]]*\]`),
+		} {
+			b = re.ReplaceAll(b, nil)
+		}
+		return b
+	}
+	if bytes.Equal(strip(fullRaw), strip(failRaw)) {
+		t.Fatalf("complex fail-steps PDF identical to full (%d bytes); print boot/hash gate regresssed", len(fullRaw))
+	}
+	if len(failRaw) >= len(fullRaw) {
+		t.Fatalf("complex fail-steps PDF should shrink (fail=%d full=%d)", len(failRaw), len(fullRaw))
+	}
+	html, err := os.ReadFile(generated.IndexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`applyingHash = true`, `failSteps = null`, `print-color-adjust: exact`} {
+		if !strings.Contains(string(html), want) {
+			t.Fatalf("generated index missing %q", want)
+		}
 	}
 }

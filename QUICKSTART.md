@@ -128,7 +128,7 @@ GOTOOLCHAIN=go1.27.0 go build -o bin/studio-reporter .
 | `GAUGE_STUDIO_SKIP_REPORT` | `true` 时不写 HTML |
 | `GAUGE_STUDIO_OPEN_BROWSER` | `true` 时结束后打开 `index.html` |
 | `GAUGE_STUDIO_WRITE_PDF` | `true` 时额外写 `report.pdf`（需 Chrome/Chromium） |
-| `GAUGE_STUDIO_PDF_FAIL_STEPS` | 与 PDF 联用：`true` 时打印 URL 带 `#fail-steps`，仅失败步骤 |
+| `GAUGE_STUDIO_PDF_FAIL_STEPS` | 与 PDF 联用：`true` 时打印 URL 带 `#fail-steps`，仅失败步骤（headless 会等 JS 应用模式后再打印） |
 | `GAUGE_STUDIO_WRITE_SINGLE` | `true` 时额外写 `report.single.html`（截图内联） |
 | `GAUGE_STUDIO_REPORT_META` | Overview 额外 KV：`k=v,k2=v2` |
 | `CHROME_PATH` | 指定 headless Chrome 可执行文件 |

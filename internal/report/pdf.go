@@ -50,9 +50,12 @@ func writePDF(indexHTML, pdfPath string, failStepsOnly bool) error {
 	if failStepsOnly {
 		fileURL = withURLFragment(fileURL, "fail-steps")
 	}
+	// virtual-time-budget lets inline report JS apply #fail-steps / print banner
+	// before Chromium snapshots the print layout.
 	cmd := exec.Command(chrome,
 		"--headless=new",
 		"--disable-gpu",
+		"--virtual-time-budget=5000",
 		"--no-pdf-header-footer",
 		"--print-to-pdf="+absPDF,
 		fileURL,
