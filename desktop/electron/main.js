@@ -4,7 +4,6 @@ const path = require('node:path');
 const fs = require('node:fs');
 const http = require('node:http');
 const { pathToFileURL } = require('node:url');
-const { spawnSync } = require('node:child_process');
 const {
   app,
   BrowserWindow,
@@ -49,6 +48,10 @@ const {
   resolveStudioReporterBin,
   missingBundleResources,
 } = require('./paths.js');
+const {
+  exportMany,
+  killExportChild,
+} = require('./export-report.js');
 const {
   isUhilreportPath,
   regenerateFromUhilreport,
@@ -111,6 +114,9 @@ function sendToRenderer(channel, payload) {
     mainWindow.webContents.send(channel, payload);
   }
 }
+
+let activeExportChild = null;
+let exportCancelled = false;
 
 async function connectLiveWs(input) {
   const url = normalizeWsInput(input);
@@ -735,7 +741,7 @@ function registerIpc() {
     return { indexPath, dir: path.dirname(indexPath) };
   });
 
-  ipcMain.handle('desktop:export-report', async (_evt, kind, entryOrEntries) => {
+  ipcMain.handle('desktop:export-report', async (evt, kind, entryOrEntries) => {
     const settings = loadSettings(app.getPath('userData'));
     const hub = settings.reportHubDir;
     if (!hub) throw new Error('请先在设置中指定报告根目录');
@@ -747,35 +753,55 @@ function registerIpc() {
     const bin = resolveStudioReporterBin(BUNDLE_ROOT);
     if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
 
-    const exportOne = (input) => {
-      const outDir = path.dirname(input);
-      const args = ['generate', '--input', input, '--out', outDir];
-      if (kind === 'pdf') args.push('--pdf');
-      if (kind === 'single') args.push('--single');
-      const result = spawnSync(bin, args, { encoding: 'utf8' });
-      if (result.status !== 0) {
-        throw new Error(result.stderr || result.stdout || `export failed (${result.status})`);
-      }
-      return { input, out: outDir, log: result.stdout };
-    };
-
+    let inputs = [];
     if (!entries.length) {
       const matches = fs.readdirSync(hub).filter((n) => n.endsWith('.uhilreport'));
       if (!matches.length) throw new Error('报告根目录下没有 .uhilreport');
       matches.sort();
-      const one = exportOne(path.join(hub, matches[matches.length - 1]));
-      return { ok: true, kind, exported: [one] };
+      inputs = [path.join(hub, matches[matches.length - 1])];
+    } else {
+      for (const entry of entries) {
+        const input = resolveRunUhilreport(hub, entry);
+        if (!input) {
+          throw new Error(`运行 ${entry.id || entry.href || '?'} 找不到 .uhilreport`);
+        }
+        inputs.push(input);
+      }
     }
 
-    const exported = [];
-    for (const entry of entries) {
-      const input = resolveRunUhilreport(hub, entry);
-      if (!input) {
-        throw new Error(`运行 ${entry.id || entry.href || '?'} 找不到 .uhilreport`);
-      }
-      exported.push(exportOne(input));
+    exportCancelled = false;
+    activeExportChild = null;
+    const sender = evt.sender;
+    const result = await exportMany({
+      bin,
+      kind,
+      inputs,
+      onProgress: (p) => {
+        if (!sender.isDestroyed()) {
+          sender.send('desktop:export-progress', {
+            kind,
+            current: p.current,
+            total: p.total,
+            input: p.input,
+          });
+        }
+      },
+      isCancelled: () => exportCancelled,
+      onSpawn: (child) => {
+        activeExportChild = child;
+      },
+    });
+    activeExportChild = null;
+    if (result.cancelled) {
+      return { ok: false, cancelled: true, kind, exported: result.exported };
     }
-    return { ok: true, kind, exported };
+    return { ok: true, kind, exported: result.exported };
+  });
+
+  ipcMain.handle('desktop:cancel-export', async () => {
+    exportCancelled = true;
+    const killed = killExportChild(activeExportChild);
+    return { ok: true, killed };
   });
 
   ipcMain.handle('desktop:delete-history-runs', async (_evt, ids) => {

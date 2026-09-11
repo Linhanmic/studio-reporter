@@ -55,6 +55,12 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   listHistory: (hubDir) => ipcRenderer.invoke('desktop:list-history', hubDir),
   openHistoryRun: (entry) => ipcRenderer.invoke('desktop:open-history-run', entry),
   exportReport: (kind, entry) => ipcRenderer.invoke('desktop:export-report', kind, entry),
+  cancelExport: () => ipcRenderer.invoke('desktop:cancel-export'),
+  onExportProgress: (cb) => {
+    const handler = (_e, data) => cb(data);
+    ipcRenderer.on('desktop:export-progress', handler);
+    return () => ipcRenderer.removeListener('desktop:export-progress', handler);
+  },
   deleteHistoryRuns: (ids) => ipcRenderer.invoke('desktop:delete-history-runs', ids),
   revealHistoryRun: (entry) => ipcRenderer.invoke('desktop:reveal-history-run', entry),
   copyHistoryPath: (entry, kind) => ipcRenderer.invoke('desktop:copy-history-path', entry, kind),

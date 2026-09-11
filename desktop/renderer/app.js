@@ -12,6 +12,8 @@ const state = {
   historyQuery: '',
   historyVerdict: 'all',
   selectedIds: [],
+  exporting: false,
+  unsubExportProgress: null,
   lastCompare: null,
   lastExportedComparePath: null,
   discoverTimer: null,
@@ -564,26 +566,82 @@ function deltaClass(ms) {
   return 'delta-same';
 }
 
+const MAX_HISTORY_SELECTION = 50;
+
+function filteredHistoryRuns() {
+  return window.desktopAPI.filterHistoryRuns(state.historyRuns, {
+    query: state.historyQuery,
+    verdict: state.historyVerdict,
+  });
+}
+
+function setExportBusy(busy) {
+  state.exporting = Boolean(busy);
+  const pdf = $('btnExportPdf');
+  const single = $('btnExportSingle');
+  const cancel = $('btnCancelExport');
+  if (pdf) pdf.disabled = state.exporting;
+  if (single) single.disabled = state.exporting;
+  if (cancel) cancel.classList.toggle('hidden', !state.exporting);
+  updateHistoryActionButtons();
+}
+
 function updateHistoryActionButtons() {
   const n = state.selectedIds.length;
   const compareBtn = $('btnCompareRuns');
-  compareBtn.disabled = n !== 2;
-  compareBtn.textContent = `对比所选（${n}/2）`;
+  if (compareBtn) {
+    compareBtn.disabled = state.exporting || n !== 2;
+    compareBtn.textContent = `对比所选（${n}/2）`;
+  }
   const revealBtn = $('btnRevealRun');
-  if (revealBtn) revealBtn.disabled = n !== 1;
+  if (revealBtn) revealBtn.disabled = state.exporting || n !== 1;
   const copyBtn = $('btnCopyPath');
-  if (copyBtn) copyBtn.disabled = n !== 1;
+  if (copyBtn) copyBtn.disabled = state.exporting || n !== 1;
   const deleteBtn = $('btnDeleteRuns');
   if (deleteBtn) {
-    deleteBtn.disabled = n < 1;
+    deleteBtn.disabled = state.exporting || n < 1;
     deleteBtn.textContent = n > 0 ? `删除所选（${n}）` : '删除所选';
   }
+  const clearBtn = $('btnClearSelection');
+  if (clearBtn) clearBtn.disabled = state.exporting || n < 1;
+  const selectBtn = $('btnSelectFiltered');
+  if (selectBtn) selectBtn.disabled = state.exporting;
+  const pdf = $('btnExportPdf');
+  const single = $('btnExportSingle');
+  if (pdf && !state.exporting) {
+    pdf.textContent = n > 0 ? `导出 PDF（${n}）` : '导出 PDF';
+  }
+  if (single && !state.exporting) {
+    single.textContent = n > 0 ? `导出单文件 HTML（${n}）` : '导出单文件 HTML';
+  }
+}
+
+function selectFilteredHistory() {
+  const filtered = filteredHistoryRuns();
+  const ids = filtered.slice(0, MAX_HISTORY_SELECTION).map((r) => r.id).filter(Boolean);
+  state.selectedIds = ids;
+  renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
+  updateHistoryActionButtons();
+  const capped = filtered.length > MAX_HISTORY_SELECTION;
+  setStatus(
+    capped
+      ? `已勾选过滤结果前 ${ids.length} 条（上限 ${MAX_HISTORY_SELECTION}）`
+      : `已勾选过滤结果 ${ids.length} 条`,
+    'ok',
+  );
+}
+
+function clearHistorySelection() {
+  state.selectedIds = [];
+  renderHistoryList({ hubDir: state.settings?.reportHubDir || '' });
+  updateHistoryActionButtons();
+  setStatus('已清除历史勾选', 'ok');
 }
 
 function toggleSelect(id, checked) {
   if (checked) {
     if (!state.selectedIds.includes(id)) state.selectedIds.push(id);
-    while (state.selectedIds.length > 50) {
+    while (state.selectedIds.length > MAX_HISTORY_SELECTION) {
       const dropped = state.selectedIds.shift();
       const box = document.querySelector(`input.pick[data-id="${CSS.escape(dropped)}"]`);
       if (box) box.checked = false;
@@ -806,10 +864,7 @@ function renderHistoryList(histMeta) {
   const list = $('historyList');
   const empty = $('historyEmpty');
   list.innerHTML = '';
-  const filtered = window.desktopAPI.filterHistoryRuns(state.historyRuns, {
-    query: state.historyQuery,
-    verdict: state.historyVerdict,
-  });
+  const filtered = filteredHistoryRuns();
   const hubHint = histMeta?.hubDir || state.settings?.reportHubDir || '';
   $('historyMeta').textContent = hubHint
     ? `${hubHint} · ${filtered.length}/${state.historyRuns.length} 次运行`
@@ -867,21 +922,63 @@ function selectedHistoryEntry() {
 }
 
 async function exportSelectedOrLatest(kind) {
+  if (state.exporting) {
+    setStatus('已有导出任务进行中', 'warn');
+    return;
+  }
   const entries = selectedHistoryEntries();
   const label = kind === 'pdf' ? 'PDF' : '单文件 HTML';
+  const totalHint = entries.length || 1;
+  setExportBusy(true);
+  setStatus(`正在导出 ${label}（0/${totalHint}）…`, 'ok');
+  if (typeof state.unsubExportProgress === 'function') {
+    state.unsubExportProgress();
+    state.unsubExportProgress = null;
+  }
+  if (typeof window.desktopAPI.onExportProgress === 'function') {
+    state.unsubExportProgress = window.desktopAPI.onExportProgress((p) => {
+      const cur = p?.current || 0;
+      const total = p?.total || totalHint;
+      setStatus(`正在导出 ${label}（${cur}/${total}）…`, 'ok');
+    });
+  }
   try {
-    if (!entries.length) {
-      await window.desktopAPI.exportReport(kind);
-      setStatus(`已导出最新运行的 ${label}`, 'ok');
+    const result = !entries.length
+      ? await window.desktopAPI.exportReport(kind)
+      : await window.desktopAPI.exportReport(
+          kind,
+          entries.length === 1 ? entries[0] : entries,
+        );
+    if (result?.cancelled) {
+      setStatus(
+        `已取消导出${result.exported?.length ? `（已完成 ${result.exported.length} 个）` : ''}`,
+        'warn',
+      );
       return;
     }
-    await window.desktopAPI.exportReport(kind, entries.length === 1 ? entries[0] : entries);
+    const n = result?.exported?.length || entries.length || 1;
     setStatus(
-      entries.length === 1
-        ? `已导出所选运行的 ${label}`
-        : `已批量导出 ${entries.length} 次运行的 ${label}`,
-      'ok'
+      entries.length <= 1
+        ? `已导出${entries.length === 1 ? '所选' : '最新'}运行的 ${label}`
+        : `已批量导出 ${n} 次运行的 ${label}`,
+      'ok',
     );
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  } finally {
+    if (typeof state.unsubExportProgress === 'function') {
+      state.unsubExportProgress();
+      state.unsubExportProgress = null;
+    }
+    setExportBusy(false);
+  }
+}
+
+async function cancelActiveExport() {
+  if (!state.exporting) return;
+  try {
+    await window.desktopAPI.cancelExport();
+    setStatus('正在取消导出…', 'warn');
   } catch (err) {
     setStatus(String(err.message || err), 'warn');
   }
@@ -1396,8 +1493,11 @@ function wire() {
       setStatus(String(err.message || err), 'warn');
     }
   });
+  $('btnSelectFiltered')?.addEventListener('click', () => selectFilteredHistory());
+  $('btnClearSelection')?.addEventListener('click', () => clearHistorySelection());
   $('btnExportPdf').addEventListener('click', () => exportSelectedOrLatest('pdf'));
   $('btnExportSingle').addEventListener('click', () => exportSelectedOrLatest('single'));
+  $('btnCancelExport')?.addEventListener('click', () => cancelActiveExport());
   $('btnRevealRun')?.addEventListener('click', () => revealSelectedRun());
   $('btnCopyPath')?.addEventListener('click', () => copySelectedPath());
   $('btnDeleteRuns')?.addEventListener('click', () => deleteSelectedRuns());

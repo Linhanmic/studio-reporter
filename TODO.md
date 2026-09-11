@@ -142,6 +142,8 @@
 | 2026-09-11 | Desktop Discover 超时可配置 | 设置页「Discover 超时（秒）」；`discoverTimeoutMs`（5–120s）持久化；启动 Gauge 使用该超时 |
 | 2026-09-11 | Desktop Win CLI 打包资源 | `make build-windows`；`pack:check:win` / `pack:dir:win` / `pack:win`；electron-builder 按平台 `extraResources` 打入 `.exe` |
 
+| 2026-09-11 | Desktop 导出进度/取消 + 历史批量勾选 | `export-report` 异步 spawn；进度事件 + 取消；历史「全选过滤结果 / 清除勾选」；导出按钮显示数量 |
+
 ## 下一任务（选定）
 
-**大纲/报告性能 profiling 与批量选中优化**，或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限），或 Desktop 导出进度/取消。
+**大纲/报告性能 profiling**（虚拟列表之上的长报告渲染与交互），或代码签名 secrets / GaugeStudio 消费 `@studio-reporter/discover`（后两项依赖仓外权限），或历史列表虚拟化。

@@ -110,9 +110,12 @@
                 <option value="">最近 hub…</option>
               </select>
             </label>
+            <button type="button" id="btnSelectFiltered" class="btn" title="勾选当前过滤结果（最多 50）">全选过滤结果</button>
+            <button type="button" id="btnClearSelection" class="btn" title="清除历史勾选" disabled>清除勾选</button>
             <button type="button" id="btnCompareRuns" class="btn primary" disabled>对比所选（0/2）</button>
             <button type="button" id="btnExportPdf" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出 PDF</button>
             <button type="button" id="btnExportSingle" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出单文件 HTML</button>
+            <button type="button" id="btnCancelExport" class="btn danger hidden" title="取消正在进行的导出">取消导出</button>
             <button type="button" id="btnRevealRun" class="btn" disabled title="在文件管理器中显示所选运行">打开所在文件夹</button>
             <button type="button" id="btnCopyPath" class="btn" disabled title="复制所选运行的归档目录路径">复制路径</button>
             <button type="button" id="btnDeleteRuns" class="btn danger" disabled title="删除勾选的历史归档">删除所选</button>
