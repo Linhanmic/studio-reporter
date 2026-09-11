@@ -94,6 +94,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   copyCompareJson: (cmp, opts) => ipcRenderer.invoke('desktop:copy-compare-json', cmp, opts),
   copyCompareDeepLink: (payload) => ipcRenderer.invoke('desktop:copy-compare-deeplink', payload),
   copyOpenDeepLink: (payload) => ipcRenderer.invoke('desktop:copy-open-deeplink', payload),
+  popupHistoryMenu: (opts) => ipcRenderer.invoke('desktop:popup-history-menu', opts || {}),
   buildCompareDeepLink,
   buildOpenDeepLink,
   parseShareHash,

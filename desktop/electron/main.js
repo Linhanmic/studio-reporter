@@ -40,6 +40,9 @@ const {
   buildOpenDeepLink,
   createDeepLinkQueue,
 } = require('./deeplink.js');
+const {
+  popupHistoryContextMenu,
+} = require('./history-menu.js');
 const { appendShareHash, reportFocusHash, reportOpenHashFromOutline } = require('./share-hash.js');
 const {
   buildCompareShareCardHtml,
@@ -744,7 +747,13 @@ function registerIpc() {
     return { ok: true, url };
   });
 
-  ipcMain.handle('desktop:open-path', async (_evt, absPath) => {
+  
+  ipcMain.handle('desktop:popup-history-menu', async (evt, opts = {}) => {
+    const win = BrowserWindow.fromWebContents(evt.sender);
+    return popupHistoryContextMenu(Menu, win, opts || {});
+  });
+
+ipcMain.handle('desktop:open-path', async (_evt, absPath) => {
     const target = path.resolve(String(absPath || ''));
     if (!target || !fs.existsSync(target)) {
       throw new Error('文件不存在');

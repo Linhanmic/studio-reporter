@@ -1345,12 +1345,72 @@ function wireHistoryListInteractions() {
     const run = (state.historyFilteredRuns || state.historyRuns).find((r) => r.id === id);
     if (!run) return;
     try {
-      await window.desktopAPI.openHistoryRun(run);
-      setTab('report');
+      await openHistoryRunEntry(run);
     } catch (err) {
       setStatus(String(err.message || err), 'warn');
     }
   });
+  list.addEventListener('contextmenu', (e) => {
+    const row = e.target.closest('.history-row');
+    if (!row || !list.contains(row)) return;
+    e.preventDefault();
+    const id = row.dataset.id;
+    const run = (state.historyFilteredRuns || state.historyRuns).find((r) => r.id === id);
+    if (!run) return;
+    void handleHistoryRowContextMenu(run, e);
+  });
+}
+
+async function openHistoryRunEntry(run, opts = {}) {
+  const failSteps =
+    opts.failSteps != null
+      ? !!opts.failSteps
+      : String(run?.verdict || '').toLowerCase() === 'fail';
+  await window.desktopAPI.openHistoryRun(run, {
+    focus: opts.focus,
+    failSteps,
+  });
+  setTab('report');
+  setStatus(`已打开报告：${run.id || ''}`, 'ok');
+}
+
+async function handleHistoryRowContextMenu(run, ev) {
+  if (typeof window.desktopAPI.popupHistoryMenu !== 'function') {
+    setStatus('当前版本不支持历史右键菜单', 'warn');
+    return;
+  }
+  try {
+    const result = await window.desktopAPI.popupHistoryMenu({
+      x: ev.x,
+      y: ev.y,
+    });
+    const action = result?.action || 'dismiss';
+    if (action === 'open') {
+      await openHistoryRunEntry(run);
+      return;
+    }
+    if (action === 'copy-open') {
+      const copied = await window.desktopAPI.copyOpenDeepLink({
+        run: run.id,
+        hub: state.settings?.reportHubDir || '',
+        failSteps: String(run.verdict || '').toLowerCase() === 'fail',
+      });
+      setStatus(`已复制打开深链：${copied?.url || ''}`, 'ok');
+      return;
+    }
+    if (action === 'reveal') {
+      const revealed = await window.desktopAPI.revealHistoryRun(run);
+      setStatus(`已在文件管理器中显示：${revealed.path}`, 'ok');
+      return;
+    }
+    if (action === 'copy-path') {
+      const copied = await window.desktopAPI.copyHistoryPath(run, 'dir');
+      setStatus(`已复制路径：${copied.path}`, 'ok');
+      return;
+    }
+  } catch (err) {
+    setStatus(String(err.message || err), 'warn');
+  }
 }
 
 function selectedHistoryEntries() {

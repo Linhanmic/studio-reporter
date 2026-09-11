@@ -111,7 +111,8 @@
 - [x] 静态报告「复制可见范围链接」工具栏按钮（`copy-share-link`；复制当前 share hash 完整 URL）
 - [x] 静态报告分享链接复制后展示可读过滤摘要（状态栏附带 q/scenario/failSteps/定位）
 - [x] Desktop 对比分享卡片场景 diff 一键打开报告定位
-- [x] Desktop 对比面板复制场景打开深链（场景 diff「复制深链」→ `studio-reporter://open?run=&hub=&focus=`）（HTML/MD/JSON 写入 `studio-reporter://open?run=&hub=&focus=`；主进程按 run 打开历史并 hash 定位）
+- [x] Desktop 对比面板复制场景打开深链
+- [x] Desktop 历史列表右键打开定位（打开报告 / 复制 open 深链 / 显示文件夹 / 复制路径）（场景 diff「复制深链」→ `studio-reporter://open?run=&hub=&focus=`）（HTML/MD/JSON 写入 `studio-reporter://open?run=&hub=&focus=`；主进程按 run 打开历史并 hash 定位）
 
 ## 迭代日志
 
@@ -219,8 +220,9 @@
 | 2026-09-11 | Desktop 对比深链携带场景类型过滤 | `kinds=` 查询参数；`parseDeepLink`/`buildCompareDeepLink`/`resolveCompareShareDeepLink`；打开时写入 state 并持久化 |
 | 2026-09-11 | 静态报告过滤状态可分享 URL | fragment `#focus?q=&spec=&scenario=&failSteps=1`；兼容 `#fail-steps`；工具栏变更 `replaceState`；Go 镜像解析 |
 | 2026-09-11 | 对比分享卡片场景打开深链 | HTML/Markdown/JSON 场景 diff 附带 `studio-reporter://open?run=&hub=&focus=&failSteps=`；主进程 open 支持 run+focus；与面板「在报告中查看」同源 |
+| 2026-09-11 | 历史列表右键打开定位 | 原生 Menu：打开报告、复制 open 深链、显示文件夹、复制路径；失败运行默认 failSteps |
 
 ## 下一任务（选定）
 
-**历史列表右键打开定位**（打开报告 / 复制 open 深链 + focus），或 **代码签名 secrets / 发布管道加固** / **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限）。
+**代码签名 secrets / 发布管道加固**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限时改做：历史多选批量复制 open 深链 / 分享卡片模板预览）。
 
