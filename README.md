@@ -144,7 +144,7 @@ When a suite finishes, the plugin writes a **static HTML report** to `reports/st
 
 The report includes:
 
-- **Overview** home page: project / host / OS / plugin / format / custom meta + counts + spec list
+- **Overview** home page: project / host / OS / plugin / format / custom meta + counts + spec list + **fail-reason clusters** (group by primary error)
 - Left **navigation tree** (spec → scenario) with jump links; right content pane (CANoe-like)
 - Nested expandable result blocks (spec → scenario → concept → step)
 - Overall verdict, duration, environment, and success rate
