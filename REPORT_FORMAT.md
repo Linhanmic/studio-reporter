@@ -1,6 +1,6 @@
 # Studio Reporter — Report File Format
 
-This document specifies the on-disk report format written by the studio-reporter Gauge plugin. It is the contract between the three parts of the tool chain:
+This document specifies the on-disk report format written by studio-reporter (standalone tool / Gauge plugin mode). It is the contract between the three parts of the tool chain:
 
 1. **Report generation** — the Gauge plugin writes the files below while (and after) a suite runs.
 2. **Report files** — a versioned, self-describing set of JSON files plus a static HTML viewer.
@@ -85,7 +85,7 @@ The project name is sanitized for filesystem safety (path separators, `:*?"<>|` 
 Its content is the Gauge `SuiteExecutionResult` in protojson encoding (UTF-8 JSON text). On write, studio-reporter **rewrites screenshot file fields** from Gauge’s absolute paths to hub-relative `images/<name>` paths (matching the copied files next to the `.uhilreport`). The portable unit is therefore **`<run>.uhilreport` + sibling `images/`** (hub root or an `archives/<id>/` folder):
 
 ```bash
-studio-reporter --input demo-project-2026-08-28_10.30.00.uhilreport --out /path/to/output
+studio-reporter generate --input demo-project-2026-08-28_10.30.00.uhilreport --out /path/to/output
 ```
 
 `--input` resolves relative `images/...` paths against the directory that contains the `.uhilreport`. Older files that still store absolute paths also fall back to `<uhilreport-dir>/images/<basename>` when the absolute source is gone.

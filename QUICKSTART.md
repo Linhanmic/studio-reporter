@@ -1,21 +1,32 @@
 # Studio Reporter — Quick Start
 
-面向首次接入与本地验证。对应插件版本 **0.4.10**。
+面向首次接入与本地验证。对应插件版本 **0.5.0**。
 
-## 1. 安装插件
+## 0. 作为独立报告工具（推荐入口）
+
+```bash
+studio-reporter generate --input path/to/run.uhilreport --out /tmp/out --single
+studio-reporter serve --dir reports/studio-report
+studio-reporter version
+```
+
+Gauge 插件模式仍可用（`plugin` / `--start`），但产品身份是报告工具，不是“只能当插件”。
+
+## 1. 安装插件（可选）
+
 
 从 [Releases](https://github.com/Linhanmic/studio-reporter/releases) 下载对应平台 zip，例如：
 
 ```bash
-gauge install studio-reporter --file studio-reporter-0.4.10-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.5.0-linux.x86_64.zip
 ```
 
 或解压到 Gauge 插件目录：
 
 ```bash
 # Linux 示例
-mkdir -p ~/.gauge/plugins/studio-reporter/0.4.10
-unzip studio-reporter-0.4.10-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.4.10
+mkdir -p ~/.gauge/plugins/studio-reporter/0.5.0
+unzip studio-reporter-0.5.0-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.0
 ```
 
 确认 `plugin.json` 中 `version` 与目录名一致。
@@ -66,7 +77,7 @@ studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 `.uhilreport` 内截图路径为相对 `images/...`；请与同目录的 `images/` 一起拷贝后再再生：
 
 ```bash
-studio-reporter \
+studio-reporter generate \
   --input reports/studio-report/demo-project-2026-08-28_10.30.00.uhilreport \
   --out /tmp/studio-report \
   --pdf --single

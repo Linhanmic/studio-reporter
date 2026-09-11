@@ -1,10 +1,10 @@
 # Studio Reporter Plugin
 
-A Gauge plugin that forwards test execution lifecycle events to Gauge Studio via WebSocket in real-time, and generates an HTML report in the CANoe Test Report Viewer style.
+A **standalone test report tool** (with an optional Gauge plugin mode) that generates CANoe-style HTML/PDF reports, serves a local report hub, and can forward Gauge execution events to Gauge Studio over WebSocket.
 
 ## Overview
 
-The Studio Reporter Plugin is a gRPC plugin for the [Gauge test framework](https://gauge.org/) that monitors test execution, forwards events to [Gauge Studio](https://github.com/gaugestudio/gauge-studio) via WebSocket, and writes a local HTML report when the suite finishes.
+Studio Reporter is primarily a **CLI report tool**. Install the binary and use `generate` / `serve` without Gauge. When installed as a [Gauge](https://gauge.org/) plugin it also monitors execution, forwards events to [Gauge Studio](https://github.com/gaugestudio/gauge-studio), and writes the report at suite end.
 
 ## Features
 
@@ -77,16 +77,32 @@ go build -o bin/studio-reporter ./...
 
 ```bash
 # Install the plugin (match the release version)
-gauge install studio-reporter --file studio-reporter-0.4.10-linux.x86_64.zip
+gauge install studio-reporter --file studio-reporter-0.5.0-linux.x86_64.zip
 
 # Or unzip into the Gauge plugin directory
-mkdir -p ~/.gauge/plugins/studio-reporter/0.4.10
-unzip studio-reporter-0.4.10-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.4.10
+mkdir -p ~/.gauge/plugins/studio-reporter/0.5.0
+unzip studio-reporter-0.5.0-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.0
 ```
 
 ## Usage
 
-### Starting the Plugin
+### Standalone CLI (primary)
+
+```bash
+# Rebuild HTML (+ optional PDF / single-file) from a portable .uhilreport
+studio-reporter generate --input run.uhilreport --out /tmp/out --pdf --single
+
+# Serve the report hub (history / manage console)
+studio-reporter serve --dir reports/studio-report --addr 127.0.0.1:8765
+
+studio-reporter version
+studio-reporter help
+```
+
+Legacy flat flags (`--input`, `--serve`, `--start`) remain supported.
+
+### Gauge plugin mode
+
 
 The plugin starts automatically when you run Gauge tests. It binds a random local WebSocket port and prints:
 
@@ -103,7 +119,7 @@ gauge run specs/
 ### Manual Start
 
 ```bash
-./bin/studio-reporter --start
+./bin/studio-reporter plugin   # or: --start
 ```
 
 ## HTML Report

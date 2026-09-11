@@ -18,7 +18,7 @@ const (
 	ViewerFile               = "viewer.html"
 	ManageIndexFile          = "manage.html"
 	FormatVersion            = 1
-	PluginVersion            = "0.4.10"
+	PluginVersion            = "0.5.0"
 	WritePDFEnv              = "GAUGE_STUDIO_WRITE_PDF"
 	WriteSingleHTMLEnv       = "GAUGE_STUDIO_WRITE_SINGLE"
 	UhilReportExt            = ".uhilreport"

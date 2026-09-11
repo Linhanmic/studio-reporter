@@ -5,8 +5,8 @@
 
 ## 当前版本
 
-- 插件：**0.4.10**（本 PR）
-- 主干能力：静态终态报告（CANoe 风 Overview/左右栏）+ 可选 PDF / 单文件 HTML + WS 实时 viewer + 归档/管理 + `.uhilreport` 再生
+- 工具：**0.5.0**（本 PR；独立报告 CLI，Gauge 插件为一种模式）
+- 主干能力：独立 CLI（generate/serve/plugin）+ 静态终态报告（CANoe 风）+ 可选 PDF / 单文件 HTML + WS 实时 viewer + 归档/管理 + `.uhilreport` 再生
 
 ## P0 — 工程基建
 
@@ -49,6 +49,7 @@
 - [x] CANoe 风 Overview + 左右分栏 + 截图画廊/lightbox
 - [x] 结构化 PDF 导出（`--pdf` / `GAUGE_STUDIO_WRITE_PDF`；Chrome print，非拼图）
 - [x] 单文件 HTML（内联截图；`--single` / `GAUGE_STUDIO_WRITE_SINGLE` → `report.single.html`；目录版 `index.html` 仍为默认真源）
+- [x] 独立报告工具 CLI（`generate` / `serve` / `plugin` / `version`；保留 `--start`/`--input` 兼容；产品定位 v0.5）
 
 ## 迭代日志
 
@@ -68,6 +69,8 @@
 | 2026-09-11 | 复杂 Gauge 夹具 | 真实 `.spec`/`.cpt` 树 + Go 合成 SuiteResult（无需 Gauge 运行时）；覆盖嵌套概念、表驱动、截图、CJK、skip、multiline |
 | 2026-09-11 | CANoe Overview / 分栏 / PDF | 交互在 HTML；PDF 为 Chrome 结构化打印；截图：步骤全量 + 失败标注 + hook + lightbox；`meta` 附加字段不升 formatVersion |
 | 2026-09-11 | 单文件 HTML | 默认仍写目录版；可选 `report.single.html` 把 `images/` 内联为 data URI；分享单文件、不替代可移植 uhileport 单元 |
+
+| 2026-09-11 | 独立报告工具 CLI | 产品身份改为 standalone tool；Gauge 插件降为 `plugin`/`--start` 接入；子命令 `generate`/`serve`/`plugin`；legacy 扁平 flag 保留 |
 
 ## 下一任务（选定）
 

@@ -1,10 +1,18 @@
 # Studio Reporter — Design
 
-本文描述 **v0.4.10** 起的真实架构与关键决策。实现以仓库代码为准；文档随迭代更新。
+本文描述 **v0.5.0** 起的真实架构与关键决策。实现以仓库代码为准；文档随迭代更新。
 
 ## 产品目标
 
-Gauge 执行期：
+**Studio Reporter 是独立的测试报告工具**；Gauge 插件模式是其一种数据接入方式，不是产品边界。
+
+核心能力：
+
+1. 从可移植报告文件（`.uhilreport`）生成 / 再生 HTML、单文件 HTML、PDF
+2. 提供本地报告 hub（浏览 / 历史 / 管理）
+3. （可选）作为 Gauge reporter 插件：实时 WS 转发 + 套件结束落盘
+
+Gauge 执行期（plugin 模式）仍覆盖：
 
 1. 把生命周期事件实时转发到 Gauge Studio（WebSocket）
 2. 在本地生成可读、可归档、可再生成的测试报告
@@ -54,7 +62,7 @@ Gauge (gRPC)
 | `orchestrate.go` | Suite 结束单路径 |
 | `assets.go` | embed `viewer.html` / `manage.html` / assets |
 
-主包负责：gRPC、WebSocket forwarder、history、`--serve`、浏览器打开回调。
+主包负责：CLI 路由（`generate`/`serve`/`plugin`）、gRPC 插件模式、WebSocket forwarder、history、浏览器打开回调。
 
 ## 决策原则
 
@@ -94,6 +102,7 @@ Gauge (gRPC)
 | 2026-09-11 | 交互主体验 = HTML；PDF = 同源打印 | 「可交互 PDF」在业界多为 HTML Viewer + 打印；真正交互保留左导航/Overview/lightbox；PDF 用 Chrome print 保留文字链接图片，避免栅格拼贴 |
 | 2026-09-11 | Overview + 左右分栏 + 截图策略 | 对齐 CANoe Test Report Viewer：首页环境配置、左树跳转；步骤全量截图 + 失败标注 + hook 截图 + dialog 放大 |
 | 2026-09-11 | 单文件 HTML 为可选导出，不替换目录版 | 分享场景需要自包含文件；`index.html`+`images/` 仍是默认真源与 uhileport 可移植单元；内联用 data URI，缺图 best-effort |
+| 2026-09-11 | 产品升级为独立报告工具（v0.5） | CLI 子命令为用户面；Gauge `--start` 降为兼容接入；避免“只会当插件跑”的认知锁死；对照 Allure/ReportPortal CLI 工具形态 |
 
 ## 前端资源布局（SSoT）
 
