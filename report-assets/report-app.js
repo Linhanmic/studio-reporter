@@ -511,7 +511,7 @@ const reportDataEl = document.getElementById('report-data');
           <el-table-column label="结果" width="70">
             <template #default="{ row: scn }"><el-tag :type="tagType(scn.verdict)" size="small">{{ verdictLabel(scn.verdict) }}</el-tag></template>
           </el-table-column>
-          <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
+          <el-table-column label="运行时间" width="112" min-width="112" class-name="col-time" label-class-name="col-time" prop="duration"></el-table-column>
         </el-table>`
     };
     const ItemTable = {
@@ -582,7 +582,7 @@ const reportDataEl = document.getElementById('report-data');
           <el-table-column label="结果" width="70">
             <template #default="{ row }"><el-tag :type="tagType(itemVerdict(row))" size="small">{{ verdictLabel(itemVerdict(row)) }}</el-tag></template>
           </el-table-column>
-          <el-table-column label="运行时间" width="96">
+          <el-table-column label="运行时间" width="112" min-width="112" class-name="col-time" label-class-name="col-time">
             <template #default="{ row }">{{ itemDuration(row) }}</template>
           </el-table-column>
         </el-table>`

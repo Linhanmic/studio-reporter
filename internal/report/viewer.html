@@ -132,7 +132,11 @@
     .dense-table.el-table th.col-type,
     .dense-table.el-table td.col-type,
     .dense-table.el-table th.col-type .cell,
-    .dense-table.el-table td.col-type .cell {
+    .dense-table.el-table td.col-type .cell,
+    .dense-table.el-table th.col-time,
+    .dense-table.el-table td.col-time,
+    .dense-table.el-table th.col-time .cell,
+    .dense-table.el-table td.col-time .cell {
       white-space: nowrap !important;
       word-break: keep-all;
     }
@@ -292,7 +296,7 @@
                 <el-table-column label="结果" width="70">
                   <template #default="{ row: body }"><el-tag :type="tagType(body.verdict)" size="small">{{ verdictLabel(body.verdict) }}</el-tag></template>
                 </el-table-column>
-                <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
+                <el-table-column label="运行时间" width="112" min-width="112" class-name="col-time" label-class-name="col-time" prop="duration"></el-table-column>
               </el-table>
             </div>
           </template>
@@ -306,7 +310,7 @@
         <el-table-column label="结果" width="70">
           <template #default="{ row }"><el-tag :type="tagType(row.verdict)" size="small">{{ verdictLabel(row.verdict) }}</el-tag></template>
         </el-table-column>
-        <el-table-column label="运行时间" width="96" prop="duration"></el-table-column>
+        <el-table-column label="运行时间" width="112" min-width="112" class-name="col-time" label-class-name="col-time" prop="duration"></el-table-column>
       </el-table>
     </main>
       </div>
