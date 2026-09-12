@@ -1717,8 +1717,23 @@
     var report = emptyStateMetricsReportMeta();
     // Prefer visible-subset JSON so kind chips shrink the issue payload by default.
     var json = formatEmptyStateMetricsVisibleJSON();
+    var presetId = '';
+    var presetName = '默认';
+    try {
+      presetId = getActiveEmptyStateMetricsMetaFieldNamedPresetId() || 'default';
+      var preset = findEmptyStateMetricsMetaFieldNamedPreset(presetId);
+      if (preset && preset.name) presetName = preset.name;
+      else if (presetId && presetId !== 'default') presetName = presetId;
+    } catch (ePreset) {}
+    var presetSummary = '';
+    try {
+      presetSummary = describeEmptyStateMetricsMetaFieldNamedPreset(
+        findEmptyStateMetricsMetaFieldNamedPreset(presetId || 'default')
+      );
+    } catch (eSummary) {}
+    var title = '### studio-reporter 空态 metrics · 预设 ' + presetName;
     var lines = [
-      '### studio-reporter 空态 metrics',
+      title,
       '',
       '- 项目: ' + (report.projectName ? ('`' + report.projectName + '`') : '_（未知）_'),
       '- 结果: ' + (report.verdict ? ('`' + report.verdict + '`') : '_（未知）_'),
@@ -1726,6 +1741,7 @@
       '- 项目根目录: ' + (report.projectRoot ? ('`' + report.projectRoot + '`') : '_（未知）_'),
       '- 主机: ' + (report.hostName ? ('`' + report.hostName + '`') : '_（未知）_'),
       '- 插件版本: ' + (report.pluginVersion ? ('`' + report.pluginVersion + '`') : '_（未知）_'),
+      '- meta 字段预设: `' + presetName + '`' + (presetId && presetId !== 'default' ? (' (`' + presetId + '`)') : '') + (presetSummary ? (' — ' + presetSummary) : ''),
       '- 开启链接: ' + (enableURL ? ('`' + enableURL + '`') : '_（无法生成）_'),
       '- 当前过滤: ' + filter,
       '- 事件 kind: ' + (kindFilter ? ('`' + kindFilter + '`（可见子集）') : '当前未过滤'),

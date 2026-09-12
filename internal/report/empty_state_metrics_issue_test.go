@@ -65,6 +65,7 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 	probe := "<script>\n(function () {\n" +
 		"  function mark(v) { document.documentElement.setAttribute('data-issue-md', v); }\n" +
 		"  function go() {\n" +
+		"    var applyNamed = window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPreset;\n" +
 		"    var format = window.StudioReportFormatEmptyStateMetricsIssueMarkdown;\n" +
 		"    var copy = window.StudioReportCopyEmptyStateMetricsIssueMarkdown;\n" +
 		"    var show = window.StudioReportShowEmptyStateMetricsPanel;\n" +
@@ -98,7 +99,20 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"      && mdAll.indexOf('主机') >= 0\n" +
 		"      && mdAll.indexOf('ci-host-1') >= 0\n" +
 		"      && mdAll.indexOf('插件版本') >= 0\n" +
-		"      && mdAll.indexOf('0.5.2') >= 0;\n" +
+		"      && mdAll.indexOf('0.5.2') >= 0\n" +
+		"      && mdAll.indexOf('### studio-reporter 空态 metrics · 预设') >= 0\n" +
+		"      && mdAll.indexOf('meta 字段预设') >= 0;\n" +
+		"    var presetOk = true;\n" +
+		"    if (typeof applyNamed === 'function') {\n" +
+		"      applyNamed('ci-slim');\n" +
+		"      var mdPreset = format();\n" +
+		"      presetOk = typeof mdPreset === 'string'\n" +
+		"        && mdPreset.indexOf('### studio-reporter 空态 metrics · 预设') >= 0\n" +
+		"        && (mdPreset.indexOf('CI') >= 0 || mdPreset.indexOf('精简') >= 0)\n" +
+		"        && mdPreset.indexOf('ci-slim') >= 0\n" +
+		"        && mdPreset.indexOf('meta 字段预设') >= 0;\n" +
+		"      applyNamed('default');\n" +
+		"    }\n" +
 		"    setKind('escClear');\n" +
 		"    var mdEsc = format();\n" +
 		"    var escOk = typeof mdEsc === 'string'\n" +
@@ -114,7 +128,7 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"    try { parsed = JSON.parse(embedded); } catch (e2) {}\n" +
 		"    var subsetOk = parsed && Array.isArray(parsed.events) && parsed.events.length >= 1\n" +
 		"      && parsed.events.every(function (ev) { return ev && ev.kind === 'escClear'; });\n" +
-		"    mark((allOk && escOk && subsetOk) ? 'ok' : ('fail:all=' + allOk + ';esc=' + escOk + ';sub=' + subsetOk + ';md=' + String(mdEsc).slice(0, 220)));\n" +
+		"    mark((allOk && escOk && subsetOk && presetOk) ? 'ok' : ('fail:all=' + allOk + ';esc=' + escOk + ';sub=' + subsetOk + ';preset=' + presetOk + ';md=' + String(mdEsc).slice(0, 220)));\n" +
 		"  }\n" +
 		"  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);\n" +
 		"  else setTimeout(go, 100);\n" +
