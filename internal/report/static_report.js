@@ -152,6 +152,31 @@
   }
 
   var lastFilterSnapshot = null;
+  var emptyStateMetrics = {
+    clear: 0,
+    restoreFailOnly: 0,
+    undo: 0,
+    escClear: 0,
+    ctrlZUndo: 0
+  };
+  var emptyStateEvents = [];
+
+  function recordEmptyStateEvent(kind, detail) {
+    emptyStateMetrics[kind] = (emptyStateMetrics[kind] || 0) + 1;
+    var entry = {
+      kind: kind,
+      at: Date.now(),
+      detail: detail || null
+    };
+    emptyStateEvents.push(entry);
+    if (emptyStateEvents.length > 50) emptyStateEvents.shift();
+    try {
+      if (window.StudioReportDebugEmptyState) {
+        // Opt-in verbose console tracing for UX evaluation.
+        console.debug('[studio-report:empty-state]', kind, detail || {});
+      }
+    } catch (e) {}
+  }
 
   function captureFilterSnapshot() {
     return {
@@ -193,8 +218,10 @@
     return !!(btn && !btn.hasAttribute('hidden'));
   }
 
-  function clearReportFilters() {
-    lastFilterSnapshot = captureFilterSnapshot();
+  function clearReportFilters(opts) {
+    opts = opts || {};
+    var before = captureFilterSnapshot();
+    lastFilterSnapshot = before;
     state.query = '';
     state.spec = 'all';
     state.scenario = 'all';
@@ -202,12 +229,17 @@
     if (failStepsOnly) setFailStepsOnly(false, { silent: true, skipHash: true });
     applyFilter();
     syncUndoClearFiltersButton();
+    recordEmptyStateEvent(opts.source === 'esc' ? 'escClear' : 'clear', {
+      source: opts.source || 'button',
+      before: before
+    });
     flashStatus('已清除过滤（可撤销）');
   }
 
   // Clear search/spec noise but keep a fail-focused view (scenario=fail).
   function restoreFailOnlyView() {
-    lastFilterSnapshot = captureFilterSnapshot();
+    var before = captureFilterSnapshot();
+    lastFilterSnapshot = before;
     state.query = '';
     state.spec = 'all';
     state.scenario = 'fail';
@@ -215,6 +247,7 @@
     if (failStepsOnly) setFailStepsOnly(false, { silent: true, skipHash: true });
     applyFilter();
     syncUndoClearFiltersButton();
+    recordEmptyStateEvent('restoreFailOnly', { source: 'button', before: before });
     flashStatus('已切换到仅失败视图（可撤销）');
   }
 
@@ -229,7 +262,8 @@
     return bits.length ? bits.join(' · ') : '完整报告（无过滤）';
   }
 
-  function undoClearReportFilters() {
+  function undoClearReportFilters(opts) {
+    opts = opts || {};
     if (!lastFilterSnapshot) {
       flashStatus('没有可撤销的过滤快照');
       return;
@@ -238,6 +272,10 @@
     lastFilterSnapshot = null;
     applyFilterSnapshot(snap);
     syncUndoClearFiltersButton();
+    recordEmptyStateEvent(opts.source === 'ctrlz' ? 'ctrlZUndo' : 'undo', {
+      source: opts.source || 'button',
+      restored: snap
+    });
     flashStatus('已撤销清除，已恢复：' + describeFilterSnapshot(snap));
   }
 
@@ -1335,7 +1373,7 @@ function copyFailSummary() {
       // Empty fail-reason state: Esc clears filters (unless typing in an input).
       if (!isTypingTarget(ev.target) && failReasonEmptyStateActive()) {
         ev.preventDefault();
-        clearReportFilters();
+        clearReportFilters({ source: 'esc' });
         return;
       }
       return;
@@ -1345,7 +1383,7 @@ function copyFailSummary() {
     if ((ev.key === 'z' || ev.key === 'Z') && (ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey) {
       if (!isTypingTarget(ev.target) && lastFilterSnapshot) {
         ev.preventDefault();
-        undoClearReportFilters();
+        undoClearReportFilters({ source: 'ctrlz' });
         return;
       }
     }
@@ -1423,6 +1461,16 @@ function copyFailSummary() {
   window.StudioReportUndoClearReportFilters = undoClearReportFilters;
   window.StudioReportDescribeFilterSnapshot = describeFilterSnapshot;
   window.StudioReportFailReasonEmptyStateActive = failReasonEmptyStateActive;
+  window.StudioReportEmptyStateMetrics = function () {
+    return {
+      clear: emptyStateMetrics.clear || 0,
+      restoreFailOnly: emptyStateMetrics.restoreFailOnly || 0,
+      undo: emptyStateMetrics.undo || 0,
+      escClear: emptyStateMetrics.escClear || 0,
+      ctrlZUndo: emptyStateMetrics.ctrlZUndo || 0,
+      events: emptyStateEvents.slice()
+    };
+  };
   window.StudioReportFilterState = function () {
     return { query: state.query, spec: state.spec, scenario: state.scenario, failStepsOnly: !!failStepsOnly };
   };
