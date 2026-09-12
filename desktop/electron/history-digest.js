@@ -104,6 +104,23 @@ function buildHistoryFailDigest(runs, opts = {}) {
 }
 
 /**
+ * Pick run + focus for opening/copying a fail-digest reason group.
+ * Uses the group's latest failing run and its topFailFocus when present.
+ * @param {{ lastRunId?: string, lastRunFocus?: string }} group
+ * @returns {{ runId: string, focus: string, failSteps: true } | null}
+ */
+function resolveDigestGroupOpenTarget(group) {
+  if (!group || typeof group !== 'object') return null;
+  const runId = String(group.lastRunId || '').trim();
+  if (!runId) return null;
+  return {
+    runId,
+    focus: String(group.lastRunFocus || '').trim(),
+    failSteps: true,
+  };
+}
+
+/**
  * studio-reporter://open deep link for one history run (failSteps=1).
  * @param {string} runId
  * @param {string} hub
@@ -301,6 +318,7 @@ module.exports = {
   DEFAULT_DIGEST_LIMIT,
   normalizeFailReason,
   buildHistoryFailDigest,
+  resolveDigestGroupOpenTarget,
   formatHistoryFailDigestMarkdown,
   formatHistoryFailDigestJson,
   buildHistoryFailDigestOpenLinks,

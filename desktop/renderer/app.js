@@ -1560,10 +1560,17 @@ function renderHistoryTrendPanel(bundle) {
         (bundle.digest?.groups || []).length
           ? `<ol class="history-digest-list">${(bundle.digest.groups || [])
               .slice(0, 8)
-              .map(
-                (g) =>
-                  `<li><strong>${g.count}×</strong> ${escapeHtml(g.reason)} <span class="muted">· ${escapeHtml(g.lastRunId || '')}</span></li>`,
-              )
+              .map((g) => {
+                const runId = String(g.lastRunId || '').trim();
+                const focus = String(g.lastRunFocus || '').trim();
+                const openBtn = runId
+                  ? `<button type="button" class="linkish" data-digest-run="${escapeHtml(runId)}" data-digest-focus="${escapeHtml(focus)}" title="打开最近失败运行并定位">${escapeHtml(runId)}</button>`
+                  : '<span class="muted">—</span>';
+                const copyBtn = runId
+                  ? `<button type="button" class="btn btn-tiny" data-digest-copy-run="${escapeHtml(runId)}" data-digest-copy-focus="${escapeHtml(focus)}" title="复制带 focus 的 open 深链">复制深链</button>`
+                  : '';
+                return `<li><strong>${g.count}×</strong> ${escapeHtml(g.reason)} <span class="muted">·</span> ${openBtn} ${copyBtn}</li>`;
+              })
               .join('')}</ol>`
           : '<p class="muted">窗口内无失败原因可汇总。</p>'
       }
@@ -1598,6 +1605,45 @@ function renderHistoryTrendPanel(bundle) {
       const id = btn.getAttribute('data-trend-run');
       const run = state.historyRuns.find((r) => r.id === id);
       if (run) await openHistoryRunEntry(run);
+    });
+  });
+  panel.querySelectorAll('[data-digest-run]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-digest-run');
+      const focus = btn.getAttribute('data-digest-focus') || '';
+      const run = state.historyRuns.find((r) => r.id === id);
+      if (!run) {
+        setStatus('找不到对应历史运行', 'warn');
+        return;
+      }
+      await openHistoryRunEntry(run, { focus: focus || undefined, failSteps: true });
+    });
+  });
+  panel.querySelectorAll('[data-digest-copy-run]').forEach((btn) => {
+    btn.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const id = btn.getAttribute('data-digest-copy-run') || '';
+      const focus = btn.getAttribute('data-digest-copy-focus') || '';
+      if (!id) {
+        setStatus('失败原因摘要缺少可复制的运行 id', 'warn');
+        return;
+      }
+      if (typeof window.desktopAPI?.copyOpenDeepLink !== 'function') {
+        setStatus('当前版本不支持复制 open 深链', 'warn');
+        return;
+      }
+      try {
+        const copied = await window.desktopAPI.copyOpenDeepLink({
+          run: id,
+          hub: state.settings?.reportHubDir || '',
+          focus: focus || undefined,
+          failSteps: true,
+        });
+        setStatus(`已复制失败原因摘要深链：${copied?.url || ''}`, 'ok');
+      } catch (err) {
+        setStatus(String(err.message || err), 'warn');
+      }
     });
   });
   panel.querySelectorAll('[data-flaky-run]').forEach((btn) => {

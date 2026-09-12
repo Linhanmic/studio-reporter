@@ -260,3 +260,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 1. `*.uhilreport` 可再生 HTML  
 2. `report.json` 信封兼容（`formatVersion`）  
 3. Gauge 插件启动契约（`--start` / gRPC / WS 端口打印）
+| 2026-09-12 | 趋势失败原因摘要一键打开定位 | digest 组最近失败接到 open+focus；复制深链与 flaky 行对称；`resolveDigestGroupOpenTarget` |
