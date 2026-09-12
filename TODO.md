@@ -203,6 +203,9 @@
 - [x] 静态报告失败原因空态 metrics 事件环空结果引导（kind 过滤后无事件时提供「清除过滤 / 显示全部」；`syncEmptyStateMetricsEvents`）
 - [x] 静态报告失败原因空态 metrics 折叠态显示当前 kind 摘要（「事件(N) · esc」；`data-kind-filter`；折叠时 title 提示已过滤 kind）
 - [x] 静态报告失败原因空态 metrics 折叠态一键清除 kind（事件按钮旁「清除 kind」；无需展开；`clear-empty-state-metrics-event-kind-collapsed`）
+- [x] 静态报告失败原因空态 metrics 开启链接复制前确认 kind 摘要（无 kind 时状态栏「当前未过滤」；`describeEmptyMetricsEnableURLPreview`）
+- [x] 静态报告失败原因空态 metrics 复制链接按钮实时 kind 摘要（title/aria；`syncEmptyMetricsEnableURLButtons` / `describeEmptyMetricsEnableKindSummary`）
+- [x] 静态报告失败原因空态 metrics 贴 issue 明示未过滤（事件 kind 行写「当前未过滤」而非「全部」）
 
 ## 迭代日志
 
@@ -437,6 +440,11 @@
 | 2026-09-12 | 失败原因空态 metrics 折叠态 kind 摘要 | 事件(N) · esc；data-kind-filter 高亮 |
 | 2026-09-12 | 失败原因空态 metrics 折叠态清除 kind | 折叠旁「清除 kind」无需展开 |
 
+| 2026-09-12 | 失败原因空态 metrics 折叠态清除 kind | 折叠旁「清除 kind」无需展开 |
+| 2026-09-12 | 失败原因空态 metrics 开启链接确认 kind | 复制后状态栏无 kind 时提示「当前未过滤」 |
+| 2026-09-12 | 失败原因空态 metrics 复制链接按钮 kind 摘要 | title/aria 实时反映 kind / 当前未过滤 |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue 未过滤文案 | 事件 kind 行与预览用语对齐 |
+
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 开启链接复制前确认 kind 摘要**（复制开启链接时若无 kind 可提示「当前未过滤」），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 导出 JSON 附带报告 meta**（project / verdict / generatedAt，便于贴 issue 定位运行），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

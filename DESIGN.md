@@ -301,3 +301,6 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 空结果引导 | 过滤后无事件时提供清除过滤 / 显示全部 |
 | 2026-09-12 | 失败原因空态 metrics 折叠态 kind 摘要 | 事件按钮显示 · kind；data-kind-filter |
 | 2026-09-12 | 失败原因空态 metrics 折叠态清除 kind | 折叠旁「清除 kind」无需展开 |
+| 2026-09-12 | 失败原因空态 metrics 开启链接确认 kind | describeEmptyMetricsEnableURLPreview：无 kind 时追加「当前未过滤」 |
+| 2026-09-12 | 失败原因空态 metrics 复制链接按钮 kind 摘要 | syncEmptyMetricsEnableURLButtons 同步 title/aria |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue 未过滤文案 | 事件 kind 行与预览用语对齐为「当前未过滤」 |

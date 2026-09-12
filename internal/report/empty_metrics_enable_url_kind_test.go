@@ -46,6 +46,9 @@ func TestEmptyMetricsEnableURLKindFilter(t *testing.T) {
 		`StudioReportFormatEmptyMetricsEnableURL`,
 		`StudioReportDescribeEmptyMetricsEnableURLPreview`,
 		` · kind=`,
+		`当前未过滤`,
+		`StudioReportSyncEmptyMetricsEnableURLButtons`,
+		`StudioReportDescribeEmptyMetricsEnableKindSummary`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -104,8 +107,20 @@ func TestEmptyMetricsEnableURLKindFilter(t *testing.T) {
 		"    try { history.replaceState(null, '', location.pathname + '?emptyMetrics=1#overview'); } catch (e5) {}\n" +
 		"    var clearUrl = format();\n" +
 		"    var clearOk = typeof clearUrl === 'string' && /[?&]emptyMetrics=1(?:&|#|$)/.test(clearUrl) && !/[?&]emptyMetricsKind=/.test(clearUrl);\n" +
-		"    var clearPreviewOk = describe(clearUrl).indexOf('kind=') < 0;\n" +
-		"    mark((urlOk && previewOk && shortOk && applyOk && clearOk && clearPreviewOk) ? 'ok' : ('fail:url=' + urlOk + ';prev=' + previewOk + ';short=' + shortOk + ';apply=' + applyOk + ';clear=' + clearOk + ';cprev=' + clearPreviewOk + ';u=' + String(url).slice(0, 120) + ';p=' + String(preview).slice(0, 80)));\n" +
+		"    var clearPreview = describe(clearUrl);\n" +
+		"    var clearPreviewOk = typeof clearPreview === 'string' && clearPreview.indexOf('当前未过滤') >= 0 && clearPreview.indexOf('kind=') < 0;\n" +
+		"    var withKindPreviewOk = preview.indexOf('当前未过滤') < 0;\n" +
+		"    var syncBtns = window.StudioReportSyncEmptyMetricsEnableURLButtons;\n" +
+		"    var summaryFn = window.StudioReportDescribeEmptyMetricsEnableKindSummary;\n" +
+		"    setKind('escClear');\n" +
+		"    if (typeof syncBtns === 'function') syncBtns();\n" +
+		"    var btn = document.querySelector('[data-action=copy-empty-metrics-enable-url]');\n" +
+		"    var titleKindOk = !!btn && /kind=escClear/.test(btn.title || '') && /kind=escClear/.test(btn.getAttribute('aria-label') || '');\n" +
+		"    setKind('');\n" +
+		"    if (typeof syncBtns === 'function') syncBtns();\n" +
+		"    var titleClearOk = !!btn && /当前未过滤/.test(btn.title || '') && /当前未过滤/.test(btn.getAttribute('aria-label') || '');\n" +
+		"    var summaryOk = typeof summaryFn === 'function' && summaryFn('') === '当前未过滤' && summaryFn('escClear') === 'kind=escClear';\n" +
+		"    mark((urlOk && previewOk && withKindPreviewOk && shortOk && applyOk && clearOk && clearPreviewOk && titleKindOk && titleClearOk && summaryOk) ? 'ok' : ('fail:url=' + urlOk + ';prev=' + previewOk + ';wk=' + withKindPreviewOk + ';short=' + shortOk + ';apply=' + applyOk + ';clear=' + clearOk + ';cprev=' + clearPreviewOk + ';tk=' + titleKindOk + ';tc=' + titleClearOk + ';sum=' + summaryOk + ';u=' + String(url).slice(0, 120) + ';p=' + String(preview).slice(0, 80) + ';cp=' + String(clearPreview).slice(0, 80) + ';title=' + String(btn && btn.title).slice(0, 80)));\n" +
 		"  }\n" +
 		"  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);\n" +
 		"  else setTimeout(go, 100);\n" +

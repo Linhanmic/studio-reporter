@@ -242,11 +242,15 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportCopyEmptyMetricsEnableURL`,
 		`StudioReportShortenEmptyMetricsEnableURL`,
 		`StudioReportDescribeEmptyMetricsEnableURLPreview`,
+		`StudioReportDescribeEmptyMetricsEnableKindSummary`,
+		`StudioReportSyncEmptyMetricsEnableURLButtons`,
 		`StudioReportFormatEmptyMetricsEnableURL`,
 		`emptyMetricsKind`,
 		`StudioReportApplyEmptyMetricsKindFromQuery`,
 		`StudioReportReadEmptyMetricsKindFromQuery`,
 		`copy-empty-metrics-enable-url`,
+		` · kind=`,
+		`当前未过滤`,
 		`StudioReportShowEmptyStateMetricsPanel`,
 		`dismiss-empty-metrics-enable-hint`,
 		`show-empty-state-metrics-panel`,
@@ -269,8 +273,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`toggle-empty-state-metrics-events`,
 		`data-kind-filter`,
 		`syncEmptyStateMetricsCollapsedKindClear`,
-		`overview-empty-state-metrics-kind-clear-collapsed`,
 		`clear-empty-state-metrics-event-kind-collapsed`,
+		`当前未过滤`,
 		`copy-empty-state-metrics-event`,
 		`copy-empty-state-metrics-visible-events`,
 		`copy-empty-state-metrics-visible-json`,
@@ -370,9 +374,12 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-kind`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-event-kind filter chips")
-		if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-kind-clear`) {
-			t.Fatal("CSS missing overview-empty-state-metrics-event-kind-clear")
-		}
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-kind-clear`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-event-kind-clear")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-kind-clear-collapsed`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-kind-clear-collapsed")
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-actions`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-event-actions for copy-visible")

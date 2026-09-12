@@ -266,6 +266,7 @@
       else localStorage.removeItem('studio-report-empty-metrics-event-kind');
     } catch (e) {}
     syncEmptyStateMetricsEvents();
+    try { syncEmptyMetricsEnableURLButtons(); } catch (e2) {}
     return emptyStateMetricsEventKindFilter();
   }
 
@@ -675,7 +676,7 @@
       '',
       '- 开启链接: ' + (enableURL ? ('`' + enableURL + '`') : '_（无法生成）_'),
       '- 当前过滤: ' + filter,
-      '- 事件 kind: ' + (kindFilter ? ('`' + kindFilter + '`（可见子集）') : '全部'),
+      '- 事件 kind: ' + (kindFilter ? ('`' + kindFilter + '`（可见子集）') : '当前未过滤'),
       '',
       '```json',
       json,
@@ -796,6 +797,25 @@
     return path + search + hash;
   }
 
+  function describeEmptyMetricsEnableKindSummary(kind) {
+    var k = kind == null ? '' : String(kind || '');
+    if (!k) {
+      try { k = emptyStateMetricsEventKindFilter(); } catch (e) { k = ''; }
+    }
+    if (k && EMPTY_STATE_EVENT_KIND_LABELS[k]) return 'kind=' + k;
+    return '当前未过滤';
+  }
+
+  function syncEmptyMetricsEnableURLButtons() {
+    var summary = describeEmptyMetricsEnableKindSummary();
+    var title = '复制带 ?emptyMetrics=1 的可分享 URL（' + summary + '；保留当前 hash 过滤）';
+    var label = '复制空态 metrics 开启链接（' + summary + '）';
+    document.querySelectorAll('[data-action="copy-empty-metrics-enable-url"]').forEach(function (btn) {
+      btn.title = title;
+      btn.setAttribute('aria-label', label);
+    });
+  }
+
   function describeEmptyMetricsEnableURLPreview(url) {
     var preview = shortenEmptyMetricsEnableURL(url);
     var kind = '';
@@ -806,10 +826,11 @@
     if (!kind) {
       try { kind = emptyStateMetricsEventKindFilter(); } catch (e2) {}
     }
+    // Keep contiguous " · kind=" for status-bar / static contract checks.
     if (kind && EMPTY_STATE_EVENT_KIND_LABELS[kind]) {
       return preview + ' · kind=' + kind;
     }
-    return preview;
+    return preview + ' · 当前未过滤';
   }
 
   function copyEmptyMetricsEnableURL() {
@@ -854,11 +875,13 @@
     if (emptyStateMetricsPanelEnabled()) {
       el.setAttribute('hidden', '');
       el.classList.remove('is-compact');
+      try { syncEmptyMetricsEnableURLButtons(); } catch (e) {}
       return;
     }
     el.removeAttribute('hidden');
     if (emptyMetricsEnableHintDismissed()) el.classList.add('is-compact');
     else el.classList.remove('is-compact');
+    try { syncEmptyMetricsEnableURLButtons(); } catch (e2) {}
   }
 
   function setEmptyStateMetricsPanelVisible(visible) {
@@ -2303,6 +2326,8 @@ function copyFailSummary() {
   window.StudioReportCopyEmptyMetricsEnableURL = copyEmptyMetricsEnableURL;
   window.StudioReportShortenEmptyMetricsEnableURL = shortenEmptyMetricsEnableURL;
   window.StudioReportDescribeEmptyMetricsEnableURLPreview = describeEmptyMetricsEnableURLPreview;
+  window.StudioReportDescribeEmptyMetricsEnableKindSummary = describeEmptyMetricsEnableKindSummary;
+  window.StudioReportSyncEmptyMetricsEnableURLButtons = syncEmptyMetricsEnableURLButtons;
   window.StudioReportSyncEmptyMetricsEnableHint = syncEmptyMetricsEnableHint;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;
@@ -2310,6 +2335,7 @@ function copyFailSummary() {
   try { syncEmptyStateMetricsPanel(); } catch (e) {}
   try { syncEmptyMetricsEnableHint(); } catch (e2) {}
   try { applyEmptyMetricsKindFromQuery(); } catch (e3) {}
+  try { syncEmptyMetricsEnableURLButtons(); } catch (e4) {}
   window.StudioReportReadEmptyMetricsKindFromQuery = readEmptyMetricsKindFromQuery;
   window.StudioReportApplyEmptyMetricsKindFromQuery = applyEmptyMetricsKindFromQuery;
   window.StudioReportFilterState = function () {
