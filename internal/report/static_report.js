@@ -205,6 +205,84 @@
       ' ctrlZ=' + (emptyStateMetrics.ctrlZUndo || 0);
   }
 
+  function emptyStateMetricsEventsExpanded() {
+    try {
+      var ls = localStorage.getItem('studio-report-empty-metrics-events');
+      return ls === '1' || ls === 'true' || ls === 'expanded';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setEmptyStateMetricsEventsExpanded(on) {
+    try {
+      localStorage.setItem('studio-report-empty-metrics-events', on ? '1' : '0');
+    } catch (e) {}
+    syncEmptyStateMetricsEvents();
+  }
+
+  function toggleEmptyStateMetricsEvents() {
+    setEmptyStateMetricsEventsExpanded(!emptyStateMetricsEventsExpanded());
+  }
+
+  function formatEmptyStateMetricsEventLine(entry) {
+    var kind = entry && entry.kind ? String(entry.kind) : '?';
+    var when = '';
+    try {
+      if (entry && entry.at) when = new Date(entry.at).toISOString().slice(11, 19);
+    } catch (e) {}
+    var detail = '';
+    try {
+      if (entry && entry.detail != null) {
+        detail = typeof entry.detail === 'string' ? entry.detail : JSON.stringify(entry.detail);
+        if (detail.length > 80) detail = detail.slice(0, 77) + '…';
+      }
+    } catch (e2) {}
+    return (when ? (when + ' ') : '') + kind + (detail ? (' · ' + detail) : '');
+  }
+
+  function syncEmptyStateMetricsEvents() {
+    var listEl = document.getElementById('overview-empty-state-metrics-events');
+    var toggleBtn = document.querySelector(
+      '#overview-empty-state-metrics [data-action="toggle-empty-state-metrics-events"]'
+    );
+    var n = emptyStateEvents.length;
+    var expanded = emptyStateMetricsEventsExpanded();
+    if (toggleBtn) {
+      toggleBtn.textContent = '事件(' + n + ')' + (expanded ? ' ▾' : ' ▸');
+      toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      toggleBtn.title = expanded
+        ? '折叠事件环（减少噪音）'
+        : '展开事件环（默认折叠）';
+    }
+    if (!listEl) return;
+    if (!expanded) {
+      listEl.setAttribute('hidden', '');
+      listEl.innerHTML = '';
+      return;
+    }
+    listEl.removeAttribute('hidden');
+    if (!n) {
+      listEl.innerHTML = '<div class="overview-empty-state-metrics-events-empty">暂无事件</div>';
+      return;
+    }
+    var html = '<ol class="overview-empty-state-metrics-events-list">';
+    var i;
+    for (i = 0; i < emptyStateEvents.length; i++) {
+      html += '<li>' + escapeHTML(formatEmptyStateMetricsEventLine(emptyStateEvents[i])) + '</li>';
+    }
+    html += '</ol>';
+    listEl.innerHTML = html;
+  }
+
+  function escapeHTML(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function snapshotEmptyStateMetrics() {
     return {
       clear: emptyStateMetrics.clear || 0,
@@ -493,6 +571,7 @@
       el.setAttribute('hidden', '');
       el.setAttribute('aria-hidden', 'true');
       syncEmptyStateMetricsPanelButtons(el, false);
+      syncEmptyStateMetricsEvents();
       return;
     }
     var textEl = document.getElementById('overview-empty-state-metrics-text');
@@ -505,6 +584,7 @@
       el.setAttribute('aria-label', '空态操作 metrics');
     }
     syncEmptyStateMetricsPanelButtons(el, true);
+    syncEmptyStateMetricsEvents();
   }
 
   function captureFilterSnapshot() {
@@ -1667,6 +1747,10 @@ function copyFailSummary() {
         copyEmptyStateMetricsIssueMarkdown();
         return;
       }
+      if (actionBtn.dataset.action === 'toggle-empty-state-metrics-events') {
+        toggleEmptyStateMetricsEvents();
+        return;
+      }
       if (actionBtn.dataset.action === 'download-empty-state-metrics-json') {
         downloadEmptyStateMetricsJSON();
         return;
@@ -1829,6 +1913,10 @@ function copyFailSummary() {
   window.StudioReportFormatEmptyStateMetricsIssueMarkdown = formatEmptyStateMetricsIssueMarkdown;
   window.StudioReportCopyEmptyStateMetricsIssueMarkdown = copyEmptyStateMetricsIssueMarkdown;
   window.StudioReportDownloadEmptyStateMetricsIssueMarkdown = downloadEmptyStateMetricsIssueMarkdown;
+  window.StudioReportToggleEmptyStateMetricsEvents = toggleEmptyStateMetricsEvents;
+  window.StudioReportEmptyStateMetricsEventsExpanded = emptyStateMetricsEventsExpanded;
+  window.StudioReportSetEmptyStateMetricsEventsExpanded = setEmptyStateMetricsEventsExpanded;
+  window.StudioReportSyncEmptyStateMetricsEvents = syncEmptyStateMetricsEvents;
   window.StudioReportEmptyStateMetricsPanelSnapshot = emptyStateMetricsPanelSnapshot;
   window.StudioReportResetEmptyStateMetrics = resetEmptyStateMetrics;
   window.StudioReportHideEmptyStateMetricsPanel = hideEmptyStateMetricsPanel;
