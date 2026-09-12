@@ -166,6 +166,7 @@
 - [x] manage.html 失败原因摘要行一键打开定位（页内打开带 focus；复制深链；与 Desktop `resolveDigestGroupOpenTarget` 同源）
 - [x] 静态报告失败原因聚合行「复制深链」（Overview 行按钮；path-style focus 可分享 URL；`failReasonShareURL`/`StudioReportFailReasonShareURL`）
 - [x] 静态报告失败原因聚合行「复制摘要片段」（单行 Markdown 含定位深链；`formatFailReasonSnippet`/`StudioReportFormatFailReasonSnippet`）
+- [x] 静态报告失败原因聚合「复制全部摘要片段」（一键复制可见全部原因 Markdown 列表；`formatAllFailReasonSnippets`/`StudioReportFormatAllFailReasonSnippets`）
 
 ## 迭代日志
 
@@ -362,7 +363,8 @@
 | 2026-09-12 | 静态报告失败原因聚合复制深链 | Overview 行「复制深链」；保留过滤；path-style focus；JS/HTML 契约 |
 
 | 2026-09-12 | 静态报告失败原因聚合复制摘要片段 | Overview 行「复制摘要」；Markdown 含次数/原因/场景/path-style 定位 |
+| 2026-09-12 | 静态报告失败原因聚合复制全部摘要 | Overview「复制全部摘要」；可见原因 Markdown 列表；与行级片段同源 |
 
 ## 下一任务（选定）
 
-**静态报告失败原因聚合「复制全部摘要片段」**（一键复制当前可见全部原因的 Markdown 列表），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因聚合「复制全部定位深链」**（一键复制当前可见全部原因的定位 URL 列表，换行分隔），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

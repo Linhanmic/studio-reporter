@@ -148,7 +148,7 @@ When a suite finishes, the plugin writes a **static HTML report** to `reports/st
 
 The report includes:
 
-- **Overview** home page: project / host / OS / plugin / format / custom meta + counts + spec list + **fail-reason clusters** (group by primary error; counts, filter badges, and fail clusters sync to visible tree when filtered / fail-steps-only)
+- **Overview** home page: project / host / OS / plugin / format / custom meta + counts + spec list + **fail-reason clusters** (group by primary error; per-row copy deep link / snippet + bulk 「复制全部摘要」; counts, filter badges, and fail clusters sync to visible tree when filtered / fail-steps-only)
 - Left **navigation tree** (spec → scenario) with jump links; right content pane (CANoe-like)
 - Nested expandable result blocks (spec → scenario → concept → step)
 - Overall verdict, duration, environment, and success rate

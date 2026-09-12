@@ -91,6 +91,8 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`复制深链`,
 		`复制摘要`,
 		`copy-fail-reason-snippet`,
+		`复制全部摘要`,
+		`copy-all-fail-reason-snippets`,
 		`boom`,
 		`data-nav-target="scn:fail"`,
 	} {
@@ -204,8 +206,13 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportCopyFailReasonLink`,
 		`StudioReportCopyFailReasonSnippet`,
 		`StudioReportFormatFailReasonSnippet`,
+		`StudioReportCopyAllFailReasonSnippets`,
+		`StudioReportFormatAllFailReasonSnippets`,
 		`copyFailReasonSnippet`,
 		`formatFailReasonSnippet`,
+		`copyAllFailReasonSnippets`,
+		`formatAllFailReasonSnippets`,
+		`copy-all-fail-reason-snippets`,
 		`FAIL_SUMMARY_LOCATOR_EXAMPLE`,
 		`copyFailSummaryLocatorExample`,
 		`StudioReportCollectFailSummary`,
@@ -240,5 +247,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.action-btn.action-btn-tiny`) {
 		t.Fatal("CSS missing action-btn-tiny for fail-reason deep-link button")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-fail-reason-tools`) {
+		t.Fatal("CSS missing overview-fail-reason-tools for bulk copy affordance")
 	}
 }

@@ -821,6 +821,31 @@ function writeHash(id) {
     });
   }
 
+  // Markdown list of all visible fail-reason snippets (same shape as per-row「复制摘要」).
+  function formatAllFailReasonSnippets() {
+    syncFailReasonOverview();
+    var parts = [];
+    document.querySelectorAll('.fail-reason-row:not(.filter-hidden)').forEach(function (row) {
+      var snip = formatFailReasonSnippet(row);
+      if (snip) parts.push(snip);
+    });
+    return parts.join('\n');
+  }
+
+  function copyAllFailReasonSnippets() {
+    var text = formatAllFailReasonSnippets();
+    if (!text) {
+      flashStatus('当前过滤下无可复制的失败原因摘要');
+      return Promise.resolve();
+    }
+    var n = (text.match(/^- /gm) || []).length;
+    return copyText(text + '\n').then(function () {
+      flashStatus('已复制全部失败原因摘要（' + n + ' 条，含定位深链）');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
   function collectFailSummary() {
     syncFailReasonOverview();
     var fails = visibleFailScenarios();
@@ -1087,6 +1112,10 @@ function copyFailSummary() {
         if (snippetRow) copyFailReasonSnippet(snippetRow);
         return;
       }
+      if (actionBtn.dataset.action === 'copy-all-fail-reason-snippets') {
+        copyAllFailReasonSnippets();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1096,7 +1125,7 @@ function copyFailSummary() {
     // Click count/reason (not a scenario link / copy button) → jump to first visible matching fail.
     var failJump = ev.target.closest('.fail-reason-count, .fail-reason-text, .fail-reason-row');
     if (failJump) {
-      if (ev.target.closest('[data-action="copy-fail-reason-link"], [data-action="copy-fail-reason-snippet"]')) return;
+      if (ev.target.closest('[data-action="copy-fail-reason-link"], [data-action="copy-fail-reason-snippet"], [data-action="copy-all-fail-reason-snippets"]')) return;
       var row = failJump.classList.contains('fail-reason-row')
         ? failJump
         : failJump.closest('.fail-reason-row');
@@ -1189,4 +1218,6 @@ function copyFailSummary() {
   window.StudioReportCopyFailReasonLink = copyFailReasonLink;
   window.StudioReportFormatFailReasonSnippet = formatFailReasonSnippet;
   window.StudioReportCopyFailReasonSnippet = copyFailReasonSnippet;
+  window.StudioReportFormatAllFailReasonSnippets = formatAllFailReasonSnippets;
+  window.StudioReportCopyAllFailReasonSnippets = copyAllFailReasonSnippets;
 })();
