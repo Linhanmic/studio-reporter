@@ -178,6 +178,7 @@
 - [x] 静态报告失败原因空态撤销快捷键（Ctrl/Cmd+Z 在可撤销时恢复；输入框内不抢原生撤销）
 - [x] 静态报告失败原因空态撤销状态摘要（撤销后状态栏展示已恢复过滤；`describeFilterSnapshot`）
 - [x] 静态报告失败原因空态操作可观测（计数 + 事件环缓冲；`StudioReportEmptyStateMetrics`；`StudioReportDebugEmptyState` 可选 console）
+- [x] 静态报告失败原因空态 metrics 面板开关（`?emptyMetrics=1` / localStorage / `StudioReportShowEmptyStateMetrics`；`overview-empty-state-metrics`）
 
 ## 迭代日志
 
@@ -386,7 +387,8 @@
 | 2026-09-12 | 失败原因空态撤销快捷键 | Ctrl/Cmd+Z 撤销清除（输入中不抢原生撤销） |
 | 2026-09-12 | 失败原因空态撤销状态摘要 | 撤销后状态栏显示已恢复的过滤摘要（搜索/场景/仅失败步骤） |
 | 2026-09-12 | 失败原因空态操作可观测 | clear/restoreFailOnly/undo/esc/ctrlZ 计数与事件环；可选 debug console |
+| 2026-09-12 | 失败原因空态 metrics 面板 | `?emptyMetrics=1` / localStorage 开启 Overview 轻量计数条 |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 面板开关**（设置/query 开启后在 Overview 显示轻量计数，便于本地 UX 抽检），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 导出**（一键复制 EmptyStateMetrics JSON，便于贴到 issue），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
