@@ -846,6 +846,31 @@ function writeHash(id) {
     });
   }
 
+  // Newline-separated share URLs for each visible fail-reason row (first visible jump).
+  function formatAllFailReasonLinks() {
+    syncFailReasonOverview();
+    var urls = [];
+    document.querySelectorAll('.fail-reason-row:not(.filter-hidden)').forEach(function (row) {
+      var url = failReasonShareURL(row);
+      if (url) urls.push(url);
+    });
+    return urls.join('\n');
+  }
+
+  function copyAllFailReasonLinks() {
+    var text = formatAllFailReasonLinks();
+    if (!text) {
+      flashStatus('当前过滤下无可复制的失败原因定位深链');
+      return Promise.resolve();
+    }
+    var n = text.split('\n').filter(Boolean).length;
+    return copyText(text + '\n').then(function () {
+      flashStatus('已复制全部失败原因定位深链（' + n + ' 条）');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
   function collectFailSummary() {
     syncFailReasonOverview();
     var fails = visibleFailScenarios();
@@ -1116,6 +1141,10 @@ function copyFailSummary() {
         copyAllFailReasonSnippets();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-all-fail-reason-links') {
+        copyAllFailReasonLinks();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1125,7 +1154,7 @@ function copyFailSummary() {
     // Click count/reason (not a scenario link / copy button) → jump to first visible matching fail.
     var failJump = ev.target.closest('.fail-reason-count, .fail-reason-text, .fail-reason-row');
     if (failJump) {
-      if (ev.target.closest('[data-action="copy-fail-reason-link"], [data-action="copy-fail-reason-snippet"], [data-action="copy-all-fail-reason-snippets"]')) return;
+      if (ev.target.closest('[data-action="copy-fail-reason-link"], [data-action="copy-fail-reason-snippet"], [data-action="copy-all-fail-reason-snippets"], [data-action="copy-all-fail-reason-links"]')) return;
       var row = failJump.classList.contains('fail-reason-row')
         ? failJump
         : failJump.closest('.fail-reason-row');
@@ -1220,4 +1249,6 @@ function copyFailSummary() {
   window.StudioReportCopyFailReasonSnippet = copyFailReasonSnippet;
   window.StudioReportFormatAllFailReasonSnippets = formatAllFailReasonSnippets;
   window.StudioReportCopyAllFailReasonSnippets = copyAllFailReasonSnippets;
+  window.StudioReportFormatAllFailReasonLinks = formatAllFailReasonLinks;
+  window.StudioReportCopyAllFailReasonLinks = copyAllFailReasonLinks;
 })();
