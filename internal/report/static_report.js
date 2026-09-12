@@ -842,6 +842,30 @@
     syncEmptyStateMetricsMetaPresetToolbarChip();
   }
 
+  function emptyStateMetricsMetaFieldLabel(id) {
+    id = String(id || '');
+    for (var i = 0; i < EMPTY_STATE_METRICS_META_FIELD_DEFS.length; i++) {
+      if (EMPTY_STATE_METRICS_META_FIELD_DEFS[i].id === id) return EMPTY_STATE_METRICS_META_FIELD_DEFS[i].label;
+    }
+    return id;
+  }
+
+  function formatEmptyStateMetricsMetaFieldIdList(ids) {
+    var labels = [];
+    (ids || []).forEach(function (id) {
+      var label = emptyStateMetricsMetaFieldLabel(id);
+      if (label) labels.push(label);
+    });
+    return labels.length ? labels.join(' · ') : '（无）';
+  }
+
+  function describeEmptyStateMetricsMetaFieldNamedPreset(preset) {
+    if (!preset) return '';
+    var primary = formatEmptyStateMetricsMetaFieldIdList(preset.primary);
+    var secondary = formatEmptyStateMetricsMetaFieldIdList(preset.secondary);
+    return '主 ' + primary + '；次 ' + secondary;
+  }
+
   function emptyStateMetricsMetaPresetMenuIsOpen() {
     var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
     return !!(menu && !menu.hasAttribute('hidden'));
@@ -937,7 +961,12 @@
     var html = '';
     listed.forEach(function (p) {
       var active = p.id === activeId;
-      html += '<button type="button" role="menuitemradio" class="overview-empty-state-metrics-meta-preset-menu-item' + (active ? ' is-active' : '') + '" data-action="apply-empty-state-metrics-meta-field-named" data-named-preset="' + p.id + '" aria-checked="' + (active ? 'true' : 'false') + '" title="' + (p.builtin ? '内置预设' : '自定义预设') + '：' + p.name + '">' + p.name + (active ? ' ✓' : '') + '</button>';
+      var summary = describeEmptyStateMetricsMetaFieldNamedPreset(p);
+      var tip = (p.builtin ? '内置预设' : '自定义预设') + '：' + p.name + (summary ? ('；' + summary) : '');
+      html += '<button type="button" role="menuitemradio" class="overview-empty-state-metrics-meta-preset-menu-item' + (active ? ' is-active' : '') + '" data-action="apply-empty-state-metrics-meta-field-named" data-named-preset="' + p.id + '" aria-checked="' + (active ? 'true' : 'false') + '" title="' + tip + '" aria-description="' + tip + '">';
+      html += '<span class="overview-empty-state-metrics-meta-preset-menu-item-name">' + p.name + (active ? ' ✓' : '') + '</span>';
+      if (summary) html += '<span class="overview-empty-state-metrics-meta-preset-menu-item-summary">' + summary + '</span>';
+      html += '</button>';
     });
     html += '<button type="button" role="menuitem" class="overview-empty-state-metrics-meta-preset-menu-item overview-empty-state-metrics-meta-preset-menu-edit" data-action="open-empty-state-metrics-meta-fields" title="打开字段编辑器">字段编辑器…</button>';
     menu.innerHTML = html;
@@ -3571,6 +3600,8 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportCloseEmptyStateMetricsMetaPresetMenu = closeEmptyStateMetricsMetaPresetMenu;
   window.StudioReportNavigateEmptyStateMetricsMetaPresetMenu = navigateEmptyStateMetricsMetaPresetMenu;
   window.StudioReportEmptyStateMetricsMetaPresetMenuIsOpen = emptyStateMetricsMetaPresetMenuIsOpen;
+  window.StudioReportDescribeEmptyStateMetricsMetaFieldNamedPreset = describeEmptyStateMetricsMetaFieldNamedPreset;
+  window.StudioReportFormatEmptyStateMetricsMetaFieldIdList = formatEmptyStateMetricsMetaFieldIdList;
   window.StudioReportCycleEmptyStateMetricsMetaFieldNamedPreset = cycleEmptyStateMetricsMetaFieldNamedPreset;
   window.StudioReportActivateEmptyStateMetricsMetaPresetChip = activateEmptyStateMetricsMetaPresetChip;
   window.StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault = resetEmptyStateMetricsMetaFieldNamedPresetToDefault;

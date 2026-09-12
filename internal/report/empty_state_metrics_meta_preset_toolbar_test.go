@@ -63,6 +63,7 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
 		`StudioReportCloseEmptyStateMetricsMetaPresetMenu`,
 		`StudioReportNavigateEmptyStateMetricsMetaPresetMenu`,
 		`StudioReportEmptyStateMetricsMetaPresetMenuIsOpen`,
+		`StudioReportDescribeEmptyStateMetricsMetaFieldNamedPreset`,
 		`预设·默认`,
 		`回默认`,
 		`Shift+点击`,
@@ -81,6 +82,9 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-preset-menu`) {
 		t.Fatal("CSS missing meta-preset-menu")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-preset-menu-item-summary`) {
+		t.Fatal("CSS missing meta-preset-menu-item-summary")
 	}
 
 	chrome, err := findChrome()
@@ -109,11 +113,13 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
     var closeMenu = window.StudioReportCloseEmptyStateMetricsMetaPresetMenu;
     var navMenu = window.StudioReportNavigateEmptyStateMetricsMetaPresetMenu;
     var menuOpen = window.StudioReportEmptyStateMetricsMetaPresetMenuIsOpen;
+    var describePreset = window.StudioReportDescribeEmptyStateMetricsMetaFieldNamedPreset;
     if (typeof show !== 'function' || typeof applyNamed !== 'function' || typeof activeNamed !== 'function'
       || typeof syncChip !== 'function' || typeof openEditor !== 'function' || typeof cycle !== 'function'
       || typeof activate !== 'function' || typeof resetDefault !== 'function'
       || typeof openMenu !== 'function' || typeof closeMenu !== 'function'
-      || typeof navMenu !== 'function' || typeof menuOpen !== 'function') {
+      || typeof navMenu !== 'function' || typeof menuOpen !== 'function'
+      || typeof describePreset !== 'function') {
       mark('missing');
       return;
     }
@@ -224,15 +230,29 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
     syncChip();
     var enterOk = activeNamed() === 'ci-slim' && !menuOpen();
 
+    // Menu item summaries show primary/secondary field labels.
+    openMenu(chip);
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var slimBtn = menu && menu.querySelector('[data-named-preset="ci-slim"]');
+    var slimSummary = slimBtn && slimBtn.querySelector('.overview-empty-state-metrics-meta-preset-menu-item-summary');
+    var described = describePreset({ name: 'CI 精简', primary: ['projectName', 'verdict'], secondary: [] });
+    var summaryApiOk = typeof described === 'string' && described.indexOf('主') >= 0 && described.indexOf('项目') >= 0 && described.indexOf('结论') >= 0;
+    var summaryDomOk = !!slimSummary && (slimSummary.textContent || '').indexOf('项目') >= 0
+      && (slimSummary.textContent || '').indexOf('结论') >= 0
+      && (slimBtn.getAttribute('aria-description') || '').indexOf('主') >= 0;
+    closeMenu();
+
     var ok = defLabelOk && defHiddenOk && actionOk && cycle1Ok && cycle2Ok && cycleBackOk
       && shiftOpenOk && editorChipOk && afterEditorOk && resetOk && bridgeResetOk
       && menuOpenOk && menuApplyOk && reopenOk && closeOk && escOk
-      && navStartOk && downOk && endOk && homeOk && enterOk;
+      && navStartOk && downOk && endOk && homeOk && enterOk
+      && summaryApiOk && summaryDomOk;
     mark(ok ? 'ok' : ('fail:def=' + defLabelOk + ';dh=' + defHiddenOk + ';act=' + actionOk
       + ';c1=' + cycle1Ok + ';c2=' + cycle2Ok + ';cb=' + cycleBackOk + ';sh=' + shiftOpenOk
       + ';ec=' + editorChipOk + ';ae=' + afterEditorOk + ';rs=' + resetOk + ';br=' + bridgeResetOk
       + ';mo=' + menuOpenOk + ';ma=' + menuApplyOk + ';re=' + reopenOk + ';cl=' + closeOk + ';esc=' + escOk
       + ';ns=' + navStartOk + ';dn=' + downOk + ';en=' + endOk + ';hm=' + homeOk + ';ent=' + enterOk
+      + ';sa=' + summaryApiOk + ';sd=' + summaryDomOk
       + ';chip=' + (chip.textContent || '') + ';active=' + activeNamed()));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);

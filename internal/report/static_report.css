@@ -894,6 +894,17 @@ html, body {
 .overview-empty-state-metrics-meta-preset-menu-item.is-active {
   font-weight: 700;
 }
+.overview-empty-state-metrics-meta-preset-menu-item-name {
+  display: block;
+}
+.overview-empty-state-metrics-meta-preset-menu-item-summary {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.78em;
+  font-weight: 400;
+  opacity: 0.72;
+  line-height: 1.25;
+}
 .overview-empty-state-metrics-meta-preset-menu-edit {
   border-top: 1px solid var(--border, #c9ced6);
   margin-top: 0.15rem;
