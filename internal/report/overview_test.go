@@ -255,7 +255,7 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportFormatEmptyStateMetricsEventLine`,
 		`StudioReportSetEmptyStateMetricsEventKindFilter`,
 		`StudioReportEmptyStateMetricsEventKindFilter`,
-				`StudioReportCopyEmptyStateMetricsVisibleEventLines`,
+		`StudioReportCopyEmptyStateMetricsVisibleEventLines`,
 		`StudioReportFormatEmptyStateMetricsVisibleEventLines`,
 		`StudioReportFormatEmptyStateMetricsVisibleJSON`,
 		`StudioReportCopyEmptyStateMetricsVisibleJSON`,
