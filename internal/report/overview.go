@@ -241,8 +241,8 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 		return
 	}
 	b.WriteString("<h3 class=\"overview-subtitle\">失败原因聚合</h3>\n")
-	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击次数或原因跳到该类首个可见失败场景；点击场景名直接定位；「复制深链」复制带 path-style focus 的可分享 URL（保留当前过滤）。过滤或「仅失败步骤」开启时，上方汇总计数、失败原因聚合与复制摘要均仅统计结果树中当前可见的节点。</p>\n")
-	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th><th>深链</th></tr></thead><tbody>\n")
+	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击次数或原因跳到该类首个可见失败场景；点击场景名直接定位；「复制深链」复制可分享 URL，「复制摘要」复制含定位的单行 Markdown（均保留当前过滤）。过滤或「仅失败步骤」开启时，上方汇总计数、失败原因聚合与复制摘要均仅统计结果树中当前可见的节点。</p>\n")
+	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th><th>操作</th></tr></thead><tbody>\n")
 	for _, g := range groups {
 		b.WriteString("<tr class=\"fail-reason-row\" data-fail-reason=\"")
 		b.WriteString(html.EscapeString(g.Reason))
@@ -286,7 +286,10 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 				b.WriteString("</span>")
 			}
 		}
-		b.WriteString("</td><td class=\"fail-reason-actions\"><button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-fail-reason-link\" title=\"复制该类首个可见失败场景的可分享定位深链\">复制深链</button></td></tr>\n")
+		b.WriteString("</td><td class=\"fail-reason-actions\">")
+		b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-fail-reason-link\" title=\"复制该类首个可见失败场景的可分享定位深链\">复制深链</button> ")
+		b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-fail-reason-snippet\" title=\"复制含次数/原因/场景/定位的单行 Markdown，便于粘贴到工单\">复制摘要</button>")
+		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody></table>\n")
 }

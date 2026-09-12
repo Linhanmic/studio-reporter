@@ -789,6 +789,38 @@ function writeHash(id) {
     });
   }
 
+  function formatFailReasonSnippet(row) {
+    if (!row) return '';
+    syncFailReasonOverview();
+    var countEl = row.querySelector('.fail-reason-count');
+    var count = countEl ? String(countEl.textContent || '').trim() : '';
+    if (!count) count = String(row.getAttribute('data-fail-count-visible') || row.getAttribute('data-fail-count-total') || '').trim();
+    var reason = String(row.getAttribute('data-fail-reason') || '').trim();
+    var refs = [];
+    row.querySelectorAll('.fail-reason-ref:not(.ref-hidden)').forEach(function (ref) {
+      var a = ref.querySelector('a');
+      var label = a ? (a.textContent || '').trim() : (ref.textContent || '').trim();
+      if (label) refs.push(label);
+    });
+    var line = '- (' + (count || '?') + ') ' + reason + (refs.length ? ' — ' + refs.join(', ') : '');
+    var url = failReasonShareURL(row);
+    if (url) line += '\n  - 定位: `' + url + '`';
+    return line;
+  }
+
+  function copyFailReasonSnippet(row) {
+    var snip = formatFailReasonSnippet(row);
+    if (!snip) {
+      flashStatus('当前过滤下该失败原因无可复制摘要');
+      return Promise.resolve();
+    }
+    return copyText(snip + '\n').then(function () {
+      flashStatus('已复制失败原因摘要片段（含定位深链）');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
   function collectFailSummary() {
     syncFailReasonOverview();
     var fails = visibleFailScenarios();
@@ -1050,6 +1082,11 @@ function copyFailSummary() {
         if (reasonRow) copyFailReasonLink(reasonRow);
         return;
       }
+      if (actionBtn.dataset.action === 'copy-fail-reason-snippet') {
+        var snippetRow = actionBtn.closest('.fail-reason-row');
+        if (snippetRow) copyFailReasonSnippet(snippetRow);
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1059,7 +1096,7 @@ function copyFailSummary() {
     // Click count/reason (not a scenario link / copy button) → jump to first visible matching fail.
     var failJump = ev.target.closest('.fail-reason-count, .fail-reason-text, .fail-reason-row');
     if (failJump) {
-      if (ev.target.closest('[data-action="copy-fail-reason-link"]')) return;
+      if (ev.target.closest('[data-action="copy-fail-reason-link"], [data-action="copy-fail-reason-snippet"]')) return;
       var row = failJump.classList.contains('fail-reason-row')
         ? failJump
         : failJump.closest('.fail-reason-row');
@@ -1150,4 +1187,6 @@ function copyFailSummary() {
   window.StudioReportCopyFailSummaryLocatorExample = copyFailSummaryLocatorExample;
   window.StudioReportFailReasonShareURL = failReasonShareURL;
   window.StudioReportCopyFailReasonLink = copyFailReasonLink;
+  window.StudioReportFormatFailReasonSnippet = formatFailReasonSnippet;
+  window.StudioReportCopyFailReasonSnippet = copyFailReasonSnippet;
 })();
