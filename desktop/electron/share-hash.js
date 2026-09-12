@@ -147,6 +147,31 @@ function resolveReportOpenHash(opts = {}) {
   return '';
 }
 
+/**
+ * Extract path-style focus ids from static-report "复制失败摘要" Markdown.
+ * Lines look like: `  - 定位: `#spec:specs/auth/login.spec-scn-0``
+ * Focus segments keep literal '/' (encodeShareFocus contract).
+ * @param {string} markdown
+ * @returns {string[]}
+ */
+function extractFailSummaryFocusHashes(markdown) {
+  const out = [];
+  const seen = new Set();
+  const re = /定位:\s*`#([^`]+)`/g;
+  let m;
+  const text = String(markdown || '');
+  while ((m = re.exec(text))) {
+    const frag = String(m[1] || '').trim();
+    if (!frag) continue;
+    const parsed = parseShareHash(frag.startsWith('#') ? frag : `#${frag}`);
+    const focus = String(parsed.focus || '').trim();
+    if (!focus || focus === 'overview' || seen.has(focus)) continue;
+    seen.add(focus);
+    out.push(focus);
+  }
+  return out;
+}
+
 module.exports = {
   parseShareHash,
   formatShareHash,
@@ -156,5 +181,6 @@ module.exports = {
   reportFocusHash,
   resolveReportOpenHash,
   appendShareHash,
+  extractFailSummaryFocusHashes,
   normalizeVerdict,
 };

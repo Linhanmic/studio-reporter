@@ -9,6 +9,7 @@ const {
   appendShareHash,
   reportFocusHash,
   resolveReportOpenHash,
+  extractFailSummaryFocusHashes,
 } = require('./share-hash.js');
 
 describe('share-hash', () => {
@@ -135,6 +136,31 @@ describe('share-hash', () => {
     assert.ok(!hash.includes('%2F'), 'fragment keeps / for getElementById');
     assert.equal(parseShareHash(hash).focus, focus);
     assert.equal(resolveReportOpenHash({ focus: parsed.focus, failSteps: true }), hash);
+  });
+
+
+  it('extractFailSummaryFocusHashes pulls path-style #focus from copy-fail-summary Markdown', () => {
+    const focus = 'spec:specs/auth/login.spec-scn-0';
+    const md = [
+      '# Studio Reporter — 失败摘要',
+      '',
+      '## 失败原因聚合',
+      '- (1) assertion failed: password — Bad password',
+      '  - 定位: `#' + focus + '`',
+      '',
+      '## 失败场景',
+      '1. Bad password (`' + focus + '`)',
+      '   - 定位: `#' + focus + '?failSteps=1`',
+      '',
+      '_由静态报告轻交互复制_',
+      '',
+    ].join('\n');
+    const ids = extractFailSummaryFocusHashes(md);
+    assert.deepEqual(ids, [focus]);
+    assert.ok(ids[0].includes('/'), 'path-style focus keeps slash');
+    const hash = resolveReportOpenHash({ focus: ids[0], failSteps: true });
+    assert.equal(hash, focus + '?failSteps=1');
+    assert.ok(!hash.includes('%2F'));
   });
 
 });

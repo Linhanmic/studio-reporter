@@ -19,6 +19,7 @@ const {
   resolveReportOpenHash,
   appendShareHash,
   parseShareHash,
+  extractFailSummaryFocusHashes,
 } = require('./share-hash.js');
 const {
   buildHistoryFailDigest,
@@ -287,4 +288,45 @@ describe('open-focus-pipeline', () => {
     }
     assertChromeOpensFocus(chrome, link, focus);
   });
+
+  it('fail-summary Markdown focus → Desktop open pipeline opens path-style details', () => {
+    const focus = 'spec:specs/auth/login.spec-scn-0';
+    // Mirrors static_report.js collectFailSummary "定位:" lines (literal '/').
+    const md = [
+      '# Studio Reporter — 失败摘要',
+      '',
+      '## 失败场景',
+      `1. Bad password (\`${focus}\`)`,
+      '   - assertion failed: password',
+      `   - 定位: \`#${focus}\``,
+      '',
+    ].join('\n');
+    const ids = extractFailSummaryFocusHashes(md);
+    assert.deepEqual(ids, [focus]);
+    const hash = resolveReportOpenHash({ focus: ids[0], failSteps: true });
+    assert.equal(hash, `${focus}?failSteps=1`);
+    assert.ok(!hash.includes('%2F'), 'hash keeps literal slash for DOM id');
+
+    // Same producer→consumer path as deep links: build open deeplink from extracted focus.
+    const link = buildOpenDeepLink({
+      run: 'run-summary-1',
+      hub: '/tmp/hub',
+      focus: ids[0],
+      failSteps: true,
+    });
+    assert.ok(link.includes('%2F'), 'open query encodes slash');
+    const { parsed, hash: openHash } = deepLinkToReportURL(link, 'http://127.0.0.1:9/index.html');
+    assert.equal(parsed.focus, focus);
+    assert.equal(openHash, `${focus}?failSteps=1`);
+
+    const chrome = findChrome();
+    if (!chrome) {
+      if (process.env.REQUIRE_CHROME === '1') {
+        assert.fail('chrome required (REQUIRE_CHROME=1) for fail-summary→open focus smoke');
+      }
+      return;
+    }
+    assertChromeOpensFocus(chrome, link, focus);
+  });
+
 });
