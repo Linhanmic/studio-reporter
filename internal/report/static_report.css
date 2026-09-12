@@ -156,6 +156,16 @@ html, body {
   line-height: 1.3;
 }
 .action-btn:hover { background: #f7fafc; }
+.action-btn:disabled,
+.action-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f3f5f7;
+}
+.action-btn:disabled:hover,
+.action-btn[aria-disabled="true"]:hover {
+  background: #f3f5f7;
+}
 .action-btn.action-btn-tiny {
   padding: 1px 7px;
   font-size: 10px;

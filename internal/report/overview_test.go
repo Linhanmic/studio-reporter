@@ -198,6 +198,7 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`wantFailStepsFromURL`,
 		`fail-steps`,
 		`syncFailReasonOverview`,
+		`syncBulkFailReasonCopyButtons`,
 		`firstVisibleFailReasonTarget`,
 		`jumpFailReasonRow`,
 		`collectFailSummary`,
@@ -212,6 +213,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportFormatAllFailReasonSnippets`,
 		`StudioReportCopyAllFailReasonLinks`,
 		`StudioReportFormatAllFailReasonLinks`,
+		`StudioReportSyncFailReasonOverview`,
+		`StudioReportSyncBulkFailReasonCopyButtons`,
 		`copyFailReasonSnippet`,
 		`formatFailReasonSnippet`,
 		`copyAllFailReasonSnippets`,
@@ -257,5 +260,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-fail-reason-tools`) {
 		t.Fatal("CSS missing overview-fail-reason-tools for bulk copy affordance")
+	}
+	if !strings.Contains(staticReportCSS, `.action-btn:disabled`) {
+		t.Fatal("CSS missing disabled action-btn style for bulk copy when no visible reasons")
 	}
 }

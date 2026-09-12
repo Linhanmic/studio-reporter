@@ -91,6 +91,7 @@
   // suite/spec hook refs (no data-scn-id) always stay.
   function syncFailReasonOverview() {
     var visible = visibleFailScenarioIdSet();
+    var visibleRows = 0;
     document.querySelectorAll('.fail-reason-row').forEach(function (row) {
       var n = 0;
       row.querySelectorAll('.fail-reason-ref').forEach(function (ref) {
@@ -103,6 +104,28 @@
       if (countEl) countEl.textContent = String(n);
       row.classList.toggle('filter-hidden', n === 0);
       row.setAttribute('data-fail-count-visible', String(n));
+      if (n > 0) visibleRows++;
+    });
+    syncBulkFailReasonCopyButtons(visibleRows);
+  }
+
+  function syncBulkFailReasonCopyButtons(visibleRows) {
+    var n = typeof visibleRows === 'number'
+      ? visibleRows
+      : document.querySelectorAll('.fail-reason-row:not(.filter-hidden)').length;
+    var disabled = n === 0;
+    document.querySelectorAll(
+      '[data-action="copy-all-fail-reason-snippets"], [data-action="copy-all-fail-reason-links"]'
+    ).forEach(function (btn) {
+      if (!btn.getAttribute('data-title-enabled')) {
+        btn.setAttribute('data-title-enabled', btn.getAttribute('title') || '');
+      }
+      btn.disabled = disabled;
+      btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+      btn.setAttribute(
+        'title',
+        disabled ? '当前过滤下无可复制的失败原因' : (btn.getAttribute('data-title-enabled') || '')
+      );
     });
   }
 
@@ -1251,4 +1274,6 @@ function copyFailSummary() {
   window.StudioReportCopyAllFailReasonSnippets = copyAllFailReasonSnippets;
   window.StudioReportFormatAllFailReasonLinks = formatAllFailReasonLinks;
   window.StudioReportCopyAllFailReasonLinks = copyAllFailReasonLinks;
+  window.StudioReportSyncFailReasonOverview = syncFailReasonOverview;
+  window.StudioReportSyncBulkFailReasonCopyButtons = syncBulkFailReasonCopyButtons;
 })();
