@@ -237,6 +237,70 @@
     return primary ? (primary + ' · ' + secondary) : secondary;
   }
 
+
+  function readEmptyMetricsMetaMoreFromQuery() {
+    try {
+      var q = String(location.search || '');
+      var m = q.match(/[?&](?:emptyMetricsMeta|empty-metrics-meta)=([^&#]*)/i);
+      if (!m) return null;
+      var raw = decodeURIComponent(String(m[1] || '').replace(/\+/g, ' ')).toLowerCase();
+      if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on' || raw === 'expanded') return true;
+      if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off' || raw === 'collapsed') return false;
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function applyEmptyMetricsMetaMoreFromQuery() {
+    var fromQ = readEmptyMetricsMetaMoreFromQuery();
+    if (fromQ === null) return emptyStateMetricsMetaMoreExpanded();
+    setEmptyStateMetricsMetaMoreExpanded(fromQ);
+    return emptyStateMetricsMetaMoreExpanded();
+  }
+
+  function stripEmptyMetricsMetaFromLocation() {
+    try {
+      var href = String(location.href || '');
+      var hashIdx = href.indexOf('#');
+      var base = hashIdx >= 0 ? href.slice(0, hashIdx) : href;
+      var hash = hashIdx >= 0 ? href.slice(hashIdx) : '';
+      var qIdx = base.indexOf('?');
+      if (qIdx < 0) return false;
+      var path = base.slice(0, qIdx);
+      var params = new URLSearchParams(base.slice(qIdx + 1));
+      var had = params.has('emptyMetricsMeta') || params.has('empty-metrics-meta');
+      if (!had) return false;
+      params.delete('emptyMetricsMeta');
+      params.delete('empty-metrics-meta');
+      var qs = params.toString();
+      history.replaceState(null, '', path + (qs ? ('?' + qs) : '') + hash);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function syncEmptyMetricsMetaInLocation(expanded) {
+    try {
+      var href = String(location.href || '');
+      var hashIdx = href.indexOf('#');
+      var base = hashIdx >= 0 ? href.slice(0, hashIdx) : href;
+      var hash = hashIdx >= 0 ? href.slice(hashIdx) : '';
+      var qIdx = base.indexOf('?');
+      var path = qIdx >= 0 ? base.slice(0, qIdx) : base;
+      var params = new URLSearchParams(qIdx >= 0 ? base.slice(qIdx + 1) : '');
+      params.delete('empty-metrics-meta');
+      if (expanded) params.set('emptyMetricsMeta', '1');
+      else params.delete('emptyMetricsMeta');
+      var qs = params.toString();
+      history.replaceState(null, '', path + (qs ? ('?' + qs) : '') + hash);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function emptyStateMetricsMetaMoreExpanded() {
     try {
       var ls = localStorage.getItem('studio-report-empty-metrics-meta-more');
@@ -250,6 +314,7 @@
     try {
       localStorage.setItem('studio-report-empty-metrics-meta-more', on ? '1' : '0');
     } catch (e) {}
+    try { syncEmptyMetricsMetaInLocation(!!on); } catch (e2) {}
     syncEmptyStateMetricsPanel();
   }
 
@@ -894,9 +959,12 @@
       params.delete('emptyMetrics');
       params.delete('empty-metrics-kind');
       params.delete('emptyMetricsKind');
+      params.delete('empty-metrics-meta');
+      params.delete('emptyMetricsMeta');
       params.set('emptyMetrics', '1');
       var kind = emptyStateMetricsEventKindFilter();
       if (kind) params.set('emptyMetricsKind', kind);
+      if (emptyStateMetricsMetaMoreExpanded()) params.set('emptyMetricsMeta', '1');
       var qs = params.toString();
       return path + (qs ? ('?' + qs) : '') + hash;
     } catch (e) {
@@ -977,10 +1045,24 @@
       try { kind = emptyStateMetricsEventKindFilter(); } catch (e2) {}
     }
     // Keep contiguous " · kind=" for status-bar / static contract checks.
+    var out;
     if (kind && EMPTY_STATE_EVENT_KIND_LABELS[kind]) {
-      return preview + ' · kind=' + kind;
+      out = preview + ' · kind=' + kind;
+    } else {
+      out = preview + ' · 当前未过滤';
     }
-    return preview + ' · 当前未过滤';
+    var metaOn = false;
+    try {
+      var mm = String(url || '').match(/[?&](?:emptyMetricsMeta|empty-metrics-meta)=([^&#]*)/i);
+      if (mm) {
+        var mv = decodeURIComponent(String(mm[1] || '').replace(/\+/g, ' ')).toLowerCase();
+        metaOn = mv === '1' || mv === 'true' || mv === 'yes' || mv === 'on' || mv === 'expanded';
+      } else {
+        metaOn = emptyStateMetricsMetaMoreExpanded();
+      }
+    } catch (e3) {}
+    if (metaOn) out += ' · meta+';
+    return out;
   }
 
   function copyEmptyMetricsEnableURL() {
@@ -2516,6 +2598,9 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportFormatEmptyStateMetricsReportSummary = formatEmptyStateMetricsReportSummary;
   window.StudioReportSetEmptyStateMetricsMetaMoreExpanded = setEmptyStateMetricsMetaMoreExpanded;
   window.StudioReportToggleEmptyStateMetricsMetaMore = toggleEmptyStateMetricsMetaMore;
+  window.StudioReportSyncEmptyMetricsMetaInLocation = syncEmptyMetricsMetaInLocation;
+  window.StudioReportApplyEmptyMetricsMetaMoreFromQuery = applyEmptyMetricsMetaMoreFromQuery;
+  window.StudioReportReadEmptyMetricsMetaMoreFromQuery = readEmptyMetricsMetaMoreFromQuery;
   window.StudioReportFormatEmptyStateMetricsReportSummarySecondary = formatEmptyStateMetricsReportSummarySecondary;
   window.StudioReportFormatEmptyStateMetricsReportSummaryPrimary = formatEmptyStateMetricsReportSummaryPrimary;
   window.StudioReportCopyEmptyStateMetricsReportSummary = copyEmptyStateMetricsReportSummary;
@@ -2525,6 +2610,7 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   try { syncEmptyStateMetricsPanel(); } catch (e) {}
   try { syncEmptyMetricsEnableHint(); } catch (e2) {}
   try { applyEmptyMetricsKindFromQuery(); } catch (e3) {}
+  try { applyEmptyMetricsMetaMoreFromQuery(); } catch (eMeta) {}
   try { syncEmptyMetricsEnableURLButtons(); } catch (e4) {}
   window.StudioReportReadEmptyMetricsKindFromQuery = readEmptyMetricsKindFromQuery;
   window.StudioReportApplyEmptyMetricsKindFromQuery = applyEmptyMetricsKindFromQuery;

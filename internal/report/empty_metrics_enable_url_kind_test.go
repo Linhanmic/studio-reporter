@@ -47,6 +47,9 @@ func TestEmptyMetricsEnableURLKindFilter(t *testing.T) {
 		`StudioReportDescribeEmptyMetricsEnableURLPreview`,
 		` · kind=`,
 		`当前未过滤`,
+		`emptyMetricsMeta`,
+		` · meta+`,
+		`StudioReportApplyEmptyMetricsMetaMoreFromQuery`,
 		`StudioReportSyncEmptyMetricsEnableURLButtons`,
 		`StudioReportDescribeEmptyMetricsEnableKindSummary`,
 	} {
@@ -120,7 +123,22 @@ func TestEmptyMetricsEnableURLKindFilter(t *testing.T) {
 		"    if (typeof syncBtns === 'function') syncBtns();\n" +
 		"    var titleClearOk = !!btn && /当前未过滤/.test(btn.title || '') && /当前未过滤/.test(btn.getAttribute('aria-label') || '');\n" +
 		"    var summaryOk = typeof summaryFn === 'function' && summaryFn('') === '当前未过滤' && summaryFn('escClear') === 'kind=escClear';\n" +
-		"    mark((urlOk && previewOk && withKindPreviewOk && shortOk && applyOk && clearOk && clearPreviewOk && titleKindOk && titleClearOk && summaryOk) ? 'ok' : ('fail:url=' + urlOk + ';prev=' + previewOk + ';wk=' + withKindPreviewOk + ';short=' + shortOk + ';apply=' + applyOk + ';clear=' + clearOk + ';cprev=' + clearPreviewOk + ';tk=' + titleKindOk + ';tc=' + titleClearOk + ';sum=' + summaryOk + ';u=' + String(url).slice(0, 120) + ';p=' + String(preview).slice(0, 80) + ';cp=' + String(clearPreview).slice(0, 80) + ';title=' + String(btn && btn.title).slice(0, 80)));\n" +
+		"    var setMeta = window.StudioReportSetEmptyStateMetricsMetaMoreExpanded;\n" +
+		"    var applyMeta = window.StudioReportApplyEmptyMetricsMetaMoreFromQuery;\n" +
+		"    var metaOk = false;\n" +
+		"    if (typeof setMeta === 'function' && typeof applyMeta === 'function') {\n" +
+		"      setMeta(true);\n" +
+		"      var metaUrl = format();\n" +
+		"      var metaPreview = describe(metaUrl);\n" +
+		"      var metaUrlOk = typeof metaUrl === 'string' && /[?&]emptyMetricsMeta=1(?:&|#|$)/.test(metaUrl);\n" +
+		"      var metaPrevOk = typeof metaPreview === 'string' && metaPreview.indexOf('meta+') >= 0;\n" +
+		"      try { history.replaceState(null, '', location.pathname + '?emptyMetrics=1&emptyMetricsMeta=1#overview'); } catch (eMeta) {}\n" +
+		"      try { localStorage.setItem('studio-report-empty-metrics-meta-more', '0'); } catch (eMeta2) {}\n" +
+		"      var appliedMeta = applyMeta();\n" +
+		"      metaOk = metaUrlOk && metaPrevOk && appliedMeta === true;\n" +
+		"      setMeta(false);\n" +
+		"    }\n" +
+		"    mark((urlOk && previewOk && withKindPreviewOk && shortOk && applyOk && clearOk && clearPreviewOk && titleKindOk && titleClearOk && summaryOk && metaOk) ? 'ok' : ('fail:url=' + urlOk + ';prev=' + previewOk + ';wk=' + withKindPreviewOk + ';short=' + shortOk + ';apply=' + applyOk + ';clear=' + clearOk + ';cprev=' + clearPreviewOk + ';tk=' + titleKindOk + ';tc=' + titleClearOk + ';sum=' + summaryOk + ';meta=' + metaOk + ';u=' + String(url).slice(0, 120) + ';p=' + String(preview).slice(0, 80) + ';cp=' + String(clearPreview).slice(0, 80) + ';title=' + String(btn && btn.title).slice(0, 80)));\n" +
 		"  }\n" +
 		"  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);\n" +
 		"  else setTimeout(go, 100);\n" +
