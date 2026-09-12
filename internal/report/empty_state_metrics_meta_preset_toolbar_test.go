@@ -8,8 +8,8 @@ import (
 )
 
 // TestEmptyStateMetricsMetaPresetToolbarChip verifies the tools-row named-preset
-// chip cycles presets on click, opens the fields editor on Shift+click, and
-// resets to default via the companion button.
+// chip cycles presets on click, opens the fields editor on Shift+click, opens a
+// keyboard/context menu of named presets, and resets to default via the companion button.
 func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
 	r := &Report{
 		ProjectName: "meta-preset-toolbar",
@@ -59,9 +59,13 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
 		`StudioReportCycleEmptyStateMetricsMetaFieldNamedPreset`,
 		`StudioReportActivateEmptyStateMetricsMetaPresetChip`,
 		`StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault`,
+		`StudioReportOpenEmptyStateMetricsMetaPresetMenu`,
+		`StudioReportCloseEmptyStateMetricsMetaPresetMenu`,
 		`预设·默认`,
 		`回默认`,
 		`Shift+点击`,
+		`右键`,
+		`aria-haspopup="menu"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -72,6 +76,9 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-preset-chip.is-custom`) {
 		t.Fatal("CSS missing meta-preset-chip.is-custom")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-preset-menu`) {
+		t.Fatal("CSS missing meta-preset-menu")
 	}
 
 	chrome, err := findChrome()
@@ -96,9 +103,12 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
     var cycle = window.StudioReportCycleEmptyStateMetricsMetaFieldNamedPreset;
     var activate = window.StudioReportActivateEmptyStateMetricsMetaPresetChip;
     var resetDefault = window.StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault;
+    var openMenu = window.StudioReportOpenEmptyStateMetricsMetaPresetMenu;
+    var closeMenu = window.StudioReportCloseEmptyStateMetricsMetaPresetMenu;
     if (typeof show !== 'function' || typeof applyNamed !== 'function' || typeof activeNamed !== 'function'
       || typeof syncChip !== 'function' || typeof openEditor !== 'function' || typeof cycle !== 'function'
-      || typeof activate !== 'function' || typeof resetDefault !== 'function') {
+      || typeof activate !== 'function' || typeof resetDefault !== 'function'
+      || typeof openMenu !== 'function' || typeof closeMenu !== 'function') {
       mark('missing');
       return;
     }
@@ -163,11 +173,36 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
     syncChip();
     var bridgeResetOk = activeNamed() === 'default' && resetBtn.hasAttribute('hidden');
 
+    // Named-preset menu: Alt+activate / openMenu lists presets; pick debug-full; Esc closes.
+    activate({ altKey: true });
+    var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var menuOpenOk = !!menu && !menu.hasAttribute('hidden')
+      && !!menu.querySelector('[data-action="apply-empty-state-metrics-meta-field-named"][data-named-preset="ci-slim"]')
+      && !!menu.querySelector('[data-action="open-empty-state-metrics-meta-fields"]');
+    var menuItem = menu && menu.querySelector('[data-action="apply-empty-state-metrics-meta-field-named"][data-named-preset="debug-full"]');
+    if (menuItem) menuItem.click();
+    syncChip();
+    var menuApplyOk = activeNamed() === 'debug-full'
+      && chip.dataset.namedPreset === 'debug-full'
+      && (!document.getElementById('overview-empty-state-metrics-meta-preset-menu')
+        || document.getElementById('overview-empty-state-metrics-meta-preset-menu').hasAttribute('hidden'));
+    openMenu(chip);
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var reopenOk = !!menu && !menu.hasAttribute('hidden');
+    closeMenu();
+    var closeOk = !menu || menu.hasAttribute('hidden');
+    activate({ altKey: true });
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var escOk = !menu || menu.hasAttribute('hidden');
+
     var ok = defLabelOk && defHiddenOk && actionOk && cycle1Ok && cycle2Ok && cycleBackOk
-      && shiftOpenOk && editorChipOk && afterEditorOk && resetOk && bridgeResetOk;
+      && shiftOpenOk && editorChipOk && afterEditorOk && resetOk && bridgeResetOk
+      && menuOpenOk && menuApplyOk && reopenOk && closeOk && escOk;
     mark(ok ? 'ok' : ('fail:def=' + defLabelOk + ';dh=' + defHiddenOk + ';act=' + actionOk
       + ';c1=' + cycle1Ok + ';c2=' + cycle2Ok + ';cb=' + cycleBackOk + ';sh=' + shiftOpenOk
       + ';ec=' + editorChipOk + ';ae=' + afterEditorOk + ';rs=' + resetOk + ';br=' + bridgeResetOk
+      + ';mo=' + menuOpenOk + ';ma=' + menuApplyOk + ';re=' + reopenOk + ';cl=' + closeOk + ';esc=' + escOk
       + ';chip=' + (chip.textContent || '') + ';active=' + activeNamed()));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);

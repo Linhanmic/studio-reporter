@@ -818,9 +818,11 @@
     chip.dataset.namedPreset = isDefault ? 'default' : activeId;
     chip.textContent = '预设·' + name;
     chip.title = isDefault
-      ? '当前 meta 字段命名预设：默认；点击循环切换；Shift+点击打开字段编辑器'
-      : ('当前 meta 字段命名预设：' + name + '；点击循环切换；Shift+点击打开字段编辑器');
+      ? '当前 meta 字段命名预设：默认；点击循环切换；Shift+点击打开字段编辑器；右键/↓/Alt+点击打开预设菜单'
+      : ('当前 meta 字段命名预设：' + name + '；点击循环切换；Shift+点击打开字段编辑器；右键/↓/Alt+点击打开预设菜单');
     chip.setAttribute('aria-label', chip.title);
+    chip.setAttribute('aria-haspopup', 'menu');
+    if (!chip.hasAttribute('aria-expanded')) chip.setAttribute('aria-expanded', 'false');
     chip.classList.toggle('is-custom', !isDefault);
     if (resetBtn) {
       if (isDefault) {
@@ -835,8 +837,57 @@
   }
 
   function openEmptyStateMetricsMetaFieldsEditor() {
+    try { closeEmptyStateMetricsMetaPresetMenu(); } catch (eClose) {}
     setEmptyStateMetricsMetaFieldsEditorOpen(true);
     syncEmptyStateMetricsMetaPresetToolbarChip();
+  }
+
+  function closeEmptyStateMetricsMetaPresetMenu() {
+    var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    if (!menu) return;
+    menu.setAttribute('hidden', '');
+    menu.setAttribute('aria-hidden', 'true');
+    menu.innerHTML = '';
+    var chip = document.getElementById('overview-empty-state-metrics-meta-preset-chip');
+    if (chip) chip.setAttribute('aria-expanded', 'false');
+  }
+
+  function openEmptyStateMetricsMetaPresetMenu(anchor, opts) {
+    opts = opts || {};
+    var chip = anchor || document.getElementById('overview-empty-state-metrics-meta-preset-chip');
+    if (!chip) return null;
+    var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'overview-empty-state-metrics-meta-preset-menu';
+      menu.className = 'overview-empty-state-metrics-meta-preset-menu';
+      menu.setAttribute('role', 'menu');
+      menu.setAttribute('aria-label', '命名字段预设');
+      document.body.appendChild(menu);
+    }
+    var activeId = getActiveEmptyStateMetricsMetaFieldNamedPresetId() || 'default';
+    var listed = listEmptyStateMetricsMetaFieldNamedPresets();
+    var html = '';
+    listed.forEach(function (p) {
+      var active = p.id === activeId;
+      html += '<button type="button" role="menuitemradio" class="overview-empty-state-metrics-meta-preset-menu-item' + (active ? ' is-active' : '') + '" data-action="apply-empty-state-metrics-meta-field-named" data-named-preset="' + p.id + '" aria-checked="' + (active ? 'true' : 'false') + '" title="' + (p.builtin ? '内置预设' : '自定义预设') + '：' + p.name + '">' + p.name + (active ? ' ✓' : '') + '</button>';
+    });
+    html += '<button type="button" role="menuitem" class="overview-empty-state-metrics-meta-preset-menu-item overview-empty-state-metrics-meta-preset-menu-edit" data-action="open-empty-state-metrics-meta-fields" title="打开字段编辑器">字段编辑器…</button>';
+    menu.innerHTML = html;
+    menu.removeAttribute('hidden');
+    menu.setAttribute('aria-hidden', 'false');
+    chip.setAttribute('aria-expanded', 'true');
+    chip.setAttribute('aria-haspopup', 'menu');
+    var rect = chip.getBoundingClientRect();
+    var left = typeof opts.x === 'number' ? opts.x : rect.left;
+    var top = typeof opts.y === 'number' ? opts.y : (rect.bottom + 4);
+    menu.style.left = Math.max(8, Math.min(left, window.innerWidth - 180)) + 'px';
+    menu.style.top = Math.max(8, Math.min(top, window.innerHeight - 40)) + 'px';
+    var first = menu.querySelector('[role="menuitemradio"], [role="menuitem"]');
+    if (first && typeof first.focus === 'function') {
+      try { first.focus(); } catch (e) {}
+    }
+    return menu;
   }
 
   function cycleEmptyStateMetricsMetaFieldNamedPreset(delta) {
@@ -859,6 +910,10 @@
     if (ev && ev.shiftKey) {
       openEmptyStateMetricsMetaFieldsEditor();
       return { openedEditor: true };
+    }
+    if (ev && (ev.altKey || ev.metaKey)) {
+      openEmptyStateMetricsMetaPresetMenu(document.getElementById('overview-empty-state-metrics-meta-preset-chip'));
+      return { openedMenu: true };
     }
     return cycleEmptyStateMetricsMetaFieldNamedPreset(1);
   }
@@ -3030,7 +3085,24 @@ function copyFailSummary() {
     selectNode(fails[next].id);
   }
 
+  document.addEventListener('contextmenu', function (ev) {
+    var chip = ev.target && ev.target.closest
+      ? ev.target.closest('#overview-empty-state-metrics-meta-preset-chip')
+      : null;
+    if (!chip) return;
+    ev.preventDefault();
+    openEmptyStateMetricsMetaPresetMenu(chip, { x: ev.clientX, y: ev.clientY });
+  });
+
   document.addEventListener('click', function (ev) {
+    var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    if (menu && !menu.hasAttribute('hidden')) {
+      var inMenu = ev.target && ev.target.closest && ev.target.closest('#overview-empty-state-metrics-meta-preset-menu');
+      var onChip = ev.target && ev.target.closest && ev.target.closest('#overview-empty-state-metrics-meta-preset-chip');
+      if (!inMenu && !onChip) {
+        try { closeEmptyStateMetricsMetaPresetMenu(); } catch (eClose) {}
+      }
+    }
     var actionBtn = ev.target.closest('[data-action]');
     if (actionBtn) {
       if (actionBtn.dataset.action === 'show-overview') {
@@ -3122,6 +3194,7 @@ function copyFailSummary() {
       }
       if (actionBtn.dataset.action === 'apply-empty-state-metrics-meta-field-named') {
         applyEmptyStateMetricsMetaFieldNamedPreset(actionBtn.dataset.namedPreset);
+        try { closeEmptyStateMetricsMetaPresetMenu(); } catch (eClose) {}
         return;
       }
       if (actionBtn.dataset.action === 'save-empty-state-metrics-meta-field-named') {
@@ -3245,6 +3318,16 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
 
   document.addEventListener('keydown', function (ev) {
     if (ev.key === 'Escape' || ev.key === 'Esc') {
+      var presetMenu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+      if (presetMenu && !presetMenu.hasAttribute('hidden')) {
+        ev.preventDefault();
+        closeEmptyStateMetricsMetaPresetMenu();
+        var chipFocus = document.getElementById('overview-empty-state-metrics-meta-preset-chip');
+        if (chipFocus && typeof chipFocus.focus === 'function') {
+          try { chipFocus.focus(); } catch (eFocus) {}
+        }
+        return;
+      }
       if (isLightboxOpen()) {
         closeLightbox();
         return;
@@ -3256,6 +3339,14 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
         return;
       }
       return;
+    }
+    if ((ev.key === 'ArrowDown' || ev.key === 'Down') && !ev.altKey && !ev.ctrlKey && !ev.metaKey && !ev.shiftKey) {
+      var chipKey = document.getElementById('overview-empty-state-metrics-meta-preset-chip');
+      if (chipKey && document.activeElement === chipKey && !isTypingTarget(ev.target)) {
+        ev.preventDefault();
+        openEmptyStateMetricsMetaPresetMenu(chipKey);
+        return;
+      }
     }
     // Ctrl/Cmd+Z undoes last clear / fail-only restore when a snapshot exists.
     // Skip while typing so native text undo still works in search.
@@ -3408,6 +3499,8 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportSyncEmptyMetricsMetaPresetInLocation = syncEmptyMetricsMetaPresetInLocation;
   window.StudioReportSyncEmptyStateMetricsMetaPresetToolbarChip = syncEmptyStateMetricsMetaPresetToolbarChip;
   window.StudioReportOpenEmptyStateMetricsMetaFieldsEditor = openEmptyStateMetricsMetaFieldsEditor;
+  window.StudioReportOpenEmptyStateMetricsMetaPresetMenu = openEmptyStateMetricsMetaPresetMenu;
+  window.StudioReportCloseEmptyStateMetricsMetaPresetMenu = closeEmptyStateMetricsMetaPresetMenu;
   window.StudioReportCycleEmptyStateMetricsMetaFieldNamedPreset = cycleEmptyStateMetricsMetaFieldNamedPreset;
   window.StudioReportActivateEmptyStateMetricsMetaPresetChip = activateEmptyStateMetricsMetaPresetChip;
   window.StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault = resetEmptyStateMetricsMetaFieldNamedPresetToDefault;
