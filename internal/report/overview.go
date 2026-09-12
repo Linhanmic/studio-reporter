@@ -296,5 +296,6 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 		b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-fail-reason-snippet\" title=\"复制含次数/原因/场景/定位的单行 Markdown，便于粘贴到工单\">复制摘要</button>")
 		b.WriteString("</td></tr>\n")
 	}
+	b.WriteString("<tr class=\"fail-reason-empty-row\" hidden><td colspan=\"4\" class=\"fail-reason-empty-cell\">当前过滤下无匹配的失败原因</td></tr>\n")
 	b.WriteString("</tbody></table>\n")
 }

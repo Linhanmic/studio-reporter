@@ -97,6 +97,8 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`copy-all-fail-reason-links`,
 		`overview-fail-reason-empty-hint`,
 		`当前过滤下无可见失败原因`,
+		`fail-reason-empty-row`,
+		`当前过滤下无匹配的失败原因`,
 		`boom`,
 		`data-nav-target="scn:fail"`,
 	} {
@@ -268,5 +270,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-fail-reason-empty-hint`) {
 		t.Fatal("CSS missing overview-fail-reason-empty-hint for filtered empty state")
+	}
+	if !strings.Contains(staticReportCSS, `.fail-reason-empty-row`) {
+		t.Fatal("CSS missing fail-reason-empty-row for filtered empty table placeholder")
 	}
 }

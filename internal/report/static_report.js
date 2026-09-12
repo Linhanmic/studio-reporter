@@ -131,6 +131,10 @@
       if (disabled) hint.removeAttribute('hidden');
       else hint.setAttribute('hidden', '');
     });
+    document.querySelectorAll('.fail-reason-empty-row').forEach(function (row) {
+      if (disabled) row.removeAttribute('hidden');
+      else row.setAttribute('hidden', '');
+    });
   }
 
   // First visible jump target for an Overview fail-reason row (filter / fail-steps aware).
