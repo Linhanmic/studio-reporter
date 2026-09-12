@@ -245,6 +245,7 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 	b.WriteString("<p class=\"overview-fail-reason-tools\">")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-all-fail-reason-snippets\" title=\"复制当前可见全部失败原因的 Markdown 列表（含定位深链），便于粘贴到工单\">复制全部摘要</button> ")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-all-fail-reason-links\" title=\"复制当前可见全部失败原因的定位深链（换行分隔）\">复制全部深链</button>")
+	b.WriteString("<span class=\"overview-fail-reason-empty-hint\" hidden aria-live=\"polite\">当前过滤下无可见失败原因</span>")
 	b.WriteString("</p>\n")
 	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th><th>操作</th></tr></thead><tbody>\n")
 	for _, g := range groups {

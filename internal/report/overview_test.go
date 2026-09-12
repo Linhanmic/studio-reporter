@@ -95,6 +95,8 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`copy-all-fail-reason-snippets`,
 		`复制全部深链`,
 		`copy-all-fail-reason-links`,
+		`overview-fail-reason-empty-hint`,
+		`当前过滤下无可见失败原因`,
 		`boom`,
 		`data-nav-target="scn:fail"`,
 	} {
@@ -263,5 +265,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.action-btn:disabled`) {
 		t.Fatal("CSS missing disabled action-btn style for bulk copy when no visible reasons")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-fail-reason-empty-hint`) {
+		t.Fatal("CSS missing overview-fail-reason-empty-hint for filtered empty state")
 	}
 }

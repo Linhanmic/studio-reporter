@@ -127,6 +127,10 @@
         disabled ? '当前过滤下无可复制的失败原因' : (btn.getAttribute('data-title-enabled') || '')
       );
     });
+    document.querySelectorAll('.overview-fail-reason-empty-hint').forEach(function (hint) {
+      if (disabled) hint.removeAttribute('hidden');
+      else hint.setAttribute('hidden', '');
+    });
   }
 
   // First visible jump target for an Overview fail-reason row (filter / fail-steps aware).

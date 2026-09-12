@@ -430,6 +430,14 @@ html, body {
   gap: 6px;
   align-items: center;
 }
+.overview-fail-reason-empty-hint {
+  color: #6b7c8d;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.overview-fail-reason-empty-hint[hidden] {
+  display: none !important;
+}
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

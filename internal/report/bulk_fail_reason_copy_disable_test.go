@@ -74,13 +74,18 @@ func TestBulkFailReasonCopyButtonsDisableWhenFilteredOut(t *testing.T) {
     sync();
     var enabledOk = !snip.disabled && snip.getAttribute('aria-disabled') !== 'true'
       && !link.disabled && link.getAttribute('aria-disabled') !== 'true';
+    var hint = document.querySelector('.overview-fail-reason-empty-hint');
+    var hintHiddenWhenEnabled = !hint || hint.hasAttribute('hidden');
     document.querySelectorAll('.result-pane .report-block[data-kind="scenario"][data-verdict="fail"]').forEach(function (el) {
       el.classList.add('filter-hidden');
     });
     sync();
     var disabledOk = snip.disabled && snip.getAttribute('aria-disabled') === 'true'
       && link.disabled && link.getAttribute('aria-disabled') === 'true';
-    mark(enabledOk && disabledOk ? 'ok' : ('fail:en=' + enabledOk + ':dis=' + disabledOk));
+    var hintShownWhenDisabled = hint && !hint.hasAttribute('hidden');
+    mark(enabledOk && disabledOk && hintHiddenWhenEnabled && hintShownWhenDisabled
+      ? 'ok'
+      : ('fail:en=' + enabledOk + ':dis=' + disabledOk + ':hintHide=' + hintHiddenWhenEnabled + ':hintShow=' + hintShownWhenDisabled));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else go();
