@@ -1786,14 +1786,29 @@
     return lines.join('\n');
   }
 
-  function downloadEmptyStateMetricsIssueMarkdownText(text, kind, statusMsg) {
+  function buildEmptyStateMetricsIssueShortDownloadName() {
+    var report = emptyStateMetricsReportMeta();
+    var project = sanitizeEmptyStateMetricsFilenamePart(report.projectName, 'project');
+    var presetId = 'default';
+    try {
+      presetId = getActiveEmptyStateMetricsMetaFieldNamedPresetId() || 'default';
+    } catch (e) {}
+    var presetPart = sanitizeEmptyStateMetricsFilenamePart(presetId, 'default');
+    var kindFilter = '';
+    try { kindFilter = emptyStateMetricsEventKindFilter() || ''; } catch (e2) {}
+    var kindPart = sanitizeEmptyStateMetricsFilenamePart(kindFilter || 'all', 'all');
+    var stamp = formatEmptyStateMetricsDownloadStamp();
+    return 'studio-report-empty-state-metrics-issue-short__' + project + '__preset-' + presetPart + '__' + kindPart + '__' + stamp + '.md';
+  }
+
+  function downloadEmptyStateMetricsIssueMarkdownText(text, kind, statusMsg, fileName) {
     text = String(text || '');
     kind = kind || 'empty-state-metrics-issue';
     var blob = new Blob([text], { type: 'text/markdown' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = buildEmptyStateMetricsDownloadName(kind, 'md');
+    a.download = fileName || buildEmptyStateMetricsDownloadName(kind, 'md');
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
@@ -1817,7 +1832,8 @@
     return downloadEmptyStateMetricsIssueMarkdownText(
       formatEmptyStateMetricsIssueShortMarkdown(),
       'empty-state-metrics-issue-short',
-      '已下载空态 metrics 短卡片 Markdown'
+      '已下载空态 metrics 短卡片 Markdown',
+      buildEmptyStateMetricsIssueShortDownloadName()
     );
   }
 
@@ -1841,7 +1857,8 @@
           downloadEmptyStateMetricsIssueMarkdownText(
             text,
             'empty-state-metrics-issue-short',
-            '剪贴板不可用，已改为下载短卡片 Markdown'
+            '剪贴板不可用，已改为下载短卡片 Markdown',
+            buildEmptyStateMetricsIssueShortDownloadName()
           );
         } else {
           downloadEmptyStateMetricsIssueMarkdown();
@@ -3618,6 +3635,7 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportReadStudioReportMeta = readStudioReportMeta;
   window.StudioReportEmptyStateMetricsReportMeta = emptyStateMetricsReportMeta;
   window.StudioReportBuildEmptyStateMetricsDownloadName = buildEmptyStateMetricsDownloadName;
+  window.StudioReportBuildEmptyStateMetricsIssueShortDownloadName = buildEmptyStateMetricsIssueShortDownloadName;
   window.StudioReportFormatEmptyStateMetricsJSON = formatEmptyStateMetricsJSON;
   window.StudioReportCopyEmptyStateMetricsJSON = copyEmptyStateMetricsJSON;
   window.StudioReportDownloadEmptyStateMetricsJSON = downloadEmptyStateMetricsJSON;
