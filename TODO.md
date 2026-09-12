@@ -168,6 +168,7 @@
 - [x] 静态报告失败原因聚合行「复制摘要片段」（单行 Markdown 含定位深链；`formatFailReasonSnippet`/`StudioReportFormatFailReasonSnippet`）
 - [x] 静态报告失败原因聚合「复制全部摘要片段」（一键复制可见全部原因 Markdown 列表；`formatAllFailReasonSnippets`/`StudioReportFormatAllFailReasonSnippets`）
 - [x] 静态报告失败原因聚合「复制全部定位深链」（一键复制可见全部原因定位 URL，换行分隔；`formatAllFailReasonLinks`/`StudioReportFormatAllFailReasonLinks`）
+- [x] 静态报告失败原因聚合过滤后批量按钮可见性（无可见原因时禁用「复制全部摘要/深链」+ `aria-disabled`；`syncBulkFailReasonCopyButtons`）
 
 ## 迭代日志
 
@@ -366,7 +367,8 @@
 | 2026-09-12 | 静态报告失败原因聚合复制摘要片段 | Overview 行「复制摘要」；Markdown 含次数/原因/场景/path-style 定位 |
 | 2026-09-12 | 静态报告失败原因聚合复制全部摘要 | Overview「复制全部摘要」；可见原因 Markdown 列表；与行级片段同源 |
 | 2026-09-12 | 静态报告失败原因聚合复制全部深链 | Overview「复制全部深链」；可见原因定位 URL 换行列表；与行级深链同源 |
+| 2026-09-12 | 失败原因批量复制按钮过滤态 | 无可见原因时禁用「复制全部摘要/深链」并同步 aria/title |
 
 ## 下一任务（选定）
 
-**静态报告失败原因聚合过滤后批量操作可见性**（无可见原因时禁用「复制全部摘要/深链」并同步 aria），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告 Overview 失败原因空态提示**（过滤后无可见原因时在工具行旁显示轻量说明，替代仅 disabled），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
