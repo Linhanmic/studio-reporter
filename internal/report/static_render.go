@@ -2,6 +2,7 @@ package report
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html"
 	"strings"
@@ -30,7 +31,9 @@ func RenderReportHTML(r *Report) ([]byte, error) {
 	b.WriteString(html.EscapeString("Test Report Viewer — " + r.ProjectName))
 	b.WriteString("</title>\n<style>\n")
 	b.WriteString(staticReportCSS)
-	b.WriteString("</style>\n</head>\n<body>\n<div class=\"app-shell\">\n")
+	b.WriteString("</style>\n</head>\n<body>\n")
+	writeStudioReportMetaJSON(&b, r)
+	b.WriteString("<div class=\"app-shell\">\n")
 	writeStaticHeader(&b, r)
 	writePrintScopeBanner(&b)
 	writeFilterToolbar(&b, r.Summary.Specs, r.Summary.Scenarios)
@@ -62,6 +65,37 @@ func RenderSnapshotHTML(snap *LiveSnapshot) ([]byte, error) {
 		return RenderReportHTML(nil)
 	}
 	return RenderReportHTML(snap.Report)
+}
+
+
+// writeStudioReportMetaJSON embeds a machine-readable report identity blob for
+// empty-state metrics / issue paste exports (project, verdict, generatedAt).
+func writeStudioReportMetaJSON(b *bytes.Buffer, r *Report) {
+	if b == nil || r == nil {
+		return
+	}
+	payload := map[string]any{
+		"projectName":    r.ProjectName,
+		"verdict":        r.Verdict,
+		"failed":         r.Failed,
+		"environment":    r.Environment,
+		"timestamp":      r.Timestamp,
+		"timestampISO":   r.TimestampISO,
+		"duration":       r.Duration,
+		"pluginVersion":  r.Meta.PluginVersion,
+		"formatVersion":  r.Meta.FormatVersion,
+		"hostName":       r.Meta.HostName,
+		"generatedAt":    r.Meta.GeneratedAt,
+		"generatedAtISO": r.Meta.GeneratedAtISO,
+		"projectRoot":    r.Meta.ProjectRoot,
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return
+	}
+	b.WriteString(`<script type="application/json" id="studio-report-meta">`)
+	b.Write(raw)
+	b.WriteString("</script>\n")
 }
 
 func writePrintScopeBanner(b *bytes.Buffer) {

@@ -550,11 +550,45 @@
     };
   }
 
+
+  function readStudioReportMeta() {
+    try {
+      var el = document.getElementById('studio-report-meta');
+      if (!el) return null;
+      var raw = String(el.textContent || el.innerText || '').trim();
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function emptyStateMetricsReportMeta() {
+    var meta = readStudioReportMeta() || {};
+    return {
+      projectName: meta.projectName || '',
+      verdict: meta.verdict || '',
+      failed: !!meta.failed,
+      environment: meta.environment || '',
+      timestamp: meta.timestamp || '',
+      timestampISO: meta.timestampISO || '',
+      duration: meta.duration || '',
+      pluginVersion: meta.pluginVersion || '',
+      formatVersion: meta.formatVersion || 0,
+      hostName: meta.hostName || '',
+      generatedAt: meta.generatedAt || '',
+      generatedAtISO: meta.generatedAtISO || '',
+      projectRoot: meta.projectRoot || ''
+    };
+  }
+
   function formatEmptyStateMetricsJSON() {
     var payload = {
       kind: 'studio-report-empty-state-metrics',
       exportedAt: new Date().toISOString(),
       href: '',
+      report: emptyStateMetricsReportMeta(),
       panel: emptyStateMetricsPanelSnapshot(),
       eventKindFilter: emptyStateMetricsEventKindFilter() || null,
       counts: {
@@ -581,6 +615,7 @@
       kind: 'studio-report-empty-state-metrics-visible',
       exportedAt: new Date().toISOString(),
       href: '',
+      report: emptyStateMetricsReportMeta(),
       panel: emptyStateMetricsPanelSnapshot(),
       eventKindFilter: emptyStateMetricsEventKindFilter() || null,
       visibleCount: events.length,
@@ -669,11 +704,15 @@
     var enableURL = formatEmptyMetricsEnableURL();
     var filter = describeFilterSnapshot(captureFilterSnapshot());
     var kindFilter = emptyStateMetricsEventKindFilter();
+    var report = emptyStateMetricsReportMeta();
     // Prefer visible-subset JSON so kind chips shrink the issue payload by default.
     var json = formatEmptyStateMetricsVisibleJSON();
     var lines = [
       '### studio-reporter 空态 metrics',
       '',
+      '- 项目: ' + (report.projectName ? ('`' + report.projectName + '`') : '_（未知）_'),
+      '- 结果: ' + (report.verdict ? ('`' + report.verdict + '`') : '_（未知）_'),
+      '- 生成时间: ' + (report.generatedAtISO || report.generatedAt || '_（未知）_'),
       '- 开启链接: ' + (enableURL ? ('`' + enableURL + '`') : '_（无法生成）_'),
       '- 当前过滤: ' + filter,
       '- 事件 kind: ' + (kindFilter ? ('`' + kindFilter + '`（可见子集）') : '当前未过滤'),
@@ -2294,6 +2333,8 @@ function copyFailSummary() {
   window.StudioReportDescribeFilterSnapshot = describeFilterSnapshot;
   window.StudioReportFailReasonEmptyStateActive = failReasonEmptyStateActive;
   window.StudioReportEmptyStateMetrics = snapshotEmptyStateMetrics;
+  window.StudioReportReadStudioReportMeta = readStudioReportMeta;
+  window.StudioReportEmptyStateMetricsReportMeta = emptyStateMetricsReportMeta;
   window.StudioReportFormatEmptyStateMetricsJSON = formatEmptyStateMetricsJSON;
   window.StudioReportCopyEmptyStateMetricsJSON = copyEmptyStateMetricsJSON;
   window.StudioReportDownloadEmptyStateMetricsJSON = downloadEmptyStateMetricsJSON;

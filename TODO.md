@@ -206,6 +206,7 @@
 - [x] 静态报告失败原因空态 metrics 开启链接复制前确认 kind 摘要（无 kind 时状态栏「当前未过滤」；`describeEmptyMetricsEnableURLPreview`）
 - [x] 静态报告失败原因空态 metrics 复制链接按钮实时 kind 摘要（title/aria；`syncEmptyMetricsEnableURLButtons` / `describeEmptyMetricsEnableKindSummary`）
 - [x] 静态报告失败原因空态 metrics 贴 issue 明示未过滤（事件 kind 行写「当前未过滤」而非「全部」）
+- [x] 静态报告失败原因空态 metrics 导出 JSON 附带报告 meta（`#studio-report-meta` → JSON/贴 issue 含 project/verdict/generatedAt）
 
 ## 迭代日志
 
@@ -445,6 +446,8 @@
 | 2026-09-12 | 失败原因空态 metrics 复制链接按钮 kind 摘要 | title/aria 实时反映 kind / 当前未过滤 |
 | 2026-09-12 | 失败原因空态 metrics 贴 issue 未过滤文案 | 事件 kind 行与预览用语对齐 |
 
+| 2026-09-12 | 失败原因空态 metrics 导出附带报告 meta | #studio-report-meta；JSON/贴 issue 含 project/verdict/generatedAt |
+
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 导出 JSON 附带报告 meta**（project / verdict / generatedAt，便于贴 issue 定位运行），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 下载文件名含 project/kind/时间戳**（避免多次导出互相覆盖），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

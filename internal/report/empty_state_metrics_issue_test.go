@@ -89,7 +89,9 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"      && mdAll.indexOf('studio-report-empty-state-metrics-visible') >= 0\n" +
 		"      && mdAll.indexOf('当前过滤') >= 0\n" +
 		"      && mdAll.indexOf('事件 kind') >= 0\n" +
-		"      && mdAll.indexOf('当前未过滤') >= 0;\n" +
+		"      && mdAll.indexOf('当前未过滤') >= 0\n" +
+		"      && mdAll.indexOf('项目') >= 0\n" +
+		"      && mdAll.indexOf('生成时间') >= 0;\n" +
 		"    setKind('escClear');\n" +
 		"    var mdEsc = format();\n" +
 		"    var escOk = typeof mdEsc === 'string'\n" +

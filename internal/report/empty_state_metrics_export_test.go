@@ -47,6 +47,8 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
 		`StudioReportDownloadEmptyStateMetricsJSON`,
 		`overview-empty-state-metrics-text`,
 		`studio-report-empty-state-metrics`,
+		`studio-report-meta`,
+		`StudioReportEmptyStateMetricsReportMeta`,
 		`studio-report-empty-state-metrics.json`,
 		`复制 JSON`,
 		`下载 JSON`,
@@ -96,6 +98,9 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
       && parsed.counts && parsed.counts.clear >= 1 && parsed.counts.escClear >= 1
       && Array.isArray(parsed.events) && parsed.events.length >= 2
       && typeof parsed.exportedAt === 'string' && parsed.exportedAt.length > 0
+      && parsed.report && parsed.report.projectName === 'metrics-export'
+      && typeof parsed.report.verdict === 'string' && parsed.report.verdict.length > 0
+      && typeof parsed.report.generatedAtISO === 'string' && parsed.report.generatedAtISO.length > 0
       && parsed.panel && parsed.panel.enabled === true
       && parsed.panel.windowFlag === true
       && parsed.panel.localStorage === '1';

@@ -95,6 +95,7 @@ func TestEmptyStateMetricsVisibleJSON(t *testing.T) {
 		"    try { all = JSON.parse(formatAll()); } catch (e2) {}\n" +
 		"    var ok = parsed\n" +
 		"      && parsed.kind === 'studio-report-empty-state-metrics-visible'\n" +
+		"      && parsed.report && parsed.report.projectName\n" +
 		"      && parsed.eventKindFilter === 'escClear'\n" +
 		"      && Array.isArray(parsed.events)\n" +
 		"      && parsed.events.length >= 1\n" +

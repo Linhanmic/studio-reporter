@@ -304,3 +304,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 开启链接确认 kind | describeEmptyMetricsEnableURLPreview：无 kind 时追加「当前未过滤」 |
 | 2026-09-12 | 失败原因空态 metrics 复制链接按钮 kind 摘要 | syncEmptyMetricsEnableURLButtons 同步 title/aria |
 | 2026-09-12 | 失败原因空态 metrics 贴 issue 未过滤文案 | 事件 kind 行与预览用语对齐为「当前未过滤」 |
+| 2026-09-12 | 失败原因空态 metrics 导出附带报告 meta | writeStudioReportMetaJSON + emptyStateMetricsReportMeta |
