@@ -47,6 +47,8 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		`StudioReportCopyEmptyStateMetricsIssueMarkdown`,
 		`StudioReportDownloadEmptyStateMetricsIssueShortMarkdown`,
 		`StudioReportBuildEmptyStateMetricsIssueShortDownloadName`,
+		`download-empty-state-metrics-issue-short`,
+		`下载短卡片`,
 		`贴 issue`,
 		`Shift+点击复制短卡片`,
 		`Alt+点击下载短卡片`,
@@ -82,7 +84,8 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"    var setExp = window.StudioReportSetEmptyStateMetricsEventsExpanded;\n" +
 		"    var setKind = window.StudioReportSetEmptyStateMetricsEventKindFilter;\n" +
 		"    var btn = document.querySelector('[data-action=\"copy-empty-state-metrics-issue\"]');\n" +
-		"    if (typeof format !== 'function' || typeof formatShort !== 'function' || typeof copy !== 'function' || typeof downloadShort !== 'function' || typeof buildShortName !== 'function' || typeof show !== 'function' || typeof setKind !== 'function' || !btn) {\n" +
+		"    var dlBtn = document.querySelector('[data-action=\"download-empty-state-metrics-issue-short\"]');\n" +
+		"    if (typeof format !== 'function' || typeof formatShort !== 'function' || typeof copy !== 'function' || typeof downloadShort !== 'function' || typeof buildShortName !== 'function' || typeof show !== 'function' || typeof setKind !== 'function' || !btn || !dlBtn) {\n" +
 		"      mark('missing');\n" +
 		"      return;\n" +
 		"    }\n" +
@@ -165,6 +168,9 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"    try {\n" +
 		"      downloaded = downloadShort();\n" +
 		"      copy({ short: true, download: true });\n" +
+		"      // Explicit toolbar button should also trigger short-card download.\n" +
+		"      capturedName = '';\n" +
+		"      dlBtn.click();\n" +
 		"    } finally {\n" +
 		"      document.createElement = origCreate;\n" +
 		"    }\n" +

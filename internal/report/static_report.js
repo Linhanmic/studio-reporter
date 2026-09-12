@@ -3428,6 +3428,10 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
         copyEmptyStateMetricsIssueMarkdown({ short: shortCard, download: altDownload });
         return;
       }
+      if (actionBtn.dataset.action === 'download-empty-state-metrics-issue-short') {
+        downloadEmptyStateMetricsIssueShortMarkdown();
+        return;
+      }
       if (actionBtn.dataset.action === 'toggle-empty-state-metrics-events') {
         toggleEmptyStateMetricsEvents();
         return;
