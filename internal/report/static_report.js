@@ -818,8 +818,8 @@
     chip.dataset.namedPreset = isDefault ? 'default' : activeId;
     chip.textContent = '预设·' + name;
     chip.title = isDefault
-      ? '当前 meta 字段命名预设：默认；点击打开字段编辑器'
-      : ('当前 meta 字段命名预设：' + name + '；点击打开字段编辑器');
+      ? '当前 meta 字段命名预设：默认；点击循环切换；Shift+点击打开字段编辑器'
+      : ('当前 meta 字段命名预设：' + name + '；点击循环切换；Shift+点击打开字段编辑器');
     chip.setAttribute('aria-label', chip.title);
     chip.classList.toggle('is-custom', !isDefault);
     if (resetBtn) {
@@ -837,6 +837,30 @@
   function openEmptyStateMetricsMetaFieldsEditor() {
     setEmptyStateMetricsMetaFieldsEditorOpen(true);
     syncEmptyStateMetricsMetaPresetToolbarChip();
+  }
+
+  function cycleEmptyStateMetricsMetaFieldNamedPreset(delta) {
+    var list = listEmptyStateMetricsMetaFieldNamedPresets();
+    if (!list || !list.length) return null;
+    var step = Number(delta);
+    if (!step || !isFinite(step)) step = 1;
+    var activeId = getActiveEmptyStateMetricsMetaFieldNamedPresetId() || 'default';
+    var idx = -1;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === activeId) { idx = i; break; }
+    }
+    if (idx < 0) idx = 0;
+    var next = list[(idx + step % list.length + list.length) % list.length];
+    if (!next) return null;
+    return applyEmptyStateMetricsMetaFieldNamedPreset(next.id);
+  }
+
+  function activateEmptyStateMetricsMetaPresetChip(ev) {
+    if (ev && ev.shiftKey) {
+      openEmptyStateMetricsMetaFieldsEditor();
+      return { openedEditor: true };
+    }
+    return cycleEmptyStateMetricsMetaFieldNamedPreset(1);
   }
 
   function resetEmptyStateMetricsMetaFieldNamedPresetToDefault() {
@@ -3072,6 +3096,10 @@ function copyFailSummary() {
         openEmptyStateMetricsMetaFieldsEditor();
         return;
       }
+      if (actionBtn.dataset.action === 'cycle-empty-state-metrics-meta-field-named-preset') {
+        activateEmptyStateMetricsMetaPresetChip(ev);
+        return;
+      }
       if (actionBtn.dataset.action === 'reset-empty-state-metrics-meta-field-named-preset') {
         resetEmptyStateMetricsMetaFieldNamedPresetToDefault();
         return;
@@ -3380,6 +3408,8 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportSyncEmptyMetricsMetaPresetInLocation = syncEmptyMetricsMetaPresetInLocation;
   window.StudioReportSyncEmptyStateMetricsMetaPresetToolbarChip = syncEmptyStateMetricsMetaPresetToolbarChip;
   window.StudioReportOpenEmptyStateMetricsMetaFieldsEditor = openEmptyStateMetricsMetaFieldsEditor;
+  window.StudioReportCycleEmptyStateMetricsMetaFieldNamedPreset = cycleEmptyStateMetricsMetaFieldNamedPreset;
+  window.StudioReportActivateEmptyStateMetricsMetaPresetChip = activateEmptyStateMetricsMetaPresetChip;
   window.StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault = resetEmptyStateMetricsMetaFieldNamedPresetToDefault;
 
   window.StudioReportFormatEmptyStateMetricsMetaFieldValue = formatEmptyStateMetricsMetaFieldValue;

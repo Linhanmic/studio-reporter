@@ -70,7 +70,7 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
 		`apply-empty-state-metrics-meta-field-named`,
 		`studio-report-empty-metrics-meta-field-named`,
 		`overview-empty-state-metrics-meta-preset-chip`,
-		`open-empty-state-metrics-meta-fields`,
+		`cycle-empty-state-metrics-meta-field-named-preset`,
 		`reset-empty-state-metrics-meta-field-named-preset`,
 	} {
 		if !strings.Contains(body, want) {

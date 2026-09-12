@@ -317,4 +317,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 命名多套字段预设 | 内置 CI 精简/排障完整；另存自定义；命名库 JSON |
 | 2026-09-12 | 失败原因空态 metrics 命名预设可分享 URL | emptyMetricsMetaPreset；开启链接/预览 · preset= |
 | 2026-09-12 | 失败原因空态 metrics 开启链接 title/aria 含命名预设 | describeEmptyMetricsEnableURLButtonSummary |
-| 2026-09-12 | 失败原因空态 metrics 工具行命名预设 chip | 预设·… + 回默认；与字段编辑器联动 |
+| 2026-09-12 | 失败原因空态 metrics 工具行命名预设 chip | 预设·… + 回默认；点击循环切换；Shift+点击开编辑器 |

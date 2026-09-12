@@ -219,7 +219,7 @@
 - [x] 静态报告失败原因空态 metrics 字段预设支持命名多套配置（内置「默认 / CI 精简 / 排障完整」一键切换；可另存/删除自定义；命名库 JSON 导入导出）
 - [x] 静态报告失败原因空态 metrics 命名字段预设支持可分享 URL（`emptyMetricsMetaPreset=ci-slim`；开启链接可携带；预览 · preset=）
 - [x] 静态报告失败原因空态 metrics 开启链接按钮 title/aria 同步显示当前命名预设（与 kind / meta+ 并列；`describeEmptyMetricsEnableURLButtonSummary`）
-- [x] 静态报告失败原因空态 metrics 面板工具行展示当前命名预设 chip（`预设·…` + 非默认时「回默认」；与字段编辑器联动；`syncEmptyStateMetricsMetaPresetToolbarChip`）
+- [x] 静态报告失败原因空态 metrics 面板工具行展示当前命名预设 chip（`预设·…` 点击循环切换；Shift+点击打开字段编辑器；非默认时「回默认」；`cycleEmptyStateMetricsMetaFieldNamedPreset` / `syncEmptyStateMetricsMetaPresetToolbarChip`）
 
 ## 迭代日志
 
@@ -481,10 +481,10 @@
 
 | 2026-09-12 | 失败原因空态 metrics 开启链接 title/aria 含命名预设 | kind · meta+ · preset= 并列摘要 |
 
-| 2026-09-12 | 失败原因空态 metrics 工具行命名预设 chip | 预设·… + 回默认；与字段编辑器联动 |
+| 2026-09-12 | 失败原因空态 metrics 工具行命名预设 chip | 预设·… 点击循环切换；Shift+开编辑器；回默认 |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 工具行 chip 支持点击循环切换命名预设**（Shift+点击打开编辑器；与 URL/开启链接同步），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 工具行 chip 右键/长按菜单列出全部命名预设**（含自定义；键盘可达），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
 
 
