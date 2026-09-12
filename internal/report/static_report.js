@@ -648,12 +648,35 @@
       var params = new URLSearchParams(search);
       params.delete('empty-metrics');
       params.delete('emptyMetrics');
+      params.delete('empty-metrics-kind');
+      params.delete('emptyMetricsKind');
       params.set('emptyMetrics', '1');
+      var kind = emptyStateMetricsEventKindFilter();
+      if (kind) params.set('emptyMetricsKind', kind);
       var qs = params.toString();
       return path + (qs ? ('?' + qs) : '') + hash;
     } catch (e) {
       return '';
     }
+  }
+
+  function readEmptyMetricsKindFromQuery() {
+    try {
+      var q = String(location.search || '');
+      var m = q.match(/[?&](?:emptyMetricsKind|empty-metrics-kind)=([^&#]*)/i);
+      if (!m) return '';
+      var raw = decodeURIComponent(String(m[1] || '').replace(/\+/g, ' '));
+      return raw ? String(raw) : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function applyEmptyMetricsKindFromQuery() {
+    var kind = readEmptyMetricsKindFromQuery();
+    if (!kind) return emptyStateMetricsEventKindFilter();
+    // Query wins over prior localStorage when sharing an enable deep link.
+    return setEmptyStateMetricsEventKindFilter(kind);
   }
 
   function shortenEmptyMetricsEnableURL(url) {
@@ -666,10 +689,15 @@
     var path = qIdx >= 0 ? base.slice(0, qIdx) : base;
     var search = qIdx >= 0 ? base.slice(qIdx) : '';
     if (path.length > 36) path = path.slice(0, 20) + '…' + path.slice(-12);
-    // Keep emptyMetrics flag visible in the status preview.
+    // Keep emptyMetrics (+ optional kind) visible in the status preview.
     if (search.length > 28) {
-      if (/[?&]emptyMetrics=1(?:&|$)/i.test(search)) search = '?emptyMetrics=1…';
-      else search = search.slice(0, 14) + '…' + search.slice(-10);
+      var kindMatch = search.match(/[?&](?:emptyMetricsKind|empty-metrics-kind)=([^&#]*)/i);
+      var kindPart = kindMatch ? ('&emptyMetricsKind=' + kindMatch[1]) : '';
+      if (/[?&]emptyMetrics=1(?:&|$)/i.test(search)) {
+        search = '?emptyMetrics=1' + kindPart + (kindPart || search.length > 40 ? '…' : '');
+      } else {
+        search = search.slice(0, 14) + '…' + search.slice(-10);
+      }
     }
     if (hash.length > 24) hash = hash.slice(0, 12) + '…' + hash.slice(-8);
     return path + search + hash;
@@ -707,6 +735,7 @@
     setEmptyStateMetricsPanelVisible(true);
     try { localStorage.setItem('studio-report-empty-metrics-hint', 'dismissed'); } catch (e) {}
     syncEmptyMetricsEnableHint();
+    applyEmptyMetricsKindFromQuery();
     flashStatus('已开启空态 metrics 面板');
   }
 
@@ -2159,6 +2188,9 @@ function copyFailSummary() {
   // Initial paint when enabled via query/localStorage before any action.
   try { syncEmptyStateMetricsPanel(); } catch (e) {}
   try { syncEmptyMetricsEnableHint(); } catch (e2) {}
+  try { applyEmptyMetricsKindFromQuery(); } catch (e3) {}
+  window.StudioReportReadEmptyMetricsKindFromQuery = readEmptyMetricsKindFromQuery;
+  window.StudioReportApplyEmptyMetricsKindFromQuery = applyEmptyMetricsKindFromQuery;
   window.StudioReportFilterState = function () {
     return { query: state.query, spec: state.spec, scenario: state.scenario, failStepsOnly: !!failStepsOnly };
   };
