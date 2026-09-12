@@ -61,6 +61,8 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
 		`StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault`,
 		`StudioReportOpenEmptyStateMetricsMetaPresetMenu`,
 		`StudioReportCloseEmptyStateMetricsMetaPresetMenu`,
+		`StudioReportNavigateEmptyStateMetricsMetaPresetMenu`,
+		`StudioReportEmptyStateMetricsMetaPresetMenuIsOpen`,
 		`预设·默认`,
 		`回默认`,
 		`Shift+点击`,
@@ -105,10 +107,13 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
     var resetDefault = window.StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault;
     var openMenu = window.StudioReportOpenEmptyStateMetricsMetaPresetMenu;
     var closeMenu = window.StudioReportCloseEmptyStateMetricsMetaPresetMenu;
+    var navMenu = window.StudioReportNavigateEmptyStateMetricsMetaPresetMenu;
+    var menuOpen = window.StudioReportEmptyStateMetricsMetaPresetMenuIsOpen;
     if (typeof show !== 'function' || typeof applyNamed !== 'function' || typeof activeNamed !== 'function'
       || typeof syncChip !== 'function' || typeof openEditor !== 'function' || typeof cycle !== 'function'
       || typeof activate !== 'function' || typeof resetDefault !== 'function'
-      || typeof openMenu !== 'function' || typeof closeMenu !== 'function') {
+      || typeof openMenu !== 'function' || typeof closeMenu !== 'function'
+      || typeof navMenu !== 'function' || typeof menuOpen !== 'function') {
       mark('missing');
       return;
     }
@@ -196,13 +201,38 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
     menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
     var escOk = !menu || menu.hasAttribute('hidden');
 
+    // Keyboard nav: ArrowDown/Up/Home/End + Enter select.
+    resetDefault();
+    syncChip();
+    openMenu(chip);
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var items = menu ? menu.querySelectorAll('[role="menuitemradio"], [role="menuitem"]') : [];
+    var navStartOk = menuOpen() && items.length >= 3;
+    // Focus first item then ArrowDown to second (ci-slim).
+    if (items[0] && typeof items[0].focus === 'function') items[0].focus();
+    navMenu({ key: 'ArrowDown', preventDefault: function () {} });
+    var afterDown = document.activeElement;
+    var downOk = !!afterDown && afterDown.getAttribute('data-named-preset') === 'ci-slim';
+    navMenu({ key: 'End', preventDefault: function () {} });
+    var afterEnd = document.activeElement;
+    var endOk = !!afterEnd && afterEnd.getAttribute('role') === 'menuitem';
+    navMenu({ key: 'Home', preventDefault: function () {} });
+    var afterHome = document.activeElement;
+    var homeOk = !!afterHome && afterHome.getAttribute('data-named-preset') === 'default';
+    navMenu({ key: 'ArrowDown', preventDefault: function () {} });
+    navMenu({ key: 'Enter', preventDefault: function () {} });
+    syncChip();
+    var enterOk = activeNamed() === 'ci-slim' && !menuOpen();
+
     var ok = defLabelOk && defHiddenOk && actionOk && cycle1Ok && cycle2Ok && cycleBackOk
       && shiftOpenOk && editorChipOk && afterEditorOk && resetOk && bridgeResetOk
-      && menuOpenOk && menuApplyOk && reopenOk && closeOk && escOk;
+      && menuOpenOk && menuApplyOk && reopenOk && closeOk && escOk
+      && navStartOk && downOk && endOk && homeOk && enterOk;
     mark(ok ? 'ok' : ('fail:def=' + defLabelOk + ';dh=' + defHiddenOk + ';act=' + actionOk
       + ';c1=' + cycle1Ok + ';c2=' + cycle2Ok + ';cb=' + cycleBackOk + ';sh=' + shiftOpenOk
       + ';ec=' + editorChipOk + ';ae=' + afterEditorOk + ';rs=' + resetOk + ';br=' + bridgeResetOk
       + ';mo=' + menuOpenOk + ';ma=' + menuApplyOk + ';re=' + reopenOk + ';cl=' + closeOk + ';esc=' + escOk
+      + ';ns=' + navStartOk + ';dn=' + downOk + ';en=' + endOk + ';hm=' + homeOk + ';ent=' + enterOk
       + ';chip=' + (chip.textContent || '') + ';active=' + activeNamed()));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);

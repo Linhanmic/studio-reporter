@@ -842,6 +842,73 @@
     syncEmptyStateMetricsMetaPresetToolbarChip();
   }
 
+  function emptyStateMetricsMetaPresetMenuIsOpen() {
+    var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    return !!(menu && !menu.hasAttribute('hidden'));
+  }
+
+  function emptyStateMetricsMetaPresetMenuItems() {
+    var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    if (!menu || menu.hasAttribute('hidden')) return [];
+    return Array.prototype.slice.call(menu.querySelectorAll('[role="menuitemradio"], [role="menuitem"]'));
+  }
+
+  function focusEmptyStateMetricsMetaPresetMenuItem(index) {
+    var items = emptyStateMetricsMetaPresetMenuItems();
+    if (!items.length) return null;
+    var i = ((index % items.length) + items.length) % items.length;
+    var el = items[i];
+    if (el && typeof el.focus === 'function') {
+      try { el.focus(); } catch (e) {}
+    }
+    return el;
+  }
+
+  function navigateEmptyStateMetricsMetaPresetMenu(ev) {
+    if (!emptyStateMetricsMetaPresetMenuIsOpen()) return false;
+    var items = emptyStateMetricsMetaPresetMenuItems();
+    if (!items.length) return false;
+    var current = -1;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i] === document.activeElement) { current = i; break; }
+    }
+    if (ev.key === 'ArrowDown' || ev.key === 'Down') {
+      ev.preventDefault();
+      focusEmptyStateMetricsMetaPresetMenuItem(current < 0 ? 0 : current + 1);
+      return true;
+    }
+    if (ev.key === 'ArrowUp' || ev.key === 'Up') {
+      ev.preventDefault();
+      focusEmptyStateMetricsMetaPresetMenuItem(current < 0 ? items.length - 1 : current - 1);
+      return true;
+    }
+    if (ev.key === 'Home') {
+      ev.preventDefault();
+      focusEmptyStateMetricsMetaPresetMenuItem(0);
+      return true;
+    }
+    if (ev.key === 'End') {
+      ev.preventDefault();
+      focusEmptyStateMetricsMetaPresetMenuItem(items.length - 1);
+      return true;
+    }
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      if (current >= 0 && items[current]) {
+        ev.preventDefault();
+        items[current].click();
+        return true;
+      }
+    }
+    if (ev.key === 'Tab') {
+      ev.preventDefault();
+      focusEmptyStateMetricsMetaPresetMenuItem(ev.shiftKey
+        ? (current < 0 ? items.length - 1 : current - 1)
+        : (current < 0 ? 0 : current + 1));
+      return true;
+    }
+    return false;
+  }
+
   function closeEmptyStateMetricsMetaPresetMenu() {
     var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
     if (!menu) return;
@@ -3317,6 +3384,7 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   });
 
   document.addEventListener('keydown', function (ev) {
+    if (navigateEmptyStateMetricsMetaPresetMenu(ev)) return;
     if (ev.key === 'Escape' || ev.key === 'Esc') {
       var presetMenu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
       if (presetMenu && !presetMenu.hasAttribute('hidden')) {
@@ -3501,6 +3569,8 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportOpenEmptyStateMetricsMetaFieldsEditor = openEmptyStateMetricsMetaFieldsEditor;
   window.StudioReportOpenEmptyStateMetricsMetaPresetMenu = openEmptyStateMetricsMetaPresetMenu;
   window.StudioReportCloseEmptyStateMetricsMetaPresetMenu = closeEmptyStateMetricsMetaPresetMenu;
+  window.StudioReportNavigateEmptyStateMetricsMetaPresetMenu = navigateEmptyStateMetricsMetaPresetMenu;
+  window.StudioReportEmptyStateMetricsMetaPresetMenuIsOpen = emptyStateMetricsMetaPresetMenuIsOpen;
   window.StudioReportCycleEmptyStateMetricsMetaFieldNamedPreset = cycleEmptyStateMetricsMetaFieldNamedPreset;
   window.StudioReportActivateEmptyStateMetricsMetaPresetChip = activateEmptyStateMetricsMetaPresetChip;
   window.StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault = resetEmptyStateMetricsMetaFieldNamedPresetToDefault;
