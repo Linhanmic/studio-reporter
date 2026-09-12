@@ -148,6 +148,44 @@
         btn.removeAttribute('tabindex');
       }
     });
+    syncUndoClearFiltersButton();
+  }
+
+  var lastFilterSnapshot = null;
+
+  function captureFilterSnapshot() {
+    return {
+      query: state.query || '',
+      spec: state.spec || 'all',
+      scenario: state.scenario || 'all',
+      failStepsOnly: !!failStepsOnly
+    };
+  }
+
+  function applyFilterSnapshot(snap) {
+    if (!snap) return;
+    state.query = snap.query || '';
+    state.spec = snap.spec || 'all';
+    state.scenario = snap.scenario || 'all';
+    if (searchInput) searchInput.value = state.query;
+    var wantFailSteps = !!snap.failStepsOnly;
+    if (wantFailSteps !== failStepsOnly) {
+      setFailStepsOnly(wantFailSteps, { silent: true, skipHash: true });
+    }
+    applyFilter();
+  }
+
+  function syncUndoClearFiltersButton() {
+    var btn = document.querySelector('.overview-fail-reason-tools [data-action="undo-clear-report-filters"]');
+    if (!btn) return;
+    var show = !!lastFilterSnapshot && !failReasonEmptyStateActive();
+    if (show) {
+      btn.removeAttribute('hidden');
+      btn.setAttribute('tabindex', '0');
+    } else {
+      btn.setAttribute('hidden', '');
+      btn.removeAttribute('tabindex');
+    }
   }
 
   function failReasonEmptyStateActive() {
@@ -156,24 +194,40 @@
   }
 
   function clearReportFilters() {
+    lastFilterSnapshot = captureFilterSnapshot();
     state.query = '';
     state.spec = 'all';
     state.scenario = 'all';
     if (searchInput) searchInput.value = '';
     if (failStepsOnly) setFailStepsOnly(false, { silent: true, skipHash: true });
     applyFilter();
-    flashStatus('已清除过滤');
+    syncUndoClearFiltersButton();
+    flashStatus('已清除过滤（可撤销）');
   }
 
   // Clear search/spec noise but keep a fail-focused view (scenario=fail).
   function restoreFailOnlyView() {
+    lastFilterSnapshot = captureFilterSnapshot();
     state.query = '';
     state.spec = 'all';
     state.scenario = 'fail';
     if (searchInput) searchInput.value = '';
     if (failStepsOnly) setFailStepsOnly(false, { silent: true, skipHash: true });
     applyFilter();
-    flashStatus('已切换到仅失败视图');
+    syncUndoClearFiltersButton();
+    flashStatus('已切换到仅失败视图（可撤销）');
+  }
+
+  function undoClearReportFilters() {
+    if (!lastFilterSnapshot) {
+      flashStatus('没有可撤销的过滤快照');
+      return;
+    }
+    var snap = lastFilterSnapshot;
+    lastFilterSnapshot = null;
+    applyFilterSnapshot(snap);
+    syncUndoClearFiltersButton();
+    flashStatus('已撤销清除，过滤已恢复');
   }
 
   // First visible jump target for an Overview fail-reason row (filter / fail-steps aware).
@@ -1223,6 +1277,10 @@ function copyFailSummary() {
         restoreFailOnlyView();
         return;
       }
+      if (actionBtn.dataset.action === 'undo-clear-report-filters') {
+        undoClearReportFilters();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1232,7 +1290,7 @@ function copyFailSummary() {
     // Click count/reason (not a scenario link / copy button) → jump to first visible matching fail.
     var failJump = ev.target.closest('.fail-reason-count, .fail-reason-text, .fail-reason-row');
     if (failJump) {
-      if (ev.target.closest('[data-action="copy-fail-reason-link"], [data-action="copy-fail-reason-snippet"], [data-action="copy-all-fail-reason-snippets"], [data-action="copy-all-fail-reason-links"], [data-action="clear-report-filters"], [data-action="restore-fail-only-view"]')) return;
+      if (ev.target.closest('[data-action="copy-fail-reason-link"], [data-action="copy-fail-reason-snippet"], [data-action="copy-all-fail-reason-snippets"], [data-action="copy-all-fail-reason-links"], [data-action="clear-report-filters"], [data-action="restore-fail-only-view"], [data-action="undo-clear-report-filters"]')) return;
       var row = failJump.classList.contains('fail-reason-row')
         ? failJump
         : failJump.closest('.fail-reason-row');
@@ -1342,8 +1400,17 @@ function copyFailSummary() {
   window.StudioReportSyncBulkFailReasonCopyButtons = syncBulkFailReasonCopyButtons;
   window.StudioReportClearReportFilters = clearReportFilters;
   window.StudioReportRestoreFailOnlyView = restoreFailOnlyView;
+  window.StudioReportUndoClearReportFilters = undoClearReportFilters;
   window.StudioReportFailReasonEmptyStateActive = failReasonEmptyStateActive;
   window.StudioReportFilterState = function () {
     return { query: state.query, spec: state.spec, scenario: state.scenario, failStepsOnly: !!failStepsOnly };
+  };
+  window.StudioReportLastFilterSnapshot = function () {
+    return lastFilterSnapshot ? {
+      query: lastFilterSnapshot.query,
+      spec: lastFilterSnapshot.spec,
+      scenario: lastFilterSnapshot.scenario,
+      failStepsOnly: !!lastFilterSnapshot.failStepsOnly
+    } : null;
   };
 })();
