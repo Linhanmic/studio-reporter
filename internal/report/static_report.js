@@ -303,6 +303,25 @@
     return emptyStateMetricsEventKindFilter();
   }
 
+  function syncEmptyStateMetricsCollapsedKindClear(kindFilter, expanded) {
+    var clearBtn = document.querySelector(
+      '#overview-empty-state-metrics [data-action="clear-empty-state-metrics-event-kind-collapsed"]'
+    );
+    if (!clearBtn) return;
+    var show = !!kindFilter && !expanded;
+    if (show) {
+      clearBtn.removeAttribute('hidden');
+      clearBtn.setAttribute('aria-hidden', 'false');
+      clearBtn.removeAttribute('tabindex');
+      var label = EMPTY_STATE_EVENT_KIND_LABELS[kindFilter] || kindFilter;
+      clearBtn.title = '清除 kind 过滤（当前 ' + label + '；无需展开；同步去掉 URL emptyMetricsKind）';
+    } else {
+      clearBtn.setAttribute('hidden', '');
+      clearBtn.setAttribute('aria-hidden', 'true');
+      clearBtn.setAttribute('tabindex', '-1');
+    }
+  }
+
   function syncEmptyStateMetricsEvents() {
     var listEl = document.getElementById('overview-empty-state-metrics-events');
     var toggleBtn = document.querySelector(
@@ -323,6 +342,7 @@
         ? ('折叠事件环' + (kindLabel ? ('（当前 kind=' + kindLabel + '）') : '（减少噪音）'))
         : ('展开事件环' + (kindLabel ? ('（已过滤 kind=' + kindLabel + '）') : '（默认折叠）'));
     }
+    syncEmptyStateMetricsCollapsedKindClear(kindFilter, expanded);
     if (!listEl) return;
     if (!expanded) {
       listEl.setAttribute('hidden', '');
@@ -2088,6 +2108,10 @@ function copyFailSummary() {
         return;
       }
       if (actionBtn.dataset.action === 'clear-empty-state-metrics-event-kind') {
+        clearEmptyStateMetricsEventKindFilter();
+        return;
+      }
+      if (actionBtn.dataset.action === 'clear-empty-state-metrics-event-kind-collapsed') {
         clearEmptyStateMetricsEventKindFilter();
         return;
       }

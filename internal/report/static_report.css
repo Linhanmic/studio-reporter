@@ -604,6 +604,14 @@ html, body {
   background: #e8eef6;
   color: #12324c;
 }
+.overview-empty-state-metrics-kind-clear-collapsed {
+  border-style: dashed;
+  color: #5a3a2a;
+  background: #faf6f2;
+}
+.overview-empty-state-metrics-kind-clear-collapsed[hidden] {
+  display: none !important;
+}
 .overview-empty-state-metrics[aria-hidden="true"] .action-btn {
   pointer-events: none;
 }
