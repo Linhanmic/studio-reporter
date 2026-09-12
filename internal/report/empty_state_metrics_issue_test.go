@@ -43,8 +43,10 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 	for _, want := range []string{
 		`copy-empty-state-metrics-issue`,
 		`StudioReportFormatEmptyStateMetricsIssueMarkdown`,
+		`StudioReportFormatEmptyStateMetricsIssueShortMarkdown`,
 		`StudioReportCopyEmptyStateMetricsIssueMarkdown`,
 		`贴 issue`,
+		`Shift+点击仅复制标题+预设短卡片`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -67,13 +69,14 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"  function go() {\n" +
 		"    var applyNamed = window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPreset;\n" +
 		"    var format = window.StudioReportFormatEmptyStateMetricsIssueMarkdown;\n" +
+		"    var formatShort = window.StudioReportFormatEmptyStateMetricsIssueShortMarkdown;\n" +
 		"    var copy = window.StudioReportCopyEmptyStateMetricsIssueMarkdown;\n" +
 		"    var show = window.StudioReportShowEmptyStateMetricsPanel;\n" +
 		"    var clear = window.StudioReportClearReportFilters;\n" +
 		"    var setExp = window.StudioReportSetEmptyStateMetricsEventsExpanded;\n" +
 		"    var setKind = window.StudioReportSetEmptyStateMetricsEventKindFilter;\n" +
 		"    var btn = document.querySelector('[data-action=\"copy-empty-state-metrics-issue\"]');\n" +
-		"    if (typeof format !== 'function' || typeof copy !== 'function' || typeof show !== 'function' || typeof setKind !== 'function' || !btn) {\n" +
+		"    if (typeof format !== 'function' || typeof formatShort !== 'function' || typeof copy !== 'function' || typeof show !== 'function' || typeof setKind !== 'function' || !btn) {\n" +
 		"      mark('missing');\n" +
 		"      return;\n" +
 		"    }\n" +
@@ -113,6 +116,21 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"        && mdPreset.indexOf('meta 字段预设') >= 0;\n" +
 		"      applyNamed('default');\n" +
 		"    }\n" +
+		"    var shortMd = formatShort();\n" +
+		"    var shortOk = typeof shortMd === 'string'\n" +
+		"      && shortMd.indexOf('### studio-reporter 空态 metrics · 预设') >= 0\n" +
+		"      && shortMd.indexOf('meta 字段预设') >= 0\n" +
+		"      && shortMd.indexOf('开启链接') >= 0\n" +
+		"      && shortMd.indexOf('```json') < 0;\n" +
+		"    if (typeof applyNamed === 'function') {\n" +
+		"      applyNamed('ci-slim');\n" +
+		"      var shortPreset = formatShort();\n" +
+		"      shortOk = shortOk && typeof shortPreset === 'string'\n" +
+		"        && (shortPreset.indexOf('CI') >= 0 || shortPreset.indexOf('精简') >= 0)\n" +
+		"        && shortPreset.indexOf('ci-slim') >= 0\n" +
+		"        && shortPreset.indexOf('```json') < 0;\n" +
+		"      applyNamed('default');\n" +
+		"    }\n" +
 		"    setKind('escClear');\n" +
 		"    var mdEsc = format();\n" +
 		"    var escOk = typeof mdEsc === 'string'\n" +
@@ -128,7 +146,7 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"    try { parsed = JSON.parse(embedded); } catch (e2) {}\n" +
 		"    var subsetOk = parsed && Array.isArray(parsed.events) && parsed.events.length >= 1\n" +
 		"      && parsed.events.every(function (ev) { return ev && ev.kind === 'escClear'; });\n" +
-		"    mark((allOk && escOk && subsetOk && presetOk) ? 'ok' : ('fail:all=' + allOk + ';esc=' + escOk + ';sub=' + subsetOk + ';preset=' + presetOk + ';md=' + String(mdEsc).slice(0, 220)));\n" +
+		"    mark((allOk && escOk && subsetOk && presetOk && shortOk) ? 'ok' : ('fail:all=' + allOk + ';esc=' + escOk + ';sub=' + subsetOk + ';preset=' + presetOk + ';short=' + shortOk + ';md=' + String(mdEsc).slice(0, 220)));\n" +
 		"  }\n" +
 		"  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);\n" +
 		"  else setTimeout(go, 100);\n" +

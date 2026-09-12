@@ -319,3 +319,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 开启链接 title/aria 含命名预设 | describeEmptyMetricsEnableURLButtonSummary |
 | 2026-09-12 | 失败原因空态 metrics 工具行命名预设 chip | 预设·… 循环/Shift/菜单导航/字段摘要/回默认 |
 | 2026-09-12 | 失败原因空态 metrics 贴 issue 含命名预设 | formatEmptyStateMetricsIssueMarkdown 标题/正文 |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue 短卡片 | Shift+点击；formatEmptyStateMetricsIssueShortMarkdown |

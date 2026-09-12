@@ -1754,6 +1754,35 @@
     return lines.join('\n');
   }
 
+  function formatEmptyStateMetricsIssueShortMarkdown() {
+    var enableURL = formatEmptyMetricsEnableURL();
+    var report = emptyStateMetricsReportMeta();
+    var presetId = '';
+    var presetName = '默认';
+    try {
+      presetId = getActiveEmptyStateMetricsMetaFieldNamedPresetId() || 'default';
+      var preset = findEmptyStateMetricsMetaFieldNamedPreset(presetId);
+      if (preset && preset.name) presetName = preset.name;
+      else if (presetId && presetId !== 'default') presetName = presetId;
+    } catch (ePreset) {}
+    var presetSummary = '';
+    try {
+      presetSummary = describeEmptyStateMetricsMetaFieldNamedPreset(
+        findEmptyStateMetricsMetaFieldNamedPreset(presetId || 'default')
+      );
+    } catch (eSummary) {}
+    var lines = [
+      '### studio-reporter 空态 metrics · 预设 ' + presetName,
+      '',
+      '- 项目: ' + (report.projectName ? ('`' + report.projectName + '`') : '_（未知）_'),
+      '- 结果: ' + (report.verdict ? ('`' + report.verdict + '`') : '_（未知）_'),
+      '- meta 字段预设: `' + presetName + '`' + (presetId && presetId !== 'default' ? (' (`' + presetId + '`)') : '') + (presetSummary ? (' — ' + presetSummary) : ''),
+      '- 开启链接: ' + (enableURL ? ('`' + enableURL + '`') : '_（无法生成）_'),
+      ''
+    ];
+    return lines.join('\n');
+  }
+
   function downloadEmptyStateMetricsIssueMarkdown() {
     var text = formatEmptyStateMetricsIssueMarkdown();
     var blob = new Blob([text], { type: 'text/markdown' });
@@ -1772,14 +1801,35 @@
     return text;
   }
 
-  function copyEmptyStateMetricsIssueMarkdown() {
-    var text = formatEmptyStateMetricsIssueMarkdown();
+  function copyEmptyStateMetricsIssueMarkdown(opts) {
+    opts = opts || {};
+    var shortCard = !!(opts.short || opts.shortCard);
+    var text = shortCard ? formatEmptyStateMetricsIssueShortMarkdown() : formatEmptyStateMetricsIssueMarkdown();
     return copyText(text).then(function () {
-      flashStatus('已复制空态 metrics issue 模板（链接 + 过滤 + JSON）');
+      flashStatus(shortCard
+        ? '已复制空态 metrics 短卡片（标题 + 预设 + 开启链接）'
+        : '已复制空态 metrics issue 模板（链接 + 过滤 + JSON）');
     }).catch(function () {
       try {
-        downloadEmptyStateMetricsIssueMarkdown();
-        flashStatus('剪贴板不可用，已改为下载 issue Markdown');
+        if (shortCard) {
+          // Fall back to downloading the short card as .md when clipboard is blocked.
+          var blob = new Blob([text], { type: 'text/markdown' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = buildEmptyStateMetricsDownloadName('empty-state-metrics-issue-short', 'md');
+          a.rel = 'noopener';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () {
+            try { URL.revokeObjectURL(url); } catch (e2) {}
+          }, 0);
+          flashStatus('剪贴板不可用，已改为下载短卡片 Markdown');
+        } else {
+          downloadEmptyStateMetricsIssueMarkdown();
+          flashStatus('剪贴板不可用，已改为下载 issue Markdown');
+        }
       } catch (e) {
         flashStatus('复制失败，请检查剪贴板权限');
       }
@@ -3338,7 +3388,7 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
         return;
       }
       if (actionBtn.dataset.action === 'copy-empty-state-metrics-issue') {
-        copyEmptyStateMetricsIssueMarkdown();
+        copyEmptyStateMetricsIssueMarkdown({ short: !!(ev && ev.shiftKey) });
         return;
       }
       if (actionBtn.dataset.action === 'toggle-empty-state-metrics-events') {
@@ -3552,6 +3602,7 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportCopyEmptyStateMetricsJSON = copyEmptyStateMetricsJSON;
   window.StudioReportDownloadEmptyStateMetricsJSON = downloadEmptyStateMetricsJSON;
   window.StudioReportFormatEmptyStateMetricsIssueMarkdown = formatEmptyStateMetricsIssueMarkdown;
+  window.StudioReportFormatEmptyStateMetricsIssueShortMarkdown = formatEmptyStateMetricsIssueShortMarkdown;
   window.StudioReportCopyEmptyStateMetricsIssueMarkdown = copyEmptyStateMetricsIssueMarkdown;
   window.StudioReportDownloadEmptyStateMetricsIssueMarkdown = downloadEmptyStateMetricsIssueMarkdown;
   window.StudioReportToggleEmptyStateMetricsEvents = toggleEmptyStateMetricsEvents;
