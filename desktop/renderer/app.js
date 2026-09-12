@@ -1751,7 +1751,8 @@ async function openFailSummaryFromClipboard() {
       return;
     }
     if (!result?.ok) {
-      setStatus(result?.message || '无法从剪贴板定位失败摘要', 'warn');
+      const hint = result?.hint ? ` — ${result.hint.split('\n')[0]}` : '';
+      setStatus((result?.message || '无法从剪贴板定位失败摘要') + hint, 'warn');
       return;
     }
     setStatus(`已从失败摘要定位：${result.focus}`, 'ok');
@@ -1983,7 +1984,8 @@ async function handleHistoryRowContextMenu(run, ev) {
         return;
       }
       if (!result?.ok) {
-        setStatus(result?.message || '无法粘贴摘要定位到此运行', 'warn');
+        const hint = result?.hint ? ` — ${result.hint.split('\n')[0]}` : '';
+        setStatus((result?.message || '无法粘贴摘要定位到此运行') + hint, 'warn');
         return;
       }
       setTab('report');

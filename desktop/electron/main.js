@@ -589,7 +589,23 @@ async function openFailSummaryFromClipboard(opts = {}) {
     failSteps: true,
   });
   if (!plan.ok) {
-    dialog.showErrorBox('无法从剪贴板定位', plan.message || '未知错误');
+    const buttons = plan.example ? ['复制示例到剪贴板', '关闭'] : ['关闭'];
+    const detail = [plan.hint, plan.example ? `示例：\n${plan.example}` : '']
+      .filter(Boolean)
+      .join('\n\n');
+    const res = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      title: '无法从剪贴板定位',
+      message: plan.message || '未知错误',
+      detail,
+      buttons,
+      defaultId: buttons.length - 1,
+      cancelId: buttons.length - 1,
+      noLink: true,
+    });
+    if (plan.example && res.response === 0) {
+      clipboard.writeText(`${plan.example}\n`);
+    }
     return plan;
   }
   if (plan.needsReportDir || !reportDir) {
