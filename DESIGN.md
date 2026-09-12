@@ -276,3 +276,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态撤销快捷键 | Ctrl/Cmd+Z 撤销清除；搜索框内保留原生文本撤销 |
 | 2026-09-12 | 失败原因空态撤销状态摘要 | 撤销后状态栏附带已恢复过滤摘要（describeFilterSnapshot） |
 | 2026-09-12 | 失败原因空态操作可观测 | EmptyStateMetrics 计数/事件环；StudioReportDebugEmptyState 可选 console |
+| 2026-09-12 | 失败原因空态 metrics 面板 | Overview 可选计数条（query/localStorage/window 开关） |

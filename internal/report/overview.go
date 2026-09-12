@@ -250,6 +250,7 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"restore-fail-only-view\" hidden title=\"清除搜索并切到「仅失败」视图，避免回到全量噪音\">仅看失败</button> ")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"undo-clear-report-filters\" hidden title=\"撤销上一次清除/仅看失败，恢复之前的过滤（Ctrl/Cmd+Z）\">撤销清除</button>")
 	b.WriteString("</p>\n")
+	b.WriteString("<div class=\"overview-empty-state-metrics\" id=\"overview-empty-state-metrics\" hidden aria-live=\"polite\" title=\"空态操作计数（本地 UX 抽检；?emptyMetrics=1 或 localStorage studio-report-empty-metrics=1 开启）\"></div>\n")
 	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th><th>操作</th></tr></thead><tbody>\n")
 	for _, g := range groups {
 		b.WriteString("<tr class=\"fail-reason-row\" data-fail-reason=\"")

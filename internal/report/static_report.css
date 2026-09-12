@@ -442,6 +442,20 @@ html, body {
 .overview-fail-reason-empty-hint[hidden] {
   display: none !important;
 }
+.overview-empty-state-metrics {
+  margin: 0 0 8px;
+  padding: 4px 8px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #4a5b6a;
+  background: #f3f6f9;
+  border: 1px dashed #c5d0dc;
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.overview-empty-state-metrics[hidden] {
+  display: none !important;
+}
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

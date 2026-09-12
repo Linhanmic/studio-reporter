@@ -236,6 +236,9 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`describeFilterSnapshot`,
 		`emptyStateMetrics`,
 		`StudioReportEmptyStateMetrics`,
+		`emptyMetrics=1`,
+		`StudioReportSyncEmptyStateMetricsPanel`,
+		`overview-empty-state-metrics`,
 		`recordEmptyStateEvent`,
 		`lastFilterSnapshot`,
 		`Ctrl/Cmd+Z`,
@@ -294,6 +297,9 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-fail-reason-empty-hint`) {
 		t.Fatal("CSS missing overview-fail-reason-empty-hint for filtered empty state")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics`) {
+		t.Fatal("CSS missing overview-empty-state-metrics panel")
 	}
 	if !strings.Contains(staticReportCSS, `.fail-reason-empty-row`) {
 		t.Fatal("CSS missing fail-reason-empty-row for filtered empty table placeholder")

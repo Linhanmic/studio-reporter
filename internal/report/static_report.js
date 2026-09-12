@@ -176,6 +176,44 @@
         console.debug('[studio-report:empty-state]', kind, detail || {});
       }
     } catch (e) {}
+    syncEmptyStateMetricsPanel();
+  }
+
+  function emptyStateMetricsPanelEnabled() {
+    try {
+      if (window.StudioReportShowEmptyStateMetrics === true) return true;
+      if (window.StudioReportShowEmptyStateMetrics === false) return false;
+    } catch (e) {}
+    try {
+      var q = String(location.search || '');
+      if (/[?&]emptyMetrics=1(?:&|$)/i.test(q) || /[?&]empty-metrics=1(?:&|$)/i.test(q)) return true;
+      if (/[?&]emptyMetrics=0(?:&|$)/i.test(q) || /[?&]empty-metrics=0(?:&|$)/i.test(q)) return false;
+    } catch (e2) {}
+    try {
+      var ls = localStorage.getItem('studio-report-empty-metrics');
+      if (ls === '1' || ls === 'true') return true;
+      if (ls === '0' || ls === 'false') return false;
+    } catch (e3) {}
+    return false;
+  }
+
+  function formatEmptyStateMetricsPanel() {
+    return '空态计数 · clear=' + (emptyStateMetrics.clear || 0) +
+      ' esc=' + (emptyStateMetrics.escClear || 0) +
+      ' failOnly=' + (emptyStateMetrics.restoreFailOnly || 0) +
+      ' undo=' + (emptyStateMetrics.undo || 0) +
+      ' ctrlZ=' + (emptyStateMetrics.ctrlZUndo || 0);
+  }
+
+  function syncEmptyStateMetricsPanel() {
+    var el = document.getElementById('overview-empty-state-metrics');
+    if (!el) return;
+    if (!emptyStateMetricsPanelEnabled()) {
+      el.setAttribute('hidden', '');
+      return;
+    }
+    el.textContent = formatEmptyStateMetricsPanel();
+    el.removeAttribute('hidden');
   }
 
   function captureFilterSnapshot() {
@@ -1471,6 +1509,10 @@ function copyFailSummary() {
       events: emptyStateEvents.slice()
     };
   };
+  window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
+  window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;
+  // Initial paint when enabled via query/localStorage before any action.
+  try { syncEmptyStateMetricsPanel(); } catch (e) {}
   window.StudioReportFilterState = function () {
     return { query: state.query, spec: state.spec, scenario: state.scenario, failStepsOnly: !!failStepsOnly };
   };
