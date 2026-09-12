@@ -54,6 +54,7 @@ func TestEmptyMetricsEnableURLMetaPreset(t *testing.T) {
 		`StudioReportApplyEmptyMetricsMetaPresetFromQuery`,
 		`StudioReportSyncEmptyMetricsMetaPresetInLocation`,
 		`StudioReportApplyEmptyStateMetricsMetaFieldNamedPreset`,
+		`StudioReportDescribeEmptyMetricsEnableURLButtonSummary`,
 		`ci-slim`,
 		` · preset=`,
 	} {
@@ -85,9 +86,13 @@ func TestEmptyMetricsEnableURLMetaPreset(t *testing.T) {
     var readQ = window.StudioReportReadEmptyMetricsMetaPresetFromQuery;
     var applyQ = window.StudioReportApplyEmptyMetricsMetaPresetFromQuery;
     var show = window.StudioReportShowEmptyStateMetricsPanel;
+    var syncBtns = window.StudioReportSyncEmptyMetricsEnableURLButtons;
+    var btnSummary = window.StudioReportDescribeEmptyMetricsEnableURLButtonSummary;
+    var setMeta = window.StudioReportSetEmptyStateMetricsMetaMoreExpanded;
     if (typeof format !== 'function' || typeof describe !== 'function' || typeof applyNamed !== 'function'
       || typeof getActive !== 'function' || typeof getPrefs !== 'function' || typeof readQ !== 'function'
-      || typeof applyQ !== 'function' || typeof show !== 'function') {
+      || typeof applyQ !== 'function' || typeof show !== 'function' || typeof syncBtns !== 'function'
+      || typeof btnSummary !== 'function') {
       mark('missing');
       return;
     }
@@ -127,11 +132,25 @@ func TestEmptyMetricsEnableURLMetaPreset(t *testing.T) {
 
     applyNamed('ci-slim');
     var syncOk = /[?&]emptyMetricsMetaPreset=ci-slim(?:&|#|$)/.test(location.search);
+    syncBtns();
+    var btn = document.querySelector('[data-action="copy-empty-metrics-enable-url"]');
+    var summaryPreset = btnSummary();
+    var titlePresetOk = !!btn && /preset=/.test(btn.title || '') && /preset=/.test(btn.getAttribute('aria-label') || '')
+      && ((btn.title || '').indexOf('CI 精简') >= 0 || (btn.title || '').indexOf('ci-slim') >= 0)
+      && typeof summaryPreset === 'string' && summaryPreset.indexOf('preset=') >= 0;
+    if (typeof setMeta === 'function') setMeta(true);
+    syncBtns();
+    var titleMetaOk = !!btn && /meta\+/.test(btn.title || '') && /preset=/.test(btn.title || '')
+      && typeof btnSummary() === 'string' && btnSummary().indexOf('meta+') >= 0 && btnSummary().indexOf('preset=') >= 0;
+    if (typeof setMeta === 'function') setMeta(false);
     applyNamed('default');
     var stripOk = !/[?&]emptyMetricsMetaPreset=/.test(location.search);
+    syncBtns();
+    var titleDefaultOk = !!btn && !/preset=/.test(btn.title || '') && !/preset=/.test(btn.getAttribute('aria-label') || '')
+      && typeof btnSummary() === 'string' && btnSummary().indexOf('preset=') < 0;
 
-    mark((urlOk && previewOk && shortOk && clearOk && applyOk && syncOk && stripOk) ? 'ok'
-      : ('fail:url=' + urlOk + ';prev=' + previewOk + ';short=' + shortOk + ';clear=' + clearOk + ';apply=' + applyOk + ';sync=' + syncOk + ';strip=' + stripOk + ';u=' + String(url).slice(0, 140) + ';p=' + String(preview).slice(0, 80) + ';fromQ=' + fromQ + ';active=' + getActive()));
+    mark((urlOk && previewOk && shortOk && clearOk && applyOk && syncOk && stripOk && titlePresetOk && titleMetaOk && titleDefaultOk) ? 'ok'
+      : ('fail:url=' + urlOk + ';prev=' + previewOk + ';short=' + shortOk + ';clear=' + clearOk + ';apply=' + applyOk + ';sync=' + syncOk + ';strip=' + stripOk + ';tp=' + titlePresetOk + ';tm=' + titleMetaOk + ';td=' + titleDefaultOk + ';u=' + String(url).slice(0, 140) + ';p=' + String(preview).slice(0, 80) + ';fromQ=' + fromQ + ';active=' + getActive() + ';sum=' + String(summaryPreset).slice(0, 60) + ';title=' + String(btn && btn.title).slice(0, 80)));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);

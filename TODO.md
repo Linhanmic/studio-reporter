@@ -218,6 +218,7 @@
 - [x] 静态报告失败原因空态 metrics 字段预设可导出/导入 JSON（复制/下载/导入；`format/applyEmptyStateMetricsMetaFieldPrefsJSON`）
 - [x] 静态报告失败原因空态 metrics 字段预设支持命名多套配置（内置「默认 / CI 精简 / 排障完整」一键切换；可另存/删除自定义；命名库 JSON 导入导出）
 - [x] 静态报告失败原因空态 metrics 命名字段预设支持可分享 URL（`emptyMetricsMetaPreset=ci-slim`；开启链接可携带；预览 · preset=）
+- [x] 静态报告失败原因空态 metrics 开启链接按钮 title/aria 同步显示当前命名预设（与 kind / meta+ 并列；`describeEmptyMetricsEnableURLButtonSummary`）
 
 ## 迭代日志
 
@@ -477,7 +478,10 @@
 
 | 2026-09-12 | 失败原因空态 metrics 命名预设可分享 URL | emptyMetricsMetaPreset；开启链接/预览 · preset= |
 
+| 2026-09-12 | 失败原因空态 metrics 开启链接 title/aria 含命名预设 | kind · meta+ · preset= 并列摘要 |
+
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 开启链接按钮 title/aria 同步显示当前命名预设**（与 kind / meta+ 摘要并列），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 面板工具行展示当前命名预设 chip**（与字段编辑器联动；一键切回默认），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+
 

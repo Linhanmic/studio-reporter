@@ -934,6 +934,7 @@
     } catch (e) {}
     try { syncEmptyMetricsMetaInLocation(!!on); } catch (e2) {}
     syncEmptyStateMetricsPanel();
+    try { syncEmptyMetricsEnableURLButtons(); } catch (e3) {}
   }
 
   function toggleEmptyStateMetricsMetaMore() {
@@ -1649,8 +1650,23 @@
     return '当前未过滤';
   }
 
+  function describeEmptyMetricsEnableURLButtonSummary() {
+    var parts = [describeEmptyMetricsEnableKindSummary()];
+    try {
+      if (emptyStateMetricsMetaMoreExpanded()) parts.push('meta+');
+    } catch (e) {}
+    try {
+      var presetId = getActiveEmptyStateMetricsMetaFieldNamedPresetId();
+      if (presetId && presetId !== 'default') {
+        var preset = findEmptyStateMetricsMetaFieldNamedPreset(presetId);
+        parts.push('preset=' + (preset && preset.name ? preset.name : presetId));
+      }
+    } catch (e2) {}
+    return parts.join(' · ');
+  }
+
   function syncEmptyMetricsEnableURLButtons() {
-    var summary = describeEmptyMetricsEnableKindSummary();
+    var summary = describeEmptyMetricsEnableURLButtonSummary();
     var title = '复制带 ?emptyMetrics=1 的可分享 URL（' + summary + '；保留当前 hash 过滤）';
     var label = '复制空态 metrics 开启链接（' + summary + '）';
     document.querySelectorAll('[data-action="copy-empty-metrics-enable-url"]').forEach(function (btn) {
@@ -3281,6 +3297,7 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportShortenEmptyMetricsEnableURL = shortenEmptyMetricsEnableURL;
   window.StudioReportDescribeEmptyMetricsEnableURLPreview = describeEmptyMetricsEnableURLPreview;
   window.StudioReportDescribeEmptyMetricsEnableKindSummary = describeEmptyMetricsEnableKindSummary;
+  window.StudioReportDescribeEmptyMetricsEnableURLButtonSummary = describeEmptyMetricsEnableURLButtonSummary;
   window.StudioReportSyncEmptyMetricsEnableURLButtons = syncEmptyMetricsEnableURLButtons;
   window.StudioReportSyncEmptyMetricsEnableHint = syncEmptyMetricsEnableHint;
   window.StudioReportFormatEmptyStateMetricsReportSummary = formatEmptyStateMetricsReportSummary;
