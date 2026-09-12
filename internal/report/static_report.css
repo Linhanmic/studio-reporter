@@ -509,6 +509,26 @@ html, body {
 .overview-empty-state-metrics-events-list li {
   margin: 0 0 2px;
 }
+.overview-empty-state-metrics-event-line {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 1px 4px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.overview-empty-state-metrics-event-line:hover {
+  background: #dde6ef;
+}
+.overview-empty-state-metrics-event-line:focus-visible {
+  outline: 2px solid #1f4668;
+  outline-offset: 1px;
+}
 .overview-empty-state-metrics-events-empty {
   color: #6a7a8a;
   font-style: italic;

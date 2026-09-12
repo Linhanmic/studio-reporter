@@ -289,3 +289,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 空态 metrics 与 focus 联调说明 | QUICKSTART：query 开 metrics + hash focus 同用 |
 | 2026-09-12 | 失败原因空态 metrics 贴 issue | formatEmptyStateMetricsIssueMarkdown：链接+过滤+JSON |
 | 2026-09-12 | 失败原因空态 metrics 事件折叠 | counts 常显；事件默认折叠（localStorage 记忆） |
+| 2026-09-12 | 失败原因空态 metrics 事件行复制 | 展开后点选单行复制（copyEmptyStateMetricsEventLine） |

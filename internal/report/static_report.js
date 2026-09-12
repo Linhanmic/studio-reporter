@@ -269,10 +269,35 @@
     var html = '<ol class="overview-empty-state-metrics-events-list">';
     var i;
     for (i = 0; i < emptyStateEvents.length; i++) {
-      html += '<li>' + escapeHTML(formatEmptyStateMetricsEventLine(emptyStateEvents[i])) + '</li>';
+      var line = formatEmptyStateMetricsEventLine(emptyStateEvents[i]);
+      html += '<li><button type="button" class="overview-empty-state-metrics-event-line"' +
+        ' data-action="copy-empty-state-metrics-event" data-event-index="' + i + '"' +
+        ' title="复制本行事件（可贴 issue）">' +
+        escapeHTML(line) +
+        '</button></li>';
     }
     html += '</ol>';
     listEl.innerHTML = html;
+    // Newly rendered event buttons inherit panel keyboard policy.
+    var panel = document.getElementById('overview-empty-state-metrics');
+    if (panel && !panel.hasAttribute('hidden')) {
+      syncEmptyStateMetricsPanelButtons(panel, true);
+    }
+  }
+
+  function copyEmptyStateMetricsEventLine(index) {
+    var i = typeof index === 'number' ? index : parseInt(String(index), 10);
+    if (!isFinite(i) || i < 0 || i >= emptyStateEvents.length) {
+      flashStatus('事件行无效或已过期，请展开后重试');
+      return Promise.reject(new Error('bad event index'));
+    }
+    var text = formatEmptyStateMetricsEventLine(emptyStateEvents[i]);
+    return copyText(text).then(function () {
+      var preview = text.length > 64 ? (text.slice(0, 61) + '…') : text;
+      flashStatus('已复制事件行：' + preview);
+    }).catch(function () {
+      flashStatus('复制事件行失败，请检查剪贴板权限');
+    });
   }
 
   function escapeHTML(s) {
@@ -1751,6 +1776,10 @@ function copyFailSummary() {
         toggleEmptyStateMetricsEvents();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-empty-state-metrics-event') {
+        copyEmptyStateMetricsEventLine(actionBtn.dataset.eventIndex);
+        return;
+      }
       if (actionBtn.dataset.action === 'download-empty-state-metrics-json') {
         downloadEmptyStateMetricsJSON();
         return;
@@ -1917,6 +1946,8 @@ function copyFailSummary() {
   window.StudioReportEmptyStateMetricsEventsExpanded = emptyStateMetricsEventsExpanded;
   window.StudioReportSetEmptyStateMetricsEventsExpanded = setEmptyStateMetricsEventsExpanded;
   window.StudioReportSyncEmptyStateMetricsEvents = syncEmptyStateMetricsEvents;
+  window.StudioReportFormatEmptyStateMetricsEventLine = formatEmptyStateMetricsEventLine;
+  window.StudioReportCopyEmptyStateMetricsEventLine = copyEmptyStateMetricsEventLine;
   window.StudioReportEmptyStateMetricsPanelSnapshot = emptyStateMetricsPanelSnapshot;
   window.StudioReportResetEmptyStateMetrics = resetEmptyStateMetrics;
   window.StudioReportHideEmptyStateMetricsPanel = hideEmptyStateMetricsPanel;
