@@ -740,6 +740,18 @@ function writeHash(id) {
     return cell ? (cell.textContent || '').trim() : (el.id || '');
   }
 
+  function failSummaryDeepLink(focusId) {
+    var id = String(focusId || '').trim();
+    if (!id) return '';
+    return '#' + buildShareHash({
+      focus: id,
+      query: state.query,
+      spec: state.spec,
+      scenario: state.scenario,
+      failSteps: failStepsOnly,
+    });
+  }
+
   function collectFailSummary() {
     syncFailReasonOverview();
     var fails = visibleFailScenarios();
@@ -760,6 +772,12 @@ function writeHash(id) {
           if (label) refs.push(label);
         });
         lines.push('- (' + String(count).trim() + ') ' + reason + (refs.length ? ' — ' + refs.join(', ') : ''));
+        var jump = firstVisibleFailReasonTarget(row);
+        var link = failSummaryDeepLink(jump);
+        if (link) {
+          // Path-style focus keeps literal '/' (encodeShareFocus); share hash is pasteable.
+          lines.push('  - 定位: `' + link + '`');
+        }
       });
       lines.push('');
     }
@@ -773,6 +791,8 @@ function writeHash(id) {
           if (text) bits.push(text);
         });
         if (bits.length) lines.push('   - ' + bits.slice(0, 4).join(' | '));
+        var link = failSummaryDeepLink(scn.id);
+        if (link) lines.push('   - 定位: `' + link + '`');
       });
       lines.push('');
     }
@@ -1076,4 +1096,7 @@ function copyFailSummary() {
     if (data.type !== 'studio-reporter:select-node') return;
     selectNode(data.id ? String(data.id) : '');
   });
+
+  // Test / Desktop bridge: sync collect for clipboard smokes (path-style focus deep links).
+  window.StudioReportCollectFailSummary = collectFailSummary;
 })();

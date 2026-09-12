@@ -181,6 +181,7 @@ Gauge (gRPC)
 | 2026-09-11 | manage POST 旁路 focus 联调 | serve POST `/api/fail-digest` 后 sidecar 深链 focus 往返；Chrome 打开 archive `#focus?failSteps=1` |
 | 2026-09-11 | Overview 失败原因跳转 path-style | 聚合表点击次数打开含 `/` 的场景 DOM；Chrome dump-dom；纳入 smoke-failsteps-hash |
 | 2026-09-11 | Overview 跳转 + fail-steps path-style | 仅失败步骤模式下聚合跳转仍打开含 `/` 的失败场景 DOM |
+| 2026-09-11 | 复制失败摘要 path-style 深链 | 失败摘要 Markdown 含 `#focus` 定位（encodeShareFocus 保留 `/`）；Chrome dump-dom 抽检 |
 | 2026-09-11 | digest 深链特殊 hub 路径编码抽检 | 深链 hub 必须经 query 编码；Go/JS/Desktop 往返覆盖空格与保留字符，避免 `?&#` 截断 |
 | 2026-09-11 | report-browser-smoke CI | PR CI 安装 Chrome 并显式跑 failSteps/manage-digest 浏览器冒烟；避免 go test 在无浏览器环境静默 Skip |
 | 2026-09-11 | manage/serve 旁路与深链联调抽检 | 对照「API 单测 ≠ 页面契约」：用真实 hub + HTTP serve 串起 POST 旁路、sidecar 深链、manage.html/JS 字符串契约与 Chrome 打开 hash；`make smoke-manage-digest` 作为可重复抽检入口 |
