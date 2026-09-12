@@ -269,6 +269,40 @@
     return emptyStateMetricsEventKindFilter();
   }
 
+  function stripEmptyMetricsKindFromLocation() {
+    try {
+      var href = String(location.href || '');
+      var hashIdx = href.indexOf('#');
+      var base = hashIdx >= 0 ? href.slice(0, hashIdx) : href;
+      var hash = hashIdx >= 0 ? href.slice(hashIdx) : '';
+      var qIdx = base.indexOf('?');
+      if (qIdx < 0) return false;
+      var path = base.slice(0, qIdx);
+      var params = new URLSearchParams(base.slice(qIdx + 1));
+      var had = params.has('emptyMetricsKind') || params.has('empty-metrics-kind');
+      if (!had) return false;
+      params.delete('emptyMetricsKind');
+      params.delete('empty-metrics-kind');
+      var qs = params.toString();
+      history.replaceState(null, '', path + (qs ? ('?' + qs) : '') + hash);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function clearEmptyStateMetricsEventKindFilter() {
+    var prev = emptyStateMetricsEventKindFilter();
+    setEmptyStateMetricsEventKindFilter('');
+    var stripped = stripEmptyMetricsKindFromLocation();
+    if (prev || stripped) {
+      flashStatus('已清除事件 kind 过滤' + (prev ? ('（原 ' + prev + '）') : ''));
+    } else {
+      flashStatus('当前无 kind 过滤');
+    }
+    return emptyStateMetricsEventKindFilter();
+  }
+
   function syncEmptyStateMetricsEvents() {
     var listEl = document.getElementById('overview-empty-state-metrics-events');
     var toggleBtn = document.querySelector(
@@ -317,6 +351,11 @@
         '" data-action="filter-empty-state-metrics-event-kind" data-kind="' + kind +
         '" title="仅显示 ' + label + ' 事件">' + label + '(' + count + ')</button>';
     });
+    if (kindFilter) {
+      html += '<button type="button" class="overview-empty-state-metrics-event-kind overview-empty-state-metrics-event-kind-clear"' +
+        ' data-action="clear-empty-state-metrics-event-kind"' +
+        ' title="清除 kind 过滤，并去掉 URL 中的 emptyMetricsKind">清除过滤</button>';
+    }
     html += '</div>';
     var visibleIdxs = visibleEmptyStateMetricsEventIndexes();
     var shown = visibleIdxs.length;
@@ -2010,7 +2049,12 @@ function copyFailSummary() {
         return;
       }
       if (actionBtn.dataset.action === 'filter-empty-state-metrics-event-kind') {
-        setEmptyStateMetricsEventKindFilter(actionBtn.dataset.kind || '');
+        if (!actionBtn.dataset.kind) clearEmptyStateMetricsEventKindFilter();
+        else setEmptyStateMetricsEventKindFilter(actionBtn.dataset.kind);
+        return;
+      }
+      if (actionBtn.dataset.action === 'clear-empty-state-metrics-event-kind') {
+        clearEmptyStateMetricsEventKindFilter();
         return;
       }
       if (actionBtn.dataset.action === 'download-empty-state-metrics-json') {
@@ -2189,6 +2233,8 @@ function copyFailSummary() {
   window.StudioReportDownloadEmptyStateMetricsVisibleJSON = downloadEmptyStateMetricsVisibleJSON;
   window.StudioReportEmptyStateMetricsEventKindFilter = emptyStateMetricsEventKindFilter;
   window.StudioReportSetEmptyStateMetricsEventKindFilter = setEmptyStateMetricsEventKindFilter;
+  window.StudioReportClearEmptyStateMetricsEventKindFilter = clearEmptyStateMetricsEventKindFilter;
+  window.StudioReportStripEmptyMetricsKindFromLocation = stripEmptyMetricsKindFromLocation;
   window.StudioReportEmptyStateMetricsPanelSnapshot = emptyStateMetricsPanelSnapshot;
   window.StudioReportResetEmptyStateMetrics = resetEmptyStateMetrics;
   window.StudioReportHideEmptyStateMetricsPanel = hideEmptyStateMetricsPanel;

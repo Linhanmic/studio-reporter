@@ -529,6 +529,14 @@ html, body {
   color: #12324c;
   font-weight: 600;
 }
+.overview-empty-state-metrics-event-kind-clear {
+  border-style: dashed;
+  color: #5a3a2a;
+  background: #faf6f2;
+}
+.overview-empty-state-metrics-event-kind-clear:hover {
+  background: #f3ebe4;
+}
 .overview-empty-state-metrics-event-kind:focus-visible {
   outline: 2px solid #1f4668;
   outline-offset: 1px;

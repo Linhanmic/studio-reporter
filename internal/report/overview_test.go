@@ -258,6 +258,7 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportCopyEmptyStateMetricsEventLine`,
 		`StudioReportFormatEmptyStateMetricsEventLine`,
 		`StudioReportSetEmptyStateMetricsEventKindFilter`,
+		`StudioReportClearEmptyStateMetricsEventKindFilter`,
 		`StudioReportEmptyStateMetricsEventKindFilter`,
 		`StudioReportCopyEmptyStateMetricsVisibleEventLines`,
 		`StudioReportFormatEmptyStateMetricsVisibleEventLines`,
@@ -270,8 +271,10 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`copy-empty-state-metrics-visible-events`,
 		`copy-empty-state-metrics-visible-json`,
 		`filter-empty-state-metrics-event-kind`,
+		`clear-empty-state-metrics-event-kind`,
 		`overview-empty-state-metrics-event-line`,
 		`overview-empty-state-metrics-event-kinds`,
+		`overview-empty-state-metrics-event-kind-clear`,
 		`overview-empty-state-metrics-event-actions`,
 		`StudioReportFormatEmptyStateMetricsIssueMarkdown`,
 		`copy-empty-state-metrics-issue`,
@@ -363,6 +366,9 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-kind`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-event-kind filter chips")
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-kind-clear`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-event-kind-clear")
+	}
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-actions`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-event-actions for copy-visible")
