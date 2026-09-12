@@ -292,3 +292,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 事件行复制 | 展开后点选单行复制（copyEmptyStateMetricsEventLine） |
 | 2026-09-12 | 失败原因空态 metrics 事件 kind 过滤 | chip 过滤 clear/esc/undo（setEmptyStateMetricsEventKindFilter） |
 | 2026-09-12 | 失败原因空态 metrics 复制可见事件 | 尊重 kind 过滤批量复制（copyEmptyStateMetricsVisibleEventLines） |
+| 2026-09-12 | 失败原因空态 metrics 可见子集 JSON | formatEmptyStateMetricsVisibleJSON：仅当前过滤 events |

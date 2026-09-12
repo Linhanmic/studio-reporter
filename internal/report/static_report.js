@@ -326,6 +326,11 @@
       '" data-action="copy-empty-state-metrics-visible-events"' +
       (shown ? '' : ' disabled') +
       ' title="复制当前可见事件行（尊重 kind 过滤）">复制可见(' + shown + ')</button>';
+    html += '<button type="button" class="overview-empty-state-metrics-event-kind' +
+      (!shown ? ' is-disabled' : '') +
+      '" data-action="copy-empty-state-metrics-visible-json"' +
+      (shown ? '' : ' disabled') +
+      ' title="复制仅含当前可见事件的 JSON（尊重 kind 过滤；可贴 issue）">可见 JSON(' + shown + ')</button>';
     html += '</div>';
     html += '<ol class="overview-empty-state-metrics-events-list">';
     var vi;
@@ -457,6 +462,7 @@
       exportedAt: new Date().toISOString(),
       href: '',
       panel: emptyStateMetricsPanelSnapshot(),
+      eventKindFilter: emptyStateMetricsEventKindFilter() || null,
       counts: {
         clear: emptyStateMetrics.clear || 0,
         escClear: emptyStateMetrics.escClear || 0,
@@ -468,6 +474,69 @@
     };
     try { payload.href = String(location.href || ''); } catch (e) {}
     return JSON.stringify(payload, null, 2);
+  }
+
+  function formatEmptyStateMetricsVisibleJSON() {
+    var idxs = visibleEmptyStateMetricsEventIndexes();
+    var events = [];
+    var i;
+    for (i = 0; i < idxs.length; i++) {
+      events.push(emptyStateEvents[idxs[i]]);
+    }
+    var payload = {
+      kind: 'studio-report-empty-state-metrics-visible',
+      exportedAt: new Date().toISOString(),
+      href: '',
+      panel: emptyStateMetricsPanelSnapshot(),
+      eventKindFilter: emptyStateMetricsEventKindFilter() || null,
+      visibleCount: events.length,
+      totalCount: emptyStateEvents.length,
+      counts: {
+        clear: emptyStateMetrics.clear || 0,
+        escClear: emptyStateMetrics.escClear || 0,
+        restoreFailOnly: emptyStateMetrics.restoreFailOnly || 0,
+        undo: emptyStateMetrics.undo || 0,
+        ctrlZUndo: emptyStateMetrics.ctrlZUndo || 0
+      },
+      events: events
+    };
+    try { payload.href = String(location.href || ''); } catch (e) {}
+    return JSON.stringify(payload, null, 2);
+  }
+
+  function downloadEmptyStateMetricsVisibleJSON() {
+    var text = formatEmptyStateMetricsVisibleJSON();
+    var blob = new Blob([text + '\n'], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'studio-report-empty-state-metrics-visible.json';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () {
+      try { URL.revokeObjectURL(url); } catch (e) {}
+    }, 0);
+    flashStatus('已下载可见空态 metrics JSON');
+    return text;
+  }
+
+  function copyEmptyStateMetricsVisibleJSON() {
+    var text = formatEmptyStateMetricsVisibleJSON();
+    var parsed;
+    try { parsed = JSON.parse(text); } catch (e) { parsed = null; }
+    var n = parsed && parsed.events ? parsed.events.length : 0;
+    return copyText(text + '\n').then(function () {
+      flashStatus('已复制可见空态 metrics JSON（' + n + ' 条事件）');
+    }).catch(function () {
+      try {
+        downloadEmptyStateMetricsVisibleJSON();
+        flashStatus('剪贴板不可用，已改为下载可见 JSON');
+      } catch (e2) {
+        flashStatus('复制可见 JSON 失败，请检查剪贴板权限');
+      }
+    });
   }
 
   function downloadEmptyStateMetricsJSON() {
@@ -1888,6 +1957,10 @@ function copyFailSummary() {
         copyEmptyStateMetricsVisibleEventLines();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-empty-state-metrics-visible-json') {
+        copyEmptyStateMetricsVisibleJSON();
+        return;
+      }
       if (actionBtn.dataset.action === 'filter-empty-state-metrics-event-kind') {
         setEmptyStateMetricsEventKindFilter(actionBtn.dataset.kind || '');
         return;
@@ -2063,6 +2136,9 @@ function copyFailSummary() {
   window.StudioReportFormatEmptyStateMetricsVisibleEventLines = formatEmptyStateMetricsVisibleEventLines;
   window.StudioReportCopyEmptyStateMetricsVisibleEventLines = copyEmptyStateMetricsVisibleEventLines;
   window.StudioReportVisibleEmptyStateMetricsEventIndexes = visibleEmptyStateMetricsEventIndexes;
+  window.StudioReportFormatEmptyStateMetricsVisibleJSON = formatEmptyStateMetricsVisibleJSON;
+  window.StudioReportCopyEmptyStateMetricsVisibleJSON = copyEmptyStateMetricsVisibleJSON;
+  window.StudioReportDownloadEmptyStateMetricsVisibleJSON = downloadEmptyStateMetricsVisibleJSON;
   window.StudioReportEmptyStateMetricsEventKindFilter = emptyStateMetricsEventKindFilter;
   window.StudioReportSetEmptyStateMetricsEventKindFilter = setEmptyStateMetricsEventKindFilter;
   window.StudioReportEmptyStateMetricsPanelSnapshot = emptyStateMetricsPanelSnapshot;
