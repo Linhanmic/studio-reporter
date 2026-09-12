@@ -38,6 +38,7 @@ func TestManageEmbedsHistoryFailDigest(t *testing.T) {
 		"buildHistoryFailDigestOpenLinks",
 		"studio-reporter://open",
 		"failSteps",
+		"resolveDigestGroupOpenTarget",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("history-digest.js missing %q", want)

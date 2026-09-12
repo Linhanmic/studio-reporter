@@ -43,6 +43,11 @@
     .digest-pane th { background: #f7fafc; color: #5a6a7a; }
     .digest-pane .muted { color: #8a9aab; }
     .digest-pane a { color: #1f4668; }
+    .digest-pane button.linkish {
+      appearance: none; border: 0; background: transparent; color: #1f4668;
+      cursor: pointer; font: inherit; padding: 0 4px 0 0; text-decoration: underline;
+    }
+    .digest-pane button.linkish:disabled { opacity: .45; cursor: not-allowed; text-decoration: none; }
     .compare-pane {
       flex: 0 0 auto;
       background: #fff;
@@ -119,10 +124,19 @@
             <tr v-for="(g, i) in failDigest.groups" :key="g.reason">
               <td>{{ i + 1 }}</td>
               <td>{{ g.count }}</td>
-              <td><code>{{ g.lastRunId || '—' }}</code></td>
               <td>
-                <a v-if="openLinkFor(g.lastRunId)" :href="openLinkFor(g.lastRunId)">open</a>
+                <button
+                  v-if="g.lastRunId"
+                  type="button"
+                  class="linkish"
+                  @click="openDigestGroup(g)"
+                  :title="g.lastRunFocus ? ('打开并定位 ' + g.lastRunFocus) : '打开最近失败运行'"
+                >{{ g.lastRunId }}</button>
                 <span v-else>—</span>
+              </td>
+              <td>
+                <button type="button" class="linkish" :disabled="!g.lastRunId" @click="openDigestGroup(g)">打开</button>
+                <button type="button" class="linkish" :disabled="!digestDeepLinkFor(g)" @click="copyDigestGroupLink(g)">复制深链</button>
               </td>
               <td>{{ g.reason }}</td>
             </tr>
@@ -334,10 +348,51 @@
               ElementPlus.ElMessage.warning('旁路文件尚不存在');
             }
           },
-          openLinkFor: function (runId) {
+          openLinkFor: function (runId, focus) {
             var api = window.StudioReporterHistoryDigest;
             if (!api || !runId) return '';
-            return api.buildOpenDeepLinkForRun(runId, '');
+            return api.buildOpenDeepLinkForRun(runId, '', focus || '');
+          },
+          digestDeepLinkFor: function (group) {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api || typeof api.resolveDigestGroupOpenTarget !== 'function') {
+              var runId = String((group && group.lastRunId) || '').trim();
+              return this.openLinkFor(runId, group && group.lastRunFocus);
+            }
+            var target = api.resolveDigestGroupOpenTarget(group);
+            if (!target) return '';
+            return api.buildOpenDeepLinkForRun(target.runId, '', target.focus);
+          },
+          openDigestGroup: function (group) {
+            var api = window.StudioReporterHistoryDigest;
+            var target =
+              api && typeof api.resolveDigestGroupOpenTarget === 'function'
+                ? api.resolveDigestGroupOpenTarget(group)
+                : null;
+            var runId = target ? target.runId : String((group && group.lastRunId) || '').trim();
+            var focus = target ? target.focus : String((group && group.lastRunFocus) || '').trim();
+            if (!runId) {
+              ElementPlus.ElMessage.warning('该失败原因没有可打开的最近运行');
+              return;
+            }
+            var row = (this.runs || []).find(function (r) {
+              return String(r.id || '') === runId;
+            });
+            if (!row) {
+              ElementPlus.ElMessage.warning('历史列表中找不到运行 ' + runId);
+              return;
+            }
+            var base = row.relDir ? row.relDir + '/index.html' : 'index.html';
+            var hash = focus ? focus + '?failSteps=1' : 'overview?failSteps=1';
+            window.location.href = base + '#' + hash;
+          },
+          copyDigestGroupLink: function (group) {
+            var link = this.digestDeepLinkFor(group);
+            if (!link) {
+              ElementPlus.ElMessage.warning('没有可复制的打开深链');
+              return;
+            }
+            this.copyText(link, '已复制失败原因打开深链');
           },
           toggleDigest: function () {
             this.showDigest = !this.showDigest;

@@ -37,6 +37,23 @@
     return PROTOCOL + '://open?' + params.toString();
   }
 
+  /**
+   * Pick run + focus for opening/copying a fail-digest reason group.
+   * Mirrors Desktop resolveDigestGroupOpenTarget.
+   * @param {{ lastRunId?: string, lastRunFocus?: string }} group
+   * @returns {{ runId: string, focus: string, failSteps: true } | null}
+   */
+  function resolveDigestGroupOpenTarget(group) {
+    if (!group || typeof group !== 'object') return null;
+    var runId = String(group.lastRunId || '').trim();
+    if (!runId) return null;
+    return {
+      runId: runId,
+      focus: String(group.lastRunFocus || '').trim(),
+      failSteps: true,
+    };
+  }
+
   function buildHistoryFailDigest(runs, opts) {
     opts = opts || {};
     var limit = Math.max(1, Math.min(50, Number(opts.limit) || DEFAULT_DIGEST_LIMIT));
@@ -252,6 +269,7 @@
     buildHistoryFailDigest: buildHistoryFailDigest,
     buildHistoryFailDigestOpenLinks: buildHistoryFailDigestOpenLinks,
     buildOpenDeepLinkForRun: buildOpenDeepLinkForRun,
+    resolveDigestGroupOpenTarget: resolveDigestGroupOpenTarget,
     formatHistoryFailDigestMarkdown: formatHistoryFailDigestMarkdown,
     formatHistoryFailDigestJson: formatHistoryFailDigestJson,
   };

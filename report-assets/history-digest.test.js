@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const {
   normalizeFailReason,
   buildHistoryFailDigest,
+  resolveDigestGroupOpenTarget,
   formatHistoryFailDigestMarkdown,
   formatHistoryFailDigestJson,
   buildHistoryFailDigestOpenLinks,
@@ -115,4 +116,30 @@ describe('report-assets/history-digest', () => {
     assert.equal(new URL(json.openLinksLatest[0]).searchParams.get('focus'), focus);
   });
 
+  it('resolveDigestGroupOpenTarget prefers lastRunId + lastRunFocus', () => {
+    const focus = 'spec:specs/checkout/pay.spec-scn-1';
+    const digest = buildHistoryFailDigest(
+      [
+        {
+          id: 'old',
+          verdict: 'fail',
+          topFailReason: 'timeout',
+          topFailFocus: 'spec:old.spec-scn-0',
+          timestampISO: '2026-09-10T10:00:00Z',
+        },
+        {
+          id: 'new',
+          verdict: 'fail',
+          topFailReason: 'timeout',
+          topFailFocus: focus,
+          timestampISO: '2026-09-11T12:00:00Z',
+        },
+      ],
+      { limit: 5 },
+    );
+    const target = resolveDigestGroupOpenTarget(digest.groups[0]);
+    assert.deepEqual(target, { runId: 'new', focus, failSteps: true });
+    assert.equal(resolveDigestGroupOpenTarget(null), null);
+    assert.equal(resolveDigestGroupOpenTarget({}), null);
+  });
 });
