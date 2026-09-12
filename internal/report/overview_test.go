@@ -237,6 +237,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`emptyStateMetrics`,
 		`StudioReportEmptyStateMetrics`,
 		`StudioReportFormatEmptyStateMetricsJSON`,
+		`buildEmptyStateMetricsDownloadName`,
+		`StudioReportBuildEmptyStateMetricsDownloadName`,
 		`emptyStateMetricsReportMeta`,
 		`StudioReportEmptyStateMetricsReportMeta`,
 		`studio-report-meta`,

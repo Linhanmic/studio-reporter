@@ -207,6 +207,7 @@
 - [x] 静态报告失败原因空态 metrics 复制链接按钮实时 kind 摘要（title/aria；`syncEmptyMetricsEnableURLButtons` / `describeEmptyMetricsEnableKindSummary`）
 - [x] 静态报告失败原因空态 metrics 贴 issue 明示未过滤（事件 kind 行写「当前未过滤」而非「全部」）
 - [x] 静态报告失败原因空态 metrics 导出 JSON 附带报告 meta（`#studio-report-meta` → JSON/贴 issue 含 project/verdict/generatedAt）
+- [x] 静态报告失败原因空态 metrics 下载文件名含 project/kind/时间戳（`buildEmptyStateMetricsDownloadName`）
 
 ## 迭代日志
 
@@ -448,6 +449,8 @@
 
 | 2026-09-12 | 失败原因空态 metrics 导出附带报告 meta | #studio-report-meta；JSON/贴 issue 含 project/verdict/generatedAt |
 
+| 2026-09-12 | 失败原因空态 metrics 下载文件名带 meta | project/kind/时间戳，避免互相覆盖 |
+
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 下载文件名含 project/kind/时间戳**（避免多次导出互相覆盖），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 面板标题显示报告 meta 摘要**（项目 · 结论 · 生成时间，打开面板即可辨认运行），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

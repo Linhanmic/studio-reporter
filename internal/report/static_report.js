@@ -633,13 +633,45 @@
     return JSON.stringify(payload, null, 2);
   }
 
+
+  function sanitizeEmptyStateMetricsFilenamePart(value, fallback) {
+    var s = String(value == null ? '' : value).trim();
+    if (!s) s = fallback || 'unknown';
+    s = s.replace(/[\\/:*?"<>|\s]+/g, '-');
+    s = s.replace(/-+/g, '-').replace(/^-|-$/g, '');
+    if (!s) s = fallback || 'unknown';
+    if (s.length > 48) s = s.slice(0, 48);
+    return s;
+  }
+
+  function formatEmptyStateMetricsDownloadStamp(date) {
+    var d = date || new Date();
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() +
+      pad(d.getMonth() + 1) +
+      pad(d.getDate()) + '-' +
+      pad(d.getHours()) +
+      pad(d.getMinutes()) +
+      pad(d.getSeconds());
+  }
+
+  function buildEmptyStateMetricsDownloadName(kind, ext) {
+    var report = emptyStateMetricsReportMeta();
+    var project = sanitizeEmptyStateMetricsFilenamePart(report.projectName, 'project');
+    var filter = emptyStateMetricsEventKindFilter();
+    var kindPart = sanitizeEmptyStateMetricsFilenamePart(filter || 'all', 'all');
+    var stamp = formatEmptyStateMetricsDownloadStamp();
+    var base = kind || 'empty-state-metrics';
+    return 'studio-report-' + base + '__' + project + '__' + kindPart + '__' + stamp + '.' + (ext || 'json');
+  }
+
   function downloadEmptyStateMetricsVisibleJSON() {
     var text = formatEmptyStateMetricsVisibleJSON();
     var blob = new Blob([text + '\n'], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'studio-report-empty-state-metrics-visible.json';
+    a.download = buildEmptyStateMetricsDownloadName('empty-state-metrics-visible', 'json');
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
@@ -674,7 +706,7 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'studio-report-empty-state-metrics.json';
+    a.download = buildEmptyStateMetricsDownloadName('empty-state-metrics', 'json');
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
@@ -731,7 +763,7 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'studio-report-empty-state-metrics-issue.md';
+    a.download = buildEmptyStateMetricsDownloadName('empty-state-metrics-issue', 'md');
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
@@ -2335,6 +2367,7 @@ function copyFailSummary() {
   window.StudioReportEmptyStateMetrics = snapshotEmptyStateMetrics;
   window.StudioReportReadStudioReportMeta = readStudioReportMeta;
   window.StudioReportEmptyStateMetricsReportMeta = emptyStateMetricsReportMeta;
+  window.StudioReportBuildEmptyStateMetricsDownloadName = buildEmptyStateMetricsDownloadName;
   window.StudioReportFormatEmptyStateMetricsJSON = formatEmptyStateMetricsJSON;
   window.StudioReportCopyEmptyStateMetricsJSON = copyEmptyStateMetricsJSON;
   window.StudioReportDownloadEmptyStateMetricsJSON = downloadEmptyStateMetricsJSON;

@@ -49,8 +49,9 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
 		`studio-report-empty-state-metrics`,
 		`studio-report-meta`,
 		`StudioReportEmptyStateMetricsReportMeta`,
-		`studio-report-empty-state-metrics.json`,
-		`复制 JSON`,
+		`StudioReportBuildEmptyStateMetricsDownloadName`,
+		`buildEmptyStateMetricsDownloadName`,
+				`复制 JSON`,
 		`下载 JSON`,
 	} {
 		if !strings.Contains(body, want) {
@@ -108,7 +109,11 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
     var dlText = download();
     var dlOk = typeof dlText === 'string' && dlText.indexOf('studio-report-empty-state-metrics') >= 0
       && dlText.indexOf('"panel"') >= 0;
-    mark((ok && dlOk) ? ('ok:clear=' + parsed.counts.clear + ';esc=' + parsed.counts.escClear + ';n=' + parsed.events.length + ';panel=1') : ('fail:' + raw.slice(0, 320)));
+    var buildName = window.StudioReportBuildEmptyStateMetricsDownloadName;
+    var name = typeof buildName === 'function' ? buildName('empty-state-metrics', 'json') : '';
+    var nameOk = typeof name === 'string'
+      && /^studio-report-empty-state-metrics__metrics-export__all__\d{8}-\d{6}\.json$/.test(name);
+    mark((ok && dlOk && nameOk) ? ('ok:clear=' + parsed.counts.clear + ';esc=' + parsed.counts.escClear + ';n=' + parsed.events.length + ';panel=1;name=' + name) : ('fail:' + raw.slice(0, 320) + ';name=' + name + ';nameOk=' + nameOk));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);
