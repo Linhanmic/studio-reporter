@@ -308,6 +308,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportFormatEmptyStateMetricsReportSummary`,
 		`StudioReportCopyEmptyStateMetricsReportSummary`,
 		`formatEmptyStateMetricsReportSummary`,
+		`shortenEmptyStateMetricsProjectRoot`,
+		`项目根目录`,
 		`overview-empty-state-metrics`,
 		`overview-empty-state-metrics-text`,
 		`recordEmptyStateEvent`,

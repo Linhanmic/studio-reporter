@@ -197,6 +197,15 @@
     return false;
   }
 
+  function shortenEmptyStateMetricsProjectRoot(root) {
+    var s = String(root || '').trim();
+    if (!s) return '';
+    s = s.replace(/\\/g, '/');
+    var parts = s.split('/').filter(Boolean);
+    if (parts.length >= 2) return '…/' + parts.slice(-2).join('/');
+    return parts.length ? parts[parts.length - 1] : s;
+  }
+
   function formatEmptyStateMetricsReportSummary() {
     var report = emptyStateMetricsReportMeta();
     var parts = [];
@@ -208,6 +217,8 @@
       if (when.length >= 19) when = when.slice(0, 19).replace('T', ' ');
       parts.push(when);
     }
+    var rootShort = shortenEmptyStateMetricsProjectRoot(report.projectRoot);
+    if (rootShort) parts.push(rootShort);
     return parts.join(' · ');
   }
 
@@ -774,6 +785,7 @@
       '- 项目: ' + (report.projectName ? ('`' + report.projectName + '`') : '_（未知）_'),
       '- 结果: ' + (report.verdict ? ('`' + report.verdict + '`') : '_（未知）_'),
       '- 生成时间: ' + (report.generatedAtISO || report.generatedAt || '_（未知）_'),
+      '- 项目根目录: ' + (report.projectRoot ? ('`' + report.projectRoot + '`') : '_（未知）_'),
       '- 开启链接: ' + (enableURL ? ('`' + enableURL + '`') : '_（无法生成）_'),
       '- 当前过滤: ' + filter,
       '- 事件 kind: ' + (kindFilter ? ('`' + kindFilter + '`（可见子集）') : '当前未过滤'),

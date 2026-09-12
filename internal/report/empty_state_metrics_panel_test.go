@@ -13,6 +13,7 @@ import (
 func TestEmptyStateMetricsPanelToggle(t *testing.T) {
 	r := &Report{
 		ProjectName: "metrics-panel",
+		Meta: ReportMeta{ProjectRoot: "/opt/gauge/demo-suite"},
 		Verdict:     VerdictFail,
 		Failed:      true,
 		Specs: []SpecReport{{
@@ -97,7 +98,7 @@ func TestEmptyStateMetricsPanelToggle(t *testing.T) {
     var summaryFn = window.StudioReportFormatEmptyStateMetricsReportSummary;
     var copyMeta = window.StudioReportCopyEmptyStateMetricsReportSummary;
     var summary = typeof summaryFn === 'function' ? String(summaryFn() || '') : '';
-    var summaryOk = summary.indexOf('metrics-panel') >= 0 && summary.indexOf('|') < 0;
+    var summaryOk = summary.indexOf('metrics-panel') >= 0 && summary.indexOf('|') < 0 && summary.indexOf('demo-suite') >= 0;
     var textOk = /clear=1/.test(text) && text.indexOf('metrics-panel') >= 0 && text.indexOf('|') >= 0;
     var titleOk = String(panel.title || '').indexOf('metrics-panel') >= 0;
     var metaBtn = panel.querySelector('[data-action="copy-empty-state-metrics-report-meta"]');

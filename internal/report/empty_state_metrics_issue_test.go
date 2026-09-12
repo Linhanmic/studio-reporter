@@ -13,6 +13,7 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 	r := &Report{
 		ProjectName: "metrics-issue",
 		Verdict:     VerdictFail,
+		Meta:        ReportMeta{ProjectRoot: "/tmp/workspace/demo-suite"},
 		Failed:      true,
 		Specs: []SpecReport{{
 			ID:       "spec:specs/auth/login.spec",
@@ -91,7 +92,9 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"      && mdAll.indexOf('事件 kind') >= 0\n" +
 		"      && mdAll.indexOf('当前未过滤') >= 0\n" +
 		"      && mdAll.indexOf('项目') >= 0\n" +
-		"      && mdAll.indexOf('生成时间') >= 0;\n" +
+		"      && mdAll.indexOf('生成时间') >= 0\n" +
+		"      && mdAll.indexOf('项目根目录') >= 0\n" +
+		"      && mdAll.indexOf('/tmp/workspace/demo-suite') >= 0;\n" +
 		"    setKind('escClear');\n" +
 		"    var mdEsc = format();\n" +
 		"    var escOk = typeof mdEsc === 'string'\n" +
