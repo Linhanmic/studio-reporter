@@ -328,7 +328,7 @@ Desktop 通过 `electron-updater` 读取 GitHub Releases 上的 `latest-linux.ym
 
 历史工具栏「复制失败摘要」「复制摘要深链」与趋势面板「复制摘要」将当前过滤窗口的 `topFailReason` 聚合成 Markdown；有 hub 时附带各类原因最近一次失败的 `studio-reporter://open?run=&hub=&failSteps=1`（有 `topFailFocus`/`lastRunFocus` 时另带 `focus=`，path-style id 在 query 中编码为 `%2F`；表格打开列 + 深链块）。工程入口：`studio-reporter digest --dir <hub> [--format json|markdown] [--write]`（`--write` 在 hub 写入 `fail-digest.md`/`fail-digest.json`；JSON 含 `formatVersion`/`generatedAt`、`groups[].lastRunFocus` 与带 focus 的 `openLinksLatest` / `openLinksAll`；CI 可用 `digest --check --max-age` 校验新鲜度）。Desktop 导出 PDF/单文件成功后会刷新同一旁路文件（写失败不阻断导出）。插件 finalize / 删除历史也会 best-effort 刷新，便于 CI 直接收集 hub。
 
-静态报告 Overview「失败原因聚合」支持点击次数/原因跳到该类首个可见失败场景（过滤与仅失败步骤感知）。 静态报告「复制失败摘要」Markdown 含 path-style `#focus` 定位深链；Desktop `extractFailSummaryFocusHashes` 可解析后经 open 管道定位（`open-focus-pipeline` 冒烟）。
+静态报告 Overview「失败原因聚合」支持点击次数/原因跳到该类首个可见失败场景（过滤与仅失败步骤感知）。 静态报告「复制失败摘要」Markdown 含 path-style `#focus` 定位深链；Desktop `extractFailSummaryFocusHashes` 可解析后经 open 管道定位（`open-focus-pipeline` 冒烟）。 历史工具栏「粘贴摘要定位」与菜单「从剪贴板打开失败摘要定位…」读取剪贴板并打开首个 path-style focus（无最近报告目录时弹窗选择）。
 
 浏览器侧 `manage.html` 使用同源 `report-assets/history-digest.js`：可展开失败摘要面板、复制 Markdown/深链，并在历史表展示 `topFailReason`（无绝对 hub 时深链仅带 `run` + `failSteps`）。管理页还会探测 hub 旁路 `fail-digest.md` / `fail-digest.json`（工具栏「旁路 MD/JSON」与摘要面板链接；缺失时提示；刷新时重探测）。manage（`--serve`）工具栏「刷新旁路」调用 `POST /api/fail-digest`；联调抽检见 `make smoke-manage-digest`；Desktop 历史工具栏同步提供「旁路 MD / 旁路 JSON / 旁路位置 / 刷新旁路」（`probeHistoryFailDigestSidecars` + `openPath`/`revealPath` + `refreshFailDigestSidecars` 等同 CLI `digest --write`；导出写旁路后自动刷新按钮态）。Desktop 打开无 hub 的 `open?run=&failSteps=1` 时使用当前报告根（或最近 hub），并以 `#overview?failSteps=1` 进入仅失败步骤视图。
 

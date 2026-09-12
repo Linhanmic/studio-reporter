@@ -51,6 +51,7 @@ const {
   reportOpenHashFromOutline,
   resolveReportOpenHash,
 } = require('./share-hash.js');
+const { planOpenFromFailSummaryMarkdown } = require('./fail-summary-open.js');
 const { writeHistoryFailDigestSidecars } = require('./history-digest.js');
 const {
   buildCompareShareCardHtml,
@@ -116,6 +117,8 @@ const BUNDLE_ROOT = resolveBundleRoot(
 const RENDERER = path.join(__dirname, '..', 'renderer', 'index.html');
 
 let mainWindow = null;
+/** Last report dir successfully opened (for clipboard fail-summary focus). */
+let lastOpenedReportDir = '';
 let assetServer = null;
 let assetPort = 0;
 let bridge = null;
@@ -437,7 +440,19 @@ function buildMenu() {
             }
           },
         },
-        { type: 'separator' },
+                {
+          label: '从剪贴板打开失败摘要定位…',
+          accelerator: 'CmdOrCtrl+Shift+F',
+          click: async () => {
+            try {
+              const result = await openFailSummaryFromClipboard();
+              if (result && result.ok === false && result.code === 'canceled') return;
+            } catch (err) {
+              dialog.showErrorBox('从剪贴板定位失败', String(err && err.message ? err.message : err));
+            }
+          },
+        },
+{ type: 'separator' },
         { role: 'quit', label: '退出' },
       ],
     },
@@ -532,6 +547,7 @@ async function openReportDir(dir, opts = {}) {
       mainWindow.webContents.send('report-outline', outline);
     }
   }
+  lastOpenedReportDir = path.resolve(dir);
   return { url, dir, indexPath };
 }
 
@@ -539,6 +555,43 @@ async function openReportDir(dir, opts = {}) {
  * Regenerate HTML from a portable .uhilreport and open the report tab.
  * @param {string} uhilPath
  */
+
+/**
+ * Read clipboard fail-summary Markdown, extract first path-style focus, open report.
+ * @param {{ reportDir?: string }} [opts]
+ */
+async function openFailSummaryFromClipboard(opts = {}) {
+  const textMd = clipboard.readText();
+  let reportDir = String(opts.reportDir || lastOpenedReportDir || '').trim();
+  const plan = planOpenFromFailSummaryMarkdown(textMd, {
+    reportDir,
+    failSteps: true,
+  });
+  if (!plan.ok) {
+    dialog.showErrorBox('无法从剪贴板定位', plan.message || '未知错误');
+    return plan;
+  }
+  if (plan.needsReportDir || !reportDir) {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: '选择含 index.html 的报告目录（将定位失败摘要 focus）',
+    });
+    if (result.canceled || !result.filePaths[0]) {
+      return { ok: false, canceled: true, code: 'canceled' };
+    }
+    reportDir = result.filePaths[0];
+  }
+  const opened = await openReportDir(reportDir, {
+    focus: plan.focus,
+    failSteps: plan.failSteps,
+  });
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('navigate-tab', { tab: 'report' });
+  }
+  return { ok: true, ...plan, reportDir, opened };
+}
+
+
 async function openUhilreport(uhilPath) {
   const bin = resolveStudioReporterBin(BUNDLE_ROOT);
   if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
@@ -646,6 +699,11 @@ function registerIpc() {
   ipcMain.handle('desktop:disconnect', async () => {
     if (bridge) bridge.close();
     return { ok: true };
+  });
+
+  
+  ipcMain.handle('desktop:open-fail-summary-clipboard', async (_evt, opts = {}) => {
+    return openFailSummaryFromClipboard(opts || {});
   });
 
   ipcMain.handle('desktop:open-report-path', async (_evt, reportPath) => {

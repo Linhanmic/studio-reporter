@@ -157,6 +157,7 @@
 - [x] Overview 失败原因跳转在仅失败步骤过滤下的 path-style focus 抽检（`TestOverviewFailReasonJumpPathStyleFocusUnderFailSteps`：先开 fail-steps-mode 再跳转含 `/` 的场景；纳入 `smoke-failsteps-hash`）
 - [x] 静态报告复制失败摘要含 path-style 深链 focus 抽检（`TestCopyFailSummaryPathStyleFocusDeepLink`：摘要 Markdown 定位 hash 保留字面 `/`；`StudioReportCollectFailSummary`；纳入 `smoke-failsteps-hash`）
 - [x] 复制失败摘要深链经 Desktop open 管道定位 path-style focus 联调（`extractFailSummaryFocusHashes` → `resolveReportOpenHash` → Chrome dump-dom；`open-focus-pipeline.test.js`）
+- [x] Desktop 剪贴板粘贴失败摘要后一键打开首个 path-style focus（`planOpenFromFailSummaryMarkdown` + 菜单/历史「粘贴摘要定位」；缺报告目录时弹窗选择）
 
 ## 迭代日志
 
@@ -341,7 +342,8 @@
 | 2026-09-11 | Overview 跳转 + fail-steps path-style | fail-steps-mode 下点击聚合仍打开含 `/` 的失败场景；Chrome dump-dom；smoke 覆盖 |
 | 2026-09-11 | 复制失败摘要 path-style 深链 | collectFailSummary 写入 `#focus` 定位（字面 `/`）；Chrome dump-dom；smoke-failsteps-hash 覆盖 |
 | 2026-09-11 | 失败摘要→Desktop open 定位联调 | 从摘要 Markdown 提取 path-style focus，经 resolveReportOpenHash 打开 details；open-focus-pipeline 覆盖 |
+| 2026-09-11 | 剪贴板粘贴摘要一键定位 | 菜单/历史工具栏读取剪贴板失败摘要，打开报告并定位首个 path-style focus；缺目录时选择 |
 
 ## 下一任务（选定）
 
-**Desktop 剪贴板粘贴失败摘要后一键打开首个 path-style focus**（`extractFailSummaryFocusHashes` 接入历史/报告打开入口），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**历史失败运行右键「粘贴摘要定位到此运行」**（把剪贴板 focus 绑到所选 history 条目的报告目录），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

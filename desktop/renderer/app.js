@@ -1737,6 +1737,29 @@ async function revealFailDigestSidecar() {
   }
 }
 
+
+async function openFailSummaryFromClipboard() {
+  if (!window.desktopAPI?.openFailSummaryClipboard) {
+    setStatus('当前版本不支持从剪贴板打开失败摘要定位', 'warn');
+    return;
+  }
+  try {
+    // Main uses lastOpenedReportDir, else prompts for a report directory.
+    const result = await window.desktopAPI.openFailSummaryClipboard({});
+    if (result?.canceled || result?.code === 'canceled') {
+      setStatus('已取消粘贴摘要定位', 'warn');
+      return;
+    }
+    if (!result?.ok) {
+      setStatus(result?.message || '无法从剪贴板定位失败摘要', 'warn');
+      return;
+    }
+    setStatus(`已从失败摘要定位：${result.focus}`, 'ok');
+  } catch (err) {
+    setStatus(`粘贴摘要定位失败：${err.message || err}`, 'warn');
+  }
+}
+
 async function refreshFailDigestSidecarsFromHub() {
   const hub = currentHistoryHubDir();
   if (!hub) {
@@ -2618,6 +2641,7 @@ function wire() {
   $('btnOpenFailDigestMd')?.addEventListener('click', () => openFailDigestSidecar('md'));
   $('btnOpenFailDigestJson')?.addEventListener('click', () => openFailDigestSidecar('json'));
   $('btnRevealFailDigest')?.addEventListener('click', revealFailDigestSidecar);
+  $('btnOpenFailSummaryClipboard')?.addEventListener('click', openFailSummaryFromClipboard);
   $('btnRefreshFailDigest')?.addEventListener('click', refreshFailDigestSidecarsFromHub);
   $('btnHistoryTrend')?.addEventListener('click', showHistoryTrend);
   $('btnPickHub').addEventListener('click', async () => {

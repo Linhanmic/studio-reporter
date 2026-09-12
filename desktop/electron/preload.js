@@ -87,6 +87,7 @@ contextBridge.exposeInMainWorld('desktopAPI', {
   connectWs: (input) => ipcRenderer.invoke('desktop:connect-ws', input),
   disconnect: () => ipcRenderer.invoke('desktop:disconnect'),
   openReportPath: (p) => ipcRenderer.invoke('desktop:open-report-path', p),
+  openFailSummaryClipboard: (opts) => ipcRenderer.invoke('desktop:open-fail-summary-clipboard', opts || {}),
   pickReportDir: () => ipcRenderer.invoke('desktop:pick-report-dir'),
   openUhilreport: (p) => ipcRenderer.invoke('desktop:open-uhilreport', p),
   pickUhilreport: () => ipcRenderer.invoke('desktop:pick-uhilreport'),
