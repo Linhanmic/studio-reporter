@@ -63,6 +63,12 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
 		`studio-report-empty-metrics-meta-fields.json`,
 		`StudioReportApplyEmptyStateMetricsMetaFieldPrefsJSON`,
 		`StudioReportFormatEmptyStateMetricsMetaFieldPrefsJSON`,
+		`StudioReportApplyEmptyStateMetricsMetaFieldNamedPreset`,
+		`StudioReportListEmptyStateMetricsMetaFieldNamedPresets`,
+		`CI 精简`,
+		`排障完整`,
+		`apply-empty-state-metrics-meta-field-named`,
+		`studio-report-empty-metrics-meta-field-named`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -70,6 +76,9 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-fields-row`) {
 		t.Fatal("CSS missing meta-fields-row")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-fields-named-chip`) {
+		t.Fatal("CSS missing named-chip")
 	}
 
 	chrome, err := findChrome()
@@ -101,6 +110,8 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
     }
     try { localStorage.removeItem('studio-report-empty-metrics-meta-fields'); } catch (e) {}
     try { localStorage.removeItem('studio-report-empty-metrics-meta-fields-open'); } catch (e2) {}
+    try { localStorage.removeItem('studio-report-empty-metrics-meta-field-named'); } catch (eNamed) {}
+    try { localStorage.removeItem('studio-report-empty-metrics-meta-field-named-active'); } catch (eActive) {}
     try { localStorage.setItem('studio-report-empty-metrics', '1'); } catch (e3) {}
     if (typeof show === 'function') {
       try { show(true); } catch (e4) { try { show(); } catch (e5) {} }
@@ -160,7 +171,71 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
       reset();
     }
 
-    mark((defOk && defTextOk && customOk && customTextOk && movedOk && resetOk && uiOk && openOk && prefsIOOk) ? 'ok' : ('fail:def=' + defOk + ';dt=' + defTextOk + ';c=' + customOk + ';ct=' + customTextOk + ';m=' + movedOk + ';r=' + resetOk + ';ui=' + uiOk + ';open=' + openOk + ';io=' + prefsIOOk + ';p0=' + p0 + ';s0=' + s0 + ';p1=' + p1 + ';s1=' + s1));
+    var listNamed = window.StudioReportListEmptyStateMetricsMetaFieldNamedPresets;
+    var applyNamed = window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPreset;
+    var activeNamed = window.StudioReportGetActiveEmptyStateMetricsMetaFieldNamedPresetId;
+    var saveNamed = window.StudioReportSaveEmptyStateMetricsMetaFieldNamedPreset;
+    var deleteNamed = window.StudioReportDeleteEmptyStateMetricsMetaFieldNamedPreset;
+    var formatNamedLib = window.StudioReportFormatEmptyStateMetricsMetaFieldNamedPresetsJSON;
+    var applyNamedLib = window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPresetsJSON;
+    var namedOk = false;
+    if (typeof listNamed === 'function' && typeof applyNamed === 'function' && typeof activeNamed === 'function'
+      && typeof saveNamed === 'function' && typeof deleteNamed === 'function'
+      && typeof formatNamedLib === 'function' && typeof applyNamedLib === 'function') {
+      var listed = listNamed();
+      var listOk = Array.isArray(listed) && listed.length >= 3
+        && listed.some(function (p) { return p.id === 'ci-slim' && p.name === 'CI 精简'; })
+        && listed.some(function (p) { return p.id === 'debug-full' && p.name === '排障完整'; });
+      applyNamed('ci-slim');
+      var slim = get();
+      var slimOk = slim.primary.join(',') === 'projectName,verdict' && slim.secondary.join(',') === ''
+        && activeNamed() === 'ci-slim';
+      var pSlim = String(primary() || '');
+      var sSlim = String(secondary() || '');
+      var slimTextOk = pSlim.indexOf('meta-fields') >= 0 && pSlim.indexOf('fail') >= 0
+        && sSlim === '';
+      applyNamed('debug-full');
+      var full = get();
+      var fullOk = full.primary.indexOf('duration') >= 0 && full.secondary.indexOf('environment') >= 0
+        && activeNamed() === 'debug-full';
+      var pFull = String(primary() || '');
+      var sFull = String(secondary() || '');
+      var fullTextOk = pFull.indexOf('12.3s') >= 0 && sFull.indexOf('ci') >= 0;
+
+      set({ primary: ['hostName', 'verdict'], secondary: ['duration'] });
+      var saved = saveNamed('团队排障');
+      var savedOk = !!saved && saved.name === '团队排障' && activeNamed() === saved.id;
+      var afterSave = listNamed().some(function (p) { return !p.builtin && p.name === '团队排障'; });
+      var lib = formatNamedLib();
+      var libParsed = null;
+      try { libParsed = JSON.parse(lib); } catch (e7) {}
+      var libOk = libParsed && libParsed.kind === 'studio-report-empty-metrics-meta-field-named'
+        && Array.isArray(libParsed.custom) && libParsed.custom.some(function (p) { return p.name === '团队排障'; });
+      applyNamed('default');
+      deleteNamed(saved.id);
+      var deletedOk = !listNamed().some(function (p) { return p.id === saved.id; });
+      applyNamedLib(lib);
+      var reimportOk = listNamed().some(function (p) { return !p.builtin && p.name === '团队排障'; });
+      // Ensure editor is open (earlier toggle may have left it open or closed).
+      if (editor && editor.hasAttribute('hidden') && btn) btn.click();
+      if (editor && editor.hasAttribute('hidden') && typeof window.StudioReportToggleEmptyStateMetricsMetaFieldsEditor === 'function') {
+        window.StudioReportToggleEmptyStateMetricsMetaFieldsEditor();
+      }
+      var chip = document.querySelector('[data-action="apply-empty-state-metrics-meta-field-named"][data-named-preset="ci-slim"]');
+      var chipOk = !!chip;
+      if (chip) chip.click();
+      var chipAppliedOk = activeNamed() === 'ci-slim' && get().primary.join(',') === 'projectName,verdict';
+      namedOk = listOk && slimOk && slimTextOk && fullOk && fullTextOk && savedOk && afterSave && libOk && deletedOk && reimportOk && chipOk && chipAppliedOk;
+      if (!namedOk) {
+        mark('fail:named:list=' + listOk + ';slim=' + slimOk + ';st=' + slimTextOk + ';full=' + fullOk + ';ft=' + fullTextOk + ';save=' + savedOk + ';as=' + afterSave + ';lib=' + libOk + ';del=' + deletedOk + ';re=' + reimportOk + ';chip=' + chipOk + ';ca=' + chipAppliedOk + ';pSlim=' + pSlim + ';pFull=' + pFull + ';sFull=' + sFull);
+        return;
+      }
+      reset();
+      try { localStorage.removeItem('studio-report-empty-metrics-meta-field-named'); } catch (e8) {}
+      try { localStorage.removeItem('studio-report-empty-metrics-meta-field-named-active'); } catch (e9) {}
+    }
+
+    mark((defOk && defTextOk && customOk && customTextOk && movedOk && resetOk && uiOk && openOk && prefsIOOk && namedOk) ? 'ok' : ('fail:def=' + defOk + ';dt=' + defTextOk + ';c=' + customOk + ';ct=' + customTextOk + ';m=' + movedOk + ';r=' + resetOk + ';ui=' + uiOk + ';open=' + openOk + ';io=' + prefsIOOk + ';named=' + namedOk + ';p0=' + p0 + ';s0=' + s0 + ';p1=' + p1 + ';s1=' + s1));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);

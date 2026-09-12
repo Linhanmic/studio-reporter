@@ -271,10 +271,302 @@
 
   function resetEmptyStateMetricsMetaFieldPrefs() {
     try { localStorage.removeItem('studio-report-empty-metrics-meta-fields'); } catch (e) {}
+    setActiveEmptyStateMetricsMetaFieldNamedPresetId('default');
     syncEmptyStateMetricsMetaFieldsEditor();
     syncEmptyStateMetricsPanel();
     flashStatus('已恢复 meta 字段默认（主三项）');
     return getEmptyStateMetricsMetaFieldPrefs();
+  }
+
+  var EMPTY_STATE_METRICS_META_FIELD_BUILTIN_PRESETS = [
+    {
+      id: 'default',
+      name: '默认',
+      primary: ['projectName', 'verdict', 'generatedAt'],
+      secondary: ['projectRoot', 'hostName', 'pluginVersion']
+    },
+    {
+      id: 'ci-slim',
+      name: 'CI 精简',
+      primary: ['projectName', 'verdict'],
+      secondary: []
+    },
+    {
+      id: 'debug-full',
+      name: '排障完整',
+      primary: ['projectName', 'verdict', 'generatedAt', 'duration'],
+      secondary: ['projectRoot', 'hostName', 'pluginVersion', 'environment']
+    }
+  ];
+
+  function sanitizeEmptyStateMetricsMetaFieldNamedPresetName(name) {
+    name = String(name || '').trim().replace(/\s+/g, ' ');
+    name = name.replace(/[<>&"'`]/g, '');
+    if (!name) return '';
+    if (name.length > 40) name = name.slice(0, 40);
+    return name;
+  }
+
+  function normalizeEmptyStateMetricsMetaFieldNamedPreset(raw, fallbackId) {
+    if (!raw || typeof raw !== 'object') return null;
+    var id = String(raw.id || fallbackId || '').trim();
+    var name = sanitizeEmptyStateMetricsMetaFieldNamedPresetName(raw.name);
+    if (!id || !name) return null;
+    if (!/^[a-zA-Z0-9_.:-]{1,64}$/.test(id)) return null;
+    var prefs = normalizeEmptyStateMetricsMetaFieldPrefs(raw);
+    return {
+      id: id,
+      name: name,
+      primary: prefs.primary.slice(),
+      secondary: prefs.secondary.slice()
+    };
+  }
+
+  function getEmptyStateMetricsMetaFieldCustomNamedPresets() {
+    try {
+      var raw = localStorage.getItem('studio-report-empty-metrics-meta-field-named');
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      var list = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.custom) ? parsed.custom : []);
+      var out = [];
+      var seen = {};
+      list.forEach(function (item, i) {
+        var p = normalizeEmptyStateMetricsMetaFieldNamedPreset(item, 'custom-' + (i + 1));
+        if (!p || seen[p.id]) return;
+        // Custom ids must not collide with builtins.
+        if (EMPTY_STATE_METRICS_META_FIELD_BUILTIN_PRESETS.some(function (b) { return b.id === p.id; })) return;
+        seen[p.id] = true;
+        out.push(p);
+      });
+      return out;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function setEmptyStateMetricsMetaFieldCustomNamedPresets(list) {
+    var next = [];
+    var seen = {};
+    (list || []).forEach(function (item, i) {
+      var p = normalizeEmptyStateMetricsMetaFieldNamedPreset(item, 'custom-' + (i + 1));
+      if (!p || seen[p.id]) return;
+      if (EMPTY_STATE_METRICS_META_FIELD_BUILTIN_PRESETS.some(function (b) { return b.id === p.id; })) return;
+      seen[p.id] = true;
+      next.push(p);
+    });
+    try {
+      localStorage.setItem('studio-report-empty-metrics-meta-field-named', JSON.stringify({ version: 1, custom: next }));
+    } catch (e) {}
+    return next;
+  }
+
+  function listEmptyStateMetricsMetaFieldNamedPresets() {
+    return EMPTY_STATE_METRICS_META_FIELD_BUILTIN_PRESETS.map(function (p) {
+      return {
+        id: p.id,
+        name: p.name,
+        builtin: true,
+        primary: p.primary.slice(),
+        secondary: p.secondary.slice()
+      };
+    }).concat(getEmptyStateMetricsMetaFieldCustomNamedPresets().map(function (p) {
+      return {
+        id: p.id,
+        name: p.name,
+        builtin: false,
+        primary: p.primary.slice(),
+        secondary: p.secondary.slice()
+      };
+    }));
+  }
+
+  function findEmptyStateMetricsMetaFieldNamedPreset(id) {
+    id = String(id || '');
+    var all = listEmptyStateMetricsMetaFieldNamedPresets();
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].id === id) return all[i];
+    }
+    return null;
+  }
+
+  function equalEmptyStateMetricsMetaFieldPrefs(a, b) {
+    a = normalizeEmptyStateMetricsMetaFieldPrefs(a || {});
+    b = normalizeEmptyStateMetricsMetaFieldPrefs(b || {});
+    return a.primary.join(',') === b.primary.join(',') && a.secondary.join(',') === b.secondary.join(',');
+  }
+
+  function getActiveEmptyStateMetricsMetaFieldNamedPresetId() {
+    var prefs = getEmptyStateMetricsMetaFieldPrefs();
+    try {
+      var raw = localStorage.getItem('studio-report-empty-metrics-meta-field-named-active');
+      if (raw) {
+        var id = String(raw || '').trim();
+        var stored = findEmptyStateMetricsMetaFieldNamedPreset(id);
+        if (stored && equalEmptyStateMetricsMetaFieldPrefs(prefs, stored)) return id;
+      }
+    } catch (e) {}
+    // Infer from current prefs when no matching explicit active id.
+    var all = listEmptyStateMetricsMetaFieldNamedPresets();
+    for (var i = 0; i < all.length; i++) {
+      if (equalEmptyStateMetricsMetaFieldPrefs(prefs, all[i])) return all[i].id;
+    }
+    return '';
+  }
+
+  function setActiveEmptyStateMetricsMetaFieldNamedPresetId(id) {
+    id = String(id || '').trim();
+    try {
+      if (!id) localStorage.removeItem('studio-report-empty-metrics-meta-field-named-active');
+      else localStorage.setItem('studio-report-empty-metrics-meta-field-named-active', id);
+    } catch (e) {}
+    return id;
+  }
+
+  function applyEmptyStateMetricsMetaFieldNamedPreset(id) {
+    var preset = findEmptyStateMetricsMetaFieldNamedPreset(id);
+    if (!preset) {
+      flashStatus('未找到字段预设：' + String(id || ''));
+      return null;
+    }
+    setActiveEmptyStateMetricsMetaFieldNamedPresetId(preset.id);
+    var next = setEmptyStateMetricsMetaFieldPrefs({
+      primary: preset.primary,
+      secondary: preset.secondary
+    });
+    flashStatus('已切换字段预设：' + preset.name);
+    return { id: preset.id, name: preset.name, prefs: next };
+  }
+
+  function saveEmptyStateMetricsMetaFieldNamedPreset(name) {
+    name = sanitizeEmptyStateMetricsMetaFieldNamedPresetName(name);
+    if (!name) {
+      flashStatus('请输入预设名称');
+      return null;
+    }
+    var prefs = getEmptyStateMetricsMetaFieldPrefs();
+    var custom = getEmptyStateMetricsMetaFieldCustomNamedPresets();
+    var existing = null;
+    for (var i = 0; i < custom.length; i++) {
+      if (custom[i].name === name) {
+        existing = custom[i];
+        break;
+      }
+    }
+    var id = existing ? existing.id : ('custom-' + Date.now().toString(36));
+    var entry = {
+      id: id,
+      name: name,
+      primary: prefs.primary.slice(),
+      secondary: prefs.secondary.slice()
+    };
+    if (existing) {
+      custom = custom.map(function (p) { return p.id === id ? entry : p; });
+    } else {
+      custom.push(entry);
+    }
+    setEmptyStateMetricsMetaFieldCustomNamedPresets(custom);
+    setActiveEmptyStateMetricsMetaFieldNamedPresetId(id);
+    syncEmptyStateMetricsMetaFieldsEditor();
+    flashStatus('已保存字段预设：' + name);
+    return entry;
+  }
+
+  function saveEmptyStateMetricsMetaFieldNamedPresetFromPrompt() {
+    var active = findEmptyStateMetricsMetaFieldNamedPreset(getActiveEmptyStateMetricsMetaFieldNamedPresetId());
+    var hint = (active && !active.builtin) ? active.name : '';
+    var name = window.prompt('另存为命名字段预设（如「团队 CI」）', hint);
+    if (name == null) return null;
+    return saveEmptyStateMetricsMetaFieldNamedPreset(name);
+  }
+
+  function deleteEmptyStateMetricsMetaFieldNamedPreset(id) {
+    id = String(id || '');
+    var preset = findEmptyStateMetricsMetaFieldNamedPreset(id);
+    if (!preset) {
+      flashStatus('未找到字段预设');
+      return false;
+    }
+    if (preset.builtin) {
+      flashStatus('内置预设不可删除');
+      return false;
+    }
+    var next = getEmptyStateMetricsMetaFieldCustomNamedPresets().filter(function (p) { return p.id !== id; });
+    setEmptyStateMetricsMetaFieldCustomNamedPresets(next);
+    if (getActiveEmptyStateMetricsMetaFieldNamedPresetId() === id) {
+      setActiveEmptyStateMetricsMetaFieldNamedPresetId('');
+    }
+    syncEmptyStateMetricsMetaFieldsEditor();
+    flashStatus('已删除字段预设：' + preset.name);
+    return true;
+  }
+
+  function deleteActiveEmptyStateMetricsMetaFieldNamedPreset() {
+    var id = getActiveEmptyStateMetricsMetaFieldNamedPresetId();
+    if (!id) {
+      flashStatus('当前无命名预设可删');
+      return false;
+    }
+    return deleteEmptyStateMetricsMetaFieldNamedPreset(id);
+  }
+
+  function formatEmptyStateMetricsMetaFieldNamedPresetsJSON() {
+    return JSON.stringify({
+      kind: 'studio-report-empty-metrics-meta-field-named',
+      version: 1,
+      activeId: getActiveEmptyStateMetricsMetaFieldNamedPresetId() || '',
+      custom: getEmptyStateMetricsMetaFieldCustomNamedPresets().map(function (p) {
+        return {
+          id: p.id,
+          name: p.name,
+          primary: p.primary.slice(),
+          secondary: p.secondary.slice()
+        };
+      })
+    }, null, 2);
+  }
+
+  function copyEmptyStateMetricsMetaFieldNamedPresetsJSON() {
+    var text = formatEmptyStateMetricsMetaFieldNamedPresetsJSON();
+    return copyText(text).then(function () {
+      flashStatus('已复制命名字段预设库 JSON');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
+  function applyEmptyStateMetricsMetaFieldNamedPresetsJSON(raw) {
+    var parsed = null;
+    try {
+      parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch (e) {
+      flashStatus('命名字段预设 JSON 解析失败');
+      return null;
+    }
+    if (!parsed || typeof parsed !== 'object') {
+      flashStatus('命名字段预设无效');
+      return null;
+    }
+    var list = Array.isArray(parsed.custom) ? parsed.custom : (Array.isArray(parsed.presets) ? parsed.presets : (Array.isArray(parsed) ? parsed : null));
+    if (!list) {
+      flashStatus('命名字段预设缺少 custom 列表');
+      return null;
+    }
+    var next = setEmptyStateMetricsMetaFieldCustomNamedPresets(list);
+    var activeId = String(parsed.activeId || '').trim();
+    if (activeId && findEmptyStateMetricsMetaFieldNamedPreset(activeId)) {
+      applyEmptyStateMetricsMetaFieldNamedPreset(activeId);
+    } else {
+      syncEmptyStateMetricsMetaFieldsEditor();
+    }
+    flashStatus('已导入命名字段预设（自定义 ' + next.length + ' 套）');
+    return { custom: next, activeId: getActiveEmptyStateMetricsMetaFieldNamedPresetId() };
+  }
+
+  function importEmptyStateMetricsMetaFieldNamedPresetsFromPrompt() {
+    var sample = formatEmptyStateMetricsMetaFieldNamedPresetsJSON();
+    var raw = window.prompt('粘贴命名字段预设库 JSON（custom 列表）', sample);
+    if (raw == null) return null;
+    return applyEmptyStateMetricsMetaFieldNamedPresetsJSON(raw);
   }
 
   function formatEmptyStateMetricsMetaFieldPrefsJSON() {
@@ -283,7 +575,8 @@
       kind: 'studio-report-empty-metrics-meta-fields',
       version: 1,
       primary: prefs.primary.slice(),
-      secondary: prefs.secondary.slice()
+      secondary: prefs.secondary.slice(),
+      activeNamedId: getActiveEmptyStateMetricsMetaFieldNamedPresetId() || ''
     }, null, 2);
   }
 
@@ -324,6 +617,10 @@
       flashStatus('meta 字段预设无效');
       return null;
     }
+    if (parsed.kind === 'studio-report-empty-metrics-meta-field-named') {
+      var namedResult = applyEmptyStateMetricsMetaFieldNamedPresetsJSON(parsed);
+      return namedResult ? getEmptyStateMetricsMetaFieldPrefs() : null;
+    }
     // Accept bare {primary,secondary} or wrapped kind payload.
     var payload = parsed;
     if (parsed.prefs && typeof parsed.prefs === 'object') payload = parsed.prefs;
@@ -331,6 +628,18 @@
       primary: payload.primary,
       secondary: payload.secondary
     });
+    var namedId = String(parsed.activeNamedId || payload.activeNamedId || '').trim();
+    if (namedId) {
+      var named = findEmptyStateMetricsMetaFieldNamedPreset(namedId);
+      if (named && equalEmptyStateMetricsMetaFieldPrefs(next, named)) {
+        setActiveEmptyStateMetricsMetaFieldNamedPresetId(namedId);
+      } else {
+        setActiveEmptyStateMetricsMetaFieldNamedPresetId('');
+      }
+    } else {
+      setActiveEmptyStateMetricsMetaFieldNamedPresetId(getActiveEmptyStateMetricsMetaFieldNamedPresetId() || '');
+    }
+    syncEmptyStateMetricsMetaFieldsEditor();
     flashStatus('已导入 meta 字段预设（主 ' + next.primary.length + ' / 次 ' + next.secondary.length + '）');
     return next;
   }
@@ -455,7 +764,20 @@
     var groupOf = {};
     (prefs.primary || []).forEach(function (id) { groupOf[id] = 'primary'; });
     (prefs.secondary || []).forEach(function (id) { groupOf[id] = 'secondary'; });
+    var activeNamed = getActiveEmptyStateMetricsMetaFieldNamedPresetId();
+    var named = listEmptyStateMetricsMetaFieldNamedPresets();
     var html = '';
+    html += '<div class="overview-empty-state-metrics-meta-fields-named" role="group" aria-label="命名字段预设">';
+    html += '<span class="overview-empty-state-metrics-meta-fields-named-label">预设</span>';
+    named.forEach(function (p) {
+      var active = p.id === activeNamed;
+      html += '<button type="button" class="action-btn action-btn-tiny overview-empty-state-metrics-meta-fields-named-chip' + (active ? ' is-active' : '') + '" data-action="apply-empty-state-metrics-meta-field-named" data-named-preset="' + p.id + '" aria-pressed="' + (active ? 'true' : 'false') + '" title="' + (p.builtin ? '内置预设' : '自定义预设') + '：' + p.name + '">' + p.name + '</button>';
+    });
+    html += '<button type="button" class="action-btn action-btn-tiny" data-action="save-empty-state-metrics-meta-field-named" title="将当前字段配置另存为命名预设">另存为</button>';
+    html += '<button type="button" class="action-btn action-btn-tiny" data-action="delete-empty-state-metrics-meta-field-named" title="删除当前选中的自定义命名预设（内置不可删）">删除预设</button>';
+    html += '<button type="button" class="action-btn action-btn-tiny" data-action="copy-empty-state-metrics-meta-field-named-json" title="复制自定义命名预设库 JSON">复制库</button>';
+    html += '<button type="button" class="action-btn action-btn-tiny" data-action="import-empty-state-metrics-meta-field-named-json" title="导入自定义命名预设库 JSON">导入库</button>';
+    html += '</div>';
     EMPTY_STATE_METRICS_META_FIELD_DEFS.forEach(function (def) {
       var g = groupOf[def.id] || 'hidden';
       html += '<div class="overview-empty-state-metrics-meta-fields-row" data-meta-field="' + def.id + '">';
@@ -2626,6 +2948,26 @@ function copyFailSummary() {
         resetEmptyStateMetricsMetaFieldPrefs();
         return;
       }
+      if (actionBtn.dataset.action === 'apply-empty-state-metrics-meta-field-named') {
+        applyEmptyStateMetricsMetaFieldNamedPreset(actionBtn.dataset.namedPreset);
+        return;
+      }
+      if (actionBtn.dataset.action === 'save-empty-state-metrics-meta-field-named') {
+        saveEmptyStateMetricsMetaFieldNamedPresetFromPrompt();
+        return;
+      }
+      if (actionBtn.dataset.action === 'delete-empty-state-metrics-meta-field-named') {
+        deleteActiveEmptyStateMetricsMetaFieldNamedPreset();
+        return;
+      }
+      if (actionBtn.dataset.action === 'copy-empty-state-metrics-meta-field-named-json') {
+        copyEmptyStateMetricsMetaFieldNamedPresetsJSON();
+        return;
+      }
+      if (actionBtn.dataset.action === 'import-empty-state-metrics-meta-field-named-json') {
+        importEmptyStateMetricsMetaFieldNamedPresetsFromPrompt();
+        return;
+      }
       if (actionBtn.dataset.action === 'move-empty-state-metrics-meta-field') {
         moveEmptyStateMetricsMetaField(actionBtn.dataset.metaField, Number(actionBtn.dataset.delta || 0));
         return;
@@ -2877,6 +3219,17 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportDownloadEmptyStateMetricsMetaFieldPrefsJSON = downloadEmptyStateMetricsMetaFieldPrefsJSON;
   window.StudioReportApplyEmptyStateMetricsMetaFieldPrefsJSON = applyEmptyStateMetricsMetaFieldPrefsJSON;
   window.StudioReportImportEmptyStateMetricsMetaFieldPrefsFromPrompt = importEmptyStateMetricsMetaFieldPrefsFromPrompt;
+  window.StudioReportListEmptyStateMetricsMetaFieldNamedPresets = listEmptyStateMetricsMetaFieldNamedPresets;
+  window.StudioReportGetActiveEmptyStateMetricsMetaFieldNamedPresetId = getActiveEmptyStateMetricsMetaFieldNamedPresetId;
+  window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPreset = applyEmptyStateMetricsMetaFieldNamedPreset;
+  window.StudioReportSaveEmptyStateMetricsMetaFieldNamedPreset = saveEmptyStateMetricsMetaFieldNamedPreset;
+  window.StudioReportSaveEmptyStateMetricsMetaFieldNamedPresetFromPrompt = saveEmptyStateMetricsMetaFieldNamedPresetFromPrompt;
+  window.StudioReportDeleteEmptyStateMetricsMetaFieldNamedPreset = deleteEmptyStateMetricsMetaFieldNamedPreset;
+  window.StudioReportDeleteActiveEmptyStateMetricsMetaFieldNamedPreset = deleteActiveEmptyStateMetricsMetaFieldNamedPreset;
+  window.StudioReportFormatEmptyStateMetricsMetaFieldNamedPresetsJSON = formatEmptyStateMetricsMetaFieldNamedPresetsJSON;
+  window.StudioReportCopyEmptyStateMetricsMetaFieldNamedPresetsJSON = copyEmptyStateMetricsMetaFieldNamedPresetsJSON;
+  window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPresetsJSON = applyEmptyStateMetricsMetaFieldNamedPresetsJSON;
+  window.StudioReportImportEmptyStateMetricsMetaFieldNamedPresetsFromPrompt = importEmptyStateMetricsMetaFieldNamedPresetsFromPrompt;
 
   window.StudioReportFormatEmptyStateMetricsMetaFieldValue = formatEmptyStateMetricsMetaFieldValue;
   window.StudioReportSyncEmptyStateMetricsMetaFieldsEditor = syncEmptyStateMetricsMetaFieldsEditor;

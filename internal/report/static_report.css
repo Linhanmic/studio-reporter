@@ -828,3 +828,19 @@ html, body {
   gap: 0.35rem;
   margin-top: 0.2rem;
 }
+.overview-empty-state-metrics-meta-fields-named {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+.overview-empty-state-metrics-meta-fields-named-label {
+  font-weight: 600;
+  min-width: 2.5rem;
+}
+.overview-empty-state-metrics-meta-fields-named-chip.is-active {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
