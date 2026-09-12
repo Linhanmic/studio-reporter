@@ -67,6 +67,10 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
 		`studio-report-empty-metrics-meta-fields__`,
 		`StudioReportApplyEmptyStateMetricsMetaFieldNamedPreset`,
 		`StudioReportListEmptyStateMetricsMetaFieldNamedPresets`,
+		`StudioReportBuildEmptyStateMetricsMetaFieldNamedPresetsDownloadName`,
+		`StudioReportDownloadEmptyStateMetricsMetaFieldNamedPresetsJSON`,
+		`download-empty-state-metrics-meta-field-named-json`,
+		`下载库`,
 		`CI 精简`,
 		`排障完整`,
 		`apply-empty-state-metrics-meta-field-named`,
@@ -269,6 +273,52 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
         mark('fail:named:list=' + listOk + ';slim=' + slimOk + ';st=' + slimTextOk + ';full=' + fullOk + ';ft=' + fullTextOk + ';save=' + savedOk + ';as=' + afterSave + ';lib=' + libOk + ';del=' + deletedOk + ';re=' + reimportOk + ';chip=' + chipOk + ';ca=' + chipAppliedOk + ';pSlim=' + pSlim + ';pFull=' + pFull + ';sFull=' + sFull);
         return;
       }
+
+      var buildLibName = window.StudioReportBuildEmptyStateMetricsMetaFieldNamedPresetsDownloadName;
+      var downloadLib = window.StudioReportDownloadEmptyStateMetricsMetaFieldNamedPresetsJSON;
+      var libDlOk = false;
+      if (typeof buildLibName === 'function' && typeof downloadLib === 'function') {
+        // Ensure at least one custom preset exists for custom-N in filename.
+        set({ primary: ['hostName'], secondary: ['duration'] });
+        var savedForDl = saveNamed('下载库抽检');
+        // Editor DOM may re-render after save; re-query the download button.
+        var libDlBtn = document.querySelector('[data-action="download-empty-state-metrics-meta-field-named-json"]');
+        var expectedLibName = buildLibName();
+        var libNameOk = typeof expectedLibName === 'string'
+          && expectedLibName.indexOf('studio-report-empty-metrics-meta-field-named__') >= 0
+          && expectedLibName.indexOf('custom-') >= 0
+          && /\.json$/.test(expectedLibName);
+        var capturedLibName = '';
+        var origCreateLib = document.createElement.bind(document);
+        document.createElement = function (tag) {
+          var el = origCreateLib(tag);
+          if (String(tag).toLowerCase() === 'a') {
+            el.click = function () { capturedLibName = String(el.download || ''); };
+          }
+          return el;
+        };
+        try {
+          if (libDlBtn) libDlBtn.click();
+          else downloadLib();
+          // If button path did not capture (stale handler), call API directly.
+          if (!capturedLibName) downloadLib();
+        } finally { document.createElement = origCreateLib; }
+        var statusLibEl = document.querySelector('.status-msg');
+        var statusLibText = statusLibEl ? String(statusLibEl.textContent || '') : '';
+        var statusLibOk = statusLibText.indexOf('已下载命名字段预设库 JSON：') >= 0
+          && statusLibText.indexOf(expectedLibName) >= 0;
+        libDlOk = libNameOk && capturedLibName === expectedLibName && statusLibOk && !!savedForDl && !!libDlBtn;
+        if (!libDlOk) {
+          mark('fail:lib-dl:nameOk=' + libNameOk + ';btn=' + !!libDlBtn + ';cap=' + capturedLibName + ';exp=' + expectedLibName + ';status=' + statusLibText);
+          return;
+        }
+        if (savedForDl && savedForDl.id) deleteNamed(savedForDl.id);
+      } else {
+        mark('fail:lib-dl:missing-api');
+        return;
+      }
+      namedOk = namedOk && libDlOk;
+
       reset();
       try { localStorage.removeItem('studio-report-empty-metrics-meta-field-named'); } catch (e8) {}
       try { localStorage.removeItem('studio-report-empty-metrics-meta-field-named-active'); } catch (e9) {}

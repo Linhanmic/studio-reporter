@@ -591,6 +591,33 @@
     });
   }
 
+  function buildEmptyStateMetricsMetaFieldNamedPresetsDownloadName() {
+    var report = emptyStateMetricsReportMeta();
+    var project = sanitizeEmptyStateMetricsFilenamePart(report.projectName, 'project');
+    var stamp = formatEmptyStateMetricsDownloadStamp();
+    var customCount = 0;
+    try { customCount = getEmptyStateMetricsMetaFieldCustomNamedPresets().length; } catch (e) {}
+    var countPart = sanitizeEmptyStateMetricsFilenamePart(String(customCount), '0');
+    return 'studio-report-empty-metrics-meta-field-named__' + project + '__custom-' + countPart + '__' + stamp + '.json';
+  }
+
+  function downloadEmptyStateMetricsMetaFieldNamedPresetsJSON() {
+    var text = formatEmptyStateMetricsMetaFieldNamedPresetsJSON();
+    var fileName = buildEmptyStateMetricsMetaFieldNamedPresetsDownloadName();
+    var blob = new Blob([text + '\n'], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 0);
+    flashStatus('已下载命名字段预设库 JSON：' + fileName);
+    return text;
+  }
+
   function applyEmptyStateMetricsMetaFieldNamedPresetsJSON(raw) {
     var parsed = null;
     try {
@@ -1059,6 +1086,7 @@
     html += '<button type="button" class="action-btn action-btn-tiny" data-action="save-empty-state-metrics-meta-field-named" title="将当前字段配置另存为命名预设">另存为</button>';
     html += '<button type="button" class="action-btn action-btn-tiny" data-action="delete-empty-state-metrics-meta-field-named" title="删除当前选中的自定义命名预设（内置不可删）">删除预设</button>';
     html += '<button type="button" class="action-btn action-btn-tiny" data-action="copy-empty-state-metrics-meta-field-named-json" title="复制自定义命名预设库 JSON">复制库</button>';
+    html += '<button type="button" class="action-btn action-btn-tiny" data-action="download-empty-state-metrics-meta-field-named-json" title="下载自定义命名预设库 JSON（文件名含项目与自定义套数）">下载库</button>';
     html += '<button type="button" class="action-btn action-btn-tiny" data-action="import-empty-state-metrics-meta-field-named-json" title="导入自定义命名预设库 JSON">导入库</button>';
     html += '</div>';
     EMPTY_STATE_METRICS_META_FIELD_DEFS.forEach(function (def) {
@@ -3430,6 +3458,10 @@ function copyFailSummary() {
         copyEmptyStateMetricsMetaFieldNamedPresetsJSON();
         return;
       }
+      if (actionBtn.dataset.action === 'download-empty-state-metrics-meta-field-named-json') {
+        downloadEmptyStateMetricsMetaFieldNamedPresetsJSON();
+        return;
+      }
       if (actionBtn.dataset.action === 'import-empty-state-metrics-meta-field-named-json') {
         importEmptyStateMetricsMetaFieldNamedPresetsFromPrompt();
         return;
@@ -3442,7 +3474,7 @@ function copyFailSummary() {
         copyEmptyStateMetricsReportSummary();
         return;
       }
-if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
+      if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
         copyEmptyStateMetricsJSON();
         return;
       }
@@ -3725,6 +3757,8 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportDeleteActiveEmptyStateMetricsMetaFieldNamedPreset = deleteActiveEmptyStateMetricsMetaFieldNamedPreset;
   window.StudioReportFormatEmptyStateMetricsMetaFieldNamedPresetsJSON = formatEmptyStateMetricsMetaFieldNamedPresetsJSON;
   window.StudioReportCopyEmptyStateMetricsMetaFieldNamedPresetsJSON = copyEmptyStateMetricsMetaFieldNamedPresetsJSON;
+  window.StudioReportBuildEmptyStateMetricsMetaFieldNamedPresetsDownloadName = buildEmptyStateMetricsMetaFieldNamedPresetsDownloadName;
+  window.StudioReportDownloadEmptyStateMetricsMetaFieldNamedPresetsJSON = downloadEmptyStateMetricsMetaFieldNamedPresetsJSON;
   window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPresetsJSON = applyEmptyStateMetricsMetaFieldNamedPresetsJSON;
   window.StudioReportImportEmptyStateMetricsMetaFieldNamedPresetsFromPrompt = importEmptyStateMetricsMetaFieldNamedPresetsFromPrompt;
   window.StudioReportReadEmptyMetricsMetaPresetFromQuery = readEmptyMetricsMetaPresetFromQuery;

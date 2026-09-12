@@ -228,6 +228,7 @@
 - [x] 静态报告失败原因空态 metrics「下载短卡片」成功后状态栏提示实际文件名（含项目/preset 片段）
 - [x] 静态报告失败原因空态 metrics JSON/可见 JSON 下载状态栏提示实际文件名（与短卡片对齐）
 - [x] 静态报告失败原因空态 metrics meta 字段预设 JSON 下载文件名含项目/预设 id，且状态栏提示实际文件名
+- [x] 静态报告失败原因空态 metrics 命名字段预设库「下载库」按钮（文件名含项目/自定义套数；状态栏提示实际文件名）
 
 ## 迭代日志
 
@@ -501,8 +502,10 @@
 
 | 2026-09-12 | 失败原因空态 metrics meta 预设下载文件名 | 含项目/preset；flashStatus 提示实际文件名 |
 
+| 2026-09-12 | 失败原因空态 metrics 命名预设库下载 | 「下载库」；文件名含项目/custom-N；状态栏提示实际文件名 |
+
 ## 下一任务（选定）
 
-**静态报告失败摘要旁路写入 path-style focus 深链（MD/JSON）并与 Desktop 打开对齐**，或 **命名字段预设库增加「下载库 JSON」按钮**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或证书到位并接线后启用签名 job。
+**静态报告空态 metrics 命名预设菜单项旁显示「下载库」快捷入口（工具行）**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或真实 Release feed / 自动更新端到端验证，或证书到位并接线后启用签名 job。
 
 

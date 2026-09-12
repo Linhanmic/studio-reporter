@@ -323,3 +323,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 短卡片下载状态栏文件名 | flashStatus「已下载…短卡片：」+ 实际文件名 |
 | 2026-09-12 | 失败原因空态 metrics JSON 下载状态栏文件名 | 全量/可见 JSON flashStatus 含实际 .json 文件名 |
 | 2026-09-12 | 失败原因空态 metrics meta 预设下载文件名 | build…MetaFieldPrefsDownloadName + flashStatus 含实际文件名 |
+| 2026-09-12 | 失败原因空态 metrics 命名预设库下载 | 「下载库」按钮 + 文件名含项目/custom-N + flashStatus |
