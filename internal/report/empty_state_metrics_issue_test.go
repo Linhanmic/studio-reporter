@@ -174,11 +174,17 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"    } finally {\n" +
 		"      document.createElement = origCreate;\n" +
 		"    }\n" +
+		"    var statusEl = document.querySelector('.status-msg');\n" +
+		"    var statusText = statusEl ? String(statusEl.textContent || '') : '';\n" +
+		"    var statusOk = statusText.indexOf('已下载空态 metrics 短卡片：') >= 0\n" +
+		"      && statusText.indexOf(shortName) >= 0\n" +
+		"      && statusText.indexOf('preset-ci-slim') >= 0;\n" +
 		"    var downloadOk = typeof downloaded === 'string'\n" +
 		"      && downloaded.indexOf('### studio-reporter 空态 metrics · 预设') >= 0\n" +
 		"      && downloaded.indexOf('```json') < 0\n" +
 		"      && dlNameOk && shortNameOk\n" +
-		"      && capturedName.indexOf('preset-ci-slim') >= 0;\n" +
+		"      && capturedName.indexOf('preset-ci-slim') >= 0\n" +
+		"      && statusOk;\n" +
 		"    setKind('');\n" +
 		"    if (typeof applyNamed === 'function') applyNamed('default');\n" +
 		"    setKind('escClear');\n" +
@@ -196,7 +202,7 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"    try { parsed = JSON.parse(embedded); } catch (e2) {}\n" +
 		"    var subsetOk = parsed && Array.isArray(parsed.events) && parsed.events.length >= 1\n" +
 		"      && parsed.events.every(function (ev) { return ev && ev.kind === 'escClear'; });\n" +
-		"    mark((allOk && escOk && subsetOk && presetOk && shortOk && downloadOk) ? 'ok' : ('fail:all=' + allOk + ';esc=' + escOk + ';sub=' + subsetOk + ';preset=' + presetOk + ';short=' + shortOk + ';dl=' + downloadOk + ';name=' + capturedName + ';md=' + String(mdEsc).slice(0, 220)));\n" +
+		"    mark((allOk && escOk && subsetOk && presetOk && shortOk && downloadOk) ? 'ok' : ('fail:all=' + allOk + ';esc=' + escOk + ';sub=' + subsetOk + ';preset=' + presetOk + ';short=' + shortOk + ';dl=' + downloadOk + ';status=' + statusText + ';name=' + capturedName + ';md=' + String(mdEsc).slice(0, 220)));\n" +
 		"  }\n" +
 		"  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);\n" +
 		"  else setTimeout(go, 100);\n" +

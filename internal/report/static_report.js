@@ -1829,11 +1829,12 @@
   }
 
   function downloadEmptyStateMetricsIssueShortMarkdown() {
+    var name = buildEmptyStateMetricsIssueShortDownloadName();
     return downloadEmptyStateMetricsIssueMarkdownText(
       formatEmptyStateMetricsIssueShortMarkdown(),
       'empty-state-metrics-issue-short',
-      '已下载空态 metrics 短卡片 Markdown',
-      buildEmptyStateMetricsIssueShortDownloadName()
+      '已下载空态 metrics 短卡片：' + name,
+      name
     );
   }
 
@@ -1854,11 +1855,12 @@
     }).catch(function () {
       try {
         if (shortCard) {
+          var fallbackName = buildEmptyStateMetricsIssueShortDownloadName();
           downloadEmptyStateMetricsIssueMarkdownText(
             text,
             'empty-state-metrics-issue-short',
-            '剪贴板不可用，已改为下载短卡片 Markdown',
-            buildEmptyStateMetricsIssueShortDownloadName()
+            '剪贴板不可用，已改为下载短卡片：' + fallbackName,
+            fallbackName
           );
         } else {
           downloadEmptyStateMetricsIssueMarkdown();

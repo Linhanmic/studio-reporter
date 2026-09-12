@@ -320,3 +320,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 工具行命名预设 chip | 预设·… 循环/Shift/菜单导航/字段摘要/回默认 |
 | 2026-09-12 | 失败原因空态 metrics 贴 issue 含命名预设 | formatEmptyStateMetricsIssueMarkdown 标题/正文 |
 | 2026-09-12 | 失败原因空态 metrics 贴 issue 短卡片 | Shift 复制 / Alt 或工具行按钮下载；文件名含项目+preset+kind |
+| 2026-09-12 | 失败原因空态 metrics 短卡片下载状态栏文件名 | flashStatus「已下载…短卡片：」+ 实际文件名 |

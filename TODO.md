@@ -225,6 +225,7 @@
 - [x] 静态报告失败原因空态 metrics「贴 issue」支持 Alt+点击下载短卡片 .md（`downloadEmptyStateMetricsIssueShortMarkdown`）
 - [x] 静态报告失败原因空态 metrics 短卡片下载文件名含项目名与预设 id（`buildEmptyStateMetricsIssueShortDownloadName`）
 - [x] 静态报告失败原因空态 metrics 工具行增加「下载短卡片」显式按钮（`download-empty-state-metrics-issue-short`；与 Alt+贴 issue 等价）
+- [x] 静态报告失败原因空态 metrics「下载短卡片」成功后状态栏提示实际文件名（含项目/preset 片段）
 
 ## 迭代日志
 
@@ -492,8 +493,10 @@
 
 | 2026-09-12 | 失败原因空态 metrics 贴 issue 短卡片 | Shift 复制 / Alt 或「下载短卡片」下载；文件名含项目+preset+kind |
 
+| 2026-09-12 | 失败原因空态 metrics 短卡片下载状态栏文件名 | flashStatus 含实际 .md 文件名（项目/preset） |
+
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics「下载短卡片」按钮在下载后给出状态栏文件名提示**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics JSON 下载状态栏同样提示实际文件名**（与短卡片对齐），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
 
 
