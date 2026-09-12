@@ -327,6 +327,25 @@
     }
   }
 
+  function shortenEmptyMetricsEnableURL(url) {
+    var s = String(url || '');
+    if (s.length <= 72) return s;
+    var hashIdx = s.indexOf('#');
+    var hash = hashIdx >= 0 ? s.slice(hashIdx) : '';
+    var base = hashIdx >= 0 ? s.slice(0, hashIdx) : s;
+    var qIdx = base.indexOf('?');
+    var path = qIdx >= 0 ? base.slice(0, qIdx) : base;
+    var search = qIdx >= 0 ? base.slice(qIdx) : '';
+    if (path.length > 36) path = path.slice(0, 20) + '…' + path.slice(-12);
+    // Keep emptyMetrics flag visible in the status preview.
+    if (search.length > 28) {
+      if (/[?&]emptyMetrics=1(?:&|$)/i.test(search)) search = '?emptyMetrics=1…';
+      else search = search.slice(0, 14) + '…' + search.slice(-10);
+    }
+    if (hash.length > 24) hash = hash.slice(0, 12) + '…' + hash.slice(-8);
+    return path + search + hash;
+  }
+
   function copyEmptyMetricsEnableURL() {
     var url = formatEmptyMetricsEnableURL();
     if (!url) {
@@ -334,7 +353,7 @@
       return Promise.reject(new Error('empty enable url'));
     }
     return copyText(url).then(function () {
-      flashStatus('已复制空态 metrics 开启链接（?emptyMetrics=1）');
+      flashStatus('已复制开启链接：' + shortenEmptyMetricsEnableURL(url));
     }).catch(function () {
       flashStatus('复制失败，请检查剪贴板权限');
     });
@@ -1761,6 +1780,7 @@ function copyFailSummary() {
   window.StudioReportDismissEmptyMetricsEnableHint = dismissEmptyMetricsEnableHint;
   window.StudioReportFormatEmptyMetricsEnableURL = formatEmptyMetricsEnableURL;
   window.StudioReportCopyEmptyMetricsEnableURL = copyEmptyMetricsEnableURL;
+  window.StudioReportShortenEmptyMetricsEnableURL = shortenEmptyMetricsEnableURL;
   window.StudioReportSyncEmptyMetricsEnableHint = syncEmptyMetricsEnableHint;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;

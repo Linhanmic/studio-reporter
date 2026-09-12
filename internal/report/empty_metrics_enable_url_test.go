@@ -87,7 +87,15 @@ func TestEmptyMetricsEnableURLCopy(t *testing.T) {
       && /[?&]foo=1(?:&|#|$)/.test(url)
       && /[?&]bar=2(?:&|#|$)/.test(url)
       && url.indexOf('#overview?scenario=fail') >= 0;
-    mark(ok ? ('ok:' + url) : ('fail:' + url));
+    var shorten = window.StudioReportShortenEmptyMetricsEnableURL;
+    var shortOk = typeof shorten === 'function';
+    if (shortOk) {
+      var longUrl = 'https://example.test/reports/very/long/path/to/index.html?foo=1&emptyMetrics=1&bar=2#overview?scenario=fail&q=' + encodeURIComponent('assertion failed password');
+      var short = shorten(longUrl);
+      shortOk = typeof short === 'string' && short.length < longUrl.length && short.indexOf('…') >= 0
+        && short.indexOf('emptyMetrics=1') >= 0;
+    }
+    mark((ok && shortOk) ? ('ok:' + url) : ('fail:' + url + ';short=' + shortOk));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);

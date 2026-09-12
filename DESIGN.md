@@ -285,3 +285,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 键盘可达 | 显示入 Tab；隐藏 tabindex=-1；focus-visible；隐藏后焦点回退 |
 | 2026-09-12 | 失败原因空态 metrics 首次开启引导 | 工具行 hint + 开启/知道了；dismiss 后紧凑入口 |
 | 2026-09-12 | 失败原因空态 metrics 开启深链 | formatEmptyMetricsEnableURL；工具行/面板「复制链接」；保留 hash |
+| 2026-09-12 | 失败原因空态 metrics 开启深链预览 | 复制后状态栏缩短 URL（shortenEmptyMetricsEnableURL） |

@@ -187,6 +187,7 @@
 - [x] 静态报告失败原因空态 metrics 面板键盘可达性（显示时入 Tab；隐藏时 tabindex=-1；`:focus-visible`；隐藏后焦点回退；`syncEmptyStateMetricsPanelButtons`）
 - [x] 静态报告失败原因空态 metrics 面板首次开启引导（工具行 hint + 「开启/知道了」；dismiss 后紧凑「开启」；`showEmptyStateMetricsPanel`/`dismissEmptyMetricsEnableHint`）
 - [x] 静态报告失败原因空态 metrics 开启深链（工具行/面板「复制链接」；`formatEmptyMetricsEnableURL`/`StudioReportFormatEmptyMetricsEnableURL`）
+- [x] 静态报告失败原因空态 metrics 开启深链状态栏预览（复制后展示缩短 URL；`shortenEmptyMetricsEnableURL`）
 
 ## 迭代日志
 
@@ -404,7 +405,8 @@
 | 2026-09-12 | 失败原因空态 metrics 面板键盘可达性 | 显示入 Tab / 隐藏 tabindex=-1 / focus-visible / 隐藏后焦点回退 |
 | 2026-09-12 | 失败原因空态 metrics 首次开启引导 | 工具行 hint；开启/知道了；dismiss 后紧凑开启入口 |
 | 2026-09-12 | 失败原因空态 metrics 开启深链 | 「复制链接」生成带 ?emptyMetrics=1 的可分享 URL（保留 hash） |
+| 2026-09-12 | 失败原因空态 metrics 开启深链预览 | 复制后状态栏展示缩短 URL 摘要 |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 开启深链一键预览**（复制后状态栏展示缩短 URL 摘要），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 与路径式 focus 联调说明**（QUICKSTART 补一小节：开启链接 + 失败原因深链怎么一起用），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
