@@ -87,6 +87,8 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`data-fail-ref-kind="scenario"`,
 		`data-scn-id="scn:fail"`,
 		`data-fail-count-total=`,
+		`copy-fail-reason-link`,
+		`复制深链`,
 		`boom`,
 		`data-nav-target="scn:fail"`,
 	} {
@@ -194,6 +196,10 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`jumpFailReasonRow`,
 		`collectFailSummary`,
 		`failSummaryDeepLink`,
+		`failReasonShareURL`,
+		`copyFailReasonLink`,
+		`StudioReportFailReasonShareURL`,
+		`StudioReportCopyFailReasonLink`,
 		`FAIL_SUMMARY_LOCATOR_EXAMPLE`,
 		`copyFailSummaryLocatorExample`,
 		`StudioReportCollectFailSummary`,
@@ -225,5 +231,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.fail-reason-ref.ref-hidden`) {
 		t.Fatal("CSS missing fail-reason-ref ref-hidden")
+	}
+	if !strings.Contains(staticReportCSS, `.action-btn.action-btn-tiny`) {
+		t.Fatal("CSS missing action-btn-tiny for fail-reason deep-link button")
 	}
 }

@@ -764,6 +764,31 @@ function writeHash(id) {
     });
   }
 
+  function failReasonShareURL(row) {
+    syncFailReasonOverview();
+    var jump = firstVisibleFailReasonTarget(row);
+    var hash = failSummaryDeepLink(jump);
+    if (!hash) return '';
+    try {
+      return String(location.href || '').split('#')[0] + hash;
+    } catch (e) {
+      return hash;
+    }
+  }
+
+  function copyFailReasonLink(row) {
+    var url = failReasonShareURL(row);
+    if (!url) {
+      flashStatus('当前过滤下该失败原因无可复制定位');
+      return Promise.resolve();
+    }
+    return copyText(url).then(function () {
+      flashStatus('已复制失败原因定位深链（path-style focus）');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
   function collectFailSummary() {
     syncFailReasonOverview();
     var fails = visibleFailScenarios();
@@ -1020,15 +1045,21 @@ function copyFailSummary() {
         copyFailSummaryLocatorExample();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-fail-reason-link') {
+        var reasonRow = actionBtn.closest('.fail-reason-row');
+        if (reasonRow) copyFailReasonLink(reasonRow);
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
       selectNode(nav.dataset.navTarget);
       return;
     }
-    // Click count/reason (not a scenario link) → jump to first visible matching fail.
+    // Click count/reason (not a scenario link / copy button) → jump to first visible matching fail.
     var failJump = ev.target.closest('.fail-reason-count, .fail-reason-text, .fail-reason-row');
     if (failJump) {
+      if (ev.target.closest('[data-action="copy-fail-reason-link"]')) return;
       var row = failJump.classList.contains('fail-reason-row')
         ? failJump
         : failJump.closest('.fail-reason-row');
@@ -1117,4 +1148,6 @@ function copyFailSummary() {
   window.StudioReportCollectFailSummary = collectFailSummary;
   window.StudioReportFailSummaryLocatorExample = FAIL_SUMMARY_LOCATOR_EXAMPLE;
   window.StudioReportCopyFailSummaryLocatorExample = copyFailSummaryLocatorExample;
+  window.StudioReportFailReasonShareURL = failReasonShareURL;
+  window.StudioReportCopyFailReasonLink = copyFailReasonLink;
 })();

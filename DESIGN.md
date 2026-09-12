@@ -262,3 +262,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 3. Gauge 插件启动契约（`--start` / gRPC / WS 端口打印）
 | 2026-09-12 | 趋势失败原因摘要一键打开定位 | digest 组最近失败接到 open+focus；复制深链与 flaky 行对称；`resolveDigestGroupOpenTarget` |
 | 2026-09-12 | manage 失败原因摘要一键打开定位 | 页内打开带 path-style focus；复制深链；`resolveDigestGroupOpenTarget` 与 Desktop 同源 |
+| 2026-09-12 | 静态报告失败原因聚合复制深链 | Overview 行按钮复制 path-style focus 可分享 URL；保留当前过滤/仅失败步骤 |

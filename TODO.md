@@ -164,6 +164,7 @@
 - [x] Desktop 历史趋势 flaky 场景一键打开定位（已有；本轮补「复制深链」+ `lastFailRunId`/`resolveFlakyOpenTarget`）
 - [x] 趋势失败原因摘要行一键打开定位（digest 组最近失败 → open+focus；「复制深链」；`resolveDigestGroupOpenTarget`）
 - [x] manage.html 失败原因摘要行一键打开定位（页内打开带 focus；复制深链；与 Desktop `resolveDigestGroupOpenTarget` 同源）
+- [x] 静态报告失败原因聚合行「复制深链」（Overview 行按钮；path-style focus 可分享 URL；`failReasonShareURL`/`StudioReportFailReasonShareURL`）
 
 ## 迭代日志
 
@@ -357,6 +358,8 @@
 
 | 2026-09-12 | manage 失败原因摘要一键打开定位 | 摘要行页内打开最近失败并 focus；复制深链；report-assets resolveDigestGroupOpenTarget |
 
+| 2026-09-12 | 静态报告失败原因聚合复制深链 | Overview 行「复制深链」；保留过滤；path-style focus；JS/HTML 契约 |
+
 ## 下一任务（选定）
 
-**静态报告失败原因聚合行增加「复制深链」**（与 Overview 跳转对称，便于外发），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因聚合行增加「复制摘要片段」**（单行 Markdown，含定位深链，便于粘贴到工单），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
