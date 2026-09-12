@@ -67,7 +67,6 @@ func RenderSnapshotHTML(snap *LiveSnapshot) ([]byte, error) {
 	return RenderReportHTML(snap.Report)
 }
 
-
 // writeStudioReportMetaJSON embeds a machine-readable report identity blob for
 // empty-state metrics / issue paste exports (project, verdict, generatedAt).
 func writeStudioReportMetaJSON(b *bytes.Buffer, r *Report) {

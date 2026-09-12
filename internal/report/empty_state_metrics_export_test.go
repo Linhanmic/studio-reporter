@@ -51,7 +51,7 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
 		`StudioReportEmptyStateMetricsReportMeta`,
 		`StudioReportBuildEmptyStateMetricsDownloadName`,
 		`buildEmptyStateMetricsDownloadName`,
-				`复制 JSON`,
+		`复制 JSON`,
 		`下载 JSON`,
 	} {
 		if !strings.Contains(body, want) {

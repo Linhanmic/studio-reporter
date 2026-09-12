@@ -13,7 +13,7 @@ import (
 func TestEmptyStateMetricsPanelToggle(t *testing.T) {
 	r := &Report{
 		ProjectName: "metrics-panel",
-		Meta: ReportMeta{HostName: "dev-laptop", PluginVersion: "0.5.2", ProjectRoot: "/opt/gauge/demo-suite"},
+		Meta:        ReportMeta{HostName: "dev-laptop", PluginVersion: "0.5.2", ProjectRoot: "/opt/gauge/demo-suite"},
 		Verdict:     VerdictFail,
 		Failed:      true,
 		Specs: []SpecReport{{
