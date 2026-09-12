@@ -1972,6 +1972,24 @@ async function handleHistoryRowContextMenu(run, ev) {
       await openHistoryRunEntry(run);
       return;
     }
+    if (action === 'paste-focus') {
+      if (!window.desktopAPI?.openFailSummaryClipboard) {
+        setStatus('当前版本不支持粘贴摘要定位', 'warn');
+        return;
+      }
+      const result = await window.desktopAPI.openFailSummaryClipboard({ entry: run });
+      if (result?.canceled || result?.code === 'canceled') {
+        setStatus('已取消粘贴摘要定位', 'warn');
+        return;
+      }
+      if (!result?.ok) {
+        setStatus(result?.message || '无法粘贴摘要定位到此运行', 'warn');
+        return;
+      }
+      setTab('report');
+      setStatus(`已粘贴摘要定位到运行 ${run.id || ''}：${result.focus}`, 'ok');
+      return;
+    }
     if (action === 'copy-open') {
       const copied = await window.desktopAPI.copyOpenDeepLink({
         run: run.id,

@@ -9,9 +9,9 @@ const {
 } = require('./history-menu.js');
 
 describe('history-menu', () => {
-  it('exposes open / copy-open / reveal / copy-path actions', () => {
+  it('exposes open / paste-focus / copy-open / reveal / copy-path actions', () => {
     const ids = HISTORY_CONTEXT_ACTIONS.filter((x) => x.id).map((x) => x.id);
-    assert.deepEqual(ids, ['open', 'copy-open', 'reveal', 'copy-path']);
+    assert.deepEqual(ids, ['open', 'paste-focus', 'copy-open', 'reveal', 'copy-path']);
     const items = historyContextMenuItems();
     assert.notEqual(items, HISTORY_CONTEXT_ACTIONS);
     assert.equal(items[0].label, '打开报告');

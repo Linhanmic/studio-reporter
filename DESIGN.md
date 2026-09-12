@@ -184,6 +184,7 @@ Gauge (gRPC)
 | 2026-09-11 | 复制失败摘要 path-style 深链 | 失败摘要 Markdown 含 `#focus` 定位（encodeShareFocus 保留 `/`）；Chrome dump-dom 抽检 |
 | 2026-09-11 | 失败摘要→Desktop open 定位 | `extractFailSummaryFocusHashes` 解析摘要定位 → resolveReportOpenHash → dump-dom 打开 path-style details |
 | 2026-09-11 | 剪贴板粘贴摘要一键定位 | Desktop 菜单/历史「粘贴摘要定位」读取剪贴板失败摘要并打开首个 path-style focus |
+| 2026-09-11 | 历史右键粘贴摘要定位 | 右键「粘贴摘要定位到此运行」把剪贴板 focus 绑到该 history 条目报告目录 |
 | 2026-09-11 | digest 深链特殊 hub 路径编码抽检 | 深链 hub 必须经 query 编码；Go/JS/Desktop 往返覆盖空格与保留字符，避免 `?&#` 截断 |
 | 2026-09-11 | report-browser-smoke CI | PR CI 安装 Chrome 并显式跑 failSteps/manage-digest 浏览器冒烟；避免 go test 在无浏览器环境静默 Skip |
 | 2026-09-11 | manage/serve 旁路与深链联调抽检 | 对照「API 单测 ≠ 页面契约」：用真实 hub + HTTP serve 串起 POST 旁路、sidecar 深链、manage.html/JS 字符串契约与 Chrome 打开 hash；`make smoke-manage-digest` 作为可重复抽检入口 |

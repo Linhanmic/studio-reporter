@@ -562,7 +562,28 @@ async function openReportDir(dir, opts = {}) {
  */
 async function openFailSummaryFromClipboard(opts = {}) {
   const textMd = clipboard.readText();
-  let reportDir = String(opts.reportDir || lastOpenedReportDir || '').trim();
+  let reportDir = String(opts.reportDir || '').trim();
+  if (!reportDir && opts.entry) {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = String(settings.reportHubDir || '').trim();
+    if (!hub) {
+      return {
+        ok: false,
+        code: 'no-hub',
+        message: '未配置报告 Hub，无法解析历史运行目录',
+      };
+    }
+    try {
+      reportDir = resolveRunDir(hub, opts.entry);
+    } catch (err) {
+      return {
+        ok: false,
+        code: 'bad-entry',
+        message: String(err && err.message ? err.message : err),
+      };
+    }
+  }
+  if (!reportDir) reportDir = String(lastOpenedReportDir || '').trim();
   const plan = planOpenFromFailSummaryMarkdown(textMd, {
     reportDir,
     failSteps: true,

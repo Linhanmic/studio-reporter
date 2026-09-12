@@ -158,6 +158,7 @@
 - [x] 静态报告复制失败摘要含 path-style 深链 focus 抽检（`TestCopyFailSummaryPathStyleFocusDeepLink`：摘要 Markdown 定位 hash 保留字面 `/`；`StudioReportCollectFailSummary`；纳入 `smoke-failsteps-hash`）
 - [x] 复制失败摘要深链经 Desktop open 管道定位 path-style focus 联调（`extractFailSummaryFocusHashes` → `resolveReportOpenHash` → Chrome dump-dom；`open-focus-pipeline.test.js`）
 - [x] Desktop 剪贴板粘贴失败摘要后一键打开首个 path-style focus（`planOpenFromFailSummaryMarkdown` + 菜单/历史「粘贴摘要定位」；缺报告目录时弹窗选择）
+- [x] 历史失败运行右键「粘贴摘要定位到此运行」（剪贴板 focus 绑定所选 history 条目报告目录；`history-menu` `paste-focus`）
 
 ## 迭代日志
 
@@ -343,7 +344,8 @@
 | 2026-09-11 | 复制失败摘要 path-style 深链 | collectFailSummary 写入 `#focus` 定位（字面 `/`）；Chrome dump-dom；smoke-failsteps-hash 覆盖 |
 | 2026-09-11 | 失败摘要→Desktop open 定位联调 | 从摘要 Markdown 提取 path-style focus，经 resolveReportOpenHash 打开 details；open-focus-pipeline 覆盖 |
 | 2026-09-11 | 剪贴板粘贴摘要一键定位 | 菜单/历史工具栏读取剪贴板失败摘要，打开报告并定位首个 path-style focus；缺目录时选择 |
+| 2026-09-11 | 历史右键粘贴摘要定位到此运行 | 右键菜单 paste-focus：剪贴板 focus + 所选运行目录打开；history-menu 单测 |
 
 ## 下一任务（选定）
 
-**历史失败运行右键「粘贴摘要定位到此运行」**（把剪贴板 focus 绑到所选 history 条目的报告目录），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**失败摘要定位失败时的可操作提示与空剪贴板引导**（无 `定位:` 行时给出复制示例/打开帮助），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

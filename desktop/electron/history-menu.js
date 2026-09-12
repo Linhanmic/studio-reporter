@@ -7,6 +7,7 @@
 
 const HISTORY_CONTEXT_ACTIONS = [
   { id: 'open', label: '打开报告' },
+  { id: 'paste-focus', label: '粘贴摘要定位到此运行' },
   { id: 'copy-open', label: '复制打开深链' },
   { type: 'separator' },
   { id: 'reveal', label: '在文件夹中显示' },
