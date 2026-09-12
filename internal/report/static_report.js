@@ -646,19 +646,30 @@
     });
   }
 
+  function buildEmptyStateMetricsMetaFieldPrefsDownloadName() {
+    var report = emptyStateMetricsReportMeta();
+    var project = sanitizeEmptyStateMetricsFilenamePart(report.projectName, 'project');
+    var presetId = '';
+    try { presetId = getActiveEmptyStateMetricsMetaFieldNamedPresetId() || 'default'; } catch (e) {}
+    var presetPart = sanitizeEmptyStateMetricsFilenamePart(presetId, 'default');
+    var stamp = formatEmptyStateMetricsDownloadStamp();
+    return 'studio-report-empty-metrics-meta-fields__' + project + '__preset-' + presetPart + '__' + stamp + '.json';
+  }
+
   function downloadEmptyStateMetricsMetaFieldPrefsJSON() {
     var text = formatEmptyStateMetricsMetaFieldPrefsJSON();
+    var fileName = buildEmptyStateMetricsMetaFieldPrefsDownloadName();
     var blob = new Blob([text + '\n'], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'studio-report-empty-metrics-meta-fields.json';
+    a.download = fileName;
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 0);
-    flashStatus('已下载 meta 字段预设 JSON');
+    flashStatus('已下载 meta 字段预设 JSON：' + fileName);
     return text;
   }
 
@@ -3701,6 +3712,7 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportToggleEmptyStateMetricsMetaFieldsEditor = toggleEmptyStateMetricsMetaFieldsEditor;
   window.StudioReportFormatEmptyStateMetricsMetaFieldPrefsJSON = formatEmptyStateMetricsMetaFieldPrefsJSON;
   window.StudioReportCopyEmptyStateMetricsMetaFieldPrefsJSON = copyEmptyStateMetricsMetaFieldPrefsJSON;
+  window.StudioReportBuildEmptyStateMetricsMetaFieldPrefsDownloadName = buildEmptyStateMetricsMetaFieldPrefsDownloadName;
   window.StudioReportDownloadEmptyStateMetricsMetaFieldPrefsJSON = downloadEmptyStateMetricsMetaFieldPrefsJSON;
   window.StudioReportApplyEmptyStateMetricsMetaFieldPrefsJSON = applyEmptyStateMetricsMetaFieldPrefsJSON;
   window.StudioReportImportEmptyStateMetricsMetaFieldPrefsFromPrompt = importEmptyStateMetricsMetaFieldPrefsFromPrompt;

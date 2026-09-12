@@ -60,9 +60,11 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
 		`字段`,
 		`导入预设`,
 		`复制预设`,
-		`studio-report-empty-metrics-meta-fields.json`,
 		`StudioReportApplyEmptyStateMetricsMetaFieldPrefsJSON`,
 		`StudioReportFormatEmptyStateMetricsMetaFieldPrefsJSON`,
+		`StudioReportDownloadEmptyStateMetricsMetaFieldPrefsJSON`,
+		`StudioReportBuildEmptyStateMetricsMetaFieldPrefsDownloadName`,
+		`studio-report-empty-metrics-meta-fields__`,
 		`StudioReportApplyEmptyStateMetricsMetaFieldNamedPreset`,
 		`StudioReportListEmptyStateMetricsMetaFieldNamedPresets`,
 		`CI 精简`,
@@ -181,6 +183,40 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
     var deleteNamed = window.StudioReportDeleteEmptyStateMetricsMetaFieldNamedPreset;
     var formatNamedLib = window.StudioReportFormatEmptyStateMetricsMetaFieldNamedPresetsJSON;
     var applyNamedLib = window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPresetsJSON;
+    var buildPrefsName = window.StudioReportBuildEmptyStateMetricsMetaFieldPrefsDownloadName;
+    var downloadPrefs = window.StudioReportDownloadEmptyStateMetricsMetaFieldPrefsJSON;
+    var prefsDlOk = false;
+    if (typeof buildPrefsName === 'function' && typeof downloadPrefs === 'function' && typeof applyNamed === 'function') {
+      applyNamed('ci-slim');
+      var expectedName = buildPrefsName();
+      var nameOk = typeof expectedName === 'string'
+        && expectedName.indexOf('studio-report-empty-metrics-meta-fields__') >= 0
+        && expectedName.indexOf('preset-ci-slim') >= 0
+        && /\.json$/.test(expectedName);
+      var capturedName = '';
+      var origCreate = document.createElement.bind(document);
+      document.createElement = function (tag) {
+        var el = origCreate(tag);
+        if (String(tag).toLowerCase() === 'a') {
+          el.click = function () { capturedName = String(el.download || ''); };
+        }
+        return el;
+      };
+      try { downloadPrefs(); } finally { document.createElement = origCreate; }
+      var statusEl = document.querySelector('.status-msg');
+      var statusText = statusEl ? String(statusEl.textContent || '') : '';
+      var statusOk = statusText.indexOf('已下载 meta 字段预设 JSON：') >= 0
+        && statusText.indexOf(expectedName) >= 0
+        && statusText.indexOf('preset-ci-slim') >= 0;
+      prefsDlOk = nameOk && capturedName === expectedName && statusOk;
+      if (!prefsDlOk) {
+        mark('fail:prefs-dl:nameOk=' + nameOk + ';cap=' + capturedName + ';exp=' + expectedName + ';status=' + statusText);
+        return;
+      }
+      reset();
+      try { localStorage.removeItem('studio-report-empty-metrics-meta-field-named-active'); } catch (eDl) {}
+    }
+
     var namedOk = false;
     if (typeof listNamed === 'function' && typeof applyNamed === 'function' && typeof activeNamed === 'function'
       && typeof saveNamed === 'function' && typeof deleteNamed === 'function'
@@ -238,7 +274,7 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
       try { localStorage.removeItem('studio-report-empty-metrics-meta-field-named-active'); } catch (e9) {}
     }
 
-    mark((defOk && defTextOk && customOk && customTextOk && movedOk && resetOk && uiOk && openOk && prefsIOOk && namedOk) ? 'ok' : ('fail:def=' + defOk + ';dt=' + defTextOk + ';c=' + customOk + ';ct=' + customTextOk + ';m=' + movedOk + ';r=' + resetOk + ';ui=' + uiOk + ';open=' + openOk + ';io=' + prefsIOOk + ';named=' + namedOk + ';p0=' + p0 + ';s0=' + s0 + ';p1=' + p1 + ';s1=' + s1));
+    mark((defOk && defTextOk && customOk && customTextOk && movedOk && resetOk && uiOk && openOk && prefsIOOk && prefsDlOk && namedOk) ? 'ok' : ('fail:def=' + defOk + ';dt=' + defTextOk + ';c=' + customOk + ';ct=' + customTextOk + ';m=' + movedOk + ';r=' + resetOk + ';ui=' + uiOk + ';open=' + openOk + ';io=' + prefsIOOk + ';dl=' + prefsDlOk + ';named=' + namedOk + ';p0=' + p0 + ';s0=' + s0 + ';p1=' + p1 + ';s1=' + s1));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);
