@@ -237,6 +237,7 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`emptyStateMetrics`,
 		`StudioReportEmptyStateMetrics`,
 		`StudioReportFormatEmptyStateMetricsJSON`,
+		`StudioReportEmptyStateMetricsPanelSnapshot`,
 		`StudioReportCopyEmptyStateMetricsJSON`,
 		`StudioReportDownloadEmptyStateMetricsJSON`,
 		`StudioReportResetEmptyStateMetrics`,

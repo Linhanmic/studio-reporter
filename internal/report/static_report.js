@@ -216,11 +216,40 @@
     };
   }
 
+  function readEmptyStateMetricsLocalStorage() {
+    try {
+      return localStorage.getItem('studio-report-empty-metrics');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function emptyStateMetricsPanelSnapshot() {
+    var windowFlag = null;
+    try {
+      if (window.StudioReportShowEmptyStateMetrics === true) windowFlag = true;
+      else if (window.StudioReportShowEmptyStateMetrics === false) windowFlag = false;
+    } catch (e) {}
+    var query = null;
+    try {
+      var q = String(location.search || '');
+      if (/[?&]emptyMetrics=1(?:&|$)/i.test(q) || /[?&]empty-metrics=1(?:&|$)/i.test(q)) query = '1';
+      else if (/[?&]emptyMetrics=0(?:&|$)/i.test(q) || /[?&]empty-metrics=0(?:&|$)/i.test(q)) query = '0';
+    } catch (e2) {}
+    return {
+      enabled: emptyStateMetricsPanelEnabled(),
+      windowFlag: windowFlag,
+      query: query,
+      localStorage: readEmptyStateMetricsLocalStorage()
+    };
+  }
+
   function formatEmptyStateMetricsJSON() {
     var payload = {
       kind: 'studio-report-empty-state-metrics',
       exportedAt: new Date().toISOString(),
       href: '',
+      panel: emptyStateMetricsPanelSnapshot(),
       counts: {
         clear: emptyStateMetrics.clear || 0,
         escClear: emptyStateMetrics.escClear || 0,
@@ -1609,6 +1638,7 @@ function copyFailSummary() {
   window.StudioReportFormatEmptyStateMetricsJSON = formatEmptyStateMetricsJSON;
   window.StudioReportCopyEmptyStateMetricsJSON = copyEmptyStateMetricsJSON;
   window.StudioReportDownloadEmptyStateMetricsJSON = downloadEmptyStateMetricsJSON;
+  window.StudioReportEmptyStateMetricsPanelSnapshot = emptyStateMetricsPanelSnapshot;
   window.StudioReportResetEmptyStateMetrics = resetEmptyStateMetrics;
   window.StudioReportHideEmptyStateMetricsPanel = hideEmptyStateMetricsPanel;
   window.StudioReportSetEmptyStateMetricsPanelVisible = setEmptyStateMetricsPanelVisible;

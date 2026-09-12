@@ -85,6 +85,7 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
       return;
     }
     window.StudioReportShowEmptyStateMetrics = true;
+    try { localStorage.setItem('studio-report-empty-metrics', '1'); } catch (e) {}
     if (typeof sync === 'function') sync();
     clear();
     clear({ source: 'esc' });
@@ -94,11 +95,15 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
     var ok = parsed && parsed.kind === 'studio-report-empty-state-metrics'
       && parsed.counts && parsed.counts.clear >= 1 && parsed.counts.escClear >= 1
       && Array.isArray(parsed.events) && parsed.events.length >= 2
-      && typeof parsed.exportedAt === 'string' && parsed.exportedAt.length > 0;
+      && typeof parsed.exportedAt === 'string' && parsed.exportedAt.length > 0
+      && parsed.panel && parsed.panel.enabled === true
+      && parsed.panel.windowFlag === true
+      && parsed.panel.localStorage === '1';
     // downloadEmptyStateMetricsJSON returns the same payload text (side-effect: trigger <a download>).
     var dlText = download();
-    var dlOk = typeof dlText === 'string' && dlText.indexOf('studio-report-empty-state-metrics') >= 0;
-    mark((ok && dlOk) ? ('ok:clear=' + parsed.counts.clear + ';esc=' + parsed.counts.escClear + ';n=' + parsed.events.length) : ('fail:' + raw.slice(0, 240)));
+    var dlOk = typeof dlText === 'string' && dlText.indexOf('studio-report-empty-state-metrics') >= 0
+      && dlText.indexOf('"panel"') >= 0;
+    mark((ok && dlOk) ? ('ok:clear=' + parsed.counts.clear + ';esc=' + parsed.counts.escClear + ';n=' + parsed.events.length + ';panel=1') : ('fail:' + raw.slice(0, 320)));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);
