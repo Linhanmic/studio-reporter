@@ -45,8 +45,10 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		`StudioReportFormatEmptyStateMetricsIssueMarkdown`,
 		`StudioReportFormatEmptyStateMetricsIssueShortMarkdown`,
 		`StudioReportCopyEmptyStateMetricsIssueMarkdown`,
+		`StudioReportDownloadEmptyStateMetricsIssueShortMarkdown`,
 		`贴 issue`,
-		`Shift+点击仅复制标题+预设短卡片`,
+		`Shift+点击复制短卡片`,
+		`Alt+点击下载短卡片`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -71,12 +73,14 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"    var format = window.StudioReportFormatEmptyStateMetricsIssueMarkdown;\n" +
 		"    var formatShort = window.StudioReportFormatEmptyStateMetricsIssueShortMarkdown;\n" +
 		"    var copy = window.StudioReportCopyEmptyStateMetricsIssueMarkdown;\n" +
+		"    var downloadShort = window.StudioReportDownloadEmptyStateMetricsIssueShortMarkdown;\n" +
+		"    var buildName = window.StudioReportBuildEmptyStateMetricsDownloadName;\n" +
 		"    var show = window.StudioReportShowEmptyStateMetricsPanel;\n" +
 		"    var clear = window.StudioReportClearReportFilters;\n" +
 		"    var setExp = window.StudioReportSetEmptyStateMetricsEventsExpanded;\n" +
 		"    var setKind = window.StudioReportSetEmptyStateMetricsEventKindFilter;\n" +
 		"    var btn = document.querySelector('[data-action=\"copy-empty-state-metrics-issue\"]');\n" +
-		"    if (typeof format !== 'function' || typeof formatShort !== 'function' || typeof copy !== 'function' || typeof show !== 'function' || typeof setKind !== 'function' || !btn) {\n" +
+		"    if (typeof format !== 'function' || typeof formatShort !== 'function' || typeof copy !== 'function' || typeof downloadShort !== 'function' || typeof show !== 'function' || typeof setKind !== 'function' || !btn) {\n" +
 		"      mark('missing');\n" +
 		"      return;\n" +
 		"    }\n" +
@@ -136,6 +140,30 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"      setKind('');\n" +
 		"      applyNamed('default');\n" +
 		"    }\n" +
+		"    var dlNameOk = typeof buildName !== 'function' || String(buildName('empty-state-metrics-issue-short', 'md') || '').indexOf('issue-short') >= 0;\n" +
+		"    var downloaded = '';\n" +
+		"    var capturedName = '';\n" +
+		"    var origCreate = document.createElement.bind(document);\n" +
+		"    document.createElement = function (tag) {\n" +
+		"      var el = origCreate(tag);\n" +
+		"      if (String(tag).toLowerCase() === 'a') {\n" +
+		"        var origClick = el.click.bind(el);\n" +
+		"        el.click = function () { capturedName = String(el.download || ''); };\n" +
+		"      }\n" +
+		"      return el;\n" +
+		"    };\n" +
+		"    try {\n" +
+		"      downloaded = downloadShort();\n" +
+		"      // Also exercise Alt+download path via copy({short, download}).\n" +
+		"      copy({ short: true, download: true });\n" +
+		"    } finally {\n" +
+		"      document.createElement = origCreate;\n" +
+		"    }\n" +
+		"    var downloadOk = typeof downloaded === 'string'\n" +
+		"      && downloaded.indexOf('### studio-reporter 空态 metrics · 预设') >= 0\n" +
+		"      && downloaded.indexOf('```json') < 0\n" +
+		"      && dlNameOk\n" +
+		"      && (capturedName.indexOf('issue-short') >= 0 || capturedName.indexOf('.md') >= 0);\n" +
 		"    setKind('escClear');\n" +
 		"    var mdEsc = format();\n" +
 		"    var escOk = typeof mdEsc === 'string'\n" +
@@ -151,7 +179,7 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"    try { parsed = JSON.parse(embedded); } catch (e2) {}\n" +
 		"    var subsetOk = parsed && Array.isArray(parsed.events) && parsed.events.length >= 1\n" +
 		"      && parsed.events.every(function (ev) { return ev && ev.kind === 'escClear'; });\n" +
-		"    mark((allOk && escOk && subsetOk && presetOk && shortOk) ? 'ok' : ('fail:all=' + allOk + ';esc=' + escOk + ';sub=' + subsetOk + ';preset=' + presetOk + ';short=' + shortOk + ';md=' + String(mdEsc).slice(0, 220)));\n" +
+		"    mark((allOk && escOk && subsetOk && presetOk && shortOk && downloadOk) ? 'ok' : ('fail:all=' + allOk + ';esc=' + escOk + ';sub=' + subsetOk + ';preset=' + presetOk + ';short=' + shortOk + ';dl=' + downloadOk + ';name=' + capturedName + ';md=' + String(mdEsc).slice(0, 220)));\n" +
 		"  }\n" +
 		"  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);\n" +
 		"  else setTimeout(go, 100);\n" +

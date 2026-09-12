@@ -222,6 +222,7 @@
 - [x] 静态报告失败原因空态 metrics 面板工具行展示当前命名预设 chip（`预设·…` 点击循环切换；Shift+点击打开字段编辑器；右键/↓/Alt+点击打开预设菜单；菜单内 ↑↓/Home/End/Enter/Tab 导航，并显示主/次字段摘要；非默认时「回默认」；`cycleEmptyStateMetricsMetaFieldNamedPreset` / `openEmptyStateMetricsMetaPresetMenu` / `describeEmptyStateMetricsMetaFieldNamedPreset`）
 - [x] 静态报告失败原因空态 metrics「贴 issue」Markdown 标题/正文写入当前命名预设（`formatEmptyStateMetricsIssueMarkdown`）
 - [x] 静态报告失败原因空态 metrics「贴 issue」支持 Shift+点击复制短卡片（标题+预设+kind+开启链接；`formatEmptyStateMetricsIssueShortMarkdown`）
+- [x] 静态报告失败原因空态 metrics「贴 issue」支持 Alt+点击下载短卡片 .md（`downloadEmptyStateMetricsIssueShortMarkdown`）
 
 ## 迭代日志
 
@@ -487,10 +488,10 @@
 
 | 2026-09-12 | 失败原因空态 metrics 贴 issue 含命名预设 | 标题 · 预设；正文 meta 字段预设行 |
 
-| 2026-09-12 | 失败原因空态 metrics 贴 issue 短卡片 | Shift+点击；含预设与 kind 过滤 |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue 短卡片 | Shift+点击复制；Alt+点击下载 .md；含预设与 kind |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 短卡片支持 Alt+点击下载 .md 文件**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 短卡片下载文件名包含项目名与预设 id**，或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
 
 
