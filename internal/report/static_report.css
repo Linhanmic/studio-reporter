@@ -156,6 +156,10 @@ html, body {
   line-height: 1.3;
 }
 .action-btn:hover { background: #f7fafc; }
+.action-btn:focus-visible {
+  outline: 2px solid #1f4668;
+  outline-offset: 1px;
+}
 .action-btn:disabled,
 .action-btn[aria-disabled="true"] {
   opacity: 0.45;

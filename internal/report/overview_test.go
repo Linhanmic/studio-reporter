@@ -96,7 +96,7 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`复制全部深链`,
 		`copy-all-fail-reason-links`,
 		`overview-fail-reason-empty-hint`,
-		`当前过滤下无可见失败原因`,
+		`当前过滤下无可见失败原因（Esc 可清除过滤）`,
 		`clear-report-filters`,
 		`清除过滤`,
 		`fail-reason-empty-row`,
@@ -223,6 +223,7 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportSyncBulkFailReasonCopyButtons`,
 		`StudioReportClearReportFilters`,
 		`clearReportFilters`,
+		`failReasonEmptyStateActive`,
 		`clear-report-filters`,
 		`copyFailReasonSnippet`,
 		`formatFailReasonSnippet`,
@@ -278,5 +279,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.fail-reason-empty-row`) {
 		t.Fatal("CSS missing fail-reason-empty-row for filtered empty table placeholder")
+	}
+	if !strings.Contains(staticReportCSS, `.action-btn:focus-visible`) {
+		t.Fatal("CSS missing action-btn:focus-visible for keyboard affordance")
 	}
 }

@@ -137,9 +137,19 @@
     });
     // Tools-row clear button (table cell button stays always in DOM; only tools one toggles).
     document.querySelectorAll('.overview-fail-reason-tools [data-action="clear-report-filters"]').forEach(function (btn) {
-      if (disabled) btn.removeAttribute('hidden');
-      else btn.setAttribute('hidden', '');
+      if (disabled) {
+        btn.removeAttribute('hidden');
+        btn.setAttribute('tabindex', '0');
+      } else {
+        btn.setAttribute('hidden', '');
+        btn.removeAttribute('tabindex');
+      }
     });
+  }
+
+  function failReasonEmptyStateActive() {
+    var btn = document.querySelector('.overview-fail-reason-tools [data-action="clear-report-filters"]');
+    return !!(btn && !btn.hasAttribute('hidden'));
   }
 
   function clearReportFilters() {
@@ -1230,8 +1240,17 @@ function copyFailSummary() {
   });
 
   document.addEventListener('keydown', function (ev) {
-    if (ev.key === 'Escape') {
-      closeLightbox();
+    if (ev.key === 'Escape' || ev.key === 'Esc') {
+      if (isLightboxOpen()) {
+        closeLightbox();
+        return;
+      }
+      // Empty fail-reason state: Esc clears filters (unless typing in an input).
+      if (!isTypingTarget(ev.target) && failReasonEmptyStateActive()) {
+        ev.preventDefault();
+        clearReportFilters();
+        return;
+      }
       return;
     }
     if (isLightboxOpen() && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
@@ -1304,4 +1323,5 @@ function copyFailSummary() {
   window.StudioReportSyncFailReasonOverview = syncFailReasonOverview;
   window.StudioReportSyncBulkFailReasonCopyButtons = syncBulkFailReasonCopyButtons;
   window.StudioReportClearReportFilters = clearReportFilters;
+  window.StudioReportFailReasonEmptyStateActive = failReasonEmptyStateActive;
 })();
