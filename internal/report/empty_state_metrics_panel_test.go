@@ -42,9 +42,12 @@ func TestEmptyStateMetricsPanelToggle(t *testing.T) {
 	body := string(html)
 	for _, want := range []string{
 		`overview-empty-state-metrics`,
+		`overview-empty-state-metrics-text`,
+		`copy-empty-state-metrics-json`,
 		`emptyMetrics=1`,
 		`StudioReportSyncEmptyStateMetricsPanel`,
 		`StudioReportEmptyStateMetricsPanelEnabled`,
+		`StudioReportFormatEmptyStateMetricsJSON`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -83,7 +86,10 @@ func TestEmptyStateMetricsPanelToggle(t *testing.T) {
     sync();
     if (panel.hasAttribute('hidden')) { mark('fail-not-shown'); return; }
     clear();
-    var text = String(panel.textContent || '');
+    var textEl = document.getElementById('overview-empty-state-metrics-text');
+    var text = String((textEl && textEl.textContent) || panel.textContent || '');
+    var btn = panel.querySelector('[data-action="copy-empty-state-metrics-json"]');
+    if (!btn) { mark('fail-no-export-btn'); return; }
     mark(/clear=1/.test(text) ? ('ok:' + text) : ('fail-text:' + text));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);

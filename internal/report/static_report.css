@@ -443,6 +443,10 @@ html, body {
   display: none !important;
 }
 .overview-empty-state-metrics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   margin: 0 0 8px;
   padding: 4px 8px;
   font-size: 10px;
@@ -455,6 +459,14 @@ html, body {
 }
 .overview-empty-state-metrics[hidden] {
   display: none !important;
+}
+.overview-empty-state-metrics-text {
+  flex: 1 1 auto;
+  min-width: 12em;
+}
+.overview-empty-state-metrics .action-btn {
+  font-family: inherit;
+  flex: 0 0 auto;
 }
 .overview-grid {
   display: grid;

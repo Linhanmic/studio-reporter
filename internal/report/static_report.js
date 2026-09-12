@@ -205,6 +205,44 @@
       ' ctrlZ=' + (emptyStateMetrics.ctrlZUndo || 0);
   }
 
+  function snapshotEmptyStateMetrics() {
+    return {
+      clear: emptyStateMetrics.clear || 0,
+      restoreFailOnly: emptyStateMetrics.restoreFailOnly || 0,
+      undo: emptyStateMetrics.undo || 0,
+      escClear: emptyStateMetrics.escClear || 0,
+      ctrlZUndo: emptyStateMetrics.ctrlZUndo || 0,
+      events: emptyStateEvents.slice()
+    };
+  }
+
+  function formatEmptyStateMetricsJSON() {
+    var payload = {
+      kind: 'studio-report-empty-state-metrics',
+      exportedAt: new Date().toISOString(),
+      href: '',
+      counts: {
+        clear: emptyStateMetrics.clear || 0,
+        escClear: emptyStateMetrics.escClear || 0,
+        restoreFailOnly: emptyStateMetrics.restoreFailOnly || 0,
+        undo: emptyStateMetrics.undo || 0,
+        ctrlZUndo: emptyStateMetrics.ctrlZUndo || 0
+      },
+      events: emptyStateEvents.slice()
+    };
+    try { payload.href = String(location.href || ''); } catch (e) {}
+    return JSON.stringify(payload, null, 2);
+  }
+
+  function copyEmptyStateMetricsJSON() {
+    var text = formatEmptyStateMetricsJSON();
+    return copyText(text + '\n').then(function () {
+      flashStatus('已复制空态 metrics JSON（可贴到 issue）');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
   function syncEmptyStateMetricsPanel() {
     var el = document.getElementById('overview-empty-state-metrics');
     if (!el) return;
@@ -212,7 +250,9 @@
       el.setAttribute('hidden', '');
       return;
     }
-    el.textContent = formatEmptyStateMetricsPanel();
+    var textEl = document.getElementById('overview-empty-state-metrics-text');
+    if (textEl) textEl.textContent = formatEmptyStateMetricsPanel();
+    else el.textContent = formatEmptyStateMetricsPanel();
     el.removeAttribute('hidden');
   }
 
@@ -1368,6 +1408,10 @@ function copyFailSummary() {
         undoClearReportFilters();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
+        copyEmptyStateMetricsJSON();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1499,16 +1543,9 @@ function copyFailSummary() {
   window.StudioReportUndoClearReportFilters = undoClearReportFilters;
   window.StudioReportDescribeFilterSnapshot = describeFilterSnapshot;
   window.StudioReportFailReasonEmptyStateActive = failReasonEmptyStateActive;
-  window.StudioReportEmptyStateMetrics = function () {
-    return {
-      clear: emptyStateMetrics.clear || 0,
-      restoreFailOnly: emptyStateMetrics.restoreFailOnly || 0,
-      undo: emptyStateMetrics.undo || 0,
-      escClear: emptyStateMetrics.escClear || 0,
-      ctrlZUndo: emptyStateMetrics.ctrlZUndo || 0,
-      events: emptyStateEvents.slice()
-    };
-  };
+  window.StudioReportEmptyStateMetrics = snapshotEmptyStateMetrics;
+  window.StudioReportFormatEmptyStateMetricsJSON = formatEmptyStateMetricsJSON;
+  window.StudioReportCopyEmptyStateMetricsJSON = copyEmptyStateMetricsJSON;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;
   // Initial paint when enabled via query/localStorage before any action.
