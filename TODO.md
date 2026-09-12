@@ -171,6 +171,7 @@
 - [x] 静态报告失败原因聚合过滤后批量按钮可见性（无可见原因时禁用「复制全部摘要/深链」+ `aria-disabled`；`syncBulkFailReasonCopyButtons`）
 - [x] 静态报告 Overview 失败原因空态提示（过滤后无可见原因时工具行旁轻量说明；`overview-fail-reason-empty-hint`）
 - [x] 静态报告失败原因聚合表空态行（过滤后表格占位「无匹配的失败原因」；`fail-reason-empty-row`）
+- [x] 静态报告失败原因空态一键清除过滤（工具行/空态行「清除过滤」；`clearReportFilters`/`StudioReportClearReportFilters`）
 
 ## 迭代日志
 
@@ -372,7 +373,8 @@
 | 2026-09-12 | 失败原因批量复制按钮过滤态 | 无可见原因时禁用「复制全部摘要/深链」并同步 aria/title |
 | 2026-09-12 | Overview 失败原因空态提示 | 过滤后无可见原因时工具行旁显示轻量说明（aria-live） |
 | 2026-09-12 | 失败原因表空态占位行 | 过滤后表格显示「无匹配的失败原因」占位行，与工具行 hint 呼应 |
+| 2026-09-12 | 失败原因空态一键清除过滤 | 工具行/空态行「清除过滤」重置搜索与结论过滤并恢复可见原因 |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态一键清除过滤**（空态行/提示旁提供「清除过滤」恢复可见原因），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告 Overview 失败原因空态可键盘操作**（清除过滤按钮可聚焦 + Esc 在 Overview 聚焦时清除过滤），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

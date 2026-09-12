@@ -135,6 +135,21 @@
       if (disabled) row.removeAttribute('hidden');
       else row.setAttribute('hidden', '');
     });
+    // Tools-row clear button (table cell button stays always in DOM; only tools one toggles).
+    document.querySelectorAll('.overview-fail-reason-tools [data-action="clear-report-filters"]').forEach(function (btn) {
+      if (disabled) btn.removeAttribute('hidden');
+      else btn.setAttribute('hidden', '');
+    });
+  }
+
+  function clearReportFilters() {
+    state.query = '';
+    state.spec = 'all';
+    state.scenario = 'all';
+    if (searchInput) searchInput.value = '';
+    if (failStepsOnly) setFailStepsOnly(false, { silent: true, skipHash: true });
+    applyFilter();
+    flashStatus('已清除过滤');
   }
 
   // First visible jump target for an Overview fail-reason row (filter / fail-steps aware).
@@ -1176,6 +1191,10 @@ function copyFailSummary() {
         copyAllFailReasonLinks();
         return;
       }
+      if (actionBtn.dataset.action === 'clear-report-filters') {
+        clearReportFilters();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1185,7 +1204,7 @@ function copyFailSummary() {
     // Click count/reason (not a scenario link / copy button) → jump to first visible matching fail.
     var failJump = ev.target.closest('.fail-reason-count, .fail-reason-text, .fail-reason-row');
     if (failJump) {
-      if (ev.target.closest('[data-action="copy-fail-reason-link"], [data-action="copy-fail-reason-snippet"], [data-action="copy-all-fail-reason-snippets"], [data-action="copy-all-fail-reason-links"]')) return;
+      if (ev.target.closest('[data-action="copy-fail-reason-link"], [data-action="copy-fail-reason-snippet"], [data-action="copy-all-fail-reason-snippets"], [data-action="copy-all-fail-reason-links"], [data-action="clear-report-filters"]')) return;
       var row = failJump.classList.contains('fail-reason-row')
         ? failJump
         : failJump.closest('.fail-reason-row');
@@ -1284,4 +1303,5 @@ function copyFailSummary() {
   window.StudioReportCopyAllFailReasonLinks = copyAllFailReasonLinks;
   window.StudioReportSyncFailReasonOverview = syncFailReasonOverview;
   window.StudioReportSyncBulkFailReasonCopyButtons = syncBulkFailReasonCopyButtons;
+  window.StudioReportClearReportFilters = clearReportFilters;
 })();
