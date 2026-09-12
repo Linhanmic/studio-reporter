@@ -255,12 +255,16 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportFormatEmptyStateMetricsEventLine`,
 		`StudioReportSetEmptyStateMetricsEventKindFilter`,
 		`StudioReportEmptyStateMetricsEventKindFilter`,
+		`StudioReportCopyEmptyStateMetricsVisibleEventLines`,
+		`StudioReportFormatEmptyStateMetricsVisibleEventLines`,
 		`overview-empty-state-metrics-events`,
 		`toggle-empty-state-metrics-events`,
 		`copy-empty-state-metrics-event`,
+		`copy-empty-state-metrics-visible-events`,
 		`filter-empty-state-metrics-event-kind`,
 		`overview-empty-state-metrics-event-line`,
 		`overview-empty-state-metrics-event-kinds`,
+		`overview-empty-state-metrics-event-actions`,
 		`StudioReportFormatEmptyStateMetricsIssueMarkdown`,
 		`copy-empty-state-metrics-issue`,
 		`StudioReportDownloadEmptyStateMetricsJSON`,
@@ -351,6 +355,9 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-kind`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-event-kind filter chips")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-actions`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-event-actions for copy-visible")
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics .action-btn:focus-visible`) {
 		t.Fatal("CSS missing metrics panel action-btn:focus-visible")

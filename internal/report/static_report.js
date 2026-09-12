@@ -318,13 +318,20 @@
         '" title="仅显示 ' + label + ' 事件">' + label + '(' + count + ')</button>';
     });
     html += '</div>';
-    var shown = 0;
+    var visibleIdxs = visibleEmptyStateMetricsEventIndexes();
+    var shown = visibleIdxs.length;
+    html += '<div class="overview-empty-state-metrics-event-actions">';
+    html += '<button type="button" class="overview-empty-state-metrics-event-kind' +
+      (!shown ? ' is-disabled' : '') +
+      '" data-action="copy-empty-state-metrics-visible-events"' +
+      (shown ? '' : ' disabled') +
+      ' title="复制当前可见事件行（尊重 kind 过滤）">复制可见(' + shown + ')</button>';
+    html += '</div>';
     html += '<ol class="overview-empty-state-metrics-events-list">';
-    for (i = 0; i < emptyStateEvents.length; i++) {
+    var vi;
+    for (vi = 0; vi < visibleIdxs.length; vi++) {
+      var i = visibleIdxs[vi];
       var entry = emptyStateEvents[i];
-      var entryKind = entry && entry.kind ? String(entry.kind) : '';
-      if (kindFilter && entryKind !== kindFilter) continue;
-      shown++;
       var line = formatEmptyStateMetricsEventLine(entry);
       html += '<li><button type="button" class="overview-empty-state-metrics-event-line"' +
         ' data-action="copy-empty-state-metrics-event" data-event-index="' + i + '"' +
@@ -356,6 +363,44 @@
       flashStatus('已复制事件行：' + preview);
     }).catch(function () {
       flashStatus('复制事件行失败，请检查剪贴板权限');
+    });
+  }
+
+  function visibleEmptyStateMetricsEventIndexes() {
+    var kindFilter = emptyStateMetricsEventKindFilter();
+    var out = [];
+    var i;
+    for (i = 0; i < emptyStateEvents.length; i++) {
+      var entryKind = emptyStateEvents[i] && emptyStateEvents[i].kind
+        ? String(emptyStateEvents[i].kind)
+        : '';
+      if (kindFilter && entryKind !== kindFilter) continue;
+      out.push(i);
+    }
+    return out;
+  }
+
+  function formatEmptyStateMetricsVisibleEventLines() {
+    var idxs = visibleEmptyStateMetricsEventIndexes();
+    var lines = [];
+    var i;
+    for (i = 0; i < idxs.length; i++) {
+      lines.push(formatEmptyStateMetricsEventLine(emptyStateEvents[idxs[i]]));
+    }
+    return lines.join('\n');
+  }
+
+  function copyEmptyStateMetricsVisibleEventLines() {
+    var text = formatEmptyStateMetricsVisibleEventLines();
+    if (!text) {
+      flashStatus('当前无可见事件可复制');
+      return Promise.reject(new Error('no visible events'));
+    }
+    var n = text.split('\n').length;
+    return copyText(text + '\n').then(function () {
+      flashStatus('已复制可见事件 ' + n + ' 行（可贴 issue）');
+    }).catch(function () {
+      flashStatus('复制可见事件失败，请检查剪贴板权限');
     });
   }
 
@@ -1839,6 +1884,10 @@ function copyFailSummary() {
         copyEmptyStateMetricsEventLine(actionBtn.dataset.eventIndex);
         return;
       }
+      if (actionBtn.dataset.action === 'copy-empty-state-metrics-visible-events') {
+        copyEmptyStateMetricsVisibleEventLines();
+        return;
+      }
       if (actionBtn.dataset.action === 'filter-empty-state-metrics-event-kind') {
         setEmptyStateMetricsEventKindFilter(actionBtn.dataset.kind || '');
         return;
@@ -2011,6 +2060,9 @@ function copyFailSummary() {
   window.StudioReportSyncEmptyStateMetricsEvents = syncEmptyStateMetricsEvents;
   window.StudioReportFormatEmptyStateMetricsEventLine = formatEmptyStateMetricsEventLine;
   window.StudioReportCopyEmptyStateMetricsEventLine = copyEmptyStateMetricsEventLine;
+  window.StudioReportFormatEmptyStateMetricsVisibleEventLines = formatEmptyStateMetricsVisibleEventLines;
+  window.StudioReportCopyEmptyStateMetricsVisibleEventLines = copyEmptyStateMetricsVisibleEventLines;
+  window.StudioReportVisibleEmptyStateMetricsEventIndexes = visibleEmptyStateMetricsEventIndexes;
   window.StudioReportEmptyStateMetricsEventKindFilter = emptyStateMetricsEventKindFilter;
   window.StudioReportSetEmptyStateMetricsEventKindFilter = setEmptyStateMetricsEventKindFilter;
   window.StudioReportEmptyStateMetricsPanelSnapshot = emptyStateMetricsPanelSnapshot;

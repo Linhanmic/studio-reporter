@@ -533,6 +533,17 @@ html, body {
   outline: 2px solid #1f4668;
   outline-offset: 1px;
 }
+.overview-empty-state-metrics-event-kind.is-disabled,
+.overview-empty-state-metrics-event-kind:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.overview-empty-state-metrics-event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 0 0 4px;
+}
 .overview-empty-state-metrics-events-list {
   margin: 0;
   padding-left: 1.2em;
