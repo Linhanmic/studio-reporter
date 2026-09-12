@@ -1649,7 +1649,8 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = buildEmptyStateMetricsDownloadName('empty-state-metrics-visible', 'json');
+    var fileName = buildEmptyStateMetricsDownloadName('empty-state-metrics-visible', 'json');
+    a.download = fileName;
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
@@ -1657,7 +1658,7 @@
     setTimeout(function () {
       try { URL.revokeObjectURL(url); } catch (e) {}
     }, 0);
-    flashStatus('已下载可见空态 metrics JSON');
+    flashStatus('已下载可见空态 metrics JSON：' + fileName);
     return text;
   }
 
@@ -1671,7 +1672,12 @@
     }).catch(function () {
       try {
         downloadEmptyStateMetricsVisibleJSON();
-        flashStatus('剪贴板不可用，已改为下载可见 JSON');
+        var el = document.querySelector('.status-msg');
+        var prev = el ? String(el.textContent || '') : '';
+        var idx = prev.indexOf('：');
+        flashStatus(idx >= 0
+          ? ('剪贴板不可用，已改为下载可见 JSON：' + prev.slice(idx + 1))
+          : '剪贴板不可用，已改为下载可见 JSON');
       } catch (e2) {
         flashStatus('复制可见 JSON 失败，请检查剪贴板权限');
       }
@@ -1684,7 +1690,8 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = buildEmptyStateMetricsDownloadName('empty-state-metrics', 'json');
+    var fileName = buildEmptyStateMetricsDownloadName('empty-state-metrics', 'json');
+    a.download = fileName;
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
@@ -1692,7 +1699,7 @@
     setTimeout(function () {
       try { URL.revokeObjectURL(url); } catch (e) {}
     }, 0);
-    flashStatus('已下载空态 metrics JSON');
+    flashStatus('已下载空态 metrics JSON：' + fileName);
     return text;
   }
 
@@ -1703,7 +1710,12 @@
     }).catch(function () {
       try {
         downloadEmptyStateMetricsJSON();
-        flashStatus('剪贴板不可用，已改为下载 JSON');
+        var el = document.querySelector('.status-msg');
+        var prev = el ? String(el.textContent || '') : '';
+        var idx = prev.indexOf('：');
+        flashStatus(idx >= 0
+          ? ('剪贴板不可用，已改为下载 JSON：' + prev.slice(idx + 1))
+          : '剪贴板不可用，已改为下载 JSON');
       } catch (e) {
         flashStatus('复制失败，请检查剪贴板权限');
       }

@@ -104,10 +104,17 @@ func TestEmptyStateMetricsVisibleJSON(t *testing.T) {
 		"      && parsed.totalCount === events.length\n" +
 		"      && parsed.events.every(function (e) { return e && e.kind === 'escClear'; })\n" +
 		"      && all && Array.isArray(all.events) && all.events.length === events.length;\n" +
+		"    var dlText = dlVis();\n" +
+		"    var statusEl = document.querySelector('.status-msg');\n" +
+		"    var statusText = statusEl ? String(statusEl.textContent || '') : '';\n" +
+		"    var statusOk = typeof dlText === 'string'\n" +
+		"      && statusText.indexOf('已下载可见空态 metrics JSON：') >= 0\n" +
+		"      && statusText.indexOf('.json') >= 0\n" +
+		"      && statusText.indexOf('empty-state-metrics-visible') >= 0;\n" +
 		"    Promise.resolve(copyVis()).then(function () {\n" +
-		"      mark((ok && btnOk) ? 'ok' : ('fail:ok=' + ok + ';btn=' + btnOk + ';raw=' + String(raw).slice(0, 180)));\n" +
+		"      mark((ok && btnOk && statusOk) ? 'ok' : ('fail:ok=' + ok + ';btn=' + btnOk + ';status=' + statusText + ';raw=' + String(raw).slice(0, 180)));\n" +
 		"    }).catch(function () {\n" +
-		"      mark((ok && btnOk) ? 'ok' : ('fail-copy:ok=' + ok + ';btn=' + btnOk));\n" +
+		"      mark((ok && btnOk && statusOk) ? 'ok' : ('fail-copy:ok=' + ok + ';btn=' + btnOk + ';status=' + statusText));\n" +
 		"    });\n" +
 		"  }\n" +
 		"  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);\n" +

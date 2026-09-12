@@ -113,7 +113,13 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
     var name = typeof buildName === 'function' ? buildName('empty-state-metrics', 'json') : '';
     var nameOk = typeof name === 'string'
       && /^studio-report-empty-state-metrics__metrics-export__all__\d{8}-\d{6}\.json$/.test(name);
-    mark((ok && dlOk && nameOk) ? ('ok:clear=' + parsed.counts.clear + ';esc=' + parsed.counts.escClear + ';n=' + parsed.events.length + ';panel=1;name=' + name) : ('fail:' + raw.slice(0, 320) + ';name=' + name + ';nameOk=' + nameOk));
+    var statusEl = document.querySelector('.status-msg');
+    var statusText = statusEl ? String(statusEl.textContent || '') : '';
+    // Status may lag one stamp tick vs rebuild; require prefix + project + .json.
+    var statusOk = statusText.indexOf('已下载空态 metrics JSON：') >= 0
+      && statusText.indexOf('metrics-export') >= 0
+      && statusText.indexOf('.json') >= 0;
+    mark((ok && dlOk && nameOk && statusOk) ? ('ok:clear=' + parsed.counts.clear + ';esc=' + parsed.counts.escClear + ';n=' + parsed.events.length + ';panel=1;name=' + name) : ('fail:' + raw.slice(0, 320) + ';name=' + name + ';nameOk=' + nameOk + ';status=' + statusText + ';statusOk=' + statusOk));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);
