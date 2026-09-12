@@ -69,6 +69,9 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
 		`排障完整`,
 		`apply-empty-state-metrics-meta-field-named`,
 		`studio-report-empty-metrics-meta-field-named`,
+		`overview-empty-state-metrics-meta-preset-chip`,
+		`open-empty-state-metrics-meta-fields`,
+		`reset-empty-state-metrics-meta-field-named-preset`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)

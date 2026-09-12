@@ -268,6 +268,7 @@
     syncEmptyStateMetricsPanel();
     try { syncEmptyMetricsMetaPresetInLocation(getActiveEmptyStateMetricsMetaFieldNamedPresetId()); } catch (e2) {}
     try { syncEmptyMetricsEnableURLButtons(); } catch (e3) {}
+    try { syncEmptyStateMetricsMetaPresetToolbarChip(); } catch (e4) {}
     return next;
   }
 
@@ -278,6 +279,7 @@
     syncEmptyStateMetricsPanel();
     try { syncEmptyMetricsMetaPresetInLocation('default'); } catch (e2) {}
     try { syncEmptyMetricsEnableURLButtons(); } catch (e3) {}
+    try { syncEmptyStateMetricsMetaPresetToolbarChip(); } catch (e4) {}
     flashStatus('已恢复 meta 字段默认（主三项）');
     return getEmptyStateMetricsMetaFieldPrefs();
   }
@@ -801,6 +803,46 @@
     return setEmptyStateMetricsMetaFieldPrefs(prefs);
   }
 
+  function syncEmptyStateMetricsMetaPresetToolbarChip() {
+    var chip = document.getElementById('overview-empty-state-metrics-meta-preset-chip');
+    var resetBtn = document.getElementById('overview-empty-state-metrics-meta-preset-reset');
+    if (!chip) return;
+    var activeId = '';
+    var preset = null;
+    try {
+      activeId = getActiveEmptyStateMetricsMetaFieldNamedPresetId() || '';
+      if (activeId) preset = findEmptyStateMetricsMetaFieldNamedPreset(activeId);
+    } catch (e) {}
+    var name = preset && preset.name ? preset.name : (activeId && activeId !== 'default' ? activeId : '默认');
+    var isDefault = !activeId || activeId === 'default';
+    chip.dataset.namedPreset = isDefault ? 'default' : activeId;
+    chip.textContent = '预设·' + name;
+    chip.title = isDefault
+      ? '当前 meta 字段命名预设：默认；点击打开字段编辑器'
+      : ('当前 meta 字段命名预设：' + name + '；点击打开字段编辑器');
+    chip.setAttribute('aria-label', chip.title);
+    chip.classList.toggle('is-custom', !isDefault);
+    if (resetBtn) {
+      if (isDefault) {
+        resetBtn.setAttribute('hidden', '');
+        resetBtn.setAttribute('aria-hidden', 'true');
+      } else {
+        resetBtn.removeAttribute('hidden');
+        resetBtn.setAttribute('aria-hidden', 'false');
+        resetBtn.title = '一键切回默认命名预设（当前：' + name + '）';
+      }
+    }
+  }
+
+  function openEmptyStateMetricsMetaFieldsEditor() {
+    setEmptyStateMetricsMetaFieldsEditorOpen(true);
+    syncEmptyStateMetricsMetaPresetToolbarChip();
+  }
+
+  function resetEmptyStateMetricsMetaFieldNamedPresetToDefault() {
+    return applyEmptyStateMetricsMetaFieldNamedPreset('default');
+  }
+
   function syncEmptyStateMetricsMetaFieldsEditor() {
     var el = document.getElementById('overview-empty-state-metrics-meta-fields');
     var btn = document.querySelector('#overview-empty-state-metrics [data-action="toggle-empty-state-metrics-meta-fields"]');
@@ -854,6 +896,7 @@
     html += '</div>';
     el.innerHTML = html;
     el.removeAttribute('hidden');
+    try { syncEmptyStateMetricsMetaPresetToolbarChip(); } catch (eChip) {}
   }
 
   function readEmptyMetricsMetaMoreFromQuery() {
@@ -1861,6 +1904,7 @@
     el.setAttribute('aria-label', head ? ('空态操作 metrics（' + head + '）') : '空态操作 metrics');
     syncEmptyStateMetricsPanelButtons(el, true);
     syncEmptyStateMetricsMetaFieldsEditor();
+    try { syncEmptyStateMetricsMetaPresetToolbarChip(); } catch (eChip) {}
     syncEmptyStateMetricsEvents();
   }
 
@@ -3024,6 +3068,14 @@ function copyFailSummary() {
         toggleEmptyStateMetricsMetaFieldsEditor();
         return;
       }
+      if (actionBtn.dataset.action === 'open-empty-state-metrics-meta-fields') {
+        openEmptyStateMetricsMetaFieldsEditor();
+        return;
+      }
+      if (actionBtn.dataset.action === 'reset-empty-state-metrics-meta-field-named-preset') {
+        resetEmptyStateMetricsMetaFieldNamedPresetToDefault();
+        return;
+      }
       if (actionBtn.dataset.action === 'copy-empty-state-metrics-meta-fields-json') {
         copyEmptyStateMetricsMetaFieldPrefsJSON();
         return;
@@ -3326,6 +3378,9 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportReadEmptyMetricsMetaPresetFromQuery = readEmptyMetricsMetaPresetFromQuery;
   window.StudioReportApplyEmptyMetricsMetaPresetFromQuery = applyEmptyMetricsMetaPresetFromQuery;
   window.StudioReportSyncEmptyMetricsMetaPresetInLocation = syncEmptyMetricsMetaPresetInLocation;
+  window.StudioReportSyncEmptyStateMetricsMetaPresetToolbarChip = syncEmptyStateMetricsMetaPresetToolbarChip;
+  window.StudioReportOpenEmptyStateMetricsMetaFieldsEditor = openEmptyStateMetricsMetaFieldsEditor;
+  window.StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault = resetEmptyStateMetricsMetaFieldNamedPresetToDefault;
 
   window.StudioReportFormatEmptyStateMetricsMetaFieldValue = formatEmptyStateMetricsMetaFieldValue;
   window.StudioReportSyncEmptyStateMetricsMetaFieldsEditor = syncEmptyStateMetricsMetaFieldsEditor;

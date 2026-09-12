@@ -844,3 +844,14 @@ html, body {
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
+.overview-empty-state-metrics-meta-preset-chip {
+  font-variant-numeric: tabular-nums;
+}
+.overview-empty-state-metrics-meta-preset-chip.is-custom {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.overview-empty-state-metrics-meta-preset-reset {
+  opacity: 0.92;
+}
