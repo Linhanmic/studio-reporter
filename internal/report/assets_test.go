@@ -6,6 +6,46 @@ import (
 	"testing"
 )
 
+func TestManageEmbedsHistoryFailDigest(t *testing.T) {
+	html := string(manageHTMLPage)
+	for _, want := range []string{
+		`assets/history-digest.js`,
+		`StudioReporterHistoryDigest`,
+		`copyFailDigest`,
+		`copyFailDigestLinks`,
+		`showDigest`,
+		`fail-digest.md`,
+		`fail-digest.json`,
+		`probeFailDigestSidecars`,
+		`refreshFailDigestSidecars`,
+		`api/fail-digest`,
+		`topFailReason`,
+		`#overview?failSteps=1`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("manage.html missing %q", want)
+		}
+	}
+
+	js, err := embeddedAssets.ReadFile(path.Join("report-assets", "history-digest.js"))
+	if err != nil {
+		t.Fatalf("read history-digest.js: %v", err)
+	}
+	body := string(js)
+	for _, want := range []string{
+		"buildHistoryFailDigest",
+		"formatHistoryFailDigestMarkdown",
+		"buildHistoryFailDigestOpenLinks",
+		"studio-reporter://open",
+		"failSteps",
+		"resolveDigestGroupOpenTarget",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("history-digest.js missing %q", want)
+		}
+	}
+}
+
 func TestViewerEmbedsFinalReportGuide(t *testing.T) {
 	html := string(viewerHTMLPage)
 	for _, want := range []string{

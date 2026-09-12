@@ -411,6 +411,19 @@ const reportDataEl = document.getElementById('report-data');
           }
           this.persistView();
         },
+        selectNode(id) {
+          if (!id) return;
+          this.selected = id;
+          this.followLive = false;
+          this.expanded = openAccordionIds(this.report, this.expanded, id);
+          this.persistView();
+          Vue.nextTick(() => {
+            const el = document.querySelector(`[data-row-id="${CSS.escape(id)}"]`)
+              || document.getElementById(id)
+              || document.querySelector(`[data-id="${CSS.escape(id)}"]`);
+            if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          });
+        },
         expandAll() {
           this.expanded = accordionPath(this.report);
           this.persistView();
@@ -918,6 +931,20 @@ const reportDataEl = document.getElementById('report-data');
           }
           this._tickTimer = setInterval(() => { this.store.clock = Date.now(); }, 250);
         }
+        this._onHostMessage = (ev) => {
+          const data = ev && ev.data;
+          if (!data) return;
+          if (data.type === 'studio-reporter:filter') {
+            if (data.query != null) this.store.query = String(data.query);
+            if (data.verdict && data.verdict !== 'all') this.store.filter = String(data.verdict);
+            else if (data.verdict === 'all') this.store.filter = 'all';
+            this.store.persistView();
+            return;
+          }
+          if (data.type !== 'studio-reporter:select-node') return;
+          if (data.id) this.store.selectNode(String(data.id));
+        };
+        window.addEventListener('message', this._onHostMessage);
       },
       beforeUnmount() {
         if (this._liveTimer) clearInterval(this._liveTimer);
@@ -926,6 +953,9 @@ const reportDataEl = document.getElementById('report-data');
         this.clearFinalRedirect();
         if (this._ws) {
           try { this._ws.onclose = null; this._ws.close(); } catch (e) {}
+        }
+        if (this._onHostMessage) {
+          window.removeEventListener('message', this._onHostMessage);
         }
       }
     });

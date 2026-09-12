@@ -18,10 +18,10 @@
         </div>
       </div>
       <nav class="tabs" role="tablist">
-        <button type="button" class="tab active" data-tab="run" role="tab" aria-selected="true">运行</button>
-        <button type="button" class="tab" data-tab="report" role="tab" aria-selected="false">报告</button>
-        <button type="button" class="tab" data-tab="history" role="tab" aria-selected="false">历史</button>
-        <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">设置</button>
+        <button type="button" class="tab active" data-tab="run" role="tab" aria-selected="true" tabindex="0">运行</button>
+        <button type="button" class="tab" data-tab="report" role="tab" aria-selected="false" tabindex="-1">报告</button>
+        <button type="button" class="tab" data-tab="history" role="tab" aria-selected="false" tabindex="-1">历史</button>
+        <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false" tabindex="-1">设置</button>
       </nav>
       <div class="status" id="connStatus" title="连接状态">未连接</div>
     </header>
@@ -35,13 +35,56 @@
       <button type="button" id="btnOpenDir" class="btn">打开报告目录…</button>
     </section>
 
+    <section class="run-bar" id="runBar">
+      <label class="connect-label" for="gaugeProjectDir">Gauge 项目</label>
+      <input id="gaugeProjectDir" type="text" list="recentProjectsList" spellcheck="false" placeholder="选择含 specs/ 的 Gauge 工程目录">
+      <datalist id="recentProjectsList"></datalist>
+      <button type="button" id="btnPickGaugeProject" class="btn">浏览…</button>
+      <input id="gaugeSpecs" type="text" spellcheck="false" value="specs" title="规格路径" placeholder="specs">
+      <input id="gaugeEnv" type="text" spellcheck="false" placeholder="env（可选）" title="--env">
+      <button type="button" id="btnStartGauge" class="btn primary">运行 Gauge</button>
+      <button type="button" id="btnStopGauge" class="btn" disabled>停止</button>
+    </section>
+    <section class="session-bar hidden" id="sessionBar" aria-label="会话列表"></section>
+    <pre id="gaugeLog" class="gauge-log hidden" aria-label="Gauge 输出"></pre>
+
     <div class="banner hidden" id="endBanner">
       <span id="endBannerText">套件已结束</span>
       <button type="button" id="btnOpenFinal" class="btn primary">打开终态报告</button>
       <button type="button" id="btnDismissBanner" class="btn ghost">稍后</button>
     </div>
 
-    <main class="panes">
+    <main class="workspace" id="workspace">
+      <aside class="outline-pane" id="outlinePane" aria-label="报告大纲">
+        <div class="outline-head">
+          <strong>大纲</strong>
+          <span id="outlineMeta" class="muted">等待快照…</span>
+        </div>
+        <div class="outline-filters">
+          <input id="outlineQuery" type="search" spellcheck="false" placeholder="搜索规格 / 场景…（/）" aria-label="大纲搜索，快捷键 /">
+          <div class="outline-verdicts" role="group" aria-label="结果过滤">
+            <button type="button" class="outline-filter-btn active" data-verdict="all">全部</button>
+            <button type="button" class="outline-filter-btn" data-verdict="pass">通过</button>
+            <button type="button" class="outline-filter-btn" data-verdict="fail">失败</button>
+            <button type="button" class="outline-filter-btn" data-verdict="skip">跳过</button>
+          </div>
+          <div class="outline-fail-nav" role="group" aria-label="失败场景跳转">
+            <button type="button" class="btn" id="btnOutlinePrevFail" title="上一个失败场景（K）">上一失败</button>
+            <button type="button" class="btn" id="btnOutlineNextFail" title="下一个失败场景（J）">下一失败</button>
+            <span id="outlineFailMeta" class="muted"></span>
+          </div>
+        </div>
+        <div id="outlineTree" class="outline-tree"></div>
+      </aside>
+      <div
+        class="outline-splitter"
+        id="outlineSplitter"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="调整大纲宽度"
+        tabindex="0"
+      ></div>
+      <div class="panes">
       <div class="pane active" id="pane-run" role="tabpanel">
         <iframe id="liveFrame" title="Live viewer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
         <div class="empty" id="liveEmpty">
@@ -57,17 +100,62 @@
         </div>
       </div>
       <div class="pane" id="pane-history" role="tabpanel">
-        <div class="panel">
+        <div class="panel history-panel">
           <div class="panel-toolbar">
             <button type="button" id="btnRefreshHistory" class="btn">刷新</button>
             <button type="button" id="btnPickHub" class="btn">选择报告根目录…</button>
-            <button type="button" id="btnExportPdf" class="btn">导出 PDF</button>
-            <button type="button" id="btnExportSingle" class="btn">导出单文件 HTML</button>
+            <label class="history-hub-pick">
+              <span class="sr-only">最近报告根目录</span>
+              <select id="historyRecentHubs" aria-label="最近报告根目录">
+                <option value="">最近 hub…</option>
+              </select>
+            </label>
+            <button type="button" id="btnSelectFiltered" class="btn" title="勾选当前过滤结果（最多 50）">全选过滤结果</button>
+            <button type="button" id="btnClearSelection" class="btn" title="清除历史勾选" disabled>清除勾选</button>
+            <button type="button" id="btnCompareRuns" class="btn primary" disabled>对比所选（0/2）</button>
+            <button type="button" id="btnCopyFailDigest" class="btn" title="按当前过滤结果聚合 topFailReason，复制 Markdown 摘要（便于 CI/评审）">复制失败摘要</button>
+            <button type="button" id="btnOpenFailSummaryClipboard" class="btn" title="读取剪贴板中的失败摘要 Markdown，打开报告并定位首个 path-style focus">粘贴摘要定位</button>
+            <button type="button" id="btnCopyFailDigestLinks" class="btn" title="复制失败摘要中各类原因最近一次运行的打开深链（换行）">复制摘要深链</button>
+            <button type="button" id="btnOpenFailDigestMd" class="btn" disabled title="打开 hub 旁路 fail-digest.md（套件结束 / 导出 / digest --write 生成）">旁路 MD</button>
+            <button type="button" id="btnOpenFailDigestJson" class="btn" disabled title="打开 hub 旁路 fail-digest.json">旁路 JSON</button>
+            <button type="button" id="btnRevealFailDigest" class="btn" disabled title="在文件管理器中显示 fail-digest 旁路">旁路位置</button>
+            <button type="button" id="btnRefreshFailDigest" class="btn" disabled title="按 hub history.json 重写 fail-digest.md/json（等同 CLI digest --write；不必先导出）">刷新旁路</button>
+            <span id="failDigestSidecarHint" class="muted" aria-live="polite"></span>
+            <button type="button" id="btnHistoryTrend" class="btn" title="根据当前过滤结果分析最近运行趋势与不稳定场景">运行趋势</button>
+            <button type="button" id="btnExportPdf" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出 PDF</button>
+            <button type="button" id="btnExportSingle" class="btn" title="未勾选导出最新；勾选 1+ 次则导出勾选的运行">导出单文件 HTML</button>
+            <button type="button" id="btnCancelExport" class="btn danger hidden" title="取消正在进行的导出">取消导出</button>
+            <button type="button" id="btnRevealRun" class="btn" disabled title="在文件管理器中显示所选运行">打开所在文件夹</button>
+            <button type="button" id="btnCopyPath" class="btn" disabled title="复制所选运行的归档目录路径">复制路径</button>
+            <button type="button" id="btnCopyOpenLinks" class="btn" disabled title="复制所选运行的 studio-reporter://open 深链（多选用换行分隔）">复制打开深链</button>
+            <button type="button" id="btnCopyFailOpenLinks" class="btn" disabled title="复制当前列表中全部失败运行的打开深链（换行分隔）">复制失败打开深链</button>
+            <button type="button" id="btnDeleteRuns" class="btn danger" disabled title="删除勾选的历史归档">删除所选</button>
             <span id="historyMeta" class="muted"></span>
           </div>
+          <div id="exportProgress" class="export-progress hidden" role="status" aria-live="polite" aria-atomic="true">
+            <div class="export-progress-track" aria-hidden="true">
+              <div id="exportProgressBar" class="export-progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="export-progress-meta">
+              <span id="exportProgressLabel">导出中…</span>
+              <span id="exportProgressFile" class="muted" title=""></span>
+            </div>
+          </div>
+          <div class="history-filters">
+            <input id="historyQuery" type="search" spellcheck="false" placeholder="搜索项目 / 时间 / id…" aria-label="历史搜索">
+            <input id="historyFailReasonQuery" type="search" spellcheck="false" placeholder="失败原因关键字…" aria-label="历史失败原因过滤" title="匹配 topFailReason（新归档写入；也可被上方搜索覆盖）">
+            <div class="history-verdicts" role="group" aria-label="历史结果过滤">
+              <button type="button" class="history-filter-btn active" data-verdict="all">全部</button>
+              <button type="button" class="history-filter-btn" data-verdict="pass">通过</button>
+              <button type="button" class="history-filter-btn" data-verdict="fail">失败</button>
+              <button type="button" class="history-filter-btn" data-verdict="skip">跳过</button>
+            </div>
+          </div>
+          <div id="historyTrendPanel" class="history-trend-panel hidden" aria-live="polite"></div>
+          <div id="comparePanel" class="compare-panel hidden"></div>
           <div id="historyList" class="history-list"></div>
           <div class="empty" id="historyEmpty">
-            <p>在「设置」中指定含 <code>history.json</code> 的报告根目录后，这里列出归档运行。</p>
+            <p>在「设置」中指定含 <code>history.json</code> 的报告根目录后，这里列出归档运行。可搜索 / 按结果过滤；勾选 1 次可打开所在文件夹 / 复制路径；勾选 1+ 次可导出、删除或复制打开深链；勾选恰好 2 次可对比，并导出 HTML 分享卡片或复制 Markdown。</p>
           </div>
         </div>
       </div>
@@ -79,20 +167,84 @@
               <input id="settingHubDir" type="text" spellcheck="false" readonly placeholder="未设置">
               <button type="button" id="btnSettingPickHub" class="btn">浏览…</button>
             </div>
+            <div class="field-row recent-hubs-row">
+              <span class="muted">最近</span>
+              <select id="settingRecentHubs" aria-label="最近报告根目录">
+                <option value="">选择最近 hub…</option>
+              </select>
+            </div>
+          </label>
+          <label class="field check">
+            <input id="settingRestoreSession" type="checkbox">
+            <span>启动时恢复上次标签页</span>
           </label>
           <label class="field check">
             <input id="settingAutoJump" type="checkbox">
             <span>套件结束后自动跳转到终态报告</span>
           </label>
+          <label class="field check">
+            <input id="settingNotifySuiteEnd" type="checkbox">
+            <span>套件结束且窗口未聚焦时发送系统通知</span>
+          </label>
+          <label class="field check">
+            <input id="settingWatchHubHistory" type="checkbox">
+            <span>监视报告根目录，自动刷新历史列表</span>
+          </label>
+          <label class="field">
+            <span>运行趋势窗口（最近 N 次）</span>
+            <input id="settingHistoryTrendLimit" type="number" min="3" max="50" value="12" title="历史「运行趋势」分析的最近运行数量">
+          </label>
+          <label class="field">
+            <span>不稳定场景列表上限</span>
+            <input id="settingHistoryTrendFlakyLimit" type="number" min="5" max="50" value="20" title="趋势面板最多列出的翻转场景数">
+          </label>
+          <label class="field">
+            <span>界面主题</span>
+            <select id="settingTheme" aria-label="界面主题">
+              <option value="system">跟随系统</option>
+              <option value="dark">深色</option>
+              <option value="light">浅色</option>
+            </select>
+          </label>
           <label class="field">
             <span>自动跳转倒计时（秒）</span>
             <input id="settingJumpSeconds" type="number" min="0" max="60" value="5">
           </label>
+          <label class="field">
+            <span>Discover 超时（秒）</span>
+            <input id="settingDiscoverTimeout" type="number" min="5" max="120" value="20" title="启动 Gauge 后等待 websocket 宣告的最长时间">
+          </label>
+          <label class="field">
+            <span>Gauge 可执行文件（默认 PATH 中的 gauge）</span>
+            <input id="settingGaugeBin" type="text" spellcheck="false" placeholder="gauge">
+          </label>
+          <div class="field">
+            <span>本机 Gauge 插件（studio-reporter）</span>
+            <div class="field-row">
+              <span id="pluginDetectStatus" class="plugin-status muted">检测中…</span>
+              <button type="button" id="btnRefreshPlugin" class="btn">重新检测</button>
+            </div>
+            <p id="pluginDetectHint" class="hint muted"></p>
+          </div>
+          <label class="field check">
+            <input id="settingAutoCheckUpdates" type="checkbox">
+            <span>启动时检查 Desktop 更新（仅打包安装包；来源 GitHub Releases）</span>
+          </label>
+          <div class="field">
+            <span>Desktop 更新</span>
+            <div class="field-row">
+              <span id="updaterStatus" class="plugin-status muted">尚未检查</span>
+              <button type="button" id="btnCheckUpdates" class="btn">检查更新</button>
+              <button type="button" id="btnQuitInstall" class="btn hidden">重启并安装</button>
+            </div>
+            <p class="hint muted">签名证书未配置时，部分平台可能无法完成静默校验；可仍从 Releases 手动下载。</p>
+          </div>
           <div class="field-row">
             <button type="button" id="btnSaveSettings" class="btn primary">保存设置</button>
             <span id="settingsStatus" class="muted"></span>
           </div>
         </div>
+      </div>
       </div>
     </main>
   </div>

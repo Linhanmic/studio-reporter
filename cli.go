@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gaugestudio/studio-reporter/internal/report"
 )
@@ -44,6 +46,8 @@ func dispatch(args []string, gaugeExecution bool, stdout, stderr io.Writer) int 
 		return runGenerateCmd(rest, stdout, stderr)
 	case "serve":
 		return runServeCmd(rest, stdout, stderr)
+	case "digest":
+		return runDigestCmd(rest, stdout, stderr)
 	case "plugin", "start":
 		return runPluginCmd(rest, stdout, stderr)
 	default:
@@ -63,6 +67,7 @@ USAGE
 COMMANDS
   generate   Rebuild HTML/PDF/single-file report from a .uhilreport
   serve      Serve a report hub over HTTP (history / manage console)
+  digest     Aggregate topFailReason across hub history (Markdown/JSON)
   plugin     Run as a Gauge reporter plugin (gRPC + live WebSocket)
   version    Print version
   help       Show this help or command help
@@ -70,6 +75,10 @@ COMMANDS
 EXAMPLES
   studio-reporter generate --input run.uhilreport --out /tmp/out --pdf --single
   studio-reporter serve --dir reports/studio-report --addr 127.0.0.1:8765
+  studio-reporter digest --dir reports/studio-report
+  studio-reporter digest --dir reports/studio-report --format json
+  studio-reporter digest --dir reports/studio-report --write
+  studio-reporter digest --dir reports/studio-report --check --max-age 24h
   studio-reporter plugin          # same as: studio-reporter --start
   studio-reporter version
 
@@ -88,6 +97,13 @@ func printCommandHelp(name string, stdout, stderr io.Writer) int {
 	case "serve":
 		fmt.Fprintln(stdout, "studio-reporter serve — HTTP hub for history / manage.html")
 		fs := newServeFlagSet(stderr)
+		fs.SetOutput(stdout)
+		fs.PrintDefaults()
+		return 0
+	case "digest":
+		fmt.Fprintln(stdout, "studio-reporter digest — aggregate topFailReason across hub history")
+		fmt.Fprintln(stdout, "Also: --check validates fail-digest.json formatVersion + generatedAt for CI freshness gates.")
+		fs := newDigestFlagSet(stderr)
 		fs.SetOutput(stdout)
 		fs.PrintDefaults()
 		return 0
@@ -159,6 +175,76 @@ func runServeCmd(args []string, stdout, stderr io.Writer) int {
 	if err := serveReportDir(*dir, *addr); err != nil {
 		fmt.Fprintf(stderr, "studio-reporter: %v\n", err)
 		return 1
+	}
+	return 0
+}
+
+func runDigestCmd(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("digest", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	dir := fs.String("dir", "", "Report hub directory containing history.json (required unless --file with --check)")
+	limit := fs.Int("limit", 15, "Max distinct fail reasons to include")
+	format := fs.String("format", "markdown", "Output format: markdown|json")
+	writeHub := fs.Bool("write", false, "Also write fail-digest.md and fail-digest.json into the hub directory")
+	outPath := fs.String("out", "", "Optional output file path (in addition to stdout)")
+	check := fs.Bool("check", false, "Validate fail-digest.json freshness (formatVersion + generatedAt); exit non-zero on failure")
+	maxAgeStr := fs.String("max-age", "24h", "With --check: maximum age of generatedAt (Go duration)")
+	requireVersion := fs.Int("require-version", historyFailDigestFormatVersion, "With --check: required formatVersion")
+	filePath := fs.String("file", "", "With --check: path to fail-digest.json (default: <dir>/fail-digest.json)")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	hub := strings.TrimSpace(*dir)
+
+	if *check {
+		jsonPath := strings.TrimSpace(*filePath)
+		if jsonPath == "" {
+			if hub == "" {
+				fmt.Fprintln(stderr, "studio-reporter digest --check: --dir or --file is required")
+				fs.PrintDefaults()
+				return 2
+			}
+			jsonPath = filepath.Join(hub, "fail-digest.json")
+		}
+		maxAge, err := time.ParseDuration(strings.TrimSpace(*maxAgeStr))
+		if err != nil {
+			fmt.Fprintf(stderr, "studio-reporter digest --check: invalid --max-age: %v\n", err)
+			return 2
+		}
+		if err := checkFailDigestSidecar(jsonPath, *requireVersion, maxAge, time.Now()); err != nil {
+			fmt.Fprintf(stderr, "studio-reporter digest --check: %v\n", err)
+			return 1
+		}
+		fmt.Fprintf(stdout, "studio-reporter digest --check: ok (%s; formatVersion=%d; max-age=%s)\n", jsonPath, *requireVersion, maxAge)
+		return 0
+	}
+
+	if hub == "" {
+		fmt.Fprintln(stderr, "studio-reporter digest: --dir is required")
+		fs.PrintDefaults()
+		return 2
+	}
+	d, err := loadHistoryFailDigestFromHub(hub, *limit)
+	if err != nil {
+		fmt.Fprintf(stderr, "studio-reporter digest: %v\n", err)
+		return 1
+	}
+	if err := writeHistoryFailDigest(stdout, d, *format); err != nil {
+		fmt.Fprintf(stderr, "studio-reporter digest: %v\n", err)
+		return 1
+	}
+	if path := strings.TrimSpace(*outPath); path != "" {
+		if err := writeHistoryFailDigestFile(path, d, *format); err != nil {
+			fmt.Fprintf(stderr, "studio-reporter digest: --out: %v\n", err)
+			return 1
+		}
+	}
+	if *writeHub {
+		if err := writeHistoryFailDigestSidecars(d.HubDir, d); err != nil {
+			fmt.Fprintf(stderr, "studio-reporter digest: --write: %v\n", err)
+			return 1
+		}
+		fmt.Fprintf(stderr, "studio-reporter digest: wrote fail-digest.md and fail-digest.json under %s\n", d.HubDir)
 	}
 	return 0
 }

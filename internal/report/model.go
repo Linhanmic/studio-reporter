@@ -20,6 +20,7 @@ const (
 	FormatVersion            = 1
 	PluginVersion            = "0.5.2"
 	WritePDFEnv              = "GAUGE_STUDIO_WRITE_PDF"
+	WritePDFFailStepsEnv     = "GAUGE_STUDIO_PDF_FAIL_STEPS"
 	WriteSingleHTMLEnv       = "GAUGE_STUDIO_WRITE_SINGLE"
 	UhilReportExt            = ".uhilreport"
 	LiveReportJSONFile       = "report.json"

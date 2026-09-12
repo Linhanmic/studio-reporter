@@ -29,6 +29,25 @@
       padding: 6px 8px; background: #eef3f8; border-bottom: 1px solid #c5d0dc;
     }
     .toolbar .hint { font-size: 11px; color: #8a9aab; margin-left: 4px; }
+    .digest-pane {
+      flex: 0 0 auto;
+      background: #fff;
+      border-bottom: 1px solid #c5d0dc;
+      padding: 8px 10px;
+      max-height: 220px;
+      overflow: auto;
+    }
+    .digest-pane h2 { margin: 0 0 6px; font-size: 12px; color: #1f4668; }
+    .digest-pane table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .digest-pane th, .digest-pane td { border: 1px solid #c5d0dc; padding: 3px 6px; text-align: left; }
+    .digest-pane th { background: #f7fafc; color: #5a6a7a; }
+    .digest-pane .muted { color: #8a9aab; }
+    .digest-pane a { color: #1f4668; }
+    .digest-pane button.linkish {
+      appearance: none; border: 0; background: transparent; color: #1f4668;
+      cursor: pointer; font: inherit; padding: 0 4px 0 0; text-decoration: underline;
+    }
+    .digest-pane button.linkish:disabled { opacity: .45; cursor: not-allowed; text-decoration: none; }
     .compare-pane {
       flex: 0 0 auto;
       background: #fff;
@@ -76,9 +95,55 @@
         <el-button size="small" type="primary" @click="openCurrent">打开当前报告</el-button>
         <el-button size="small" @click="reload">刷新</el-button>
         <el-button size="small" :disabled="selected.length !== 2" @click="clearSelection">清除对比</el-button>
-        <span v-if="!canDelete" class="hint">删除操作需要通过 studio-reporter --serve 打开本页</span>
+        <el-button size="small" :disabled="!runs.length" @click="toggleDigest" :type="showDigest ? 'primary' : 'default'">{{ showDigest ? '隐藏失败摘要' : '失败摘要' }}</el-button>
+        <el-button size="small" :disabled="!failDigest.groups.length" @click="copyFailDigest">复制失败摘要</el-button>
+        <el-button size="small" :disabled="!failDigest.groups.length" @click="copyFailDigestLinks">复制摘要深链</el-button>
+        <el-button size="small" :disabled="!sidecar.md" tag="a" :href="sidecar.md ? 'fail-digest.md' : undefined" target="_blank" @click="onSidecarClick($event, 'md')">旁路 MD</el-button>
+        <el-button size="small" :disabled="!sidecar.json" tag="a" :href="sidecar.json ? 'fail-digest.json' : undefined" target="_blank" @click="onSidecarClick($event, 'json')">旁路 JSON</el-button>
+        <el-button size="small" :disabled="!canDelete || refreshingSidecar" :loading="refreshingSidecar" @click="refreshFailDigestSidecars">刷新旁路</el-button>
+        <span v-if="sidecar.checked && !sidecar.md && !sidecar.json" class="hint">尚无 fail-digest 旁路（跑完套件、digest --write，或点「刷新旁路」）</span>
+        <span v-else-if="sidecar.md || sidecar.json" class="hint">旁路：{{ sidecar.md ? 'md' : '' }}{{ sidecar.md && sidecar.json ? '+' : '' }}{{ sidecar.json ? 'json' : '' }}</span>
+        <span v-if="!canDelete" class="hint">删除 / 刷新旁路需要通过 studio-reporter --serve 打开本页</span>
         <span v-else-if="selected.length < 2" class="hint">再选 {{ 2 - selected.length }} 次运行以对比</span>
       </div>
+      <section v-if="showDigest" class="digest-pane">
+        <h2>历史失败摘要（{{ failDigest.failRunCount }} 次失败 / {{ failDigest.groups.length }} 类原因）</h2>
+        <p v-if="sidecar.md || sidecar.json" class="muted">
+          磁盘旁路：
+          <a v-if="sidecar.md" href="fail-digest.md" target="_blank" rel="noopener">fail-digest.md</a>
+          <template v-if="sidecar.md && sidecar.json"> · </template>
+          <a v-if="sidecar.json" href="fail-digest.json" target="_blank" rel="noopener">fail-digest.json</a>
+          （与上方实时聚合同源契约；CI 可直接收集）
+        </p>
+        <p v-if="!failDigest.groups.length" class="muted">{{ failDigest.failRunCount ? '失败运行未写入 topFailReason。' : '窗口内无失败运行。' }}</p>
+        <table v-else>
+          <thead>
+            <tr><th>#</th><th>次数</th><th>最近运行</th><th>打开</th><th>失败原因</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="(g, i) in failDigest.groups" :key="g.reason">
+              <td>{{ i + 1 }}</td>
+              <td>{{ g.count }}</td>
+              <td>
+                <button
+                  v-if="g.lastRunId"
+                  type="button"
+                  class="linkish"
+                  @click="openDigestGroup(g)"
+                  :title="g.lastRunFocus ? ('打开并定位 ' + g.lastRunFocus) : '打开最近失败运行'"
+                >{{ g.lastRunId }}</button>
+                <span v-else>—</span>
+              </td>
+              <td>
+                <button type="button" class="linkish" :disabled="!g.lastRunId" @click="openDigestGroup(g)">打开</button>
+                <button type="button" class="linkish" :disabled="!digestDeepLinkFor(g)" @click="copyDigestGroupLink(g)">复制深链</button>
+              </td>
+              <td>{{ g.reason }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-if="failDigest.runsWithoutReason && failDigest.runsWithoutReason.length" class="muted">另有 {{ failDigest.runsWithoutReason.length }} 次失败无原因文本。</p>
+      </section>
       <section v-if="compare" class="compare-pane">
         <h2>对比：{{ compare.base.timestamp || compare.base.id }} → {{ compare.target.timestamp || compare.target.id }}</h2>
         <div class="compare-grid">
@@ -122,6 +187,9 @@
             <template #default="{ row }">{{ counts(row, 'steps') }}</template>
           </el-table-column>
           <el-table-column label="运行时间" width="112" prop="duration"></el-table-column>
+          <el-table-column label="失败原因" min-width="160" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.topFailReason || row.failReason || '—' }}</template>
+          </el-table-column>
           <el-table-column label="操作" width="150">
             <template #default="{ row }">
               <el-button size="small" @click="openRun(row)">打开</el-button>
@@ -139,6 +207,7 @@
   </div>
   <script src="assets/vue.global.prod.js"></script>
   <script src="assets/element-plus.full.min.js"></script>
+  <script src="assets/history-digest.js"></script>
   <script>
     (function () {
       function loadScriptData(src, key) {
@@ -202,10 +271,20 @@
             runs: [],
             selected: [],
             formatVersion: '-',
+            showDigest: false,
+            refreshingSidecar: false,
+            sidecar: { checked: false, md: false, json: false },
             canDelete: window.location.protocol === 'http:' || window.location.protocol === 'https:'
           };
         },
         computed: {
+          failDigest: function () {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api || typeof api.buildHistoryFailDigest !== 'function') {
+              return { runCount: 0, failRunCount: 0, groups: [], runsWithoutReason: [] };
+            }
+            return api.buildHistoryFailDigest(this.runs, { limit: 15 });
+          },
           compare: function () {
             if (this.selected.length !== 2) return null;
             // Newer selection is target; keep chronological base→target by timestamp when possible.
@@ -217,6 +296,148 @@
           }
         },
         methods: {
+          probeFailDigestSidecars: async function () {
+            var self = this;
+            async function exists(name) {
+              try {
+                var res = await fetch(name + '?ts=' + Date.now(), { method: 'GET', cache: 'no-store' });
+                if (!res.ok) return false;
+                var ct = String(res.headers.get('content-type') || '');
+                // Static servers / file:// may serve HTML fallback for missing files.
+                if (ct.indexOf('text/html') !== -1) return false;
+                if (name.indexOf('.json') !== -1) {
+                  var body = await res.clone().text();
+                  try { JSON.parse(body); } catch (e) { return false; }
+                }
+                return true;
+              } catch (e) {
+                return false;
+              }
+            }
+            var md = await exists('fail-digest.md');
+            var json = await exists('fail-digest.json');
+            self.sidecar = { checked: true, md: md, json: json };
+          },
+          refreshFailDigestSidecars: async function () {
+            if (!this.canDelete) {
+              ElementPlus.ElMessage.warning('刷新旁路需要通过 studio-reporter --serve 打开本页');
+              return;
+            }
+            this.refreshingSidecar = true;
+            try {
+              var res = await fetch('api/fail-digest', { method: 'POST', cache: 'no-store' });
+              if (!res.ok) {
+                ElementPlus.ElMessage.error('刷新旁路失败：' + (await res.text()));
+                return;
+              }
+              var body = await res.json();
+              await this.probeFailDigestSidecars();
+              ElementPlus.ElMessage.success(
+                '已刷新旁路：' + (body.groupCount || 0) + ' 类原因 / ' + (body.failRunCount || 0) + ' 次失败'
+              );
+            } catch (e) {
+              ElementPlus.ElMessage.error('刷新旁路失败：' + e);
+            } finally {
+              this.refreshingSidecar = false;
+            }
+          },
+          onSidecarClick: function (ev, kind) {
+            var ok = kind === 'json' ? this.sidecar.json : this.sidecar.md;
+            if (!ok) {
+              ev.preventDefault();
+              ElementPlus.ElMessage.warning('旁路文件尚不存在');
+            }
+          },
+          openLinkFor: function (runId, focus) {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api || !runId) return '';
+            return api.buildOpenDeepLinkForRun(runId, '', focus || '');
+          },
+          digestDeepLinkFor: function (group) {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api || typeof api.resolveDigestGroupOpenTarget !== 'function') {
+              var runId = String((group && group.lastRunId) || '').trim();
+              return this.openLinkFor(runId, group && group.lastRunFocus);
+            }
+            var target = api.resolveDigestGroupOpenTarget(group);
+            if (!target) return '';
+            return api.buildOpenDeepLinkForRun(target.runId, '', target.focus);
+          },
+          openDigestGroup: function (group) {
+            var api = window.StudioReporterHistoryDigest;
+            var target =
+              api && typeof api.resolveDigestGroupOpenTarget === 'function'
+                ? api.resolveDigestGroupOpenTarget(group)
+                : null;
+            var runId = target ? target.runId : String((group && group.lastRunId) || '').trim();
+            var focus = target ? target.focus : String((group && group.lastRunFocus) || '').trim();
+            if (!runId) {
+              ElementPlus.ElMessage.warning('该失败原因没有可打开的最近运行');
+              return;
+            }
+            var row = (this.runs || []).find(function (r) {
+              return String(r.id || '') === runId;
+            });
+            if (!row) {
+              ElementPlus.ElMessage.warning('历史列表中找不到运行 ' + runId);
+              return;
+            }
+            var base = row.relDir ? row.relDir + '/index.html' : 'index.html';
+            var hash = focus ? focus + '?failSteps=1' : 'overview?failSteps=1';
+            window.location.href = base + '#' + hash;
+          },
+          copyDigestGroupLink: function (group) {
+            var link = this.digestDeepLinkFor(group);
+            if (!link) {
+              ElementPlus.ElMessage.warning('没有可复制的打开深链');
+              return;
+            }
+            this.copyText(link, '已复制失败原因打开深链');
+          },
+          toggleDigest: function () {
+            this.showDigest = !this.showDigest;
+            if (this.showDigest) this.probeFailDigestSidecars();
+          },
+          copyText: async function (text, okMsg) {
+            try {
+              await navigator.clipboard.writeText(text);
+              ElementPlus.ElMessage.success(okMsg);
+            } catch (e) {
+              ElementPlus.ElMessage.error('复制失败：' + e);
+            }
+          },
+          copyFailDigest: function () {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api) {
+              ElementPlus.ElMessage.error('当前页面未加载失败摘要模块');
+              return;
+            }
+            var md = api.formatHistoryFailDigestMarkdown(this.failDigest, {
+              title: '历史失败摘要',
+              hubDir: '',
+              includeOpenLinks: true,
+            });
+            this.copyText(md, this.failDigest.failRunCount
+              ? ('已复制失败摘要：' + this.failDigest.groups.length + ' 类原因')
+              : '已复制失败摘要（无失败）');
+          },
+          copyFailDigestLinks: function () {
+            var api = window.StudioReporterHistoryDigest;
+            if (!api) {
+              ElementPlus.ElMessage.error('当前页面未加载失败摘要模块');
+              return;
+            }
+            var links = api.buildHistoryFailDigestOpenLinks(this.failDigest, {
+              hubDir: '',
+              mode: 'latest',
+            });
+            if (!String(links || '').trim()) {
+              ElementPlus.ElMessage.warning('没有可复制的失败打开深链');
+              return;
+            }
+            var n = links.split('\n').filter(Boolean).length;
+            this.copyText(links, '已复制 ' + n + ' 条失败摘要打开深链');
+          },
           verdictLabel: function (v) { return { pass: '通过', fail: '失败', skip: '跳过' }[v] || '—'; },
           tagType: function (v) { return { pass: 'success', fail: 'danger', skip: 'info' }[v] || 'info'; },
           rowClass: function (scope) {
@@ -260,10 +481,12 @@
           },
           openCurrent: function () { window.location.href = 'index.html'; },
           openRun: function (row) {
-            if (row.relDir) {
-              window.location.href = row.relDir + '/index.html';
+            var base = row.relDir ? (row.relDir + '/index.html') : 'index.html';
+            // Align with Desktop/history digest: failed runs open in fail-steps-only.
+            if (String(row.verdict || '').toLowerCase() === 'fail') {
+              window.location.href = base + '#overview?failSteps=1';
             } else {
-              window.location.href = 'index.html';
+              window.location.href = base;
             }
           },
           reload: async function () {
@@ -271,6 +494,7 @@
             this.runs = (data && data.runs) || [];
             this.formatVersion = (data && data.formatVersion) || '-';
             this.selected = [];
+            await this.probeFailDigestSidecars();
           },
           removeRun: async function (row) {
             try {

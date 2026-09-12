@@ -65,6 +65,36 @@ func historyServeMux(root string) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"ok": "true", "id": id})
 	})
+	mux.HandleFunc("/api/fail-digest", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			if !requestIsLoopback(r) {
+				http.Error(w, "refresh is only allowed from localhost", http.StatusForbidden)
+				return
+			}
+			d, err := loadHistoryFailDigestFromHub(root, 15)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if err := writeHistoryFailDigestSidecars(root, d); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"ok":           true,
+				"hubDir":       d.HubDir,
+				"runCount":     d.RunCount,
+				"failRunCount": d.FailRunCount,
+				"groupCount":   len(d.Groups),
+				"md":           "fail-digest.md",
+				"json":         "fail-digest.json",
+			})
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 	mux.Handle("/", noCache(http.FileServer(http.Dir(root))))
 	return mux
 }

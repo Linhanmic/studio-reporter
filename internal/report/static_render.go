@@ -2,6 +2,7 @@ package report
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html"
 	"strings"
@@ -30,8 +31,11 @@ func RenderReportHTML(r *Report) ([]byte, error) {
 	b.WriteString(html.EscapeString("Test Report Viewer — " + r.ProjectName))
 	b.WriteString("</title>\n<style>\n")
 	b.WriteString(staticReportCSS)
-	b.WriteString("</style>\n</head>\n<body>\n<div class=\"app-shell\">\n")
+	b.WriteString("</style>\n</head>\n<body>\n")
+	writeStudioReportMetaJSON(&b, r)
+	b.WriteString("<div class=\"app-shell\">\n")
 	writeStaticHeader(&b, r)
+	writePrintScopeBanner(&b)
 	writeFilterToolbar(&b, r.Summary.Specs, r.Summary.Scenarios)
 	b.WriteString("<div class=\"workspace\">\n")
 	writeNavPane(&b, r)
@@ -63,6 +67,40 @@ func RenderSnapshotHTML(snap *LiveSnapshot) ([]byte, error) {
 	return RenderReportHTML(snap.Report)
 }
 
+// writeStudioReportMetaJSON embeds a machine-readable report identity blob for
+// empty-state metrics / issue paste exports (project, verdict, generatedAt).
+func writeStudioReportMetaJSON(b *bytes.Buffer, r *Report) {
+	if b == nil || r == nil {
+		return
+	}
+	payload := map[string]any{
+		"projectName":    r.ProjectName,
+		"verdict":        r.Verdict,
+		"failed":         r.Failed,
+		"environment":    r.Environment,
+		"timestamp":      r.Timestamp,
+		"timestampISO":   r.TimestampISO,
+		"duration":       r.Duration,
+		"pluginVersion":  r.Meta.PluginVersion,
+		"formatVersion":  r.Meta.FormatVersion,
+		"hostName":       r.Meta.HostName,
+		"generatedAt":    r.Meta.GeneratedAt,
+		"generatedAtISO": r.Meta.GeneratedAtISO,
+		"projectRoot":    r.Meta.ProjectRoot,
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return
+	}
+	b.WriteString(`<script type="application/json" id="studio-report-meta">`)
+	b.Write(raw)
+	b.WriteString("</script>\n")
+}
+
+func writePrintScopeBanner(b *bytes.Buffer) {
+	b.WriteString("<div class=\"print-scope-banner\" id=\"print-scope-banner\" hidden aria-hidden=\"true\"></div>\n")
+}
+
 func writeStaticHeader(b *bytes.Buffer, r *Report) {
 	b.WriteString("<header class=\"app-header\"><div class=\"header-row\"><h1>")
 	b.WriteString(html.EscapeString("Test Report Viewer — " + r.ProjectName))
@@ -84,9 +122,9 @@ func writeStaticHeader(b *bytes.Buffer, r *Report) {
 		b.WriteString(html.EscapeString(r.Tags))
 	}
 	b.WriteString("</div>\n<div class=\"stat-row\">\n")
-	writeStatCard(b, "规格书", r.Summary.Specs)
-	writeStatCard(b, "场景", r.Summary.Scenarios)
-	writeStatCard(b, "步骤", r.Summary.Steps)
+	writeStatCard(b, "规格书", "specs", r.Summary.Specs)
+	writeStatCard(b, "场景", "scenarios", r.Summary.Scenarios)
+	writeStatCard(b, "步骤", "steps", r.Summary.Steps)
 	b.WriteString("<div class=\"stat-card\"><div class=\"label\">运行时间</div><div class=\"value\">")
 	b.WriteString(html.EscapeString(r.Duration))
 	b.WriteString("</div><div class=\"sub\">成功率 ")
@@ -129,7 +167,7 @@ func writeHookAlert(b *bytes.Buffer, h *HookFailure, name string) {
 
 func writeSpecBlock(b *bytes.Buffer, spec *SpecReport, open bool) {
 	tone := toneClass(spec.Verdict)
-	writeReportBlockOpen(b, tone, spec.Verdict, "spec", spec.ID, open)
+	writeReportBlockOpen(b, tone, spec.Verdict, "spec", spec.ID, spec.Heading, open)
 	writeBlockSummary(b, html.EscapeString(spec.Heading), "规格书", spec.Verdict, spec.Duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	if len(spec.Folders) > 0 {
@@ -169,7 +207,7 @@ func writeBodyRow(b *bytes.Buffer, row bodyRow) {
 		kind = "scenario"
 	}
 	tone := toneClass(row.verdict)
-	writeReportBlockOpen(b, tone, row.verdict, kind, "", row.verdict == VerdictFail)
+	writeReportBlockOpen(b, tone, row.verdict, kind, "", bodyName(row), row.verdict == VerdictFail)
 	writeBlockSummary(b, html.EscapeString(bodyName(row)), bodyTypeLabel(row), row.verdict, row.duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	if row.kind == "datarow" && len(row.headers) > 0 {
@@ -183,7 +221,7 @@ func writeBodyRow(b *bytes.Buffer, row bodyRow) {
 
 func writeScenarioBlock(b *bytes.Buffer, scn ScenarioReport, open bool) {
 	tone := toneClass(scn.Verdict)
-	writeReportBlockOpen(b, tone, scn.Verdict, "scenario", scn.ID, open)
+	writeReportBlockOpen(b, tone, scn.Verdict, "scenario", scn.ID, scn.Heading, open)
 	writeBlockSummary(b, html.EscapeString(scn.Heading), "场景", scn.Verdict, scn.Duration)
 	b.WriteString("<div class=\"block-body\">\n")
 	writeHookAlert(b, scn.PreHookFailure, "Before Scenario")
@@ -240,7 +278,7 @@ func writeConceptBlock(b *bytes.Buffer, item ItemReport) {
 	tone := toneClass(verdict)
 	name := itemTextHTML(item)
 	open := verdict == VerdictFail
-	writeReportBlockOpen(b, tone, verdict, "concept", "", open)
+	writeReportBlockOpen(b, tone, verdict, "concept", "", "", open)
 	writeBlockSummary(b, name, "概念", verdict, itemDurationStr(item))
 	b.WriteString("<div class=\"block-body\">\n")
 	for _, child := range concept.Items {
@@ -267,7 +305,7 @@ func writeStepBlock(b *bytes.Buffer, phase string, item ItemReport) {
 		return
 	}
 	open := verdict == VerdictFail
-	writeReportBlockOpen(b, tone, verdict, "step", "", open)
+	writeReportBlockOpen(b, tone, verdict, "step", "", "", open)
 	writeBlockSummary(b, name, label, verdict, dur)
 	b.WriteString("<div class=\"block-body\">\n")
 	writeStepExtras(b, step)

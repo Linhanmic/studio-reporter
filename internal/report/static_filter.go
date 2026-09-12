@@ -2,7 +2,6 @@ package report
 
 import (
 	"bytes"
-	"fmt"
 	"html"
 	"strconv"
 )
@@ -15,6 +14,11 @@ func writeFilterToolbar(b *bytes.Buffer, specs, scenarios Counts) {
 	b.WriteString("<div class=\"toolbar-actions\">")
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"expand-all\">全部展开</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"collapse-all\">全部折叠</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"fail-steps-only\" aria-pressed=\"false\" title=\"隐藏通过/跳过的场景与步骤，只保留失败场景中的失败步骤并展开\">仅失败步骤</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"copy-fail-summary\" title=\"复制当前可见失败场景的摘要到剪贴板\">复制失败摘要</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"copy-fail-summary-locator-example\" title=\"复制一条 path-style 定位示例行（与 Desktop 空剪贴板引导同源，便于粘贴摘要定位联调）\">复制定位示例</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"copy-share-link\" title=\"复制当前过滤/定位的可分享链接到剪贴板\">复制可见范围链接</button>")
+	b.WriteString("<span class=\"status-msg\" role=\"status\" aria-live=\"polite\"></span>")
 	b.WriteString("</div></div>\n")
 }
 
@@ -54,7 +58,7 @@ func writeFilterBtn(b *bytes.Buffer, scope, filter, label string, count int, act
 	b.WriteString("</span></button>\n")
 }
 
-func writeReportBlockOpen(b *bytes.Buffer, tone, verdict, kind, id string, open bool) {
+func writeReportBlockOpen(b *bytes.Buffer, tone, verdict, kind, id, name string, open bool) {
 	b.WriteString("<details class=\"report-block ")
 	b.WriteString(tone)
 	b.WriteString("\" data-verdict=\"")
@@ -65,6 +69,10 @@ func writeReportBlockOpen(b *bytes.Buffer, tone, verdict, kind, id string, open 
 		b.WriteString("\" id=\"")
 		b.WriteString(html.EscapeString(id))
 	}
+	if name != "" {
+		b.WriteString("\" data-name=\"")
+		b.WriteString(html.EscapeString(name))
+	}
 	if open {
 		b.WriteString("\" open>\n")
 	} else {
@@ -72,16 +80,14 @@ func writeReportBlockOpen(b *bytes.Buffer, tone, verdict, kind, id string, open 
 	}
 }
 
-func writeStatCard(b *bytes.Buffer, label string, c Counts) {
-	b.WriteString("<div class=\"stat-card\"><div class=\"label\">")
+func writeStatCard(b *bytes.Buffer, label, kind string, c Counts) {
+	b.WriteString("<div class=\"stat-card\" data-stat-kind=\"")
+	b.WriteString(html.EscapeString(kind))
+	b.WriteString("\"><div class=\"label\">")
 	b.WriteString(html.EscapeString(label))
-	b.WriteString("</div><div class=\"value\">")
-	b.WriteString(html.EscapeString(fmt.Sprintf("%d/%d", c.Passed, c.Total)))
-	b.WriteString("</div><div class=\"sub\">通过 ")
-	b.WriteString(html.EscapeString(strconv.Itoa(c.Passed)))
-	b.WriteString(" · 失败 ")
-	b.WriteString(html.EscapeString(strconv.Itoa(c.Failed)))
-	b.WriteString(" · 跳过 ")
-	b.WriteString(html.EscapeString(strconv.Itoa(c.Skipped)))
+	b.WriteString("</div><div class=\"value\" data-stat-value>")
+	b.WriteString(html.EscapeString(FormatCountsRatio(c)))
+	b.WriteString("</div><div class=\"sub\" data-stat-sub>")
+	b.WriteString(html.EscapeString(FormatCountsSub(c)))
 	b.WriteString("</div></div>\n")
 }

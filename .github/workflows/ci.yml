@@ -31,6 +31,15 @@ jobs:
           if-no-files-found: ignore
       - name: Build
         run: go build -o /tmp/studio-reporter .
+      - name: Shared discover package tests
+        run: |
+          cd packages/studio-reporter-discover
+          npm test
+      - name: Desktop unit tests
+        run: |
+          cd desktop
+          npm ci
+          npm test
 
   lint:
     runs-on: ubuntu-latest
@@ -43,3 +52,112 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.13.2
+
+  # Explicit Chrome dump-dom gates (also covered by go test when Chrome is present;
+  # this job installs Chrome so CI cannot silently skip).
+  report-browser-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+      - name: failSteps hash smoke
+        run: make smoke-failsteps-hash
+        env:
+          CI: "true"
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: manage/serve fail-digest deep-link smoke
+        run: make smoke-manage-digest
+        env:
+          CI: "true"
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Desktop open-focus pipeline smoke
+        run: REQUIRE_CHROME=1 node --test desktop/electron/open-focus-pipeline.test.js
+        env:
+          CI: "true"
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+
+  desktop-pack-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Build CLI
+        run: make build
+      - name: Install Desktop deps
+        run: |
+          cd desktop
+          npm ci
+      - name: Pack unpacked dir (unsigned)
+        run: |
+          cd desktop
+          npm run pack:dir
+        env:
+          # Align with Release: never auto-discover codesign identities in CI.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          WIN_CSC_LINK: ""
+      - name: Verify pack layout
+        run: |
+          cd desktop
+          npm run pack:verify
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Upload unpacked smoke logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-pack-dist
+          path: desktop/dist
+          if-no-files-found: ignore
+
+  desktop-pack-smoke-win:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Build Windows CLI
+        run: make build-windows
+      - name: Install Desktop deps
+        run: |
+          cd desktop
+          npm ci
+      - name: Pack Windows unpacked dir (unsigned cross-build)
+        run: |
+          cd desktop
+          npm run pack:dir:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          WIN_CSC_LINK: ""
+      - name: Verify Windows pack layout
+        run: |
+          cd desktop
+          npm run pack:verify
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Upload Windows unpacked smoke logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-pack-dist-win
+          path: desktop/dist
+          if-no-files-found: ignore

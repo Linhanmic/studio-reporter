@@ -43,17 +43,24 @@ func writeOverviewPanel(b *bytes.Buffer, r *Report) {
 
 	b.WriteString("<h3 class=\"overview-subtitle\">统计</h3>\n")
 	b.WriteString("<table class=\"overview-table\"><thead><tr><th>层级</th><th>总计</th><th>通过</th><th>失败</th><th>跳过</th></tr></thead><tbody>\n")
-	writeOverviewCountRow(b, "规格书", r.Summary.Specs)
-	writeOverviewCountRow(b, "场景", r.Summary.Scenarios)
-	writeOverviewCountRow(b, "步骤", r.Summary.Steps)
+	writeOverviewCountRow(b, "规格书", "specs", r.Summary.Specs)
+	writeOverviewCountRow(b, "场景", "scenarios", r.Summary.Scenarios)
+	writeOverviewCountRow(b, "步骤", "steps", r.Summary.Steps)
 	b.WriteString("</tbody></table>\n")
+
+	writeFailReasonSection(b, AggregateFailReasons(r))
 
 	if len(r.Specs) > 0 {
 		b.WriteString("<h3 class=\"overview-subtitle\">规格书清单</h3>\n")
-		b.WriteString("<table class=\"overview-table\"><thead><tr><th>规格书</th><th>结果</th><th>场景</th><th>耗时</th></tr></thead><tbody>\n")
+		b.WriteString("<p class=\"overview-lead\">过滤或「仅失败步骤」开启时，列表与场景计数同步为结果树当前可见项。</p>\n")
+		b.WriteString("<table class=\"overview-table overview-spec-table\" id=\"overview-spec-table\"><thead><tr><th>规格书</th><th>结果</th><th>场景</th><th>耗时</th></tr></thead><tbody>\n")
 		for i := range r.Specs {
 			sp := &r.Specs[i]
-			b.WriteString("<tr><td><a href=\"#")
+			b.WriteString("<tr class=\"overview-spec-row\" data-spec-id=\"")
+			b.WriteString(html.EscapeString(sp.ID))
+			b.WriteString("\" data-verdict=\"")
+			b.WriteString(html.EscapeString(sp.Verdict))
+			b.WriteString("\"><td><a href=\"#")
 			b.WriteString(html.EscapeString(sp.ID))
 			b.WriteString("\" data-nav-target=\"")
 			b.WriteString(html.EscapeString(sp.ID))
@@ -63,7 +70,7 @@ func writeOverviewPanel(b *bytes.Buffer, r *Report) {
 			b.WriteString(html.EscapeString(sp.Verdict))
 			b.WriteString("\">")
 			b.WriteString(html.EscapeString(verdictLabel(sp.Verdict)))
-			b.WriteString("</span></td><td>")
+			b.WriteString("</span></td><td class=\"overview-spec-scn-count\" data-spec-scn-count>")
 			b.WriteString(html.EscapeString(fmt.Sprintf("%d/%d", sp.Summary.Passed, sp.Summary.Total)))
 			b.WriteString("</td><td>")
 			b.WriteString(html.EscapeString(sp.Duration))
@@ -90,16 +97,18 @@ func writeOverviewKV(b *bytes.Buffer, k, v string) {
 	b.WriteString("</div></div>\n")
 }
 
-func writeOverviewCountRow(b *bytes.Buffer, label string, c Counts) {
-	b.WriteString("<tr><td>")
+func writeOverviewCountRow(b *bytes.Buffer, label, kind string, c Counts) {
+	b.WriteString("<tr class=\"overview-count-row\" data-count-kind=\"")
+	b.WriteString(html.EscapeString(kind))
+	b.WriteString("\"><td>")
 	b.WriteString(html.EscapeString(label))
-	b.WriteString("</td><td>")
+	b.WriteString("</td><td data-count=\"total\">")
 	b.WriteString(strconv.Itoa(c.Total))
-	b.WriteString("</td><td>")
+	b.WriteString("</td><td data-count=\"passed\">")
 	b.WriteString(strconv.Itoa(c.Passed))
-	b.WriteString("</td><td>")
+	b.WriteString("</td><td data-count=\"failed\">")
 	b.WriteString(strconv.Itoa(c.Failed))
-	b.WriteString("</td><td>")
+	b.WriteString("</td><td data-count=\"skipped\">")
 	b.WriteString(strconv.Itoa(c.Skipped))
 	b.WriteString("</td></tr>\n")
 }
@@ -111,7 +120,9 @@ func writeNavPane(b *bytes.Buffer, r *Report) {
 	b.WriteString("<a class=\"nav-item nav-overview is-active\" href=\"#overview\" data-nav-target=\"overview\">Overview</a>\n")
 	for i := range r.Specs {
 		sp := &r.Specs[i]
-		b.WriteString("<details class=\"nav-spec\" open>\n<summary class=\"nav-item nav-spec-sum tone-")
+		b.WriteString("<details class=\"nav-spec\" data-spec-id=\"")
+		b.WriteString(html.EscapeString(sp.ID))
+		b.WriteString("\" open>\n<summary class=\"nav-item nav-spec-sum tone-")
 		b.WriteString(html.EscapeString(sp.Verdict))
 		b.WriteString("\"><a href=\"#")
 		b.WriteString(html.EscapeString(sp.ID))
@@ -119,7 +130,9 @@ func writeNavPane(b *bytes.Buffer, r *Report) {
 		b.WriteString(html.EscapeString(sp.ID))
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(sp.Heading))
-		b.WriteString("</a><span class=\"nav-badge ")
+		b.WriteString("</a><span class=\"nav-count\" data-nav-scn-count>")
+		b.WriteString(html.EscapeString(fmt.Sprintf("%d/%d", sp.Summary.Passed, sp.Summary.Total)))
+		b.WriteString("</span><span class=\"nav-badge ")
 		b.WriteString(html.EscapeString(sp.Verdict))
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(verdictLabel(sp.Verdict)))
@@ -132,6 +145,10 @@ func writeNavPane(b *bytes.Buffer, r *Report) {
 			b.WriteString(html.EscapeString(scn.ID))
 			b.WriteString("\" data-nav-target=\"")
 			b.WriteString(html.EscapeString(scn.ID))
+			b.WriteString("\" data-scn-id=\"")
+			b.WriteString(html.EscapeString(scn.ID))
+			b.WriteString("\" data-verdict=\"")
+			b.WriteString(html.EscapeString(scn.Verdict))
 			b.WriteString("\">")
 			b.WriteString(html.EscapeString(scn.Heading))
 			b.WriteString("<span class=\"nav-badge ")
@@ -206,9 +223,108 @@ type shotItem struct {
 
 func writeShotLightbox(b *bytes.Buffer) {
 	b.WriteString(`<dialog id="shot-lightbox" class="shot-lightbox" closedby="any">`)
-	b.WriteString(`<form method="dialog" class="shot-lightbox-bar"><span id="shot-lightbox-cap"></span>`)
+	b.WriteString(`<form method="dialog" class="shot-lightbox-bar">`)
+	b.WriteString(`<div class="shot-lightbox-nav">`)
+	b.WriteString(`<button type="button" class="shot-lightbox-prev" data-lightbox-nav="-1" aria-label="上一张截图" title="← 上一张">‹</button>`)
+	b.WriteString(`<button type="button" class="shot-lightbox-next" data-lightbox-nav="1" aria-label="下一张截图" title="→ 下一张">›</button>`)
+	b.WriteString(`</div>`)
+	b.WriteString(`<span id="shot-lightbox-cap"></span>`)
+	b.WriteString(`<span id="shot-lightbox-pos" class="shot-lightbox-pos" aria-live="polite"></span>`)
 	b.WriteString(`<button value="close" type="submit" class="shot-lightbox-close">关闭</button></form>`)
 	b.WriteString(`<img id="shot-lightbox-img" alt="screenshot enlarged">`)
 	b.WriteString(`</dialog>`)
 	b.WriteByte('\n')
+}
+
+func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
+	if len(groups) == 0 {
+		return
+	}
+	b.WriteString("<h3 class=\"overview-subtitle\">失败原因聚合</h3>\n")
+	b.WriteString("<p class=\"overview-lead\">按首条错误信息归类失败场景，便于识别共因。点击次数或原因跳到该类首个可见失败场景；点击场景名直接定位；「复制深链」复制可分享 URL，「复制摘要」复制含定位的单行 Markdown，「复制全部摘要 / 复制全部深链」一键复制当前可见全部原因（均保留当前过滤）。过滤或「仅失败步骤」开启时，上方汇总计数、失败原因聚合与复制摘要均仅统计结果树中当前可见的节点。</p>\n")
+	b.WriteString("<p class=\"overview-fail-reason-tools\">")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-all-fail-reason-snippets\" title=\"复制当前可见全部失败原因的 Markdown 列表（含定位深链），便于粘贴到工单\">复制全部摘要</button> ")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-all-fail-reason-links\" title=\"复制当前可见全部失败原因的定位深链（换行分隔）\">复制全部深链</button>")
+	b.WriteString("<span class=\"overview-fail-reason-empty-hint\" hidden aria-live=\"polite\">当前过滤下无可见失败原因（Esc 可清除过滤）</span> ")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"clear-report-filters\" hidden title=\"清除搜索与结论过滤，恢复全部可见性（Esc）\">清除过滤</button> ")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"restore-fail-only-view\" hidden title=\"清除搜索并切到「仅失败」视图，避免回到全量噪音\">仅看失败</button> ")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"undo-clear-report-filters\" hidden title=\"撤销上一次清除/仅看失败，恢复之前的过滤（Ctrl/Cmd+Z）\">撤销清除</button>")
+	b.WriteString("<span class=\"overview-empty-metrics-enable-hint\" id=\"overview-empty-metrics-enable-hint\" hidden aria-live=\"polite\">")
+	b.WriteString("<span class=\"overview-empty-metrics-enable-hint-text\">空态 metrics：URL 加 <code>?emptyMetrics=1</code>，或</span> ")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"show-empty-state-metrics-panel\" title=\"开启空态 metrics 面板（写入 localStorage=1；也可用 ?emptyMetrics=1）\">开启</button> ")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-empty-metrics-enable-url\" title=\"复制带 ?emptyMetrics=1 的可分享 URL（保留当前 hash 过滤）\">复制链接</button> ")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"dismiss-empty-metrics-enable-hint\" title=\"关闭首次引导，之后仅保留紧凑「开启 / 复制链接」入口\">知道了</button>")
+	b.WriteString("</span>")
+	b.WriteString("</p>\n")
+	b.WriteString("<div class=\"overview-empty-state-metrics\" id=\"overview-empty-state-metrics\" hidden aria-live=\"polite\" title=\"空态操作计数（本地 UX 抽检；?emptyMetrics=1 或 localStorage studio-report-empty-metrics=1 开启）\">")
+	b.WriteString("<span class=\"overview-empty-state-metrics-text\" id=\"overview-empty-state-metrics-text\"></span>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny overview-empty-state-metrics-meta-more\" data-action=\"toggle-empty-state-metrics-meta-more\" aria-expanded=\"false\" title=\"展开/折叠次要报告 meta（根目录/主机/插件）\">meta+</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny overview-empty-state-metrics-meta-fields-btn\" data-action=\"toggle-empty-state-metrics-meta-fields\" aria-expanded=\"false\" aria-controls=\"overview-empty-state-metrics-meta-fields\" title=\"自定义 meta 字段顺序与显隐（主/次/隐；命名预设一键切换；localStorage 记忆）\">字段</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny overview-empty-state-metrics-meta-preset-chip\" id=\"overview-empty-state-metrics-meta-preset-chip\" data-action=\"cycle-empty-state-metrics-meta-field-named-preset\" data-named-preset=\"\" aria-haspopup=\"menu\" aria-expanded=\"false\" title=\"当前 meta 字段命名预设；点击循环切换；Shift+点击打开字段编辑器；右键/↓/Alt+点击打开预设菜单\">预设·默认</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny overview-empty-state-metrics-meta-preset-reset\" id=\"overview-empty-state-metrics-meta-preset-reset\" data-action=\"reset-empty-state-metrics-meta-field-named-preset\" hidden aria-hidden=\"true\" title=\"一键切回默认命名预设（主三项）\">回默认</button>")
+	b.WriteString("<span class=\"overview-empty-state-metrics-meta-secondary\" id=\"overview-empty-state-metrics-meta-secondary\" hidden></span>")
+	b.WriteString("<div class=\"overview-empty-state-metrics-meta-fields\" id=\"overview-empty-state-metrics-meta-fields\" hidden role=\"region\" aria-label=\"空态 metrics meta 字段设置\"></div>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"toggle-empty-state-metrics-events\" aria-expanded=\"false\" aria-controls=\"overview-empty-state-metrics-events\" title=\"展开/折叠事件环（默认折叠，减少噪音）\">事件</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny overview-empty-state-metrics-kind-clear-collapsed\" data-action=\"clear-empty-state-metrics-event-kind-collapsed\" hidden aria-hidden=\"true\" title=\"清除 kind 过滤（无需展开事件环；同步去掉 URL emptyMetricsKind）\">清除 kind</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-empty-state-metrics-report-meta\" title=\"复制报告 meta 摘要（项目 · 结论 · 生成时间）\">复制 meta</button> ")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-empty-state-metrics-json\" title=\"复制 EmptyStateMetrics JSON（含计数与事件环），便于粘贴到 issue；失败时自动下载文件\">复制 JSON</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-empty-state-metrics-issue\" title=\"复制可贴 issue 的 Markdown（开启链接 + 过滤摘要 + JSON；Shift+点击复制短卡片；Alt+点击下载短卡片 .md）\">贴 issue</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"download-empty-state-metrics-issue-short\" title=\"下载空态 metrics 短卡片 Markdown（标题+预设+kind+开启链接；文件名含项目/preset/kind）\">下载短卡片</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"download-empty-state-metrics-json\" title=\"下载 EmptyStateMetrics JSON 文件（无剪贴板权限时的兜底）\">下载 JSON</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-empty-metrics-enable-url\" title=\"复制带 ?emptyMetrics=1 的可分享 URL，便于同事一键打开 metrics\">复制开启链接</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"reset-empty-state-metrics\" title=\"清零空态计数与事件环，便于重新采样\">清零</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"hide-empty-state-metrics-panel\" title=\"隐藏本下面板并写入 localStorage=0（本会话优先；可用 ?emptyMetrics=1 或 StudioReportShowEmptyStateMetrics=true 再开）\">隐藏</button>")
+	b.WriteString("<div class=\"overview-empty-state-metrics-events\" id=\"overview-empty-state-metrics-events\" hidden role=\"region\" aria-label=\"空态 metrics 事件环\"></div>")
+	b.WriteString("</div>\n")
+	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th><th>操作</th></tr></thead><tbody>\n")
+	for _, g := range groups {
+		b.WriteString("<tr class=\"fail-reason-row\" data-fail-reason=\"")
+		b.WriteString(html.EscapeString(g.Reason))
+		b.WriteString("\" data-fail-count-total=\"")
+		b.WriteString(strconv.Itoa(g.Count))
+		b.WriteString("\"><td><span class=\"fail-reason-count\" title=\"跳到该类首个可见失败场景\">")
+		b.WriteString(strconv.Itoa(g.Count))
+		b.WriteString("</span></td><td><code class=\"fail-reason-text\" title=\"")
+		b.WriteString(html.EscapeString(g.Reason))
+		b.WriteString(" — 点击跳到该类首个可见失败场景\">")
+		b.WriteString(html.EscapeString(g.Reason))
+		b.WriteString("</code></td><td class=\"fail-reason-refs\">")
+		for _, ref := range g.Refs {
+			label := ref.ScnName
+			if label == "" {
+				label = ref.SpecName
+			}
+			if ref.ScnID != "" {
+				b.WriteString("<span class=\"fail-reason-ref\" data-fail-ref-kind=\"scenario\" data-scn-id=\"")
+				b.WriteString(html.EscapeString(ref.ScnID))
+				b.WriteString("\"><a href=\"#")
+				b.WriteString(html.EscapeString(ref.ScnID))
+				b.WriteString("\" data-nav-target=\"")
+				b.WriteString(html.EscapeString(ref.ScnID))
+				b.WriteString("\">")
+				b.WriteString(html.EscapeString(label))
+				b.WriteString("</a></span>")
+			} else if ref.SpecID != "" {
+				b.WriteString("<span class=\"fail-reason-ref\" data-fail-ref-kind=\"hook\" data-spec-id=\"")
+				b.WriteString(html.EscapeString(ref.SpecID))
+				b.WriteString("\"><a href=\"#")
+				b.WriteString(html.EscapeString(ref.SpecID))
+				b.WriteString("\" data-nav-target=\"")
+				b.WriteString(html.EscapeString(ref.SpecID))
+				b.WriteString("\">")
+				b.WriteString(html.EscapeString(label))
+				b.WriteString("</a></span>")
+			} else {
+				b.WriteString("<span class=\"fail-reason-ref\" data-fail-ref-kind=\"hook\">")
+				b.WriteString(html.EscapeString(label))
+				b.WriteString("</span>")
+			}
+		}
+		b.WriteString("</td><td class=\"fail-reason-actions\">")
+		b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-fail-reason-link\" title=\"复制该类首个可见失败场景的可分享定位深链\">复制深链</button> ")
+		b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-fail-reason-snippet\" title=\"复制含次数/原因/场景/定位的单行 Markdown，便于粘贴到工单\">复制摘要</button>")
+		b.WriteString("</td></tr>\n")
+	}
+	b.WriteString("<tr class=\"fail-reason-empty-row\" hidden><td colspan=\"4\" class=\"fail-reason-empty-cell\">当前过滤下无匹配的失败原因 <button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"clear-report-filters\" title=\"清除搜索与结论过滤，恢复全部可见性（Esc）\">清除过滤</button> <button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"restore-fail-only-view\" title=\"清除搜索并切到「仅失败」视图，避免回到全量噪音\">仅看失败</button></td></tr>\n")
+	b.WriteString("</tbody></table>\n")
 }

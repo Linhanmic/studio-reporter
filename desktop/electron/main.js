@@ -11,24 +11,177 @@ const {
   dialog,
   ipcMain,
   shell,
+  clipboard,
+  Notification,
+  screen,
 } = require('electron');
 const { normalizeWsInput } = require('./discover.js');
+const { checkPluginHello } = require('./compat.js');
+const { detectInstalledPlugin } = require('./plugin-detect.js');
 const {
   loadSettings,
   saveSettings,
   readHistory,
   resolveRunIndex,
+  resolveRunDir,
+  resolveRunUhilreport,
+  deleteHistoryRuns,
 } = require('./settings.js');
+const { withHubLock } = require('./hublock.js');
+const { createHubWatcher } = require('./hub-watch.js');
+const {
+  shouldNotifySuiteEnd,
+  formatSuiteEndNotification,
+} = require('./notify.js');
+const {
+  PROTOCOL,
+  parseDeepLink,
+  extractDeepLinkFromArgv,
+  buildCompareDeepLink,
+  buildOpenDeepLink,
+  buildHistoryOpenDeepLinks,
+  createDeepLinkQueue,
+} = require('./deeplink.js');
+const {
+  popupHistoryContextMenu,
+} = require('./history-menu.js');
+const {
+  appendShareHash,
+  reportFocusHash,
+  reportOpenHashFromOutline,
+  resolveReportOpenHash,
+} = require('./share-hash.js');
+const { planOpenFromFailSummaryMarkdown } = require('./fail-summary-open.js');
+const { writeHistoryFailDigestSidecars } = require('./history-digest.js');
+const {
+  buildCompareShareCardHtml,
+  inspectCompareShareCardHtml,
+  buildCompareShareMarkdown,
+  buildCompareShareJson,
+  suggestedCompareShareBasename,
+} = require('./compare.js');
+const {
+  resolveBundleRoot,
+  resolveStudioReporterBin,
+  missingBundleResources,
+} = require('./paths.js');
+const {
+  exportMany,
+  killExportChild,
+} = require('./export-report.js');
+const {
+  isUhilreportPath,
+  regenerateFromUhilreport,
+} = require('./uhil-open.js');
+const {
+  rememberRecentProject,
+  rememberRecentHub,
+  GaugeSessionManager,
+} = require('./sessions.js');
+const { createUpdater } = require('./updater.js');
+const { buildReportOutline, loadOutlineFromReportDir } = require('./outline.js');
+const { compareScenarioReportsFromDirs } = require('./scenario-compare.js');
+const { buildHistoryTrendBundle } = require('./history-trend.js');
+const {
+  loadWindowState,
+  saveWindowState,
+  sanitizeWindowState,
+  captureWindowState,
+  browserWindowOptionsFromState,
+  MIN_WIDTH,
+  MIN_HEIGHT,
+} = require('./window-state.js');
 
+/**
+ * Persist report hub dir and push onto recentHubs.
+ * @param {string} hubDir
+ */
+function persistReportHub(hubDir) {
+  const userData = app.getPath('userData');
+  const settings = loadSettings(userData);
+  const hub = path.resolve(String(hubDir || '').trim());
+  const next = saveSettings(userData, {
+    reportHubDir: hub,
+    recentHubs: rememberRecentHub(settings.recentHubs, hub),
+  });
+  syncHubWatcher(next);
+  return next;
+}
 const DESKTOP_VERSION = '0.5.2';
-/** Repo root (parent of desktop/) — viewer.html / report-assets live here in dev. */
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
+/** Dev: repo root. Packaged: Electron extraResources (viewer + report-assets + bin). */
+const BUNDLE_ROOT = resolveBundleRoot(
+  app.isPackaged,
+  process.resourcesPath,
+  path.join(__dirname, '..')
+);
 const RENDERER = path.join(__dirname, '..', 'renderer', 'index.html');
 
 let mainWindow = null;
+/** Last report dir successfully opened (for clipboard fail-summary focus). */
+let lastOpenedReportDir = '';
 let assetServer = null;
 let assetPort = 0;
 let bridge = null;
+const sessionManager = new GaugeSessionManager();
+const updater = createUpdater({
+  isPackaged: app.isPackaged,
+  autoDownload: true,
+  logger: console,
+});
+updater.setStatusListener((status) => {
+  sendToRenderer('updater-status', status);
+});
+
+function sendToRenderer(channel, payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, payload);
+  }
+}
+
+const hubWatcher = createHubWatcher({
+  debounceMs: 350,
+  onChange: (info) => {
+    sendToRenderer('history-changed', {
+      hubDir: info.hubDir,
+      reason: info.reason,
+      at: new Date().toISOString(),
+    });
+  },
+});
+
+/**
+ * Start/stop hub history.json watcher from current settings.
+ * @param {ReturnType<typeof loadSettings>} [settings]
+ */
+function syncHubWatcher(settings) {
+  const s = settings || loadSettings(app.getPath('userData'));
+  if (s.watchHubHistory === false) {
+    hubWatcher.stop();
+    return;
+  }
+  const hub = String(s.reportHubDir || '').trim();
+  if (!hub) {
+    hubWatcher.stop();
+    return;
+  }
+  hubWatcher.setHub(hub);
+}
+
+let activeExportChild = null;
+let exportCancelled = false;
+
+async function connectLiveWs(input) {
+  const url = normalizeWsInput(input);
+  if (!url) {
+    throw new Error('无法解析 WebSocket 地址。请粘贴 ws://127.0.0.1:<port> 或 discover 整行。');
+  }
+  if (!bridge) bridge = new ReporterBridge();
+  await bridge.connect(url);
+  await startAssetServer(BUNDLE_ROOT);
+  const liveUrl = `http://127.0.0.1:${assetPort}/viewer.html?ws=${encodeURIComponent(url)}`;
+  sendToRenderer('navigate-live', { url: liveUrl });
+  return { url, liveUrl };
+}
 
 function createAssetServer(rootDir) {
   const root = path.resolve(rootDir);
@@ -36,7 +189,6 @@ function createAssetServer(rootDir) {
     try {
       const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
       let rel = urlPath === '/' ? '/viewer.html' : urlPath;
-      // Map /assets/* to report-assets for hub-style URLs
       if (rel.startsWith('/assets/')) {
         rel = '/report-assets/' + rel.slice('/assets/'.length);
       }
@@ -86,6 +238,38 @@ function startAssetServer(rootDir) {
   });
 }
 
+
+function maybeNotifySuiteEnd(payload) {
+  try {
+    const settings = loadSettings(app.getPath('userData'));
+    const focused = Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused());
+    if (!shouldNotifySuiteEnd({ enabled: settings.notifyOnSuiteEnd !== false, windowFocused: focused })) {
+      return;
+    }
+    if (!Notification.isSupported()) return;
+    const { title, body, reportPath, reportDir } = formatSuiteEndNotification(payload || {});
+    const note = new Notification({ title, body });
+    note.on('click', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+        const target = reportPath || reportDir;
+        if (target) {
+          const abs = path.resolve(target);
+          const url = pathToFileURL(
+            abs.endsWith('.html') ? abs : path.join(abs, 'index.html')
+          ).href;
+          mainWindow.webContents.send('navigate-report', { path: abs, url });
+        }
+      }
+    });
+    note.show();
+  } catch (err) {
+    console.warn('suite-end notification failed:', err);
+  }
+}
+
 /** Minimal WS client for control + ReportGenerated (Node 22+ global WebSocket). */
 class ReporterBridge {
   constructor() {
@@ -129,20 +313,29 @@ class ReporterBridge {
           return;
         }
         if (msg.type === 'ServerHello') {
-          this.emitStatus({ hello: msg.payload, connected: true, url });
+          const compat = checkPluginHello(msg.payload);
+          this.emitStatus({
+            hello: msg.payload,
+            compat,
+            connected: true,
+            url,
+          });
         }
         if (msg.type === 'ReportGenerated' && msg.payload) {
           this.emitStatus({ reportGenerated: msg.payload });
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send('report-generated', msg.payload);
           }
+          maybeNotifySuiteEnd(msg.payload);
         }
         if (msg.type === 'ReportSnapshot' && mainWindow && !mainWindow.isDestroyed()) {
+          const payload = msg.payload || {};
           mainWindow.webContents.send('report-snapshot-meta', {
-            running: msg.payload?.running,
-            rev: msg.payload?.rev,
-            projectName: msg.payload?.report?.projectName,
+            running: payload.running,
+            rev: payload.rev,
+            projectName: payload.report?.projectName,
           });
+          mainWindow.webContents.send('report-outline', buildReportOutline(payload));
         }
       });
       ws.addEventListener('close', () => {
@@ -183,6 +376,31 @@ class ReporterBridge {
 }
 
 function buildMenu() {
+  const helpItems = [];
+  if (!app.isPackaged) {
+    helpItems.push({
+      label: 'DESKTOP.md',
+      click: () => shell.openPath(path.join(BUNDLE_ROOT, 'DESKTOP.md')),
+    });
+  }
+  helpItems.push({
+    label: `Studio Reporter Desktop ${DESKTOP_VERSION}`,
+    enabled: false,
+  });
+  helpItems.push({
+    label: '检查更新…',
+    click: async () => {
+      const status = await updater.checkForUpdates();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        dialog.showMessageBox(mainWindow, {
+          type: status.state === 'error' ? 'error' : 'info',
+          message: '检查更新',
+          detail: status.message,
+        });
+      }
+    },
+  });
+
   const template = [
     {
       label: '文件',
@@ -200,58 +418,257 @@ function buildMenu() {
           },
         },
         {
-          label: '打开仓库 viewer（开发）',
+          label: '打开 .uhilreport…',
+          accelerator: 'CmdOrCtrl+Shift+O',
           click: async () => {
-            await startAssetServer(REPO_ROOT);
-            mainWindow.webContents.send('navigate-live', {
-              url: `http://127.0.0.1:${assetPort}/viewer.html`,
-            });
+            try {
+              await pickAndOpenUhilreport();
+            } catch (err) {
+              dialog.showErrorBox('打开 .uhilreport 失败', String(err.message || err));
+            }
           },
         },
-        { type: 'separator' },
+        {
+          label: '打开仓库 viewer（开发）',
+          visible: !app.isPackaged,
+          click: async () => {
+            await startAssetServer(BUNDLE_ROOT);
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-live', {
+                url: `http://127.0.0.1:${assetPort}/viewer.html`,
+              });
+            }
+          },
+        },
+                {
+          label: '从剪贴板打开失败摘要定位…',
+          accelerator: 'CmdOrCtrl+Shift+F',
+          click: async () => {
+            try {
+              const result = await openFailSummaryFromClipboard();
+              if (result && result.ok === false && result.code === 'canceled') return;
+            } catch (err) {
+              dialog.showErrorBox('从剪贴板定位失败', String(err && err.message ? err.message : err));
+            }
+          },
+        },
+{ type: 'separator' },
         { role: 'quit', label: '退出' },
       ],
     },
     {
       label: '查看',
       submenu: [
+        {
+          label: '运行',
+          accelerator: 'CmdOrCtrl+1',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-tab', { tab: 'run' });
+            }
+          },
+        },
+        {
+          label: '报告',
+          accelerator: 'CmdOrCtrl+2',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-tab', { tab: 'report' });
+            }
+          },
+        },
+        {
+          label: '历史',
+          accelerator: 'CmdOrCtrl+3',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-tab', { tab: 'history' });
+            }
+          },
+        },
+        {
+          label: '设置',
+          accelerator: 'CmdOrCtrl+4',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('navigate-tab', { tab: 'settings' });
+            }
+          },
+        },
+        { type: 'separator' },
+        {
+          label: '刷新历史',
+          accelerator: 'CmdOrCtrl+Shift+H',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('desktop-shortcut', { type: 'refresh-history' });
+            }
+          },
+        },
+        {
+          label: '连接 WebSocket',
+          accelerator: 'CmdOrCtrl+Enter',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('desktop-shortcut', { type: 'connect' });
+            }
+          },
+        },
+        { type: 'separator' },
         { role: 'reload', label: '重新加载' },
         { role: 'toggleDevTools', label: '开发者工具' },
       ],
     },
     {
       label: '帮助',
-      submenu: [
-        {
-          label: 'DESKTOP.md',
-          click: () => shell.openPath(path.join(REPO_ROOT, 'DESKTOP.md')),
-        },
-      ],
+      submenu: helpItems,
     },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-async function openReportDir(dir) {
+async function openReportDir(dir, opts = {}) {
   const indexPath = path.join(dir, 'index.html');
   if (!fs.existsSync(indexPath)) {
     dialog.showErrorBox('无效报告目录', `未找到 ${indexPath}`);
     return;
   }
   await startAssetServer(dir);
-  // Prefer hub assets: if dir is a gauge hub it may have viewer + assets copied
-  const url = `http://127.0.0.1:${assetPort}/index.html`;
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('navigate-report', { url, dir });
+  let url = `http://127.0.0.1:${assetPort}/index.html`;
+  const focus = String(opts.focus || '').trim();
+  const hash = resolveReportOpenHash(opts);
+  if (hash) {
+    url = appendShareHash(url, hash);
   }
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('navigate-report', { url, dir, focus: focus || undefined });
+    const outline = loadOutlineFromReportDir(dir);
+    if (outline) {
+      mainWindow.webContents.send('report-outline', outline);
+    }
+  }
+  lastOpenedReportDir = path.resolve(dir);
+  return { url, dir, indexPath };
+}
+
+/**
+ * Regenerate HTML from a portable .uhilreport and open the report tab.
+ * @param {string} uhilPath
+ */
+
+/**
+ * Read clipboard fail-summary Markdown, extract first path-style focus, open report.
+ * @param {{ reportDir?: string }} [opts]
+ */
+async function openFailSummaryFromClipboard(opts = {}) {
+  const textMd = clipboard.readText();
+  let reportDir = String(opts.reportDir || '').trim();
+  if (!reportDir && opts.entry) {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = String(settings.reportHubDir || '').trim();
+    if (!hub) {
+      return {
+        ok: false,
+        code: 'no-hub',
+        message: '未配置报告 Hub，无法解析历史运行目录',
+      };
+    }
+    try {
+      reportDir = resolveRunDir(hub, opts.entry);
+    } catch (err) {
+      return {
+        ok: false,
+        code: 'bad-entry',
+        message: String(err && err.message ? err.message : err),
+      };
+    }
+  }
+  if (!reportDir) reportDir = String(lastOpenedReportDir || '').trim();
+  const plan = planOpenFromFailSummaryMarkdown(textMd, {
+    reportDir,
+    failSteps: true,
+  });
+  if (!plan.ok) {
+    const buttons = plan.example ? ['复制示例到剪贴板', '关闭'] : ['关闭'];
+    const detail = [plan.hint, plan.example ? `示例：\n${plan.example}` : '']
+      .filter(Boolean)
+      .join('\n\n');
+    const res = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      title: '无法从剪贴板定位',
+      message: plan.message || '未知错误',
+      detail,
+      buttons,
+      defaultId: buttons.length - 1,
+      cancelId: buttons.length - 1,
+      noLink: true,
+    });
+    if (plan.example && res.response === 0) {
+      clipboard.writeText(`${plan.example}\n`);
+    }
+    return plan;
+  }
+  if (plan.needsReportDir || !reportDir) {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: '选择含 index.html 的报告目录（将定位失败摘要 focus）',
+    });
+    if (result.canceled || !result.filePaths[0]) {
+      return { ok: false, canceled: true, code: 'canceled' };
+    }
+    reportDir = result.filePaths[0];
+  }
+  const opened = await openReportDir(reportDir, {
+    focus: plan.focus,
+    failSteps: plan.failSteps,
+  });
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('navigate-tab', { tab: 'report' });
+  }
+  return { ok: true, ...plan, reportDir, opened };
+}
+
+
+async function openUhilreport(uhilPath) {
+  const bin = resolveStudioReporterBin(BUNDLE_ROOT);
+  if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
+  const result = regenerateFromUhilreport({ bin, uhilPath });
+  await openReportDir(result.outDir);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('navigate-tab', { tab: 'report' });
+  }
+  return result;
+}
+
+async function pickAndOpenUhilreport() {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    title: '选择 .uhilreport（将再生 HTML 并打开）',
+    filters: [
+      { name: 'Studio Reporter', extensions: ['uhilreport'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  });
+  if (result.canceled || !result.filePaths[0]) {
+    return { ok: false, canceled: true };
+  }
+  const opened = await openUhilreport(result.filePaths[0]);
+  return { ok: true, ...opened };
+}
+
+function displayWorkAreas() {
+  return screen.getAllDisplays().map((d) => d.workArea);
 }
 
 function createWindow() {
+  const userData = app.getPath('userData');
+  let windowState = sanitizeWindowState(loadWindowState(userData), displayWorkAreas());
+  const bounds = browserWindowOptionsFromState(windowState);
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 840,
-    minWidth: 900,
-    minHeight: 600,
+    ...bounds,
+    minWidth: MIN_WIDTH,
+    minHeight: MIN_HEIGHT,
+    show: false,
     title: 'Studio Reporter',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -260,41 +677,90 @@ function createWindow() {
       webviewTag: true,
     },
   });
+
+  let persistTimer = null;
+  const persist = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      try {
+        windowState = captureWindowState(mainWindow, windowState);
+        saveWindowState(userData, windowState);
+      } catch {
+        /* ignore */
+      }
+    }, 200);
+  };
+  mainWindow.on('resize', persist);
+  mainWindow.on('move', persist);
+  mainWindow.on('maximize', persist);
+  mainWindow.on('unmaximize', persist);
+  mainWindow.on('close', () => {
+    clearTimeout(persistTimer);
+    try {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        windowState = captureWindowState(mainWindow, windowState);
+        saveWindowState(userData, windowState);
+      }
+    } catch {
+      /* ignore */
+    }
+  });
+  mainWindow.once('ready-to-show', () => {
+    if (windowState.isMaximized) mainWindow.maximize();
+    mainWindow.show();
+  });
+  const loaded = new Promise((resolve) => {
+    mainWindow.webContents.once('did-finish-load', () => resolve());
+  });
   mainWindow.loadFile(RENDERER);
+  return loaded;
 }
 
 function registerIpc() {
   ipcMain.handle('desktop:info', async () => ({
     version: DESKTOP_VERSION,
-    repoRoot: REPO_ROOT,
+    bundleRoot: BUNDLE_ROOT,
+    packaged: app.isPackaged,
     assetPort,
   }));
 
-  ipcMain.handle('desktop:connect-ws', async (_evt, input) => {
-    const url = normalizeWsInput(input);
-    if (!url) {
-      throw new Error('无法解析 WebSocket 地址。请粘贴 ws://127.0.0.1:<port> 或 discover 整行。');
-    }
-    if (!bridge) bridge = new ReporterBridge();
-    await bridge.connect(url);
-    // Live viewer needs plugin hub assets OR repo root assets; serve repo for Vue/CSS
-    await startAssetServer(REPO_ROOT);
-    const liveUrl = `http://127.0.0.1:${assetPort}/viewer.html?ws=${encodeURIComponent(url)}`;
-    return { url, liveUrl };
-  });
+  ipcMain.handle('desktop:detect-plugin', async () => detectInstalledPlugin());
+
+  ipcMain.handle('desktop:updater-status', async () => updater.getStatus());
+  ipcMain.handle('desktop:check-updates', async () => updater.checkForUpdates());
+  ipcMain.handle('desktop:quit-and-install', async () => updater.quitAndInstall());
+
+  ipcMain.handle('desktop:connect-ws', async (_evt, input) => connectLiveWs(input));
 
   ipcMain.handle('desktop:disconnect', async () => {
     if (bridge) bridge.close();
     return { ok: true };
   });
 
+  
+  ipcMain.handle('desktop:open-fail-summary-clipboard', async (_evt, opts = {}) => {
+    return openFailSummaryFromClipboard(opts || {});
+  });
+
   ipcMain.handle('desktop:open-report-path', async (_evt, reportPath) => {
     if (!reportPath) throw new Error('empty reportPath');
     const abs = path.resolve(reportPath);
+    if (isUhilreportPath(abs)) {
+      const opened = await openUhilreport(abs);
+      return { dir: opened.outDir, uhilreport: opened.input, regenerated: true };
+    }
     const dir = path.extname(abs).toLowerCase() === '.html' ? path.dirname(abs) : abs;
     await openReportDir(dir);
     return { dir };
   });
+
+  ipcMain.handle('desktop:open-uhilreport', async (_evt, uhilPath) => {
+    if (!uhilPath) throw new Error('empty uhilPath');
+    return openUhilreport(uhilPath);
+  });
+
+  ipcMain.handle('desktop:pick-uhilreport', async () => pickAndOpenUhilreport());
 
   ipcMain.handle('desktop:pick-report-dir', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -310,13 +776,192 @@ function registerIpc() {
     if (targetPath) shell.showItemInFolder(path.resolve(targetPath));
   });
 
+
+  ipcMain.handle('desktop:history-trend-bundle', async (_evt, opts = {}) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = String(opts.hubDir || settings.reportHubDir || '').trim();
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const hist = readHistory(hub);
+    const runs = Array.isArray(opts.runs) && opts.runs.length ? opts.runs : hist.runs || [];
+    return buildHistoryTrendBundle(hub, runs, resolveRunDir, {
+      trendLimit: opts.trendLimit,
+      flakyLimit: opts.flakyLimit,
+    });
+  });
+
+  ipcMain.handle('desktop:compare-scenarios', async (_evt, baseEntry, targetEntry) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = settings.reportHubDir;
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const baseDir = resolveRunDir(hub, baseEntry);
+    const targetDir = resolveRunDir(hub, targetEntry);
+    if (!baseDir || !targetDir) throw new Error('找不到对比运行的归档目录');
+    return compareScenarioReportsFromDirs(baseDir, targetDir);
+  });
+
+  ipcMain.handle('desktop:reveal-history-run', async (_evt, entry) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = settings.reportHubDir;
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const dir = resolveRunDir(hub, entry);
+    const indexPath = resolveRunIndex(hub, entry);
+    const target = indexPath && fs.existsSync(indexPath) ? indexPath : dir;
+    if (!target || !fs.existsSync(target)) {
+      throw new Error('找不到该次运行的归档目录');
+    }
+    shell.showItemInFolder(path.resolve(target));
+    return { ok: true, path: target };
+  });
+
+  ipcMain.handle('desktop:copy-history-path', async (_evt, entry, kind = 'dir') => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = settings.reportHubDir;
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const indexPath = resolveRunIndex(hub, entry);
+    const dir = resolveRunDir(hub, entry);
+    const text = kind === 'index' ? indexPath : dir;
+    if (!text) throw new Error('找不到该次运行的路径');
+    clipboard.writeText(text);
+    return { ok: true, path: text };
+  });
+
+  ipcMain.handle('desktop:export-compare-card', async (_evt, cmp, opts = {}) => {
+    if (!cmp?.base || !cmp?.target) throw new Error('对比结果无效');
+    const basename = suggestedCompareShareBasename(cmp);
+    const defaultPath = path.join(app.getPath('documents'), `${basename}.html`);
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: '导出对比分享卡片',
+      defaultPath,
+      filters: [{ name: 'HTML', extensions: ['html'] }],
+    });
+    if (result.canceled || !result.filePath) {
+      return { ok: false, canceled: true };
+    }
+    const settings = loadSettings(app.getPath('userData'));
+    const html = buildCompareShareCardHtml(cmp, {
+      title: opts.title,
+      template: opts.template,
+      generatedAt: opts.generatedAt || new Date().toISOString(),
+      hub: opts.hub != null ? opts.hub : settings.reportHubDir,
+      kinds: opts.kinds,
+    });
+    fs.writeFileSync(result.filePath, html, 'utf8');
+    const check = inspectCompareShareCardHtml(html, {
+      template: opts.template,
+      title: opts.title,
+      kinds: opts.kinds,
+    });
+    let opened = false;
+    if (opts.openAfterExport !== false) {
+      try {
+        const err = await shell.openPath(result.filePath);
+        opened = !err;
+      } catch {
+        opened = false;
+      }
+    }
+    return { ok: true, path: result.filePath, check, opened };
+  });
+
+  ipcMain.handle('desktop:copy-compare-markdown', async (_evt, cmp, opts = {}) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const md = buildCompareShareMarkdown(cmp, {
+      ...opts,
+      hub: opts.hub != null ? opts.hub : settings.reportHubDir,
+    });
+    clipboard.writeText(md);
+    return { ok: true, bytes: Buffer.byteLength(md, 'utf8') };
+  });
+
+  ipcMain.handle('desktop:copy-compare-json', async (_evt, cmp, opts = {}) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const json = buildCompareShareJson(cmp, {
+      ...opts,
+      hub: opts.hub != null ? opts.hub : settings.reportHubDir,
+    });
+    clipboard.writeText(json);
+    return { ok: true, bytes: Buffer.byteLength(json, 'utf8') };
+  });
+
+  ipcMain.handle('desktop:copy-compare-deeplink', async (_evt, payload = {}) => {
+    const url = buildCompareDeepLink({
+      base: payload.base,
+      target: payload.target,
+      hub: payload.hub,
+      kinds: payload.kinds,
+    });
+    clipboard.writeText(url);
+    return { ok: true, url };
+  });
+
+
+  ipcMain.handle('desktop:copy-open-deeplink', async (_evt, payload = {}) => {
+    const url = buildOpenDeepLink({
+      run: payload.run,
+      path: payload.path,
+      dir: payload.dir,
+      hub: payload.hub,
+      focus: payload.focus,
+      failSteps: payload.failSteps,
+    });
+    clipboard.writeText(url);
+    return { ok: true, url };
+  });
+
+  
+  
+  ipcMain.handle('desktop:copy-open-deeplinks', async (_evt, payload = {}) => {
+    const text = buildHistoryOpenDeepLinks(payload.entries || [], {
+      hub: payload.hub,
+      failSteps: payload.failSteps,
+    });
+    if (!text) throw new Error('没有可复制的打开深链');
+    clipboard.writeText(text);
+    return { ok: true, text, count: text.split('\n').filter(Boolean).length };
+  });
+
+ipcMain.handle('desktop:popup-history-menu', async (evt, opts = {}) => {
+    const win = BrowserWindow.fromWebContents(evt.sender);
+    return popupHistoryContextMenu(Menu, win, opts || {});
+  });
+
+ipcMain.handle('desktop:open-path', async (_evt, absPath) => {
+    const target = path.resolve(String(absPath || ''));
+    if (!target || !fs.existsSync(target)) {
+      throw new Error('文件不存在');
+    }
+    const err = await shell.openPath(target);
+    if (err) throw new Error(err);
+    return { ok: true, path: target };
+  });
+
+  ipcMain.handle('desktop:reveal-path', async (_evt, absPath) => {
+    const target = path.resolve(String(absPath || ''));
+    if (!target || !fs.existsSync(target)) {
+      throw new Error('路径不存在');
+    }
+    shell.showItemInFolder(target);
+    return { ok: true, path: target };
+  });
+
   ipcMain.handle('desktop:file-url', async (_evt, absPath) => pathToFileURL(absPath).href);
 
   ipcMain.handle('desktop:get-settings', async () => loadSettings(app.getPath('userData')));
 
-  ipcMain.handle('desktop:save-settings', async (_evt, partial) =>
-    saveSettings(app.getPath('userData'), partial || {})
-  );
+  ipcMain.handle('desktop:save-settings', async (_evt, partial) => {
+    const userData = app.getPath('userData');
+    const patch = { ...(partial || {}) };
+    if (patch.reportHubDir) {
+      const cur = loadSettings(userData);
+      patch.recentHubs = rememberRecentHub(cur.recentHubs, patch.reportHubDir);
+    }
+    if (Object.prototype.hasOwnProperty.call(patch, 'watchHubHistory')) {
+      patch.watchHubHistory = patch.watchHubHistory !== false;
+    }
+    const next = saveSettings(userData, patch);
+    syncHubWatcher(next);
+    return next;
+  });
 
   ipcMain.handle('desktop:pick-hub-dir', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -325,7 +970,7 @@ function registerIpc() {
     });
     if (result.canceled || !result.filePaths[0]) return null;
     const hub = result.filePaths[0];
-    saveSettings(app.getPath('userData'), { reportHubDir: hub });
+    persistReportHub(hub);
     return hub;
   });
 
@@ -335,56 +980,521 @@ function registerIpc() {
     return readHistory(dir);
   });
 
-  ipcMain.handle('desktop:open-history-run', async (_evt, entry) => {
+  ipcMain.handle('desktop:refresh-fail-digest', async (_evt, hubDir) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = path.resolve(String(hubDir || settings.reportHubDir || '').trim());
+    if (!hub) throw new Error('未设置报告根目录（hub）');
+    if (!fs.existsSync(hub)) throw new Error(`hub 不存在：${hub}`);
+    const hist = readHistory(hub);
+    if (hist?.error) throw new Error(hist.error);
+    const written = writeHistoryFailDigestSidecars(hub, hist?.runs || []);
+    return {
+      ok: true,
+      hubDir: hub,
+      mdPath: written.mdPath,
+      jsonPath: written.jsonPath,
+      failRunCount: written.digest?.failRunCount || 0,
+      groupCount: written.digest?.groups?.length || 0,
+      runCount: written.digest?.runCount || 0,
+    };
+  });
+
+  ipcMain.handle('desktop:open-history-run', async (_evt, entry, opts = {}) => {
     const settings = loadSettings(app.getPath('userData'));
     const indexPath = resolveRunIndex(settings.reportHubDir, entry);
     if (!indexPath || !fs.existsSync(indexPath)) {
       throw new Error('找不到该次运行的 index.html，请检查报告根目录设置');
     }
-    await openReportDir(path.dirname(indexPath));
-    return { indexPath, dir: path.dirname(indexPath) };
+    const opened = await openReportDir(path.dirname(indexPath), opts || {});
+    return { indexPath, dir: path.dirname(indexPath), url: opened?.url };
   });
 
-  ipcMain.handle('desktop:export-report', async (_evt, kind) => {
+  ipcMain.handle('desktop:export-report', async (evt, kind, entryOrEntries) => {
     const settings = loadSettings(app.getPath('userData'));
     const hub = settings.reportHubDir;
     if (!hub) throw new Error('请先在设置中指定报告根目录');
-    const matches = fs.readdirSync(hub).filter((n) => n.endsWith('.uhilreport'));
-    if (!matches.length) throw new Error('报告根目录下没有 .uhilreport');
-    matches.sort();
-    const input = path.join(hub, matches[matches.length - 1]);
-    const binCandidates = [
-      path.join(REPO_ROOT, 'bin', 'studio-reporter'),
-      path.join(REPO_ROOT, 'bin', 'studio-reporter.exe'),
-      'studio-reporter',
-    ];
-    const { spawnSync } = require('node:child_process');
-    let bin = binCandidates.find((c) => c === 'studio-reporter' || fs.existsSync(c));
+    const entries = Array.isArray(entryOrEntries)
+      ? entryOrEntries.filter(Boolean)
+      : entryOrEntries
+        ? [entryOrEntries]
+        : [];
+    const bin = resolveStudioReporterBin(BUNDLE_ROOT);
     if (!bin) throw new Error('找不到 studio-reporter 可执行文件（请先 make build）');
-    const args = ['generate', '--input', input, '--out', hub];
-    if (kind === 'pdf') args.push('--pdf');
-    if (kind === 'single') args.push('--single');
-    const result = spawnSync(bin, args, { encoding: 'utf8' });
-    if (result.status !== 0) {
-      throw new Error(result.stderr || result.stdout || `export failed (${result.status})`);
+
+    let inputs = [];
+    if (!entries.length) {
+      const matches = fs.readdirSync(hub).filter((n) => n.endsWith('.uhilreport'));
+      if (!matches.length) throw new Error('报告根目录下没有 .uhilreport');
+      matches.sort();
+      inputs = [path.join(hub, matches[matches.length - 1])];
+    } else {
+      for (const entry of entries) {
+        const input = resolveRunUhilreport(hub, entry);
+        if (!input) {
+          throw new Error(`运行 ${entry.id || entry.href || '?'} 找不到 .uhilreport`);
+        }
+        inputs.push(input);
+      }
     }
-    return { ok: true, input, out: hub, kind, log: result.stdout };
+
+    exportCancelled = false;
+    activeExportChild = null;
+    const sender = evt.sender;
+    const result = await exportMany({
+      bin,
+      kind,
+      inputs,
+      onProgress: (p) => {
+        if (!sender.isDestroyed()) {
+          sender.send('desktop:export-progress', {
+            kind,
+            current: p.current,
+            total: p.total,
+            input: p.input,
+          });
+        }
+      },
+      isCancelled: () => exportCancelled,
+      onSpawn: (child) => {
+        activeExportChild = child;
+      },
+    });
+    activeExportChild = null;
+    let digest = null;
+    let digestError = '';
+    try {
+      const hist = readHistory(hub);
+      digest = writeHistoryFailDigestSidecars(hub, hist?.runs || []);
+    } catch (err) {
+      digestError = String(err?.message || err);
+      console.warn('[export] fail-digest sidecars:', digestError);
+    }
+    if (result.cancelled) {
+      return {
+        ok: false,
+        cancelled: true,
+        kind,
+        exported: result.exported,
+        digest: digest
+          ? { mdPath: digest.mdPath, jsonPath: digest.jsonPath, failRunCount: digest.digest.failRunCount }
+          : undefined,
+        digestError: digestError || undefined,
+      };
+    }
+    return {
+      ok: true,
+      kind,
+      exported: result.exported,
+      digest: digest
+        ? { mdPath: digest.mdPath, jsonPath: digest.jsonPath, failRunCount: digest.digest.failRunCount }
+        : undefined,
+      digestError: digestError || undefined,
+    };
+  });
+
+  ipcMain.handle('desktop:cancel-export', async () => {
+    exportCancelled = true;
+    const killed = killExportChild(activeExportChild);
+    return { ok: true, killed };
+  });
+
+  ipcMain.handle('desktop:delete-history-runs', async (_evt, ids) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const hub = settings.reportHubDir;
+    if (!hub) throw new Error('请先在设置中指定报告根目录');
+    const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
+    if (!list.length) throw new Error('未选择要删除的运行');
+    const detail =
+      list.length === 1
+        ? `删除运行 ${list[0]}？\n归档文件将被移除且无法恢复。`
+        : `删除所选 ${list.length} 次运行？\n${list.join('\n')}\n\n归档文件将被移除且无法恢复。`;
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      buttons: ['删除', '取消'],
+      defaultId: 1,
+      cancelId: 1,
+      title: '删除历史运行',
+      message: '确认删除历史运行',
+      detail,
+      noLink: true,
+    });
+    if (response !== 0) return { ok: false, cancelled: true, deleted: [] };
+    return withHubLock(hub, () => deleteHistoryRuns(hub, list));
+  });
+
+  ipcMain.handle('desktop:pick-gauge-project', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: '选择 Gauge 项目目录（含 manifest.json 或 specs/）',
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const projectDir = result.filePaths[0];
+    const settings = loadSettings(app.getPath('userData'));
+    saveSettings(app.getPath('userData'), {
+      gaugeProjectDir: projectDir,
+      recentProjects: rememberRecentProject(settings.recentProjects, projectDir),
+    });
+    return projectDir;
+  });
+
+  ipcMain.handle('desktop:list-sessions', async () => ({
+    sessions: sessionManager.list(),
+    activeId: sessionManager.activeId,
+  }));
+
+  ipcMain.handle('desktop:set-active-session', async (_evt, id) => {
+    const session = sessionManager.setActive(id);
+    if (!session) throw new Error('会话不存在');
+    if (session.liveUrl) {
+      sendToRenderer('navigate-live', { url: session.liveUrl });
+    } else if (session.discoveredUrl) {
+      const live = await connectLiveWs(session.discoveredUrl);
+      sessionManager.markLive(id, live.liveUrl);
+    }
+    sendToRenderer('sessions-updated', {
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
+    });
+    return sessionManager.get(id);
+  });
+
+  ipcMain.handle('desktop:gauge-status', async () => {
+    const active = sessionManager.active;
+    return {
+      running: Boolean(active && active.status === 'running'),
+      discoveredUrl: active?.discoveredUrl || null,
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
+    };
+  });
+
+  ipcMain.handle('desktop:start-gauge', async (_evt, opts = {}) => {
+    const settings = loadSettings(app.getPath('userData'));
+    const projectDir = opts.projectDir || settings.gaugeProjectDir;
+    const specs = opts.specs || settings.gaugeSpecs || 'specs';
+    const env = opts.env != null ? opts.env : settings.gaugeEnv || '';
+    const gaugeBin = opts.gaugeBin || settings.gaugeBin || 'gauge';
+    const recentProjects = rememberRecentProject(settings.recentProjects, projectDir);
+    saveSettings(app.getPath('userData'), {
+      gaugeProjectDir: projectDir || '',
+      gaugeSpecs: specs,
+      gaugeEnv: env,
+      gaugeBin,
+      recentProjects,
+    });
+
+    const session = sessionManager.start({
+      projectDir,
+      specs,
+      env,
+      gaugeBin,
+      onLog: (text, stream, sessionId) =>
+        sendToRenderer('gauge-log', { text, stream, sessionId }),
+      onDiscover: async (url, sessionId) => {
+        sendToRenderer('gauge-discover', { url, sessionId });
+        if (sessionManager.activeId !== sessionId) return;
+        try {
+          const live = await connectLiveWs(url);
+          sessionManager.markLive(sessionId, live.liveUrl);
+          sendToRenderer('gauge-status', {
+            running: true,
+            sessionId,
+            discoveredUrl: url,
+            autoConnected: true,
+            liveUrl: live.liveUrl,
+            sessions: sessionManager.list(),
+            activeId: sessionManager.activeId,
+          });
+        } catch (err) {
+          sendToRenderer('gauge-status', {
+            running: true,
+            sessionId,
+            discoveredUrl: url,
+            autoConnected: false,
+            error: String(err.message || err),
+            sessions: sessionManager.list(),
+            activeId: sessionManager.activeId,
+          });
+        }
+      },
+      onExit: (code, signal, sessionId) => {
+        sendToRenderer('gauge-status', {
+          running: false,
+          sessionId,
+          code,
+          signal,
+          discoveredUrl: sessionManager.get(sessionId)?.discoveredUrl || null,
+          sessions: sessionManager.list(),
+          activeId: sessionManager.activeId,
+        });
+        sendToRenderer('sessions-updated', {
+          sessions: sessionManager.list(),
+          activeId: sessionManager.activeId,
+        });
+      },
+    });
+
+    sendToRenderer('gauge-status', {
+      running: true,
+      sessionId: session.id,
+      pid: session.pid,
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
+    });
+    sendToRenderer('sessions-updated', {
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
+    });
+    return { ok: true, session, sessions: sessionManager.list() };
+  });
+
+  ipcMain.handle('desktop:stop-gauge', async (_evt, sessionId) => {
+    const stopped = sessionManager.stop(sessionId);
+    return {
+      ok: true,
+      stopped,
+      sessions: sessionManager.list(),
+      activeId: sessionManager.activeId,
+    };
   });
 
 }
 
+
+/** Deep-link queue: hold cold-start / early open-url until renderer finished loading. */
+const deepLinkQueue = createDeepLinkQueue({
+  parse: parseDeepLink,
+  handle: (parsed) => handleDeepLinkAction(parsed),
+  onIgnored: (parsed, raw) => {
+    console.warn('[desktop] deep link ignored:', parsed?.error || 'invalid', raw);
+  },
+});
+
+function focusMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow();
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+async function handleDeepLinkAction(action) {
+  if (!action || !action.ok) return { ok: false, error: action?.error || 'invalid' };
+  focusMainWindow();
+  if (action.action === 'open') {
+    const focusOpts = {
+      focus: action.focus || undefined,
+      failSteps: !!action.failSteps,
+    };
+    if (action.run) {
+      let settings = loadSettings(app.getPath('userData'));
+      if (action.hub) {
+        settings = persistReportHub(path.resolve(action.hub)) || settings;
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('settings-updated', settings);
+        }
+      }
+      let hub = String(settings.reportHubDir || '').trim();
+      if (!hub) {
+        const recent = Array.isArray(settings.recentHubs) ? settings.recentHubs : [];
+        const fallback = String(recent[0] || '').trim();
+        if (fallback) {
+          settings = persistReportHub(path.resolve(fallback)) || settings;
+          hub = String(settings.reportHubDir || fallback).trim();
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('settings-updated', settings);
+          }
+        }
+      }
+      if (!hub) {
+        throw new Error('open?run= 需要 hub 参数、已配置的报告根目录，或最近使用的 hub');
+      }
+      const hist = readHistory(hub);
+      const runs = Array.isArray(hist?.runs) ? hist.runs : Array.isArray(hist) ? hist : [];
+      const entry = runs.find((r) => String(r?.id || '') === String(action.run));
+      if (!entry) {
+        throw new Error(`历史中找不到运行 ${action.run}`);
+      }
+      const indexPath = resolveRunIndex(hub, entry);
+      if (!indexPath || !fs.existsSync(indexPath)) {
+        throw new Error(`找不到运行 ${action.run} 的 index.html`);
+      }
+      const dir = path.dirname(indexPath);
+      await openReportDir(dir, focusOpts);
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('navigate-tab', { tab: 'report' });
+      }
+      return {
+        ok: true,
+        action: 'open',
+        dir,
+        run: action.run,
+        focus: focusOpts.focus,
+        failSteps: focusOpts.failSteps || undefined,
+      };
+    }
+    if (action.path && isUhilreportPath(action.path)) {
+      const opened = await openUhilreport(action.path);
+      // openUhilreport opens without hash; re-open when focus and/or failSteps
+      // were requested (digest links often send failSteps=1 without focus).
+      if (focusOpts.focus || focusOpts.failSteps) {
+        await openReportDir(opened.outDir, focusOpts);
+      }
+      return {
+        ok: true,
+        action: 'open',
+        dir: opened.outDir,
+        uhilreport: opened.input,
+        regenerated: true,
+        focus: focusOpts.focus,
+        failSteps: focusOpts.failSteps || undefined,
+      };
+    }
+    let dir = action.dir || '';
+    if (action.path) {
+      const abs = path.resolve(action.path);
+      dir = abs.toLowerCase().endsWith('.html') ? path.dirname(abs) : abs;
+    }
+    dir = path.resolve(dir);
+    await openReportDir(dir, focusOpts);
+    return {
+      ok: true,
+      action: 'open',
+      dir,
+      focus: focusOpts.focus,
+      failSteps: focusOpts.failSteps || undefined,
+    };
+  }
+if (action.action === 'connect') {
+    await connectLiveWs(action.url);
+    return { ok: true, action: 'connect', url: action.url };
+  }
+  if (action.action === 'hub') {
+    const dir = path.resolve(action.dir);
+    const settings = persistReportHub(dir);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('settings-updated', settings);
+      mainWindow.webContents.send('navigate-tab', { tab: 'history' });
+    }
+    return { ok: true, action: 'hub', dir };
+  }
+  if (action.action === 'compare') {
+    let settings = null;
+    if (action.hub) {
+      const dir = path.resolve(action.hub);
+      settings = persistReportHub(dir);
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (settings) mainWindow.webContents.send('settings-updated', settings);
+      mainWindow.webContents.send('navigate-compare', {
+        base: action.base,
+        target: action.target,
+        kinds: action.kinds || null,
+      });
+    }
+    return {
+      ok: true,
+      action: 'compare',
+      base: action.base,
+      target: action.target,
+      hub: action.hub ? path.resolve(action.hub) : undefined,
+      kinds: action.kinds || undefined,
+    };
+  }
+  return { ok: false, error: `unhandled action ${action.action}` };
+}
+
+async function enqueueDeepLink(raw) {
+  try {
+    return await deepLinkQueue.enqueue(raw);
+  } catch (err) {
+    console.warn('[desktop] deep link failed:', err);
+    return { ok: false, error: String(err.message || err) };
+  }
+}
+
+async function flushPendingDeepLinks() {
+  return deepLinkQueue.flush();
+}
+
+
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_evt, argv) => {
+    const link = extractDeepLinkFromArgv(argv);
+    focusMainWindow();
+    if (link) enqueueDeepLink(link);
+  });
+}
+
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  app.setAsDefaultProtocolClient(PROTOCOL);
+}
+
+app.on('open-url', (evt, url) => {
+  evt.preventDefault();
+  enqueueDeepLink(url);
+});
+
+// Cold-start deep link (Windows/Linux): queue until renderer did-finish-load.
+{
+  const cold = extractDeepLinkFromArgv(process.argv);
+  if (cold) enqueueDeepLink(cold);
+}
+
 app.whenReady().then(async () => {
+  const missing = missingBundleResources(BUNDLE_ROOT);
+  if (missing.length && !app.isPackaged) {
+    console.warn('[desktop] missing bundle resources:', missing.join(', '));
+  }
   registerIpc();
   buildMenu();
-  await startAssetServer(REPO_ROOT);
-  createWindow();
+  await startAssetServer(BUNDLE_ROOT);
+  await createWindow();
+  await flushPendingDeepLinks();
+  try {
+    syncHubWatcher(loadSettings(app.getPath('userData')));
+  } catch {
+    /* ignore */
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+  try {
+    const settings = loadSettings(app.getPath('userData'));
+    if (app.isPackaged && settings.autoCheckUpdates) {
+      setTimeout(() => {
+        updater.checkForUpdates().catch(() => {});
+      }, 2500);
+    }
+  } catch {
+    /* ignore */
+  }
+});
+
+app.on('before-quit', () => {
+  try {
+    hubWatcher.stop();
+  } catch {
+    /* ignore */
+  }
 });
 
 app.on('window-all-closed', () => {
   if (bridge) bridge.close();
+  sessionManager.stopAll();
   if (assetServer) assetServer.close();
+  try {
+    hubWatcher.stop();
+  } catch {
+    /* ignore */
+  }
   if (process.platform !== 'darwin') app.quit();
 });

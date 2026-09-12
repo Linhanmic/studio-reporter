@@ -131,5 +131,34 @@ studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
 |---|---|---|
 | `/api/history` | GET | Returns `history.json` |
 | `/api/history/{id}` | DELETE | Removes `archives/<id>` and its index entry. Loopback clients only |
+| `/api/fail-digest` | POST | Rewrite hub `fail-digest.md`/`fail-digest.json` from `history.json`. Loopback clients only |
+
+### `fail-digest.md` / `fail-digest.json`
+
+Hub sidecars written by `studio-reporter digest --write`, Desktop export/refresh, plugin finalize, or `POST /api/fail-digest`.
+
+`fail-digest.json` (additive fields; current `formatVersion` **1**):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `format` | string | `studio-reporter.historyFailDigest/v1` |
+| `formatVersion` | int | Schema version, currently `1` |
+| `generatedAt` | string | RFC3339 UTC timestamp when the digest was built |
+| `hubDir` | string | Absolute hub path when known |
+| `runCount` / `failRunCount` / … | int | Window counters |
+| `groups` | array | Aggregated `topFailReason` groups (`lastRunFocus` = path-style DOM id when known) |
+| `openLinksLatest` / `openLinksAll` | string[] | Optional deep links when hub is known; last-run links include `focus=` (query encodes `/` as `%2F`) when `lastRunFocus` is set |
+
+Markdown includes the same `formatVersion` / `generatedAt` meta lines for human/CI grepping.
+
+CI freshness gate:
+
+```bash
+studio-reporter digest --dir reports/studio-report --check --max-age 24h
+# or: make check-fail-digest DIR=reports/studio-report MAX_AGE=24h
+```
+
+Fails (exit 1) when the sidecar is missing, `formatVersion` mismatches, or `generatedAt` is older than `--max-age`.
+
 
 Static files (viewer, manage console, archives) are served from the hub root with `Cache-Control: no-store`.

@@ -58,6 +58,9 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`data-action="show-overview"`,
 		`id="shot-lightbox"`,
 		`data-shot-gallery`,
+		`data-lightbox-nav="-1"`,
+		`data-lightbox-nav="1"`,
+		`id="shot-lightbox-pos"`,
 		`data-shot-src="images/step-a.png"`,
 		`data-shot-src="images/step-fail.png"`,
 		`shot-fail`,
@@ -69,6 +72,46 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`截图显示策略`,
 		`插件版本`,
 		`操作系统`,
+		`失败原因聚合`,
+		`fail-reason-table`,
+		`copy-empty-state-metrics-report-meta`,
+		`复制 meta`,
+		`字段`,
+		`overview-empty-state-metrics-meta-fields`,
+		`toggle-empty-state-metrics-meta-fields`,
+		`data-stat-kind="specs"`,
+		`data-count-kind="scenarios"`,
+		`overview-count-row`,
+		`overview-spec-row`,
+		`data-nav-scn-count`,
+		`nav-count`,
+		`data-scn-id=`,
+		`print-scope-banner`,
+		`data-spec-id=`,
+		`fail-reason-ref`,
+		`data-fail-ref-kind="scenario"`,
+		`data-scn-id="scn:fail"`,
+		`data-fail-count-total=`,
+		`copy-fail-reason-link`,
+		`复制深链`,
+		`复制摘要`,
+		`copy-fail-reason-snippet`,
+		`复制全部摘要`,
+		`copy-all-fail-reason-snippets`,
+		`复制全部深链`,
+		`copy-all-fail-reason-links`,
+		`overview-fail-reason-empty-hint`,
+		`当前过滤下无可见失败原因（Esc 可清除过滤）`,
+		`clear-report-filters`,
+		`清除过滤`,
+		`restore-fail-only-view`,
+		`仅看失败`,
+		`undo-clear-report-filters`,
+		`撤销清除`,
+		`fail-reason-empty-row`,
+		`当前过滤下无匹配的失败原因`,
+		`boom`,
+		`data-nav-target="scn:fail"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q", want)
@@ -111,5 +154,280 @@ func TestPathToFileURL(t *testing.T) {
 	got := pathToFileURL("/tmp/a b/index.html")
 	if !strings.HasPrefix(got, "file://") {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestWithURLFragment(t *testing.T) {
+	got := withURLFragment("file:///tmp/index.html", "fail-steps")
+	if got != "file:///tmp/index.html#fail-steps" {
+		t.Fatalf("got %q", got)
+	}
+	got = withURLFragment("file:///tmp/index.html#overview", "#fail-steps")
+	if got != "file:///tmp/index.html#fail-steps" {
+		t.Fatalf("replace frag: %q", got)
+	}
+	if withURLFragment("file:///x", "") != "file:///x" {
+		t.Fatal("empty frag should no-op")
+	}
+}
+
+func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
+	css := staticReportCSS
+	printIdx := strings.Index(css, "@media print")
+	if printIdx < 0 {
+		t.Fatal("missing @media print")
+	}
+	printBlock := css[printIdx:]
+	for _, want := range []string{
+		`html.fail-steps-mode`,
+		`data-kind="step"`,
+		`data-kind="concept"`,
+		`data-kind="scenario"`,
+		`data-kind="spec"`,
+		`:has(`,
+		`filter-hidden`,
+		`print-scope-banner`,
+		`print-color-adjust: exact`,
+		`-webkit-print-color-adjust: exact`,
+	} {
+		if !strings.Contains(printBlock, want) {
+			t.Fatalf("print CSS missing %q", want)
+		}
+	}
+	screenBlock := css[:printIdx]
+	for _, want := range []string{
+		`.fail-steps-mode .result-pane .report-block[data-kind="scenario"]:not([data-verdict="fail"])`,
+		`data-kind="datarow"`,
+		`data-kind="datadriven"`,
+		`.fail-steps-mode .nav-pane .nav-item.nav-scn:not(.tone-fail)`,
+		`.fail-steps-mode .nav-pane .nav-spec:not(:has(.nav-item.nav-scn.tone-fail))`,
+	} {
+		if !strings.Contains(screenBlock, want) {
+			t.Fatalf("screen CSS missing scenario/nav collapse %q", want)
+		}
+	}
+	js := staticReportJS
+	for _, want := range []string{
+		`beforeprint`,
+		`prepareFailStepsForPrint`,
+		`wantFailStepsFromURL`,
+		`fail-steps`,
+		`syncFailReasonOverview`,
+		`syncBulkFailReasonCopyButtons`,
+		`firstVisibleFailReasonTarget`,
+		`jumpFailReasonRow`,
+		`collectFailSummary`,
+		`failSummaryDeepLink`,
+		`failReasonShareURL`,
+		`copyFailReasonLink`,
+		`StudioReportFailReasonShareURL`,
+		`StudioReportCopyFailReasonLink`,
+		`StudioReportCopyFailReasonSnippet`,
+		`StudioReportFormatFailReasonSnippet`,
+		`StudioReportCopyAllFailReasonSnippets`,
+		`StudioReportFormatAllFailReasonSnippets`,
+		`StudioReportCopyAllFailReasonLinks`,
+		`StudioReportFormatAllFailReasonLinks`,
+		`StudioReportSyncFailReasonOverview`,
+		`StudioReportSyncBulkFailReasonCopyButtons`,
+		`StudioReportClearReportFilters`,
+		`StudioReportRestoreFailOnlyView`,
+		`StudioReportUndoClearReportFilters`,
+		`clearReportFilters`,
+		`restoreFailOnlyView`,
+		`undoClearReportFilters`,
+		`已撤销清除，已恢复：`,
+		`StudioReportDescribeFilterSnapshot`,
+		`describeFilterSnapshot`,
+		`emptyStateMetrics`,
+		`StudioReportEmptyStateMetrics`,
+		`StudioReportFormatEmptyStateMetricsJSON`,
+		`buildEmptyStateMetricsDownloadName`,
+		`StudioReportBuildEmptyStateMetricsDownloadName`,
+		`emptyStateMetricsReportMeta`,
+		`StudioReportEmptyStateMetricsReportMeta`,
+		`studio-report-meta`,
+		`StudioReportEmptyStateMetricsPanelSnapshot`,
+		`StudioReportDismissEmptyMetricsEnableHint`,
+		`StudioReportCopyEmptyMetricsEnableURL`,
+		`StudioReportShortenEmptyMetricsEnableURL`,
+		`StudioReportDescribeEmptyMetricsEnableURLPreview`,
+		`StudioReportDescribeEmptyMetricsEnableKindSummary`,
+		`StudioReportSyncEmptyMetricsEnableURLButtons`,
+		`StudioReportFormatEmptyMetricsEnableURL`,
+		`emptyMetricsKind`,
+		`StudioReportApplyEmptyMetricsKindFromQuery`,
+		`StudioReportReadEmptyMetricsKindFromQuery`,
+		`copy-empty-metrics-enable-url`,
+		` · kind=`,
+		`当前未过滤`,
+		`StudioReportShowEmptyStateMetricsPanel`,
+		`dismiss-empty-metrics-enable-hint`,
+		`show-empty-state-metrics-panel`,
+		`overview-empty-metrics-enable-hint`,
+		`syncEmptyStateMetricsPanelButtons`,
+		`StudioReportCopyEmptyStateMetricsJSON`,
+		`StudioReportCopyEmptyStateMetricsIssueMarkdown`,
+		`StudioReportToggleEmptyStateMetricsEvents`,
+		`StudioReportCopyEmptyStateMetricsEventLine`,
+		`StudioReportFormatEmptyStateMetricsEventLine`,
+		`StudioReportSetEmptyStateMetricsEventKindFilter`,
+		`StudioReportClearEmptyStateMetricsEventKindFilter`,
+		`StudioReportEmptyStateMetricsEventKindFilter`,
+		`StudioReportCopyEmptyStateMetricsVisibleEventLines`,
+		`StudioReportFormatEmptyStateMetricsVisibleEventLines`,
+		`StudioReportFormatEmptyStateMetricsVisibleJSON`,
+		`StudioReportCopyEmptyStateMetricsVisibleJSON`,
+		`StudioReportDownloadEmptyStateMetricsVisibleJSON`,
+		`overview-empty-state-metrics-events`,
+		`toggle-empty-state-metrics-events`,
+		`data-kind-filter`,
+		`syncEmptyStateMetricsCollapsedKindClear`,
+		`clear-empty-state-metrics-event-kind-collapsed`,
+		`copy-empty-state-metrics-report-meta`,
+		`当前未过滤`,
+		`copy-empty-state-metrics-event`,
+		`copy-empty-state-metrics-visible-events`,
+		`copy-empty-state-metrics-visible-json`,
+		`filter-empty-state-metrics-event-kind`,
+		`clear-empty-state-metrics-event-kind`,
+		`overview-empty-state-metrics-event-line`,
+		`overview-empty-state-metrics-event-kinds`,
+		`overview-empty-state-metrics-event-kind-clear`,
+		`overview-empty-state-metrics-event-actions`,
+		`StudioReportFormatEmptyStateMetricsIssueMarkdown`,
+		`copy-empty-state-metrics-issue`,
+		`download-empty-state-metrics-issue-short`,
+		`StudioReportDownloadEmptyStateMetricsJSON`,
+		`StudioReportResetEmptyStateMetrics`,
+		`StudioReportHideEmptyStateMetricsPanel`,
+		`StudioReportSetEmptyStateMetricsPanelVisible`,
+		`copy-empty-state-metrics-json`,
+		`download-empty-state-metrics-json`,
+		`reset-empty-state-metrics`,
+		`hide-empty-state-metrics-panel`,
+		`emptyMetrics=1`,
+		`StudioReportSyncEmptyStateMetricsPanel`,
+		`报告 `,
+		`StudioReportFormatEmptyStateMetricsReportSummary`,
+		`StudioReportCopyEmptyStateMetricsReportSummary`,
+		`formatEmptyStateMetricsReportSummary`,
+		`meta+`,
+		`formatEmptyStateMetricsReportSummarySecondary`,
+		`formatEmptyStateMetricsReportSummaryPrimary`,
+		`StudioReportToggleEmptyStateMetricsMetaMore`,
+		`StudioReportSyncEmptyMetricsMetaInLocation`,
+		`StudioReportApplyEmptyMetricsMetaMoreFromQuery`,
+		` · meta+`,
+		`emptyMetricsMeta`,
+		`overview-empty-state-metrics-meta-secondary`,
+		`toggle-empty-state-metrics-meta-more`,
+		`shortenEmptyStateMetricsProjectRoot`,
+		`项目根目录`,
+		`plugin `,
+		`'- 插件版本: '`,
+		`'- 主机: '`,
+		`overview-empty-state-metrics`,
+		`overview-empty-state-metrics-text`,
+		`recordEmptyStateEvent`,
+		`lastFilterSnapshot`,
+		`Ctrl/Cmd+Z`,
+		`failReasonEmptyStateActive`,
+		`clear-report-filters`,
+		`restore-fail-only-view`,
+		`undo-clear-report-filters`,
+		`copyFailReasonSnippet`,
+		`formatFailReasonSnippet`,
+		`copyAllFailReasonSnippets`,
+		`formatAllFailReasonSnippets`,
+		`copyAllFailReasonLinks`,
+		`formatAllFailReasonLinks`,
+		`copy-all-fail-reason-snippets`,
+		`copy-all-fail-reason-links`,
+		`FAIL_SUMMARY_LOCATOR_EXAMPLE`,
+		`copyFailSummaryLocatorExample`,
+		`StudioReportCollectFailSummary`,
+		`StudioReportFailSummaryLocatorExample`,
+		`StudioReportCopyFailSummaryLocatorExample`,
+		`syncOverviewCounts`,
+		`syncFilterBadges`,
+		`syncOverviewSpecList`,
+		`syncNavCounts`,
+		`updatePrintScopeBanner`,
+		`describePrintScope`,
+		`updateFilterGroupCounts`,
+		`isNodeVisuallyCounted`,
+		`visibleFailScenarioIdSet`,
+		`FilterFailReasonGroups`,
+		`applyingHash = true`,
+		`failSteps = null`,
+		`parseFailStepsFlag`,
+		`failStepsParamValue`,
+		`failsteps`,
+		`fail_steps`,
+	} {
+		if !strings.Contains(js, want) {
+			t.Fatalf("static JS missing %q", want)
+		}
+	}
+	if !strings.Contains(staticReportCSS, `.fail-reason-row.filter-hidden`) {
+		t.Fatal("CSS missing fail-reason-row filter-hidden")
+	}
+	if !strings.Contains(staticReportCSS, `.fail-reason-ref.ref-hidden`) {
+		t.Fatal("CSS missing fail-reason-ref ref-hidden")
+	}
+	if !strings.Contains(staticReportCSS, `.action-btn.action-btn-tiny`) {
+		t.Fatal("CSS missing action-btn-tiny for fail-reason deep-link button")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-fail-reason-tools`) {
+		t.Fatal("CSS missing overview-fail-reason-tools for bulk copy affordance")
+	}
+	if !strings.Contains(staticReportCSS, `.action-btn:disabled`) {
+		t.Fatal("CSS missing disabled action-btn style for bulk copy when no visible reasons")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-fail-reason-empty-hint`) {
+		t.Fatal("CSS missing overview-fail-reason-empty-hint for filtered empty state")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics`) {
+		t.Fatal("CSS missing overview-empty-state-metrics panel")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-metrics-enable-hint`) {
+		t.Fatal("CSS missing overview-empty-metrics-enable-hint")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-text`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-text for JSON export panel")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-events`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-events fold region")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-line`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-event-line copy affordance")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-kind`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-event-kind filter chips")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-kind-clear`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-event-kind-clear")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-kind-clear-collapsed`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-kind-clear-collapsed")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-secondary`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-meta-secondary")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-fields-row`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-meta-fields-row")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-actions`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-event-actions for copy-visible")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics .action-btn:focus-visible`) {
+		t.Fatal("CSS missing metrics panel action-btn:focus-visible")
+	}
+	if !strings.Contains(staticReportCSS, `.fail-reason-empty-row`) {
+		t.Fatal("CSS missing fail-reason-empty-row for filtered empty table placeholder")
+	}
+	if !strings.Contains(staticReportCSS, `.action-btn:focus-visible`) {
+		t.Fatal("CSS missing action-btn:focus-visible for keyboard affordance")
 	}
 }

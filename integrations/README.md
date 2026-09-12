@@ -2,7 +2,7 @@
 
 本目录保存与桌面端的联调产物。通信契约与 **Studio Reporter Desktop** 设计见仓库根 [DESKTOP.md](../DESKTOP.md)。
 
-历史对象：[GaugeStudio](https://github.com/Linhanmic/GaugeStudio)（Electron）已按同一 discover 契约连接本插件；Reporter Desktop 将复用该桥接，聚焦报告工作台 UX。
+历史对象：[GaugeStudio](https://github.com/Linhanmic/GaugeStudio)（Electron）已按同一 discover 契约连接本插件；Reporter Desktop 聚焦报告工作台 UX。共享解析实现见 [`packages/studio-reporter-discover`](../packages/studio-reporter-discover)（`@studio-reporter/discover`）。
 
 ## 契约（0.4.x / Studio 0.1.1+）
 

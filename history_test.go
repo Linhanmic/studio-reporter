@@ -64,6 +64,14 @@ func TestRecordAndDeleteHistory(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(archive, "assets")); err == nil {
 		t.Fatal("archive should not copy Vue assets")
 	}
+	mdPath := filepath.Join(runDir, "fail-digest.md")
+	jsonPath := filepath.Join(runDir, "fail-digest.json")
+	if _, err := os.Stat(mdPath); err != nil {
+		t.Fatalf("expected fail-digest.md after finalize: %v", err)
+	}
+	if _, err := os.Stat(jsonPath); err != nil {
+		t.Fatalf("expected fail-digest.json after finalize: %v", err)
+	}
 
 	if err := deleteHistoryRun(runDir, entry.ID); err != nil {
 		t.Fatal(err)

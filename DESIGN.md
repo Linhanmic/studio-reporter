@@ -99,6 +99,123 @@ Gauge (gRPC)
 | 2026-09-11 | `.uhilreport` 截图改为相对 `images/` 路径 | 可移植单元 = uhileport + 同级 `images/`；`--input` 相对输入文件目录解析；旧绝对路径回退 `images/<basename>` |
 | 2026-09-11 | viewer 与静态报告视觉对齐 | 终态跳转后色板/密度一致优先于完全同构 DOM；静态补 frag/行底色/步骤卡；live tag 用品牌 token |
 | 2026-09-11 | manage 历史对比 | 对比信息已在 history.json；客户端勾选两次即可，无需新 API；时长变慢标红、变快标绿 |
+| 2026-09-11 | Desktop 历史对比 | 同语义移植到 `desktop/electron/compare.js`；历史页勾选 UI |
+| 2026-09-11 | Desktop 历史过滤/导出 | `filterHistoryRuns` + `resolveRunUhilreport`；搜索/verdict chips；勾选 1 次导出该次 |
+| 2026-09-11 | Desktop 历史删除/批量导出 | 原生 FS 删除对齐 Go `deleteHistoryRun`；多选批量 `generate` |
+| 2026-09-11 | Desktop 历史定位 + hub 锁 | `showItemInFolder` / clipboard；删除走 `withHubLock`（与 Go `.hub.lock` flock 对齐） |
+| 2026-09-11 | Desktop 套件结束系统通知 | 窗口未聚焦时发 OS Notification；设置 `notifyOnSuiteEnd`；点击回前台打开报告 |
+| 2026-09-11 | Desktop 自定义协议深链 | `studio-reporter://open|connect|hub|compare`；单实例转发；builder `protocols.schemes` |
+| 2026-09-11 | Desktop 深链直达历史对比 | `compare?base=&target=` 打开历史页并运行对比；可选 `hub` 先切报告根；与 UI「对比」共用 `openCompareByIds`/`runCompare` |
+| 2026-09-11 | Desktop 对比面板复制深链 | 分享入口与打开入口对称：`buildCompareDeepLink` 生成 URL，「复制深链」写入剪贴板；含 hub 以便跨机/重开可定位 |
+| 2026-09-11 | 对比分享卡片附带 compare 深链 | 离线卡片/Markdown/JSON 携带同一深链，聊天粘贴后可一键回到 Desktop 对比面板 |
+| 2026-09-11 | 深链冷启动队列加固 | 协议 URL 可能在 BrowserWindow 就绪前到达；用队列 + did-finish-load flush，保证 compare 导航送达渲染进程 |
+| 2026-09-11 | Desktop 键盘快捷键 | Cmd/Ctrl+1–4 切页；Enter 连接；Shift+H/F5 刷新历史；tablist 方向键 |
+| 2026-09-11 | Desktop 明暗主题 | 设置 `theme=system|light|dark`；CSS `[data-theme]` token；跟随系统可监听 |
+| 2026-09-11 | Desktop 打开 .uhilreport | 离线入口：菜单/IPC/深链 → CLI generate → 报告页；不改 uhileport schema |
+| 2026-09-11 | 静态报告极轻量交互 | 在静态 `index.html` 增加 hash 深链 / 复制失败摘要 / sticky 工具栏 / 键盘导航；明确不引入 SPA，避免与 Desktop 双真源 |
+| 2026-09-11 | Desktop 对比分享卡片 | 对比结果可导出自包含 HTML 卡片或复制 Markdown；非完整报告真源，便于 IM/邮件粘贴 |
+| 2026-09-11 | Desktop 打包 | electron-builder + extraResources；dev/packaged 双路径 bundle root；CLI 随包分发供导出 |
+| 2026-09-11 | Desktop 启动 Gauge | Desktop 可 spawn `gauge run` 并解析 stdout discover；仍允许外部附着；单一 discover 契约 |
+| 2026-09-11 | Desktop 多会话 | 主进程会话管理器允许多 Gauge 并行（上限 3）；UI 会话条切换 active live；最近项目持久化 |
+| 2026-09-11 | Desktop 会话恢复 / 最近 hub | `recentHubs` 与 `recentProjects` 同模式；`lastTab`/`restoreSession` 持久化；选 hub、保存设置、深链 `hub` 均写入最近列表 |
+| 2026-09-11 | Desktop 窗口布局记忆 | `window-state.js` 持久化 bounds/最大化；离屏校正；独立 `window-state.json` 与设置解耦 |
+| 2026-09-11 | Desktop 大纲分栏宽度记忆 | 拖拽分隔条调整大纲宽度；`outlinePaneWidth` 持久化；键盘左右键微调 |
+| 2026-09-11 | Desktop 大纲虚拟列表 | 侧栏 flatten + 窗口裁剪；仅 DOM 挂载可视行；失败跳转用 scrollTop 对齐 |
+| 2026-09-11 | Desktop 安装包冒烟 Win/mac | 校验器理解 `mac/*.app` 与 `win-unpacked`；跨平台 fixture；CI 仍在 Linux 上用夹具覆盖 |
+| 2026-09-11 | Desktop 安装包冒烟 | `verify-pack-dir` 校验 unpacked app + extraResources；CI 独立 job，失败上传 dist |
+| 2026-09-11 | Desktop 历史对比 UX 深化 | `invertCompareResult` + `buildCompareShareJson`；导出后 openPath/revealPath；面板交换方向 |
+| 2026-09-11 | Desktop 统一大纲搜索 | host `studio-reporter:filter` 在切页/iframe load 重放；`outlineQuery`/`outlineVerdict` 持久化；`/` 聚焦 |
+| 2026-09-11 | Desktop 失败路径一键跳转 | 主机层大纲 fail 导航（按钮 + `j`/`k`）；与静态报告内键盘分工：宿主管大纲选中，iframe 内仍可自导航 |
+| 2026-09-11 | Desktop 失败跳转可见性 | `prepareFailJumpFilter` 在跳转前清除遮挡 query / 切 fail；重放 `studio-reporter:filter` 后再 select |
+| 2026-09-11 | Desktop 历史对比导出模板 | `compareCardTemplate`（default/light/compact）+ `compareCardTitle`；分享 HTML 带 data-template |
+| 2026-09-11 | Desktop Discover 超时可配置 | `discoverTimeoutMs`（默认 20s，钳制 5–120s）；设置页秒级输入；启动 Gauge 使用该值 |
+| 2026-09-11 | 对比分享含场景 diff | 分享 Markdown/HTML/JSON 复用 `scenarioCompare`；卡片增加场景级差异区；无 report.json 时保留警告 |
+| 2026-09-11 | 静态报告仅失败步骤 | 工具栏 `fail-steps-only` 切换；隐藏非失败 step/concept；展开失败步骤与祖先；sessionStorage 记忆 |
+| 2026-09-11 | 打印/PDF 尊重仅失败步骤 | 「所见即所打」延伸到 fail-steps：print CSS + beforeprint 展开；headless PDF 用 `#fail-steps` / `GAUGE_STUDIO_PDF_FAIL_STEPS` |
+| 2026-09-11 | 仅失败步骤场景级折叠 | 在步骤隐藏之上用 `:has()` 折叠无失败场景的结构父节点；屏显/打印同一套选择器，避免空壳场景噪声 |
+| 2026-09-11 | 导航树同步 fail-steps | 左侧导航与结果树同模式隐藏；避免模式开启后仍可点到被隐藏场景 |
+| 2026-09-11 | Overview 失败摘要对齐可见树 | 客户端按可见失败场景 id 同步聚合表（隐藏引用/重算次数/空行隐藏）；Go `FilterFailReasonGroups` 为同契约纯函数；复制摘要读同步后 DOM |
+| 2026-09-11 | Overview 汇总计数对齐可见树 | 过滤与 fail-steps-mode 下顶栏/Overview 计数按可见节点重算；与失败摘要同步同一可见性规则 |
+| 2026-09-11 | 工具栏过滤徽标对齐可见树 | 过滤器徽标按搜索/交叉过滤/fail-steps 重算；表示「点选后可见量」而非静态全量 |
+| 2026-09-11 | Overview 规格书清单对齐可见树 | 过滤后隐藏不可见规格书行并刷新场景计数；与汇总/摘要同一可见性规则 |
+| 2026-09-11 | 导航树场景计数对齐可见树 | 左侧导航规格书旁显示可见场景计数；无可见子场景时隐藏该导航节点 |
+| 2026-09-11 | 导航场景项随过滤隐藏 | 搜索/结论过滤时同步隐藏左侧 `nav-scn`；与结果树可见性一致 |
+| 2026-09-11 | 打印页眉标注可见范围 | beforeprint 填充打印专用横幅，声明当前过滤/搜索/仅失败步骤，防止 PDF 误读为全量 |
+| 2026-09-11 | Desktop 对比场景类型过滤 | 面板勾选 kinds 同时约束展示与导出；空/全选 = 不过滤；分享 JSON 记 `kindsFilter`；与静态报告「可见树一致性」同原则 |
+| 2026-09-11 | Desktop 对比场景类型过滤持久化 | settings `compareScenarioKinds`；与模板/标题一样跨会话恢复；全选折叠为 null |
+| 2026-09-11 | Desktop 对比深链携带场景类型过滤 | compare 深链 `kinds=` 与面板过滤同源；复制深链/分享卡片附带；打开深链恢复勾选并持久化 |
+| 2026-09-11 | 静态报告过滤状态可分享 URL | `#focus?q=&spec=&scenario=&failSteps=1` 与工具栏双向同步；兼容 `#fail-steps`；Go `ParseShareHash` 契约测试 |
+| 2026-09-11 | Desktop 对比差异定位到报告 | 场景 diff 携带 scnId；对比面板一键打开基线/目标报告并 hash 定位 |
+| 2026-09-11 | Desktop 打开报告附带过滤 hash | 打开终态/历史报告时把大纲 query/verdict 写成静态 share hash；与报告内过滤契约对齐 |
+| 2026-09-11 | 历史失败运行快速筛选强化 | history 写入 topFailReason；Desktop 按失败原因关键字过滤；一键复制当前列表失败 open 深链 |
+| 2026-09-11 | 对比分享卡片模板预览 | 导出前 iframe 预览 default/light/compact；模板/标题变更即时刷新；与导出同源 HTML |
+| 2026-09-11 | Desktop hub 历史文件监视 | `fs.watch` history.json/archives；设置 `watchHubHistory`；IPC `history-changed`；刷新保留勾选 |
+| 2026-09-11 | Desktop 历史过滤与趋势窗口持久化 | `historyQuery`/`historyVerdict`/`historyFailReasonQuery`/`historyTrendLimit`/`historyTrendFlakyLimit` 写入 desktop-settings.json；趋势分析读设置而非硬编码 |
+| 2026-09-11 | 历史失败摘要 digest | 跨运行聚合 topFailReason；Desktop 复制 Markdown；CLI `digest` 输出 md/json 供 CI |
+| 2026-09-11 | 失败摘要附带打开深链 | digest Markdown/JSON 与 Desktop「复制摘要深链」输出 `open?run=&hub=&failSteps=1`；复用 deeplink 契约 |
+| 2026-09-11 | manage.html 历史失败摘要 | 浏览器 hub 管理页嵌入同源 digest 模块；无 Desktop 时亦可复制摘要与打开深链 |
+| 2026-09-11 | Overview 失败原因一键定位 | 静态报告 Overview 点击失败原因次数/文本跳到首个可见失败场景；过滤/仅失败步骤感知 |
+| 2026-09-11 | Desktop 打开 manage 失败摘要深链联调 | 无 hub 的 open?run 回退当前/最近 hub；failSteps 单独打开写 overview hash |
+| 2026-09-11 | CLI digest --write 旁路文件 | digest 可把 md/json 写入 hub 旁路文件，便于 CI 收集失败摘要工件 |
+| 2026-09-11 | Desktop 导出刷新 fail-digest 旁路 | 导出 PDF/单文件后写 hub fail-digest.*；与 CLI 契约一致 |
+| 2026-09-11 | 插件 finalize 同步刷新 fail-digest | 套件落盘与删除历史后 best-effort 写 fail-digest.*，CI 无需再手动 digest --write |
+| 2026-09-11 | manage.html 打开 fail-digest 旁路 | 管理页探测并链到 hub fail-digest.md/json；与 CLI/插件旁路同源 |
+| 2026-09-11 | Desktop 历史页打开 fail-digest 旁路 | 历史工具栏旁路 MD/JSON/位置；与 manage/CLI 旁路契约对齐 |
+| 2026-09-11 | Desktop 一键刷新 fail-digest 旁路 | 历史工具栏「刷新旁路」；等同 CLI digest --write |
+| 2026-09-11 | manage.html 一键刷新 fail-digest 旁路 | POST /api/fail-digest（localhost）；与 Desktop/CLI 契约对齐 |
+| 2026-09-11 | fail-digest 旁路 formatVersion/generatedAt | 旁路 JSON/Markdown 增加 formatVersion=1 与 generatedAt；CI 可校验新鲜度 |
+| 2026-09-11 | fail-digest CI 新鲜度闸门 | `digest --check --max-age` + `make check-fail-digest`；校验 formatVersion/generatedAt |
+| 2026-09-11 | PDF `#fail-steps` 启动门闩 | 首轮 `applyFilter` 不得在解析 fragment 前 `syncShareHash`；`applyingHash=true` 至首次 `applyHashFromLocation`；未声明的 `failSteps` 为 `null` 以免冲掉会话；Chrome PDF 加 `--virtual-time-budget`；打印 `print-color-adjust: exact` |
+| 2026-09-11 | uhilreport/manage 深链 failSteps | `.uhilreport` 深链仅 failSteps 时也要 `openReportDir` 挂 hash；manage 失败「打开」带 `#overview?failSteps=1` |
+| 2026-09-11 | failSteps 解析跨端对齐 | 契约：键 failSteps/fail-steps/failsteps/fail_steps；真值 1/true/yes、假值 0/false/no（大小写不敏感）；空 hash 静态端仍用 null 保会话 |
+| 2026-09-11 | Desktop 打包 unsigned 闸门 | CI 增加 Win 交叉 pack smoke；pack-smoke/Release 强制 unsigned；文档写明 secrets 清单未注入 workflow |
+| 2026-09-11 | failSteps 别名浏览器冒烟 | headless dump-dom 门禁别名契约；与 Go/Desktop 解析表同源；CI 可通过 `make smoke-failsteps-hash` |
+| 2026-09-11 | 分享 hash Unicode/空格往返抽检 | focus 必须 percent-encode（保留 `:`）；否则 URL.hash 往返后 DOM id 失配；query 走 URLSearchParams/url.Values |
+| 2026-09-11 | focus PathEscape 保留 `/` | DOM id 为 `spec:`+filepath，含 `/`；`encodeShareFocus` 在 PathEscape 后恢复 `%2F`→`/`，使 `#` fragment 与 `getElementById` 对齐；legacy `%2F` 仍由 decode 兼容 |
+| 2026-09-11 | 深链 focus 双轨编码 | `open?focus=` 走 query：`/`→`%2F`（防截断）；报告内 `#focus` 走 fragment：保持字面 `/`；Desktop buildOpenDeepLink / Go openDeepLink / compare 分享卡同源 |
+| 2026-09-11 | Desktop 深链打开定位冒烟 | 不依赖完整 Electron：用与 `openReportDir` 相同的 hash 管道 + Chrome dump-dom 断言 path-style `<details open>`；browser CI 强制 Chrome |
+| 2026-09-11 | manage/serve path-style focus 联调 | 静态报告经 manage HTTP 打开时，path-style `#spec:specs/…`（字面 `/` 与 legacy `%2F`）须选中 DOM；与 file:// / Desktop 管道同源 |
+| 2026-09-11 | 历史摘要 TopFailFocus | 失败运行写入首个失败场景/规格 DOM id；digest 深链带 focus（query `%2F`）；与对比分享卡 path-style focus 同源 |
+| 2026-09-11 | Desktop digest/compare→open 定位 | 历史摘要与对比分享卡产出的 path-style focus 深链，经 Desktop open 管道（parse→hash）后 dump-dom 打开对应 details |
+| 2026-09-11 | 旁路 fail-digest path-style focus | hub `fail-digest.md`/`json` 的 open 深链写入 LastRunFocus（query `%2F`）；与 CLI/Desktop/插件旁路同源 |
+| 2026-09-11 | manage POST 旁路 focus 联调 | serve POST `/api/fail-digest` 后 sidecar 深链 focus 往返；Chrome 打开 archive `#focus?failSteps=1` |
+| 2026-09-11 | Overview 失败原因跳转 path-style | 聚合表点击次数打开含 `/` 的场景 DOM；Chrome dump-dom；纳入 smoke-failsteps-hash |
+| 2026-09-11 | Overview 跳转 + fail-steps path-style | 仅失败步骤模式下聚合跳转仍打开含 `/` 的失败场景 DOM |
+| 2026-09-11 | 复制失败摘要 path-style 深链 | 失败摘要 Markdown 含 `#focus` 定位（encodeShareFocus 保留 `/`）；Chrome dump-dom 抽检 |
+| 2026-09-11 | 失败摘要→Desktop open 定位 | `extractFailSummaryFocusHashes` 解析摘要定位 → resolveReportOpenHash → dump-dom 打开 path-style details |
+| 2026-09-11 | 剪贴板粘贴摘要一键定位 | Desktop 菜单/历史「粘贴摘要定位」读取剪贴板失败摘要并打开首个 path-style focus |
+| 2026-09-11 | 历史右键粘贴摘要定位 | 右键「粘贴摘要定位到此运行」把剪贴板 focus 绑到该 history 条目报告目录 |
+| 2026-09-11 | 粘贴摘要失败可操作引导 | 空剪贴板/无定位行返回 hint+示例；Desktop 对话框可一键复制示例定位行 |
+| 2026-09-12 | 静态报告复制定位示例 | 工具栏「复制定位示例」与 Desktop `FAIL_SUMMARY_LOCATOR_EXAMPLE` 同源；互检单测防漂移 |
+| 2026-09-12 | 趋势 flaky 复制 open 深链 | 不稳定场景行「复制深链」；`lastFailRunId` + `resolveFlakyOpenTarget`；打开/复制同源 |
+| 2026-09-11 | digest 深链特殊 hub 路径编码抽检 | 深链 hub 必须经 query 编码；Go/JS/Desktop 往返覆盖空格与保留字符，避免 `?&#` 截断 |
+| 2026-09-11 | report-browser-smoke CI | PR CI 安装 Chrome 并显式跑 failSteps/manage-digest 浏览器冒烟；避免 go test 在无浏览器环境静默 Skip |
+| 2026-09-11 | manage/serve 旁路与深链联调抽检 | 对照「API 单测 ≠ 页面契约」：用真实 hub + HTTP serve 串起 POST 旁路、sidecar 深链、manage.html/JS 字符串契约与 Chrome 打开 hash；`make smoke-manage-digest` 作为可重复抽检入口 |
+| 2026-09-11 | 自动更新 feed 离线校验 | `update-feed.js` 校验 latest*.yml 与 publish owner/repo；签名 secrets 文档化，证书到位前保持 unsigned |
+| 2026-09-11 | Release 无签名可发 | tag Release 分 plugin/linux/win；SHA256SUMS；`CSC_IDENTITY_AUTO_DISCOVERY=false`；签名 secrets 仍为可选 |
+| 2026-09-11 | Desktop 历史趋势 / 不稳定场景 | 过滤窗口 suite 趋势（history.json）+ report.json 场景翻转检测；与 pairwise compare 共用 scenarioKey |
+| 2026-09-11 | 分享卡片导出一致性抽检 | 卡片 meta 写入 template/title/kinds；导出后 `inspectCompareShareCardHtml` 对照 UI 选项；默认 `openPath` 打开预览 |
+| 2026-09-11 | 历史多选批量复制打开深链 | 工具栏复制多条 `open` 深链（换行）；与单条右键复制同源；失败默认 failSteps |
+| 2026-09-11 | 历史列表右键打开定位 | 历史行原生右键菜单：打开报告 / 复制 open 深链 / 显示文件夹 / 复制路径；与分享卡片 open 契约一致 |
+| 2026-09-11 | 对比面板复制场景打开深链 | 面板场景 diff 可复制 open 深链（run+hub+focus）；与分享卡片及「在报告中查看」同契约 |
+| 2026-09-11 | 对比分享卡片场景打开深链 | 离线卡片/MD/JSON 每条场景 diff 附带 open 深链（run+hub+focus）；Desktop 处理 `open?run=` 定位历史报告，与面板内跳转同契约 |
+| 2026-09-11 | 分享链接复制摘要提示 | 复制成功后状态栏附带可读过滤摘要（`describeShareScope`） |
+| 2026-09-11 | 静态报告复制可见范围链接 | 工具栏一键复制当前 `#focus?…` 完整 URL；与过滤/定位同源 |
+| 2026-09-11 | 场景级运行对比 | 从两侧 `report.json` 提取 ScenarioLite；按 file+heading+row 对齐；分类 regressed/fixed/added/removed/reason_changed；Desktop 历史对比面板展示 |
+| 2026-09-11 | Desktop 导出进度条 UI | 历史页可视进度条；`formatExportProgress` 统一状态文案（百分比 + basename）；取消仍走 cancel-export |
+| 2026-09-11 | 截图灯箱 ←/→ | 打开后收集 `[data-shot-src]`；←/→ 与前后按钮环绕切换；`#shot-lightbox-pos`；Go/JS 步进契约对齐 |
+| 2026-09-11 | 静态报告失败原因聚合 | Overview 按规范化首条 ErrorMessage 归类失败场景；复制摘要同步聚合段 |
+| 2026-09-11 | 静态报告过滤性能 | 过滤只动 spec/scenario/datarow/datadriven；渲染写 `data-name`；搜索防抖；展开全部不再打开 step/concept |
+| 2026-09-11 | Desktop 历史列表虚拟化 | 历史侧栏复用 `computeVirtualWindow`；固定行高；过滤防抖 |
+| 2026-09-11 | Desktop 导出进度/取消 | 批量导出改为异步 spawn；`desktop:export-progress` + `cancel-export`；历史侧全选过滤/清除勾选 |
+| 2026-09-11 | Desktop Win CLI 打包 | `build-windows` 交叉编译；平台级 extraResources（linux/mac ↔ unix bin，win ↔ `.exe`）；`pack:check:win` 强制校验 |
+| 2026-09-11 | 共享 discover | 抽出 `@studio-reporter/discover`（`packages/studio-reporter-discover`）；Desktop 经 file: 依赖消费 |
+| 2026-09-11 | 插件版本门闸 | Desktop 对 ServerHello 校验 semver ≥ 0.5.0 与必需 capabilities；状态栏提示 ok/warn/error |
+| 2026-09-11 | 本机插件检测 | 扫描 Gauge plugins 目录；设置页展示安装版本；discover 超时结合安装态提示 |
+| 2026-09-11 | Desktop 自动更新 | electron-updater + GitHub Releases；开发态跳过；打包后可检查/下载；Release workflow 产出 AppImage + latest-linux.yml；代码签名依赖仓库 secrets |
+| 2026-09-11 | Desktop 原生大纲 | 主进程转发精简 ReportSnapshot 大纲；运行页侧栏；viewer 监听 `studio-reporter:select-node` postMessage |
+| 2026-09-11 | Desktop 终态大纲 | 打开终态目录时加载 `report.json`；大纲跨 live/终态共享；静态报告 JS 响应同一 postMessage |
+| 2026-09-11 | Desktop 大纲过滤 | 侧栏 query + verdict chips；同步 `studio-reporter:filter` 到 live/静态 iframe |
 | 2026-09-11 | 复杂夹具双轨：Gauge 工程文件 + Go 合成器 | CI 不能依赖本机 Gauge/语言插件；`.spec` 作可读真源，`complexsuite.Suite` 作可重复输入 |
 | 2026-09-11 | 交互主体验 = HTML；PDF = 同源打印 | 「可交互 PDF」在业界多为 HTML Viewer + 打印；真正交互保留左导航/Overview/lightbox；PDF 用 Chrome print 保留文字链接图片，避免栅格拼贴 |
 | 2026-09-11 | Overview + 左右分栏 + 截图策略 | 对齐 CANoe Test Report Viewer：首页环境配置、左树跳转；步骤全量截图 + 失败标注 + hook 截图 + dialog 放大 |
@@ -134,6 +251,8 @@ scripts/check-assets.sh   # CI：漂移则失败
 - 本地/CI：`make ci`（含 assets 校验、vet、test、build）；`make cover` / CI `cover-summary.sh` 输出覆盖率摘要；`make lint` 跑 golangci-lint；`make hooks` 启用 `.githooks`
 - 测试：`GOTOOLCHAIN=go1.27.0 go test ./...`
 
+| 2026-09-11 | CI Chrome sandbox | headless dump-dom/PDF 显式 `--no-sandbox`/`--disable-setuid-sandbox`，兼容 Actions setup-chrome |
+
 ## 演进方向
 
 见 [TODO.md](TODO.md)。架构允许在迭代中重构包边界、替换实时查看实现、增强静态报告交互，只要保持：
@@ -141,3 +260,68 @@ scripts/check-assets.sh   # CI：漂移则失败
 1. `*.uhilreport` 可再生 HTML  
 2. `report.json` 信封兼容（`formatVersion`）  
 3. Gauge 插件启动契约（`--start` / gRPC / WS 端口打印）
+| 2026-09-12 | 趋势失败原因摘要一键打开定位 | digest 组最近失败接到 open+focus；复制深链与 flaky 行对称；`resolveDigestGroupOpenTarget` |
+| 2026-09-12 | manage 失败原因摘要一键打开定位 | 页内打开带 path-style focus；复制深链；`resolveDigestGroupOpenTarget` 与 Desktop 同源 |
+| 2026-09-12 | 静态报告失败原因聚合复制深链 | Overview 行按钮复制 path-style focus 可分享 URL；保留当前过滤/仅失败步骤 |
+| 2026-09-12 | 静态报告失败原因聚合复制摘要片段 | Overview 行「复制摘要」输出含 path-style 定位的 Markdown，便于粘贴工单 |
+| 2026-09-12 | 静态报告失败原因聚合复制全部摘要 | Overview「复制全部摘要」输出可见原因 Markdown 列表；与行级片段同源 |
+| 2026-09-12 | 静态报告失败原因聚合复制全部深链 | Overview「复制全部深链」输出可见原因定位 URL（换行）；与行级深链同源 |
+| 2026-09-12 | 失败原因批量复制按钮过滤态 | 无可见原因时禁用批量按钮并同步 aria-disabled / title |
+| 2026-09-12 | Overview 失败原因空态提示 | 过滤后无可见原因时工具行旁轻量说明（aria-live） |
+| 2026-09-12 | 失败原因表空态占位行 | 过滤后表格占位「无匹配的失败原因」，与工具行 hint 同步 |
+| 2026-09-12 | 失败原因空态一键清除过滤 | 「清除过滤」重置搜索/结论过滤并恢复失败原因可见性 |
+| 2026-09-12 | 失败原因空态键盘操作 | Esc 清除过滤（输入框内除外）；清除按钮可聚焦与 focus-visible |
+| 2026-09-12 | 失败原因空态「仅看失败」 | 空态按钮清除搜索并切到 scenario=fail，避免回到全量噪音 |
+| 2026-09-12 | 失败原因空态清除撤销 | 清除前快照过滤；「撤销清除」恢复上次 query/scenario/failSteps |
+| 2026-09-12 | 失败原因空态撤销快捷键 | Ctrl/Cmd+Z 撤销清除；搜索框内保留原生文本撤销 |
+| 2026-09-12 | 失败原因空态撤销状态摘要 | 撤销后状态栏附带已恢复过滤摘要（describeFilterSnapshot） |
+| 2026-09-12 | 失败原因空态操作可观测 | EmptyStateMetrics 计数/事件环；StudioReportDebugEmptyState 可选 console |
+| 2026-09-12 | 失败原因空态 metrics 面板 | Overview 可选计数条（query/localStorage/window 开关） |
+| 2026-09-12 | 失败原因空态 metrics 导出 | 面板「复制 JSON」输出 EmptyStateMetrics（kind/exportedAt/counts/events） |
+| 2026-09-12 | 失败原因空态 metrics 下载 | 「下载 JSON」与复制失败自动落盘；无剪贴板权限兜底 |
+| 2026-09-12 | 失败原因空态 metrics 隐藏 | 「隐藏」写 window+localStorage=0；可用 setter / ?emptyMetrics=1 再开 |
+| 2026-09-12 | 失败原因空态 metrics 清零 | 「清零」重置 EmptyStateMetrics 计数/事件环 |
+| 2026-09-12 | 失败原因空态 metrics 导出面板快照 | JSON `panel` 含 enabled/windowFlag/query/localStorage |
+| 2026-09-12 | 失败原因空态 metrics 键盘可达 | 显示入 Tab；隐藏 tabindex=-1；focus-visible；隐藏后焦点回退 |
+| 2026-09-12 | 失败原因空态 metrics 首次开启引导 | 工具行 hint + 开启/知道了；dismiss 后紧凑入口 |
+| 2026-09-12 | 失败原因空态 metrics 开启深链 | formatEmptyMetricsEnableURL；工具行/面板「复制链接」；保留 hash |
+| 2026-09-12 | 失败原因空态 metrics 开启深链预览 | 复制后状态栏缩短 URL（shortenEmptyMetricsEnableURL） |
+| 2026-09-12 | 空态 metrics 与 focus 联调说明 | QUICKSTART：query 开 metrics + hash focus 同用 |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue | formatEmptyStateMetricsIssueMarkdown：链接+过滤+JSON |
+| 2026-09-12 | 失败原因空态 metrics 事件折叠 | counts 常显；事件默认折叠（localStorage 记忆） |
+| 2026-09-12 | 失败原因空态 metrics 事件行复制 | 展开后点选单行复制（copyEmptyStateMetricsEventLine） |
+| 2026-09-12 | 失败原因空态 metrics 事件 kind 过滤 | chip 过滤 clear/esc/undo（setEmptyStateMetricsEventKindFilter） |
+| 2026-09-12 | 失败原因空态 metrics 复制可见事件 | 尊重 kind 过滤批量复制（copyEmptyStateMetricsVisibleEventLines） |
+| 2026-09-12 | 失败原因空态 metrics 可见子集 JSON | formatEmptyStateMetricsVisibleJSON：仅当前过滤 events |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue 可见子集 | issue Markdown 默认嵌入可见 JSON |
+| 2026-09-12 | 失败原因空态 metrics kind 过滤持久化 | localStorage studio-report-empty-metrics-event-kind |
+| 2026-09-12 | 失败原因空态 metrics 开启链接携带 kind | formatEmptyMetricsEnableURL 附加 emptyMetricsKind |
+| 2026-09-12 | 失败原因空态 metrics 开启链接预览 kind | describeEmptyMetricsEnableURLPreview 追加 · kind= |
+| 2026-09-12 | 失败原因空态 metrics 清除 kind 过滤 | clearEmptyStateMetricsEventKindFilter 清 chip + URL |
+| 2026-09-12 | 失败原因空态 metrics 空结果引导 | 过滤后无事件时提供清除过滤 / 显示全部 |
+| 2026-09-12 | 失败原因空态 metrics 折叠态 kind 摘要 | 事件按钮显示 · kind；data-kind-filter |
+| 2026-09-12 | 失败原因空态 metrics 折叠态清除 kind | 折叠旁「清除 kind」无需展开 |
+| 2026-09-12 | 失败原因空态 metrics 开启链接确认 kind | describeEmptyMetricsEnableURLPreview：无 kind 时追加「当前未过滤」 |
+| 2026-09-12 | 失败原因空态 metrics 复制链接按钮 kind 摘要 | syncEmptyMetricsEnableURLButtons 同步 title/aria |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue 未过滤文案 | 事件 kind 行与预览用语对齐为「当前未过滤」 |
+| 2026-09-12 | 失败原因空态 metrics 导出附带报告 meta | writeStudioReportMetaJSON + emptyStateMetricsReportMeta |
+| 2026-09-12 | 失败原因空态 metrics 下载文件名带 meta | buildEmptyStateMetricsDownloadName：project/kind/时间戳 |
+| 2026-09-12 | 失败原因空态 metrics 面板 meta 摘要 | formatEmptyStateMetricsReportSummary 写入面板文案与 title |
+| 2026-09-12 | 失败原因空态 metrics 复制报告 meta | copyEmptyStateMetricsReportSummary + 面板按钮 |
+| 2026-09-12 | 失败原因空态 metrics 附带项目根目录 | projectRoot 进 JSON/issue；面板摘要缩短路径 |
+| 2026-09-12 | 失败原因空态 metrics 主机/插件进 meta | 面板摘要与贴 issue 对齐 Overview KV |
+| 2026-09-12 | 失败原因空态 metrics meta 次要字段可折叠 | 主摘要精简；meta+ 展开根目录/主机/插件 |
+| 2026-09-12 | 失败原因空态 metrics meta+ 可分享 URL | emptyMetricsMeta query；开启链接/预览携带 |
+| 2026-09-12 | 失败原因空态 metrics meta 字段显隐/顺序 | get/setEmptyStateMetricsMetaFieldPrefs；主/次/隐 + 同组排序 |
+| 2026-09-12 | 失败原因空态 metrics 字段预设导入导出 | format/applyEmptyStateMetricsMetaFieldPrefsJSON |
+| 2026-09-12 | 失败原因空态 metrics 命名多套字段预设 | 内置 CI 精简/排障完整；另存自定义；命名库 JSON |
+| 2026-09-12 | 失败原因空态 metrics 命名预设可分享 URL | emptyMetricsMetaPreset；开启链接/预览 · preset= |
+| 2026-09-12 | 失败原因空态 metrics 开启链接 title/aria 含命名预设 | describeEmptyMetricsEnableURLButtonSummary |
+| 2026-09-12 | 失败原因空态 metrics 工具行命名预设 chip | 预设·… 循环/Shift/菜单导航/字段摘要/回默认 |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue 含命名预设 | formatEmptyStateMetricsIssueMarkdown 标题/正文 |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue 短卡片 | Shift 复制 / Alt 或工具行按钮下载；文件名含项目+preset+kind |
+| 2026-09-12 | 失败原因空态 metrics 短卡片下载状态栏文件名 | flashStatus「已下载…短卡片：」+ 实际文件名 |
+| 2026-09-12 | 失败原因空态 metrics JSON 下载状态栏文件名 | 全量/可见 JSON flashStatus 含实际 .json 文件名 |
+| 2026-09-12 | 失败原因空态 metrics meta 预设下载文件名 | build…MetaFieldPrefsDownloadName + flashStatus 含实际文件名 |
+| 2026-09-12 | 失败原因空态 metrics 命名预设库下载 | 「下载库」按钮 + 文件名含项目/custom-N + flashStatus |
+| 2026-09-12 | 失败原因空态 metrics 命名预设菜单下载库 | chip 菜单「下载库 JSON…」；下载后关菜单 |

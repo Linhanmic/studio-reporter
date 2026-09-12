@@ -13,14 +13,14 @@ Studio Reporter ships today as a [Gauge](https://gauge.org/) reporter plugin (WS
 - Supports all Gauge execution lifecycle events
 - **Static HTML report** at suite end (`index.html`, Go-rendered — no embedded JSON / no Vue required to read)
 - **Live viewer** (`viewer.html`) via WebSocket `ReportSnapshot` while the suite runs (disk writes only on finalize)
-- **Desktop P0 shell** (`desktop/`) — Electron workbench: paste/discover WS URL, embed live viewer + final `index.html`, control Hello/RequestSnapshot
+- **Desktop P0 shell** (`desktop/`) — Electron workbench: paste/discover WS URL, embed live viewer + final `index.html`, control Hello/RequestSnapshot; history export with cancellable progress bar; scenario-level compare diffs with kind filters (also in share cards)
 - Spec / scenario filter toolbar on the static report (pass / fail / skip)
 - **CANoe-style layout**: left navigation tree + right content, with an **Overview** page (env / host / plugin / stats)
-- Screenshot galleries at suite / spec / scenario / step (hook + failure shots; click-to-enlarge lightbox)
+- Screenshot galleries at suite / spec / scenario / step (hook + failure shots; click-to-enlarge lightbox with ←/→ navigation; toolbar “fail steps only” mode; shareable filter URL hash (`#…?q=&scenario=&failSteps=1`; path-style focus keeps `/` aligned with DOM ids))
 - Optional **structured PDF** export via headless Chrome (`--pdf` / `GAUGE_STUDIO_WRITE_PDF`) — text + links + images, not a screenshot collage
 - Optional **single-file HTML** (`--single` / `GAUGE_STUDIO_WRITE_SINGLE` → `report.single.html`) with screenshots inlined as data URIs; directory `index.html` remains the default source of truth
 - Versioned report file format (see [REPORT_FORMAT.md](REPORT_FORMAT.md))
-- Standalone report management console (`manage.html`): list, open, and delete archived runs
+- Standalone report management console (`manage.html`): list, open, compare, fail digest, and open hub `fail-digest.md`/`json` sidecars when present
 - Cross-platform (Windows, Linux, macOS)
 - Configurable message size limits
 
@@ -39,7 +39,7 @@ Studio Reporter ships today as a [Gauge](https://gauge.org/) reporter plugin (WS
 
 ### Download Pre-built Binaries
 
-Download the latest release from the [Releases](https://github.com/Linhanmic/studio-reporter/releases) page.
+Download the latest release (plugin zips + Desktop packages + `SHA256SUMS-*.txt`) from the [Releases](https://github.com/Linhanmic/studio-reporter/releases) page.
 
 ### Build from Source
 
@@ -71,6 +71,7 @@ go build -o bin/studio-reporter ./...
 | `GAUGE_STUDIO_SKIP_BROWSER` | No | - | Kept for compatibility; the reporter no longer opens a browser by default |
 | `GAUGE_STUDIO_OPEN_BROWSER` | No | - | Set to `true` to restore opening `index.html` in the default browser |
 | `GAUGE_STUDIO_WRITE_PDF` | No | - | Set to `true` to also write `report.pdf` (requires Chrome/Chromium; or set `CHROME_PATH`) |
+| `GAUGE_STUDIO_PDF_FAIL_STEPS` | No | - | With PDF: set `true` to print with `#fail-steps` (fail-steps-only; headless waits for JS via virtual-time-budget) |
 | `GAUGE_STUDIO_WRITE_SINGLE` | No | - | Set to `true` to also write `report.single.html` (screenshots inlined as data URIs) |
 | `GAUGE_STUDIO_REPORT_META` | No | - | Extra Overview KV pairs: `k=v,k2=v2` |
 | `CHROME_PATH` | No | - | Absolute path to Chrome/Chromium for PDF export |
@@ -86,13 +87,16 @@ mkdir -p ~/.gauge/plugins/studio-reporter/0.5.2
 unzip studio-reporter-0.5.2-linux.x86_64.zip -d ~/.gauge/plugins/studio-reporter/0.5.2
 ```
 
-### Desktop App (P0)
+### Desktop App
 
 ```bash
 cd desktop
 npm install
 npm start
 # Paste: studio-reporter websocket: ws://127.0.0.1:<port>
+
+make build && cd desktop && npm run pack:dir   # unpacked smoke build
+make build-windows && cd desktop && npm run pack:dir:win  # Windows cross-pack
 ```
 
 See [desktop/README.md](desktop/README.md) and [DESKTOP.md](DESKTOP.md).
@@ -106,6 +110,9 @@ See [desktop/README.md](desktop/README.md) and [DESKTOP.md](DESKTOP.md).
 studio-reporter generate --input run.uhilreport --out /tmp/out --pdf --single
 
 # Serve the report hub (history / manage console)
+studio-reporter digest --dir reports/studio-report
+studio-reporter digest --dir reports/studio-report --format json
+studio-reporter digest --dir reports/studio-report --write
 studio-reporter serve --dir reports/studio-report --addr 127.0.0.1:8765
 
 studio-reporter version
@@ -141,7 +148,7 @@ When a suite finishes, the plugin writes a **static HTML report** to `reports/st
 
 The report includes:
 
-- **Overview** home page: project / host / OS / plugin / format / custom meta + counts + spec list
+- **Overview** home page: project / host / OS / plugin / format / custom meta + counts + spec list + **fail-reason clusters** (group by primary error; per-row copy deep link / snippet + bulk 「复制全部摘要 / 复制全部深链」; empty-filter UX with clear / fail-only / undo + optional `?emptyMetrics=1` panel with 「复制 / 下载 / 清零 / 隐藏」 (+ panel snapshot in JSON; keyboard-accessible panel actions + tools-row enable hint + copy enable URL (optional emptyMetricsKind) + paste-issue Markdown (title includes active named preset; Shift+click copies short card; Alt+click or 下载短卡片 downloads .md with status-bar filename); collapsible event ring with per-line copy, kind chips, copy-visible, visible-subset JSON, issue paste using the visible subset, clear-kind control, collapsed kind summary on the events toggle, and collapsed clear-kind; enable-URL preview shows kind or 「当前未过滤」; copy-link title/aria mirrors that summary including kind / meta+ / named preset) for issue paste; JSON/issue include report meta (project/verdict/generatedAt) via #studio-report-meta; download filenames include project/kind/timestamp (status bar shows actual name); panel summary shows project · verdict · generatedAt with one-click copy-meta; exports include projectRoot/hostName/pluginVersion; panel meta+ expands secondary fields (shareable via emptyMetricsMeta=1; customizable primary/secondary/hidden field prefs with JSON import/export (download filenames include project/preset; status bar shows actual name); named presets (默认/CI 精简/排障完整) with save/delete and named-library JSON copy/download/import (download filenames include project/custom count; status bar shows actual name); shareable via emptyMetricsMetaPreset; tools-row preset chip cycles on click / Shift+click opens fields / right-click·↓·Alt+click menu with field summaries + ↑↓/Enter / 下载库 JSON / 回默认)); counts, filter badges, and fail clusters sync to visible tree when filtered / fail-steps-only)
 - Left **navigation tree** (spec → scenario) with jump links; right content pane (CANoe-like)
 - Nested expandable result blocks (spec → scenario → concept → step)
 - Overall verdict, duration, environment, and success rate
@@ -168,7 +175,7 @@ Set `GAUGE_STUDIO_OPEN_BROWSER=true` if you want the old auto-open behavior.
 
 The on-disk format (`report.json`, `<project>-<timestamp>.uhilreport`, `history.json`, `archives/`) is versioned and documented in [REPORT_FORMAT.md](REPORT_FORMAT.md).
 
-Every completed run is archived under `reports/studio-report/archives/<id>/` (including a static `index.html`). The management console `reports/studio-report/manage.html` lists archived runs and opens them directly. Deleting archives from the console requires serving the hub:
+Every completed run is archived under `reports/studio-report/archives/<id>/` (including a static `index.html`). The management console `reports/studio-report/manage.html` lists archived runs and opens them directly. When the hub has `fail-digest.md` / `fail-digest.json` (from suite finalize, Desktop export, or `digest --write`), the console probes and links those sidecars. Deleting archives from the console requires serving the hub:
 
 ```bash
 ./bin/studio-reporter --serve --dir reports/studio-report --addr 127.0.0.1:8765
@@ -219,6 +226,9 @@ make ci      # check-assets + vet + test + build
 make cover   # go test -coverprofile + function/package summary
 make smoke-input  # --input regeneration + screenshot relative paths
 make smoke-complex  # dense fixture (nested concepts / shots / CJK / skip)
+make smoke-failsteps-hash  # failSteps aliases + slash-focus DOM id via Chrome dump-dom
+make smoke-manage-digest   # manage/serve fail-digest sidecar + deep-link E2E
+# PR CI job report-browser-smoke installs Chrome and runs both browser smokes
 make demo-complex   # write .demo/complex-hub for manual browsing
 make lint    # golangci-lint v2 (install matching CI pin locally)
 make sync-assets
@@ -229,7 +239,7 @@ See also [`testdata/complex-gauge/`](testdata/complex-gauge/) for the readable G
 
 CI runs `./scripts/cover-summary.sh` and uploads `cover.out` as an artifact (no hard threshold yet).
 
-Static `index.html` print CSS respects the current filter/search (`filter-hidden` stays hidden — print what you see).
+Static `index.html` print CSS respects the current filter/search and **fail-steps-only** mode (`filter-hidden` / non-fail scenarios & steps stay hidden — print what you see). Use `#fail-steps` or `GAUGE_STUDIO_PDF_FAIL_STEPS=true` for headless PDF.
 ### Project Structure
 
 ```

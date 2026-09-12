@@ -1,6 +1,6 @@
 # Studio Reporter Desktop — 详细设计
 
-状态：P0 已落地（v0.5.2）；P1+ 仍为路线图  
+状态：P0/P1 已落地（v0.5.2）；打包骨架已落地（含 Win `studio-reporter.exe` 交叉打包路径）；P2「运行」+ 多项目/多会话 + 共享 discover 已落地；P3 插件门闸/本机检测/自动更新骨架/原生大纲（live+终态）/大纲搜索过滤/失败路径一键跳转（含可见性） / 历史搜索过滤 / 勾选导出（含进度/取消与全选过滤） / 原生删除与批量导出 / 打开文件夹与复制路径 / 删除 hub 锁 / 套件结束系统通知 / 自定义协议深链 / 键盘快捷键与 tablist a11y / 明暗主题 / 对比分享卡片（HTML+Markdown）/ 静态报告极轻量交互 / 打开 `.uhilreport` 离线再生 / 会话恢复与最近 hub / 窗口布局记忆 / 大纲分栏宽度记忆 / 安装包冒烟（含 Win/mac 布局） / 大纲虚拟列表 / 历史对比 UX 深化 / 统一大纲搜索 / Discover 超时可配置 / 对比导出模板（default/light/compact）已落地；hub 历史文件监视与运行趋势/不稳定场景面板已落地；趋势窗口与历史过滤偏好可持久化；代码签名仍为路线图   
 关联：本仓库插件/报告引擎 + `desktop/` Electron 壳；通信契约见 [API.md](API.md)、落盘契约见 [REPORT_FORMAT.md](REPORT_FORMAT.md)。
 
 ## 1. 产品定位（纠偏）
@@ -158,10 +158,10 @@ Desktop 在无 Gauge 进程时仍应可用：
 | 区 | 内容 |
 |----|------|
 | **运行** | 连接状态、live 树、当前失败、日志条、结束 CTA |
-| **报告** | 嵌入终态报告（优先加载磁盘 `index.html`；CANoe 左右栏已在静态页） |
-| **历史** | `history.json` 列表、对比、打开归档、删除（需 serve 或原生 FS） |
-| **导出** | PDF / 单文件 HTML / 在访达/资源管理器中显示 / 复制路径 |
-| **设置** | 报告根目录、是否自动打开终态、主题、发现超时、兼容模式 |
+| **报告** | 嵌入终态 `index.html`（CANoe 左右栏；静态页 hash 深链 / 复制失败摘要 / 键盘）；**文件 → 打开 .uhilreport…**（`Cmd/Ctrl+Shift+O`）CLI `generate` 再生后打开；深链 `studio-reporter://open?path=*.uhilreport` |
+| **历史** | `history.json` 列表、搜索/结果过滤、对比（可交换方向）、场景差异类型过滤（面板+导出同源）、对比分享卡片（离线 HTML / Markdown / JSON；导出后自动打开并抽检模板/标题/kinds）、hub 文件监视自动刷新历史、导出后打开/显示、打开归档、打开所在文件夹、复制路径、原生删除（确认框 + hub 锁）、最近 hub 下拉切换 |
+| **导出** | PDF / 单文件 HTML（默认最新；勾选 1+ 次批量导出所选）/ 在访达/资源管理器中显示 / 复制路径 |
+| **设置** | 报告根目录、最近 hub、启动恢复上次标签、是否自动打开终态、主题、Discover 超时、兼容模式 |
 
 ### 5.2 「报告」页策略（关键）
 
@@ -239,25 +239,25 @@ studio-reporter/
 
 验收：一次 `gauge run` → Desktop 实时树 → 结束后 CANoe 终态报告。
 
-### P1 — 工作台 — **进行中（0.5.2）**
+### P1 — 工作台 — **已完成（0.5.2）**
 
-1. ~~历史页（读 `history.json`）+ 打开归档~~（Desktop 已落地）。
-2. ~~导出：触发 PDF / single HTML（调 CLI）~~（历史页按钮）。
+1. ~~历史页（读 `history.json`）+ 打开归档~~（Desktop 已落地；含搜索 / pass/fail/skip 过滤）。
+2. ~~导出：触发 PDF / single HTML（调 CLI）~~（历史页按钮；勾选 1 次导出该次 `.uhilreport`，否则最新）。
 3. ~~设置：报告根目录、自动跳转~~（Electron `userData`）。
-4. 对比两次运行（可移植 `CompareHistoryRuns`）— 下一步。
+4. ~~对比两次运行~~（`desktop/electron/compare.js` 移植 `CompareHistoryRuns`；历史页勾选）。
 5. （已提前）控制消息 — 见 P0。
 
-### P2 — 体验
+### P2 — 体验 — **部分完成（0.5.2）**
 
-1. Desktop「运行」按钮封装 gauge（选规格、环境）。
-2. 多项目 / 多会话。
-3. 与 GaugeStudio 模块边界清晰化（共享 discover 包）。
+1. ~~Desktop「运行」按钮封装 gauge（选规格、环境）~~（`gauge-run.js` + 运行栏；discover 自动连接）。
+2. ~~多项目 / 多会话~~（`recentProjects` + `GaugeSessionManager`；会话条切换）；~~会话恢复 / 最近 hub~~（`recentHubs` + `lastTab` + `restoreSession`）；~~窗口布局记忆~~（`window-state.json`）；~~大纲分栏宽度记忆~~（`outlinePaneWidth`）；~~安装包冒烟~~（`desktop-pack-smoke`）。
+3. ~~与 GaugeStudio 模块边界清晰化（共享 discover 包）~~（`packages/studio-reporter-discover` → `@studio-reporter/discover`）。
 
-### P3 — 体验
+### P3 — 体验 — **部分完成（0.5.2）**
 
-1. 原生报告树（若 WebView 不足）。
-2. 插件侧能力协商、版本门闸。
-3. 安装体验：Desktop 安装器检测/提示 Gauge 插件版本。
+1. ~~原生报告树（若 WebView 不足）~~ — **live + 终态已落地**：共享大纲侧栏（spec→scenario）；live 来自 `ReportSnapshot`，终态来自同目录 `report.json`；点击 `postMessage` 驱动 viewer / 静态 `index.html` 展开定位。侧栏支持搜索与 pass/fail/skip 过滤，并同步到 iframe。支持「上一/下一失败」与主机层 `j`/`k`；跳转前会放宽遮挡过滤以保证可见。
+2. ~~插件侧能力协商、版本门闸~~（`desktop/electron/compat.js` 校验 ServerHello ≥ 0.5.0 + 必需 capabilities）。
+3. ~~安装体验：Desktop 检测/提示 Gauge 插件版本~~（`plugin-detect.js`）；~~自动更新骨架~~（`electron-updater` + GitHub Releases；设置/菜单检查更新；tag Release 上传 AppImage）。代码签名证书仍待仓库 secrets。~~历史原生删除 / 批量导出~~（`deleteHistoryRuns`；确认框；多选导出）。
 
 ## 9. 插件侧改动清单（相对现状）
 
@@ -275,7 +275,7 @@ studio-reporter/
    - 建议：协议与 discover **共享**；品牌上允许 Desktop 独立发布「Studio Reporter」。
 2. **file:// vs 内置 serve**：截图与 ES module 限制 → P0 起倾向内置 loopback serve。
 3. **谁启动 Gauge**：Desktop 包 gauge vs 用户外部跑、Desktop 只附着日志。P0 可只附着。
-4. **大 snapshot 性能**：已有场景层裁剪；Desktop 需虚拟列表。
+4. **大 snapshot 性能**：已有场景层裁剪；Desktop 大纲侧栏已虚拟列表（固定行高窗口渲染）。
 
 ## 11. 决策记录（本设计）
 
@@ -293,4 +293,45 @@ studio-reporter/
 2. ~~`ClientHello` / `RequestSnapshot`~~（插件 0.5.2）。
 3. ~~Hub 跨进程写入锁~~（0.5.2：`WithHubLock`）。
 4. ~~Desktop P1 骨架~~（历史 / 设置 / 导出）。
-5. Desktop 历史对比（移植 `CompareHistoryRuns`）；可选安装器。
+5. ~~Desktop 历史对比~~。
+6. ~~安装器 / 打包骨架~~（`desktop/` + electron-builder；`npm run pack:dir` / `pack`；bundle root 区分 dev/packaged）。
+7. ~~P2「运行」封装 gauge~~；~~多项目/多会话~~；~~共享 discover 包~~；~~插件版本门闸~~；~~本机插件安装检测~~；~~自动更新骨架~~；~~原生大纲侧栏（live + 终态统一搜索过滤，可持久化）~~；~~失败路径一键跳转（上一/下一失败 + `j`/`k`，跳转时放宽过滤）~~；~~Discover 超时可配置~~；~~历史搜索过滤与勾选导出~~；~~历史原生删除 / 批量导出~~；~~打开所在文件夹 / 复制路径 / 删除 hub 锁~~；~~套件结束系统通知~~；~~自定义协议深链（`studio-reporter://`）~~；~~键盘快捷键 / tablist 无障碍~~；~~明暗主题（system/light/dark）~~；~~对比分享卡片（HTML + Markdown）~~；~~静态报告极轻量交互（hash/复制失败摘要/键盘）~~；~~打开 `.uhilreport` 离线入口~~；~~会话恢复 / 最近 hub~~；~~窗口布局记忆（bounds/最大化）~~；~~大纲分栏宽度记忆~~；~~安装包冒烟（pack:dir；linux/win/mac 布局校验）~~；~~历史对比 UX 深化（交换/JSON/打开）~~；~~统一大纲搜索（重放过滤 + `/` + 持久化）~~；~~对比导出模板（default/light/compact + 标题）~~；~~大纲虚拟列表~~；~~Win 打包补齐 `studio-reporter.exe`（`build-windows` + 平台 extraResources）~~；~~导出进度/取消 + 历史全选过滤结果~~；~~历史列表虚拟化~~；~~静态报告过滤性能（structural-only + data-name + 防抖）~~；~~静态报告失败原因聚合~~；~~截图灯箱 ←/→~~；~~导出进度条 UI（百分比/文件名）~~；~~场景级对比（verdict/失败原因）~~；~~静态报告仅失败步骤~~；~~对比卡片纳入场景 diff~~；~~打印/PDF 尊重仅失败步骤~~；~~深链直达两侧历史对比~~；~~对比面板一键复制 compare 深链~~；~~仅失败步骤模式下场景级折叠精简~~；~~导航树与 fail-steps-mode 同步~~；~~对比分享卡片场景深链定位 / 对比分享卡片附带 compare 深链~~；~~深链冷启动队列加固 / 端到端验证~~；~~fail-steps-mode 下失败摘要与可见树一致~~；~~Overview 汇总计数与过滤可见树对齐~~；~~工具栏过滤徽标与可见树实时对齐~~；~~Overview 规格书清单随过滤可见树同步~~；~~左侧导航场景计数与过滤可见树对齐~~；~~打印页眉标注可见过滤范围~~；~~导航场景项随过滤隐藏~~；~~Desktop 对比按场景差异类型过滤导出~~；~~对比场景类型过滤持久化~~；~~对比深链携带场景类型过滤~~；~~静态报告过滤状态可分享 URL~~；~~静态报告复制可见范围链接~~；~~对比面板复制场景打开深链~~；~~历史列表右键打开定位~~；~~历史多选批量复制打开深链~~；~~对比分享卡片模板预览~~；~~历史失败运行快速筛选强化~~；~~分享卡片导出后自动打开预览一致性抽检~~；~~hub 历史文件监视自动刷新~~；~~历史多运行趋势 / 不稳定场景面板~~；~~静态报告 focus PathEscape 保留 `/` 与 DOM id 对齐（含 Chrome dump-dom）~~；~~Desktop/对比深链 `open?focus=` path-style query 编码（`%2F`）与 hash 字面 `/` 双轨~~；~~Desktop 深链→resolveReportOpenHash→dump-dom 定位冒烟~~；~~manage/serve path-style focus HTTP dump-dom 联调~~；~~历史摘要 TopFailFocus → digest 深链 path-style focus~~；~~对比分享卡/历史摘要 focus 深链 Desktop 打开定位联调~~；下一步：失败摘要旁路 MD/JSON 写入 path-style focus 深链并与 Desktop 打开对齐，或代码签名 secrets / 发布管道加固，或 GaugeStudio 消费 `@studio-reporter/discover`（缺仓外权限），或真实 Release feed / 自动更新端到端验证。
+
+
+
+
+## 代码签名与自动更新（发布）
+
+Desktop 通过 `electron-updater` 读取 GitHub Releases 上的 `latest-linux.yml` / `latest.yml` / `latest-mac.yml`。
+
+**当前状态（以 workflow 为准）：** Release / CI pack smoke **一律 unsigned**（`CSC_IDENTITY_AUTO_DISCOVERY=false`，且清空 `WIN_CSC_LINK`）。仓库 Secrets 表仅作未来接线清单——**尚未注入** `release.yml`，配了也不会自动签名。
+
+本地 `make desktop-pack-smoke` / `npm run pack:smoke` 同样默认 unsigned，并在 verify 日志打印 `signing=unsigned`。
+
+### 可选仓库 Secrets（有证书、且改 workflow 接线后再用）
+
+| Secret | 用途 |
+|--------|------|
+| `CSC_LINK` | macOS/通用证书（p12 等；见 electron-builder） |
+| `CSC_KEY_PASSWORD` | 证书密码 |
+| `WIN_CSC_LINK` | Windows 代码签名证书 |
+| `WIN_CSC_KEY_PASSWORD` | Windows 证书密码 |
+| `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` | macOS notarization（若做 notarize） |
+
+启用签名时需同步修改 `.github/workflows/release.yml`：去掉强制 `CSC_IDENTITY_AUTO_DISCOVERY=false` / 空 `WIN_CSC_LINK`，并按平台注入 `${{ secrets.CSC_* }}`。在那之前 OS 可能提示「未签名」；自动更新仍可走 GitHub provider（`desktop/package.json` → `build.publish`）。
+
+### 离线校验更新 feed
+
+单元测试覆盖 `desktop/electron/update-feed.js`：解析/校验 `latest*.yml` 形状，并断言 `build.publish` 的 `owner`/`repo` 与仓库一致。发版后可用同逻辑抽检 Releases 资产。
+
+### 历史失败摘要
+
+历史工具栏「复制失败摘要」「复制摘要深链」与趋势面板「复制摘要」将当前过滤窗口的 `topFailReason` 聚合成 Markdown；有 hub 时附带各类原因最近一次失败的 `studio-reporter://open?run=&hub=&failSteps=1`（有 `topFailFocus`/`lastRunFocus` 时另带 `focus=`，path-style id 在 query 中编码为 `%2F`；表格打开列 + 深链块）。工程入口：`studio-reporter digest --dir <hub> [--format json|markdown] [--write]`（`--write` 在 hub 写入 `fail-digest.md`/`fail-digest.json`；JSON 含 `formatVersion`/`generatedAt`、`groups[].lastRunFocus` 与带 focus 的 `openLinksLatest` / `openLinksAll`；CI 可用 `digest --check --max-age` 校验新鲜度）。Desktop 导出 PDF/单文件成功后会刷新同一旁路文件（写失败不阻断导出）。插件 finalize / 删除历史也会 best-effort 刷新，便于 CI 直接收集 hub。
+
+静态报告 Overview「失败原因聚合」（行内「复制深链 / 复制摘要」，段首「复制全部摘要 / 复制全部深链」）支持点击次数/原因跳到该类首个可见失败场景（过滤与仅失败步骤感知）。 静态报告「复制失败摘要」Markdown 含 path-style `#focus` 定位深链；工具栏旁「复制定位示例」复制与 Desktop 空剪贴板引导同源的定位行（`FAIL_SUMMARY_LOCATOR_EXAMPLE`）。Desktop `extractFailSummaryFocusHashes` 可解析后经 open 管道定位（`open-focus-pipeline` 冒烟）。 历史工具栏「粘贴摘要定位」与菜单「从剪贴板打开失败摘要定位…」读取剪贴板并打开首个 path-style focus（无最近报告目录时弹窗选择）。 历史行右键提供「粘贴摘要定位到此运行」，将剪贴板 focus 绑定到该运行的报告目录。 若剪贴板为空或缺少 `定位:` 行，对话框给出操作提示与可复制的 path-style 定位示例（亦可在静态报告点「复制定位示例」）。 历史趋势「不稳定场景」行可点击打开最近失败运行并 focus，亦可「复制深链」生成带 focus/failSteps 的 open URL（优先 `lastFailRunId`）。 失败原因摘要行同样可点击最近失败 run 打开并定位（`lastRunFocus`），或「复制深链」。
+
+浏览器侧 `manage.html` 失败原因摘要行可页内打开最近失败并 focus，也可复制 open 深链；使用同源 `report-assets/history-digest.js`：可展开失败摘要面板、复制 Markdown/深链，并在历史表展示 `topFailReason`（无绝对 hub 时深链仅带 `run` + `failSteps`）。管理页还会探测 hub 旁路 `fail-digest.md` / `fail-digest.json`（工具栏「旁路 MD/JSON」与摘要面板链接；缺失时提示；刷新时重探测）。manage（`--serve`）工具栏「刷新旁路」调用 `POST /api/fail-digest`；联调抽检见 `make smoke-manage-digest`；Desktop 历史工具栏同步提供「旁路 MD / 旁路 JSON / 旁路位置 / 刷新旁路」（`probeHistoryFailDigestSidecars` + `openPath`/`revealPath` + `refreshFailDigestSidecars` 等同 CLI `digest --write`；导出写旁路后自动刷新按钮态）。Desktop 打开无 hub 的 `open?run=&failSteps=1` 时使用当前报告根（或最近 hub），并以 `#overview?failSteps=1` 进入仅失败步骤视图。
+
+### 历史趋势与过滤偏好
+
+设置页可配置 `historyTrendLimit`（默认 12）与 `historyTrendFlakyLimit`（默认 20）。历史页的搜索（`historyQuery`）、结论 chips（`historyVerdict`）、失败原因关键字（`historyFailReasonQuery`）防抖写入 `desktop-settings.json`，重启后恢复；「运行趋势」读取上述窗口上限而非硬编码。

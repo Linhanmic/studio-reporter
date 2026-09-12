@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  release-plugin:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,10 +18,102 @@ jobs:
           go-version: "1.27"
       - name: Build plugin zips
         run: ./build-all.sh
-      - name: Publish GitHub Release
+      - name: Checksums (plugin)
+        run: |
+          cd dist
+          sha256sum *.zip | tee SHA256SUMS-plugin.txt
+      - name: Upload plugin zips
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.zip
+          files: |
+            dist/*.zip
+            dist/SHA256SUMS-plugin.txt
+          body: |
+            ## Studio Reporter ${{ github.ref_name }}
+
+            Plugin zips and Desktop packages below. Desktop artifacts are **unsigned**
+            (`CSC_IDENTITY_AUTO_DISCOVERY=false`; signing secrets are documented in
+            DESKTOP.md but not yet wired into this workflow).
           generate_release_notes: true
           fail_on_unmatched_files: true
+          overwrite_files: true
+
+  release-desktop-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Build CLI for Desktop extraResources
+        run: make build
+      - name: Pack Desktop (Linux AppImage + dir)
+        run: |
+          cd desktop
+          npm ci
+          npm run pack
+        env:
+          # Unsigned artifacts only. Secrets in DESKTOP.md are not wired yet.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          WIN_CSC_LINK: ""
+      - name: Checksums (linux desktop)
+        run: |
+          cd desktop/dist
+          sha256sum *.AppImage latest*.yml 2>/dev/null | tee SHA256SUMS-desktop-linux.txt \
+            || sha256sum * | tee SHA256SUMS-desktop-linux.txt
+      - name: Upload Desktop Linux artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/dist/*.AppImage
+            desktop/dist/latest*.yml
+            desktop/dist/SHA256SUMS-desktop-linux.txt
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          overwrite_files: true
+
+  release-desktop-win:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Build Windows CLI for Desktop extraResources
+        run: make build-windows
+      - name: Pack Desktop (Windows unsigned)
+        run: |
+          cd desktop
+          npm ci
+          npm run pack:win
+        env:
+          # Unsigned cross-build from Linux. DESKTOP.md lists future signing secrets.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          WIN_CSC_LINK: ""
+      - name: Checksums (windows desktop)
+        run: |
+          cd desktop/dist
+          sha256sum *.exe *.zip 2>/dev/null | tee SHA256SUMS-desktop-win.txt \
+            || find . -maxdepth 2 -type f \( -name '*.exe' -o -name '*.zip' -o -name '*.yml' \) -print0 \
+            | xargs -0 sha256sum | tee SHA256SUMS-desktop-win.txt
+      - name: Upload Desktop Windows artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/dist/*.exe
+            desktop/dist/*win*.zip
+            desktop/dist/latest*.yml
+            desktop/dist/SHA256SUMS-desktop-win.txt
+          generate_release_notes: true
+          fail_on_unmatched_files: false
           overwrite_files: true

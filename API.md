@@ -369,7 +369,19 @@ Optional bidirectional control on the same WebSocket. Unknown types are ignored 
 | `Ping` / `Pong` | either | keepalive (`Pong` payload `{}`) |
 | `RequestSnapshot` | client → plugin | reply with a `ReportSnapshot` of the current in-memory tree (no-op if none) |
 
-Desktop P0 sends `ClientHello` + `RequestSnapshot` on connect.
+Desktop P0 sends `ClientHello` + `RequestSnapshot` on connect. On `ServerHello`, Desktop runs a compatibility gate (`desktop/electron/compat.js`): plugin version must be ≥ `0.5.0`, and capabilities must include `ReportSnapshot`, `ReportGenerated`, and `RequestSnapshot`. Status bar shows ok / warn / error accordingly.
+
+Stdout discover helpers are shared as `@studio-reporter/discover` (`packages/studio-reporter-discover`) for Desktop and GaugeStudio.
+
+While connected, each `ReportSnapshot` is reduced to a native outline (`desktop/electron/outline.js`) for the Desktop sidebar. Opening a final report directory also loads sibling `report.json` into the same outline. Clicking a node posts `{type:'studio-reporter:select-node', id}` into the active iframe (live viewer or static `index.html`). Sidebar search / verdict chips post `{type:'studio-reporter:filter', query, verdict}` so the iframe filter stays in sync.
+
+History tab filters `history.json` runs client-side (`filterHistoryRuns`: query + verdict). Export PDF / single HTML resolves portable `.uhilreport` paths via `resolveRunUhilreport` for one or more selected runs; with none selected it uses the newest `.uhilreport` under the hub root. Delete uses native FS (`deleteHistoryRuns`, same semantics as Go `deleteHistoryRun`) under `withHubLock` on `.hub.lock` (python fcntl flock, compatible with Go), with a confirmation dialog, and rewrites `history.json` + `history-live.js`. Selected runs can also be revealed in the OS file manager or have their archive path copied to the clipboard. When the Desktop window is unfocused, a suite-end OS notification is shown on `ReportGenerated` (setting `notifyOnSuiteEnd`, default on); clicking it focuses the app and navigates to the final report.
+
+Desktop theme preference (`desktop/electron/theme.js`, setting `theme`: `system`|`light`|`dark`) resolves to `data-theme` on `<html>` and follows `prefers-color-scheme` when set to system.
+
+Desktop keyboard shortcuts (`desktop/electron/shortcuts.js`): Ctrl/Cmd+1–4 switch tabs, Ctrl/Cmd+Enter connects WS, Ctrl/Cmd+Shift+H or F5 refreshes history; tablist supports arrow/Home/End. Shortcuts are ignored while typing in text fields.
+
+Desktop also registers the `studio-reporter://` protocol (`desktop/electron/deeplink.js`): `open?path|dir=…` opens a report folder, `connect?url=ws://…` connects live WS, `hub?dir=…` sets the report hub and switches to History, `compare?base=&target=` (aliases `a`/`b`, `from`/`to`; optional `hub`/`dir`) opens the History compare panel for two runs. The History compare panel can copy a shareable `studio-reporter://compare` URL via `buildCompareDeepLink` / `copyCompareDeepLink`, and exported Markdown/HTML/JSON share cards embed the same deep link (`resolveCompareShareDeepLink`). A single-instance lock forwards links from a second process. Cold-start and early `open-url` links are queued (`createDeepLinkQueue`) until the renderer `did-finish-load`, then flushed so `compare` navigation is not dropped.
 
 ## HTML Report
 

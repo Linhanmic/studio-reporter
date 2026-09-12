@@ -2,17 +2,114 @@
   "name": "studio-reporter-desktop",
   "version": "0.5.2",
   "private": true,
-  "description": "Studio Reporter Desktop — Electron workbench for live + final reports",
+  "description": "Studio Reporter Desktop \u2014 Electron workbench for live + final reports",
+  "author": "Studio Reporter",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test electron/discover.test.js electron/settings.test.js",
-    "pack": "echo \"Packaging not configured yet; use npm start for P0/P1\""
+    "test": "node --test electron/discover.test.js electron/compat.test.js electron/plugin-detect.test.js electron/updater.test.js electron/update-feed.test.js electron/outline.test.js electron/outline-virtual.test.js electron/settings.test.js electron/hublock.test.js electron/hub-watch.test.js electron/history-trend.test.js electron/history-digest.test.js electron/notify.test.js electron/deeplink.test.js electron/shortcuts.test.js electron/theme.test.js electron/compare.test.js electron/paths.test.js electron/gauge-run.test.js electron/sessions.test.js electron/uhil-open.test.js electron/export-report.test.js electron/export-progress.test.js electron/scenario-compare.test.js electron/share-hash.test.js electron/fail-summary-open.test.js electron/open-focus-pipeline.test.js electron/history-menu.test.js electron/window-state.test.js scripts/verify-pack-dir.test.js scripts/prepare-pack-resources.test.js",
+    "pack:check": "node scripts/prepare-pack-resources.js",
+    "pack:check:win": "node scripts/prepare-pack-resources.js --win",
+    "pack:dir": "npm run pack:check && electron-builder --dir --publish never",
+    "pack:dir:win": "npm run pack:check:win && electron-builder --win --dir --publish never",
+    "pack": "npm run pack:check && electron-builder --publish never",
+    "pack:win": "npm run pack:check:win && electron-builder --win --publish never",
+    "dist": "npm run pack",
+    "pack:verify": "node scripts/run-verify-pack-dist.js",
+    "pack:smoke": "bash scripts/pack-smoke.sh"
   },
   "engines": {
     "node": ">=18"
   },
+  "dependencies": {
+    "@studio-reporter/discover": "file:../packages/studio-reporter-discover",
+    "electron-updater": "^6.6.2"
+  },
   "devDependencies": {
-    "electron": "^37.2.0"
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.gaugestudio.studio-reporter",
+    "productName": "Studio Reporter",
+    "copyright": "Copyright \u00a9 Studio Reporter contributors",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Linhanmic",
+        "repo": "studio-reporter"
+      }
+    ],
+    "files": [
+      "electron/**/*",
+      "renderer/**/*",
+      "package.json",
+      "!electron/**/*.test.js"
+    ],
+    "extraResources": [
+      {
+        "from": "../viewer.html",
+        "to": "viewer.html"
+      },
+      {
+        "from": "../report-assets",
+        "to": "report-assets"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "dir"
+      ],
+      "category": "Development",
+      "artifactName": "studio-reporter-desktop-${version}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "../bin/studio-reporter",
+          "to": "bin/studio-reporter"
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "dir"
+      ],
+      "category": "public.app-category.developer-tools",
+      "artifactName": "studio-reporter-desktop-${version}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "../bin/studio-reporter",
+          "to": "bin/studio-reporter"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "dir"
+      ],
+      "artifactName": "studio-reporter-desktop-${version}-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "../bin/studio-reporter.exe",
+          "to": "bin/studio-reporter.exe"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "protocols": {
+      "name": "Studio Reporter",
+      "schemes": [
+        "studio-reporter"
+      ]
+    }
   }
 }

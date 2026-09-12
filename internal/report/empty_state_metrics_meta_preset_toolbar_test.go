@@ -1,0 +1,310 @@
+package report
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// TestEmptyStateMetricsMetaPresetToolbarChip verifies the tools-row named-preset
+// chip cycles presets on click, opens the fields editor on Shift+click, opens a
+// keyboard/context menu of named presets, and resets to default via the companion button.
+func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
+	r := &Report{
+		ProjectName: "meta-preset-toolbar",
+		Verdict:     VerdictFail,
+		Failed:      true,
+		Environment: "ci",
+		Duration:    "12.3s",
+		Meta: ReportMeta{
+			HostName:       "ci-host",
+			PluginVersion:  "0.5.2",
+			ProjectRoot:    "/tmp/workspace/demo-suite",
+			GeneratedAt:    "2026-09-12 10:00:00",
+			GeneratedAtISO: "2026-09-12T10:00:00Z",
+		},
+		Specs: []SpecReport{{
+			ID:       "spec:specs/auth/login.spec",
+			Heading:  "Login",
+			FileName: "specs/auth/login.spec",
+			Verdict:  VerdictFail,
+			Scenarios: []ScenarioReport{{
+				ID:      "spec:specs/auth/login.spec-scn-0",
+				Heading: "Bad password",
+				Verdict: VerdictFail,
+				Items: []ItemReport{{
+					Kind: "step",
+					Step: &StepReport{
+						ActualText:   "Assert password",
+						Verdict:      VerdictFail,
+						ErrorMessage: "assertion failed: password",
+					},
+				}},
+			}},
+		}},
+	}
+	html, err := RenderReportHTML(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(html)
+	for _, want := range []string{
+		`overview-empty-state-metrics-meta-preset-chip`,
+		`overview-empty-state-metrics-meta-preset-reset`,
+		`cycle-empty-state-metrics-meta-field-named-preset`,
+		`reset-empty-state-metrics-meta-field-named-preset`,
+		`StudioReportSyncEmptyStateMetricsMetaPresetToolbarChip`,
+		`StudioReportOpenEmptyStateMetricsMetaFieldsEditor`,
+		`StudioReportCycleEmptyStateMetricsMetaFieldNamedPreset`,
+		`StudioReportActivateEmptyStateMetricsMetaPresetChip`,
+		`StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault`,
+		`StudioReportOpenEmptyStateMetricsMetaPresetMenu`,
+		`StudioReportCloseEmptyStateMetricsMetaPresetMenu`,
+		`StudioReportNavigateEmptyStateMetricsMetaPresetMenu`,
+		`StudioReportEmptyStateMetricsMetaPresetMenuIsOpen`,
+		`StudioReportDescribeEmptyStateMetricsMetaFieldNamedPreset`,
+		`预设·默认`,
+		`回默认`,
+		`Shift+点击`,
+		`右键`,
+		`aria-haspopup="menu"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("report missing %q", want)
+		}
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-preset-chip`) {
+		t.Fatal("CSS missing meta-preset-chip")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-preset-chip.is-custom`) {
+		t.Fatal("CSS missing meta-preset-chip.is-custom")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-preset-menu`) {
+		t.Fatal("CSS missing meta-preset-menu")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-preset-menu-item-summary`) {
+		t.Fatal("CSS missing meta-preset-menu-item-summary")
+	}
+
+	chrome, err := findChrome()
+	if err != nil {
+		if os.Getenv("CI") != "" {
+			t.Fatalf("chrome required in CI for meta-preset toolbar smoke: %v", err)
+		}
+		t.Skip("chrome not available:", err)
+	}
+
+	dir := t.TempDir()
+	index := filepath.Join(dir, "index.html")
+	probe := `<script>
+(function () {
+  function mark(v) { document.documentElement.setAttribute('data-meta-preset-toolbar', v); }
+  function go() {
+    var show = window.StudioReportShowEmptyStateMetricsPanel;
+    var applyNamed = window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPreset;
+    var activeNamed = window.StudioReportGetActiveEmptyStateMetricsMetaFieldNamedPresetId;
+    var syncChip = window.StudioReportSyncEmptyStateMetricsMetaPresetToolbarChip;
+    var openEditor = window.StudioReportOpenEmptyStateMetricsMetaFieldsEditor;
+    var cycle = window.StudioReportCycleEmptyStateMetricsMetaFieldNamedPreset;
+    var activate = window.StudioReportActivateEmptyStateMetricsMetaPresetChip;
+    var resetDefault = window.StudioReportResetEmptyStateMetricsMetaFieldNamedPresetToDefault;
+    var openMenu = window.StudioReportOpenEmptyStateMetricsMetaPresetMenu;
+    var closeMenu = window.StudioReportCloseEmptyStateMetricsMetaPresetMenu;
+    var navMenu = window.StudioReportNavigateEmptyStateMetricsMetaPresetMenu;
+    var menuOpen = window.StudioReportEmptyStateMetricsMetaPresetMenuIsOpen;
+    var describePreset = window.StudioReportDescribeEmptyStateMetricsMetaFieldNamedPreset;
+    if (typeof show !== 'function' || typeof applyNamed !== 'function' || typeof activeNamed !== 'function'
+      || typeof syncChip !== 'function' || typeof openEditor !== 'function' || typeof cycle !== 'function'
+      || typeof activate !== 'function' || typeof resetDefault !== 'function'
+      || typeof openMenu !== 'function' || typeof closeMenu !== 'function'
+      || typeof navMenu !== 'function' || typeof menuOpen !== 'function'
+      || typeof describePreset !== 'function') {
+      mark('missing');
+      return;
+    }
+    try { localStorage.removeItem('studio-report-empty-metrics-meta-fields'); } catch (e) {}
+    try { localStorage.removeItem('studio-report-empty-metrics-meta-field-named-active'); } catch (e2) {}
+    show();
+    syncChip();
+    var chip = document.getElementById('overview-empty-state-metrics-meta-preset-chip');
+    var resetBtn = document.getElementById('overview-empty-state-metrics-meta-preset-reset');
+    var editor = document.getElementById('overview-empty-state-metrics-meta-fields');
+    if (!chip || !resetBtn || !editor) {
+      mark('missing-dom');
+      return;
+    }
+    var defLabelOk = (chip.textContent || '').indexOf('默认') >= 0;
+    var defHiddenOk = resetBtn.hasAttribute('hidden') && !chip.classList.contains('is-custom');
+    var actionOk = chip.getAttribute('data-action') === 'cycle-empty-state-metrics-meta-field-named-preset';
+
+    // Plain click cycles default → ci-slim (first builtin after default).
+    chip.click();
+    syncChip();
+    var cycle1Ok = activeNamed() === 'ci-slim'
+      && ((chip.textContent || '').indexOf('CI') >= 0 || (chip.textContent || '').indexOf('精简') >= 0)
+      && chip.classList.contains('is-custom')
+      && !resetBtn.hasAttribute('hidden');
+
+    chip.click();
+    syncChip();
+    var cycle2Ok = activeNamed() === 'debug-full'
+      && ((chip.textContent || '').indexOf('排障') >= 0 || (chip.textContent || '').indexOf('完整') >= 0);
+
+    // Bridge cycle with negative delta wraps back.
+    cycle(-1);
+    syncChip();
+    var cycleBackOk = activeNamed() === 'ci-slim';
+
+    // Shift+click opens editor without further cycling.
+    var beforeShift = activeNamed();
+    activate({ shiftKey: true });
+    syncChip();
+    var shiftOpenOk = !editor.hasAttribute('hidden') && activeNamed() === beforeShift;
+
+    // Editor chip still applies and refreshes toolbar chip.
+    var editorChip = document.querySelector('[data-action="apply-empty-state-metrics-meta-field-named"][data-named-preset="debug-full"]');
+    var editorChipOk = !!editorChip;
+    if (editorChip) editorChip.click();
+    syncChip();
+    var afterEditorOk = activeNamed() === 'debug-full'
+      && chip.dataset.namedPreset === 'debug-full'
+      && chip.classList.contains('is-custom')
+      && !resetBtn.hasAttribute('hidden');
+
+    resetBtn.click();
+    syncChip();
+    var resetOk = activeNamed() === 'default'
+      && (chip.textContent || '').indexOf('默认') >= 0
+      && !chip.classList.contains('is-custom')
+      && resetBtn.hasAttribute('hidden');
+
+    applyNamed('ci-slim');
+    resetDefault();
+    syncChip();
+    var bridgeResetOk = activeNamed() === 'default' && resetBtn.hasAttribute('hidden');
+
+    // Named-preset menu: Alt+activate / openMenu lists presets; pick debug-full; Esc closes.
+    activate({ altKey: true });
+    var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var menuOpenOk = !!menu && !menu.hasAttribute('hidden')
+      && !!menu.querySelector('[data-action="apply-empty-state-metrics-meta-field-named"][data-named-preset="ci-slim"]')
+      && !!menu.querySelector('[data-action="open-empty-state-metrics-meta-fields"]')
+      && !!menu.querySelector('[data-action="download-empty-state-metrics-meta-field-named-json"]');
+    var menuItem = menu && menu.querySelector('[data-action="apply-empty-state-metrics-meta-field-named"][data-named-preset="debug-full"]');
+    if (menuItem) menuItem.click();
+    syncChip();
+    var menuApplyOk = activeNamed() === 'debug-full'
+      && chip.dataset.namedPreset === 'debug-full'
+      && (!document.getElementById('overview-empty-state-metrics-meta-preset-menu')
+        || document.getElementById('overview-empty-state-metrics-meta-preset-menu').hasAttribute('hidden'));
+    openMenu(chip);
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var reopenOk = !!menu && !menu.hasAttribute('hidden');
+    closeMenu();
+    var closeOk = !menu || menu.hasAttribute('hidden');
+    activate({ altKey: true });
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var escOk = !menu || menu.hasAttribute('hidden');
+
+    // Keyboard nav: ArrowDown/Up/Home/End + Enter select.
+    resetDefault();
+    syncChip();
+    openMenu(chip);
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var items = menu ? menu.querySelectorAll('[role="menuitemradio"], [role="menuitem"]') : [];
+    var navStartOk = menuOpen() && items.length >= 3;
+    // Focus first item then ArrowDown to second (ci-slim).
+    if (items[0] && typeof items[0].focus === 'function') items[0].focus();
+    navMenu({ key: 'ArrowDown', preventDefault: function () {} });
+    var afterDown = document.activeElement;
+    var downOk = !!afterDown && afterDown.getAttribute('data-named-preset') === 'ci-slim';
+    navMenu({ key: 'End', preventDefault: function () {} });
+    var afterEnd = document.activeElement;
+    var endOk = !!afterEnd && afterEnd.getAttribute('role') === 'menuitem';
+    navMenu({ key: 'Home', preventDefault: function () {} });
+    var afterHome = document.activeElement;
+    var homeOk = !!afterHome && afterHome.getAttribute('data-named-preset') === 'default';
+    navMenu({ key: 'ArrowDown', preventDefault: function () {} });
+    navMenu({ key: 'Enter', preventDefault: function () {} });
+    syncChip();
+    var enterOk = activeNamed() === 'ci-slim' && !menuOpen();
+
+    // Menu item summaries show primary/secondary field labels.
+    openMenu(chip);
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var slimBtn = menu && menu.querySelector('[data-named-preset="ci-slim"]');
+    var slimSummary = slimBtn && slimBtn.querySelector('.overview-empty-state-metrics-meta-preset-menu-item-summary');
+    var described = describePreset({ name: 'CI 精简', primary: ['projectName', 'verdict'], secondary: [] });
+    var summaryApiOk = typeof described === 'string' && described.indexOf('主') >= 0 && described.indexOf('项目') >= 0 && described.indexOf('结论') >= 0;
+    var summaryDomOk = !!slimSummary && (slimSummary.textContent || '').indexOf('项目') >= 0
+      && (slimSummary.textContent || '').indexOf('结论') >= 0
+      && (slimBtn.getAttribute('aria-description') || '').indexOf('主') >= 0;
+    closeMenu();
+
+    // Menu 「下载库 JSON…」 triggers library download and closes the menu.
+    openMenu(chip);
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var dlLibBtn = menu && menu.querySelector('[data-action="download-empty-state-metrics-meta-field-named-json"]');
+    var buildLibName = window.StudioReportBuildEmptyStateMetricsMetaFieldNamedPresetsDownloadName;
+    var expectedMenuDlName = typeof buildLibName === 'function' ? buildLibName() : '';
+    var capturedMenuDlName = '';
+    var origCreateMenu = document.createElement.bind(document);
+    document.createElement = function (tag) {
+      var el = origCreateMenu(tag);
+      if (String(tag).toLowerCase() === 'a') {
+        el.click = function () { capturedMenuDlName = String(el.download || ''); };
+      }
+      return el;
+    };
+    try { if (dlLibBtn) dlLibBtn.click(); } finally { document.createElement = origCreateMenu; }
+    var statusMenuEl = document.querySelector('.status-msg');
+    var statusMenuText = statusMenuEl ? String(statusMenuEl.textContent || '') : '';
+    var menuDlOk = !!dlLibBtn
+      && typeof expectedMenuDlName === 'string' && expectedMenuDlName.indexOf('studio-report-empty-metrics-meta-field-named__') >= 0
+      && capturedMenuDlName === expectedMenuDlName
+      && statusMenuText.indexOf('已下载命名字段预设库 JSON：') >= 0
+      && statusMenuText.indexOf(expectedMenuDlName) >= 0
+      && (!document.getElementById('overview-empty-state-metrics-meta-preset-menu')
+        || document.getElementById('overview-empty-state-metrics-meta-preset-menu').hasAttribute('hidden'));
+
+    var ok = defLabelOk && defHiddenOk && actionOk && cycle1Ok && cycle2Ok && cycleBackOk
+      && shiftOpenOk && editorChipOk && afterEditorOk && resetOk && bridgeResetOk
+      && menuOpenOk && menuApplyOk && reopenOk && closeOk && escOk
+      && navStartOk && downOk && endOk && homeOk && enterOk
+      && summaryApiOk && summaryDomOk && menuDlOk;
+    mark(ok ? 'ok' : ('fail:def=' + defLabelOk + ';dh=' + defHiddenOk + ';act=' + actionOk
+      + ';c1=' + cycle1Ok + ';c2=' + cycle2Ok + ';cb=' + cycleBackOk + ';sh=' + shiftOpenOk
+      + ';ec=' + editorChipOk + ';ae=' + afterEditorOk + ';rs=' + resetOk + ';br=' + bridgeResetOk
+      + ';mo=' + menuOpenOk + ';ma=' + menuApplyOk + ';re=' + reopenOk + ';cl=' + closeOk + ';esc=' + escOk
+      + ';ns=' + navStartOk + ';dn=' + downOk + ';en=' + endOk + ';hm=' + homeOk + ';ent=' + enterOk
+      + ';sa=' + summaryApiOk + ';sd=' + summaryDomOk + ';mdl=' + menuDlOk
+      + ';cap=' + capturedMenuDlName + ';exp=' + expectedMenuDlName + ';status=' + statusMenuText
+      + ';chip=' + (chip.textContent || '') + ';active=' + activeNamed()));
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+  else setTimeout(go, 100);
+})();
+</script>`
+	injected := body
+	if strings.Contains(injected, "</body>") {
+		injected = strings.Replace(injected, "</body>", probe+"</body>", 1)
+	} else {
+		injected += probe
+	}
+	if err := os.WriteFile(index, []byte(injected), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	dom := chromeDumpDOM(t, chrome, pathToFileURL(index))
+	if !strings.Contains(dom, `data-meta-preset-toolbar="ok"`) {
+		marker := ""
+		if i := strings.Index(dom, `data-meta-preset-toolbar="`); i >= 0 {
+			rest := dom[i+len(`data-meta-preset-toolbar="`):]
+			if j := strings.Index(rest, `"`); j >= 0 {
+				marker = rest[:j]
+			}
+		}
+		t.Fatalf("meta-preset toolbar smoke failed; marker=%q", marker)
+	}
+}

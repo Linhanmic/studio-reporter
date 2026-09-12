@@ -28,17 +28,19 @@ type HistoryFile struct {
 }
 
 type HistoryEntry struct {
-	ID           string               `json:"id"`
-	Href         string               `json:"href"`
-	RelDir       string               `json:"relDir"`
-	ProjectName  string               `json:"projectName"`
-	Timestamp    string               `json:"timestamp"`
-	TimestampISO string               `json:"timestampISO,omitempty"`
-	Duration     string               `json:"duration"`
-	Verdict      string               `json:"verdict"`
-	Failed       bool                 `json:"failed"`
-	Summary      report.ReportSummary `json:"summary"`
-	Current      bool                 `json:"current,omitempty"`
+	ID            string               `json:"id"`
+	Href          string               `json:"href"`
+	RelDir        string               `json:"relDir"`
+	ProjectName   string               `json:"projectName"`
+	Timestamp     string               `json:"timestamp"`
+	TimestampISO  string               `json:"timestampISO,omitempty"`
+	Duration      string               `json:"duration"`
+	Verdict       string               `json:"verdict"`
+	Failed        bool                 `json:"failed"`
+	TopFailReason string               `json:"topFailReason,omitempty"`
+	TopFailFocus  string               `json:"topFailFocus,omitempty"`
+	Summary       report.ReportSummary `json:"summary"`
+	Current       bool                 `json:"current,omitempty"`
 }
 
 func recordCompletedRun(runDir string, r *report.Report) error {
@@ -98,6 +100,7 @@ func recordCompletedRun(runDir string, r *report.Report) error {
 	if err := writeHistoryFile(absRoot, hist); err != nil {
 		return err
 	}
+	refreshFailDigestSidecars(absRoot, hist.Runs)
 	if absRun != absRoot {
 		if err := report.WriteAssets(absRoot); err != nil {
 			return err
@@ -112,6 +115,14 @@ func recordCompletedRun(runDir string, r *report.Report) error {
 		}
 	}
 	return nil
+}
+
+// refreshFailDigestSidecars best-effort writes fail-digest.md/json for CI/manage.
+// Digest write failures must not fail the suite finalize path.
+func refreshFailDigestSidecars(hubDir string, runs []HistoryEntry) {
+	d := buildHistoryFailDigest(runs, 15)
+	d.HubDir = hubDir
+	_ = writeHistoryFailDigestSidecars(hubDir, d)
 }
 
 func historyRootFor(runDir string) (string, bool) {
@@ -154,7 +165,7 @@ func uniqueDirName(parent, stamp string) string {
 }
 
 func historyEntryFromReport(r *report.Report) HistoryEntry {
-	return HistoryEntry{
+	entry := HistoryEntry{
 		ProjectName:  r.ProjectName,
 		Timestamp:    r.Timestamp,
 		TimestampISO: r.TimestampISO,
@@ -163,6 +174,22 @@ func historyEntryFromReport(r *report.Report) HistoryEntry {
 		Failed:       r.Failed,
 		Summary:      r.Summary,
 	}
+	if groups := report.AggregateFailReasons(r); len(groups) > 0 {
+		if groups[0].Reason != "" {
+			entry.TopFailReason = groups[0].Reason
+		}
+		// Prefer scenario DOM id, else spec id (path-style: spec:specs/.../x.spec).
+		for _, ref := range groups[0].Refs {
+			if id := strings.TrimSpace(ref.ScnID); id != "" {
+				entry.TopFailFocus = id
+				break
+			}
+			if id := strings.TrimSpace(ref.SpecID); id != "" && entry.TopFailFocus == "" {
+				entry.TopFailFocus = id
+			}
+		}
+	}
+	return entry
 }
 
 func upsertHistory(runs []HistoryEntry, entry HistoryEntry) []HistoryEntry {
@@ -386,7 +413,11 @@ func deleteHistoryRunLocked(absRoot, id string) error {
 		kept = append(kept, r)
 	}
 	hist.Runs = kept
-	return writeHistoryFile(absRoot, hist)
+	if err := writeHistoryFile(absRoot, hist); err != nil {
+		return err
+	}
+	refreshFailDigestSidecars(absRoot, hist.Runs)
+	return nil
 }
 
 func fileExists(path string) bool {
