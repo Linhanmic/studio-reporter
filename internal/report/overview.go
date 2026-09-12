@@ -254,6 +254,7 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 	b.WriteString("<span class=\"overview-empty-state-metrics-text\" id=\"overview-empty-state-metrics-text\"></span>")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-empty-state-metrics-json\" title=\"复制 EmptyStateMetrics JSON（含计数与事件环），便于粘贴到 issue；失败时自动下载文件\">复制 JSON</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"download-empty-state-metrics-json\" title=\"下载 EmptyStateMetrics JSON 文件（无剪贴板权限时的兜底）\">下载 JSON</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"hide-empty-state-metrics-panel\" title=\"隐藏本下面板并写入 localStorage=0（本会话优先；可用 ?emptyMetrics=1 或 StudioReportShowEmptyStateMetrics=true 再开）\">隐藏</button>")
 	b.WriteString("</div>\n")
 	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th><th>操作</th></tr></thead><tbody>\n")
 	for _, g := range groups {

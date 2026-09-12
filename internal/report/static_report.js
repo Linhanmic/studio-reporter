@@ -266,6 +266,21 @@
     });
   }
 
+  function setEmptyStateMetricsPanelVisible(visible) {
+    var on = !!visible;
+    try { window.StudioReportShowEmptyStateMetrics = on; } catch (e) {}
+    try {
+      localStorage.setItem('studio-report-empty-metrics', on ? '1' : '0');
+    } catch (e2) {}
+    syncEmptyStateMetricsPanel();
+    return emptyStateMetricsPanelEnabled();
+  }
+
+  function hideEmptyStateMetricsPanel() {
+    setEmptyStateMetricsPanelVisible(false);
+    flashStatus('已隐藏空态 metrics 面板（localStorage=0）');
+  }
+
   function syncEmptyStateMetricsPanel() {
     var el = document.getElementById('overview-empty-state-metrics');
     if (!el) return;
@@ -1439,6 +1454,10 @@ function copyFailSummary() {
         downloadEmptyStateMetricsJSON();
         return;
       }
+      if (actionBtn.dataset.action === 'hide-empty-state-metrics-panel') {
+        hideEmptyStateMetricsPanel();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1574,6 +1593,8 @@ function copyFailSummary() {
   window.StudioReportFormatEmptyStateMetricsJSON = formatEmptyStateMetricsJSON;
   window.StudioReportCopyEmptyStateMetricsJSON = copyEmptyStateMetricsJSON;
   window.StudioReportDownloadEmptyStateMetricsJSON = downloadEmptyStateMetricsJSON;
+  window.StudioReportHideEmptyStateMetricsPanel = hideEmptyStateMetricsPanel;
+  window.StudioReportSetEmptyStateMetricsPanelVisible = setEmptyStateMetricsPanelVisible;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;
   // Initial paint when enabled via query/localStorage before any action.
