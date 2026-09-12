@@ -231,6 +231,8 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`clearReportFilters`,
 		`restoreFailOnlyView`,
 		`undoClearReportFilters`,
+		`lastFilterSnapshot`,
+		`Ctrl/Cmd+Z`,
 		`failReasonEmptyStateActive`,
 		`clear-report-filters`,
 		`restore-fail-only-view`,

@@ -1329,6 +1329,15 @@ function copyFailSummary() {
       }
       return;
     }
+    // Ctrl/Cmd+Z undoes last clear / fail-only restore when a snapshot exists.
+    // Skip while typing so native text undo still works in search.
+    if ((ev.key === 'z' || ev.key === 'Z') && (ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey) {
+      if (!isTypingTarget(ev.target) && lastFilterSnapshot) {
+        ev.preventDefault();
+        undoClearReportFilters();
+        return;
+      }
+    }
     if (isLightboxOpen() && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
       ev.preventDefault();
       stepLightbox(ev.key === 'ArrowRight' ? 1 : -1);
