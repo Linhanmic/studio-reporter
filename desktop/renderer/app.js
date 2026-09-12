@@ -1518,9 +1518,14 @@ function renderHistoryTrendPanel(bundle) {
       const series = (f.verdictSeries || [])
         .map((v) => (v.verdict === 'fail' ? '✗' : v.verdict === 'pass' ? '✓' : '·'))
         .join('');
-      const lastRun = [...(f.verdictSeries || [])].reverse().find((v) => v.runId)?.runId || '';
+      const lastRun =
+        String(f.lastFailRunId || '').trim() ||
+        [...(f.verdictSeries || [])].reverse().find((v) => v.runId)?.runId ||
+        '';
+      const focus = f.scnId || '';
       return `<tr>
-        <td><button type="button" class="linkish" data-flaky-run="${escapeHtml(lastRun)}" data-flaky-focus="${escapeHtml(f.scnId || '')}" title="${escapeHtml(f.specFile || '')}">${escapeHtml(f.scnName || f.key)}</button>
+        <td><button type="button" class="linkish" data-flaky-run="${escapeHtml(lastRun)}" data-flaky-focus="${escapeHtml(focus)}" title="${escapeHtml(f.specFile || '')}">${escapeHtml(f.scnName || f.key)}</button>
+          <button type="button" class="btn btn-tiny" data-flaky-copy-run="${escapeHtml(lastRun)}" data-flaky-copy-focus="${escapeHtml(focus)}" title="复制带 focus 的 open 深链">复制深链</button>
           <div class="muted">${escapeHtml(f.specName || '')}</div></td>
         <td>${f.flips}/${f.seen}</td>
         <td>${Math.round((f.failRate || 0) * 100)}%</td>
@@ -1605,6 +1610,33 @@ function renderHistoryTrendPanel(bundle) {
         return;
       }
       await openHistoryRunEntry(run, { focus: focus || undefined, failSteps: true });
+    });
+  });
+  panel.querySelectorAll('[data-flaky-copy-run]').forEach((btn) => {
+    btn.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const id = btn.getAttribute('data-flaky-copy-run') || '';
+      const focus = btn.getAttribute('data-flaky-copy-focus') || '';
+      if (!id) {
+        setStatus('不稳定场景缺少可复制的运行 id', 'warn');
+        return;
+      }
+      if (typeof window.desktopAPI?.copyOpenDeepLink !== 'function') {
+        setStatus('当前版本不支持复制 open 深链', 'warn');
+        return;
+      }
+      try {
+        const copied = await window.desktopAPI.copyOpenDeepLink({
+          run: id,
+          hub: state.settings?.reportHubDir || '',
+          focus: focus || undefined,
+          failSteps: true,
+        });
+        setStatus(`已复制不稳定场景深链：${copied?.url || ''}`, 'ok');
+      } catch (err) {
+        setStatus(String(err.message || err), 'warn');
+      }
     });
   });
 }

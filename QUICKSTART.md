@@ -158,7 +158,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 深链：`studio-reporter://open?dir=<报告目录>`（亦支持 `open?run=<runId>&failSteps=1`；无 hub 时使用 Desktop 当前报告根或最近 hub）（也支持 `open?run=<runId>&hub=<hub>&focus=<scnId>`；path-style id 如 `spec:specs/auth/login.spec-scn-0` 在 query 中编码为 `%2F`，打开后 hash 仍用字面 `/`；对比分享卡片场景 diff 可点此定位）、`studio-reporter://connect?url=ws://...`、`studio-reporter://hub?dir=<hub>`、`studio-reporter://compare?base=<runId>&target=<runId>`（可选 `&hub=`、`&kinds=regressed,fixed`；历史对比面板「复制深链」/分享卡片会带上当前场景类型过滤；安装包注册协议；开发态也会尝试注册；冷启动时深链会排队到窗口加载完成后再打开）。
 快捷键：`Ctrl/Cmd+1…4` 切换运行/报告/历史/设置；`Ctrl/Cmd+Enter` 连接；`Ctrl/Cmd+Shift+H` 或 `F5` 刷新历史；页签支持方向键。
 设置中可选择界面主题：跟随系统 / 深色 / 浅色。  
-设置可开启「启动时恢复上次标签页」；报告根目录保留最近 hub 列表，历史页与设置页可一键切换；默认可监视报告根目录 `history.json`，外部写入新报告时历史列表自动刷新（可关）。历史页「运行趋势」可对当前过滤窗口给出时长 sparkline / 失败率，并列出不稳定场景（需归档内 `report.json`）；趋势窗口大小与不稳定场景上限在设置中可配，历史搜索/结论/失败原因过滤会自动记住。
+设置可开启「启动时恢复上次标签页」；报告根目录保留最近 hub 列表，历史页与设置页可一键切换；默认可监视报告根目录 `history.json`，外部写入新报告时历史列表自动刷新（可关）。历史页「运行趋势」可对当前过滤窗口给出时长 sparkline / 失败率，并列出不稳定场景（点击打开最近失败并 focus，或「复制深链」分享 open URL；需归档内 `report.json`）；趋势窗口大小与不稳定场景上限在设置中可配，历史搜索/结论/失败原因过滤会自动记住。
 窗口位置、尺寸与最大化状态会自动记住（换显示器时若窗口完全离屏会回正到主屏）。
 运行/报告页左侧大纲宽度可拖拽调整，并会记住上次宽度。
 打包冒烟：`make desktop-pack-smoke`（构建 CLI → `electron-builder --dir` → 校验解包布局；校验器覆盖 linux / `mac/*.app` / `win-unpacked`）。

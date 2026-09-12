@@ -175,11 +175,13 @@ function listFlakyScenarios(runsWithLites, opts = {}) {
     let passes = 0;
     let flips = 0;
     let lastFailReason = '';
+    let lastFailRunId = '';
     let prev = '';
     for (const v of row.verdicts) {
       const verd = v.verdict === 'fail' ? 'fail' : v.verdict === 'pass' ? 'pass' : v.verdict;
       if (verd === 'fail') {
         fails += 1;
+        lastFailRunId = v.runId || lastFailRunId;
         if (v.failReason) lastFailReason = v.failReason;
       } else if (verd === 'pass') {
         passes += 1;
@@ -208,6 +210,7 @@ function listFlakyScenarios(runsWithLites, opts = {}) {
       flips,
       failRate,
       lastFailReason,
+      lastFailRunId,
       verdictSeries: row.verdicts.map((v) => ({ runId: v.runId, verdict: v.verdict })),
     });
   }
@@ -218,6 +221,25 @@ function listFlakyScenarios(runsWithLites, opts = {}) {
     return String(a.scnName).localeCompare(String(b.scnName));
   });
   return out.slice(0, limit);
+}
+
+/**
+ * Pick run + focus for opening/copying a flaky scenario deep link.
+ * Prefers the last failing run so failSteps mode lands on a real failure.
+ * @param {{ lastFailRunId?: string, scnId?: string, verdictSeries?: Array<{ runId?: string }> }} flaky
+ * @returns {{ runId: string, focus: string, failSteps: true } | null}
+ */
+function resolveFlakyOpenTarget(flaky) {
+  if (!flaky || typeof flaky !== 'object') return null;
+  const series = Array.isArray(flaky.verdictSeries) ? flaky.verdictSeries : [];
+  const lastAny = [...series].reverse().find((v) => v && v.runId)?.runId || '';
+  const runId = String(flaky.lastFailRunId || lastAny || '').trim();
+  if (!runId) return null;
+  return {
+    runId,
+    focus: String(flaky.scnId || '').trim(),
+    failSteps: true,
+  };
 }
 
 /**
@@ -282,6 +304,7 @@ module.exports = {
   sortRunsChrono,
   buildHistoryTrend,
   listFlakyScenarios,
+  resolveFlakyOpenTarget,
   sparkline,
   formatTrendDuration,
   loadScenarioLitesForEntry,

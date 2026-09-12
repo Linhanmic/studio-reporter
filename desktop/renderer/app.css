@@ -103,6 +103,13 @@ html, body {
   appearance: none; border: 1px solid var(--line); background: var(--surface-btn);
   color: var(--text); border-radius: 6px; padding: 7px 12px; cursor: pointer; font: inherit;
 }
+.btn.btn-tiny {
+  padding: 2px 7px;
+  font-size: 11px;
+  line-height: 1.35;
+  margin-left: 6px;
+  vertical-align: middle;
+}
 .btn:hover { background: #274358; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn.primary {

@@ -9,6 +9,7 @@ const {
   sortRunsChrono,
   buildHistoryTrend,
   listFlakyScenarios,
+  resolveFlakyOpenTarget,
   sparkline,
   formatTrendDuration,
   loadScenarioLitesForEntry,
@@ -104,6 +105,22 @@ describe('history-trend', () => {
     assert.equal(flaky[0].flips, 2);
     assert.equal(flaky[0].fails, 1);
     assert.equal(flaky[0].lastFailReason, 'boom');
+    assert.equal(flaky[0].lastFailRunId, 'b');
+    const target = resolveFlakyOpenTarget(flaky[0]);
+    assert.deepEqual(target, { runId: 'b', focus: '1', failSteps: true });
+  });
+
+  it('resolveFlakyOpenTarget falls back to latest run when no fail id', () => {
+    const target = resolveFlakyOpenTarget({
+      scnId: 'scn-9',
+      verdictSeries: [
+        { runId: 'r1', verdict: 'pass' },
+        { runId: 'r2', verdict: 'pass' },
+      ],
+    });
+    assert.deepEqual(target, { runId: 'r2', focus: 'scn-9', failSteps: true });
+    assert.equal(resolveFlakyOpenTarget(null), null);
+    assert.equal(resolveFlakyOpenTarget({}), null);
   });
 
   it('loadScenarioLitesForEntry reads report.json via resolveRunDir', () => {
