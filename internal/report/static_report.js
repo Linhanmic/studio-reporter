@@ -703,6 +703,22 @@
     return path + search + hash;
   }
 
+  function describeEmptyMetricsEnableURLPreview(url) {
+    var preview = shortenEmptyMetricsEnableURL(url);
+    var kind = '';
+    try {
+      var m = String(url || '').match(/[?&](?:emptyMetricsKind|empty-metrics-kind)=([^&#]*)/i);
+      if (m) kind = decodeURIComponent(String(m[1] || '').replace(/\+/g, ' '));
+    } catch (e) {}
+    if (!kind) {
+      try { kind = emptyStateMetricsEventKindFilter(); } catch (e2) {}
+    }
+    if (kind && EMPTY_STATE_EVENT_KIND_LABELS[kind]) {
+      return preview + ' · kind=' + kind;
+    }
+    return preview;
+  }
+
   function copyEmptyMetricsEnableURL() {
     var url = formatEmptyMetricsEnableURL();
     if (!url) {
@@ -710,7 +726,7 @@
       return Promise.reject(new Error('empty enable url'));
     }
     return copyText(url).then(function () {
-      flashStatus('已复制开启链接：' + shortenEmptyMetricsEnableURL(url));
+      flashStatus('已复制开启链接：' + describeEmptyMetricsEnableURLPreview(url));
     }).catch(function () {
       flashStatus('复制失败，请检查剪贴板权限');
     });
@@ -2182,6 +2198,7 @@ function copyFailSummary() {
   window.StudioReportFormatEmptyMetricsEnableURL = formatEmptyMetricsEnableURL;
   window.StudioReportCopyEmptyMetricsEnableURL = copyEmptyMetricsEnableURL;
   window.StudioReportShortenEmptyMetricsEnableURL = shortenEmptyMetricsEnableURL;
+  window.StudioReportDescribeEmptyMetricsEnableURLPreview = describeEmptyMetricsEnableURLPreview;
   window.StudioReportSyncEmptyMetricsEnableHint = syncEmptyMetricsEnableHint;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;

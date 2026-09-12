@@ -44,6 +44,8 @@ func TestEmptyMetricsEnableURLKindFilter(t *testing.T) {
 		`StudioReportReadEmptyMetricsKindFromQuery`,
 		`StudioReportApplyEmptyMetricsKindFromQuery`,
 		`StudioReportFormatEmptyMetricsEnableURL`,
+		`StudioReportDescribeEmptyMetricsEnableURLPreview`,
+		` · kind=`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -65,12 +67,13 @@ func TestEmptyMetricsEnableURLKindFilter(t *testing.T) {
 		"  function go() {\n" +
 		"    var format = window.StudioReportFormatEmptyMetricsEnableURL;\n" +
 		"    var shorten = window.StudioReportShortenEmptyMetricsEnableURL;\n" +
+		"    var describe = window.StudioReportDescribeEmptyMetricsEnableURLPreview;\n" +
 		"    var setKind = window.StudioReportSetEmptyStateMetricsEventKindFilter;\n" +
 		"    var getKind = window.StudioReportEmptyStateMetricsEventKindFilter;\n" +
 		"    var readQ = window.StudioReportReadEmptyMetricsKindFromQuery;\n" +
 		"    var applyQ = window.StudioReportApplyEmptyMetricsKindFromQuery;\n" +
 		"    var show = window.StudioReportShowEmptyStateMetricsPanel;\n" +
-		"    if (typeof format !== 'function' || typeof setKind !== 'function' || typeof getKind !== 'function' || typeof readQ !== 'function' || typeof applyQ !== 'function' || typeof show !== 'function') {\n" +
+		"    if (typeof format !== 'function' || typeof setKind !== 'function' || typeof getKind !== 'function' || typeof readQ !== 'function' || typeof applyQ !== 'function' || typeof show !== 'function' || typeof describe !== 'function') {\n" +
 		"      mark('missing');\n" +
 		"      return;\n" +
 		"    }\n" +
@@ -83,6 +86,8 @@ func TestEmptyMetricsEnableURLKindFilter(t *testing.T) {
 		"      && /[?&]emptyMetrics=1(?:&|#|$)/.test(url)\n" +
 		"      && /[?&]emptyMetricsKind=escClear(?:&|#|$)/.test(url)\n" +
 		"      && url.indexOf('#overview?scenario=fail') >= 0;\n" +
+		"    var preview = describe(url);\n" +
+		"    var previewOk = typeof preview === 'string' && preview.indexOf('kind=escClear') >= 0;\n" +
 		"    var shortOk = true;\n" +
 		"    if (typeof shorten === 'function') {\n" +
 		"      var longUrl = 'https://example.test/reports/very/long/path/to/index.html?foo=1&emptyMetrics=1&emptyMetricsKind=escClear&bar=2#overview?scenario=fail&q=' + encodeURIComponent('assertion failed password');\n" +
@@ -99,7 +104,8 @@ func TestEmptyMetricsEnableURLKindFilter(t *testing.T) {
 		"    try { history.replaceState(null, '', location.pathname + '?emptyMetrics=1#overview'); } catch (e5) {}\n" +
 		"    var clearUrl = format();\n" +
 		"    var clearOk = typeof clearUrl === 'string' && /[?&]emptyMetrics=1(?:&|#|$)/.test(clearUrl) && !/[?&]emptyMetricsKind=/.test(clearUrl);\n" +
-		"    mark((urlOk && shortOk && applyOk && clearOk) ? 'ok' : ('fail:url=' + urlOk + ';short=' + shortOk + ';apply=' + applyOk + ';clear=' + clearOk + ';u=' + String(url).slice(0, 120)));\n" +
+		"    var clearPreviewOk = describe(clearUrl).indexOf('kind=') < 0;\n" +
+		"    mark((urlOk && previewOk && shortOk && applyOk && clearOk && clearPreviewOk) ? 'ok' : ('fail:url=' + urlOk + ';prev=' + previewOk + ';short=' + shortOk + ';apply=' + applyOk + ';clear=' + clearOk + ';cprev=' + clearPreviewOk + ';u=' + String(url).slice(0, 120) + ';p=' + String(preview).slice(0, 80)));\n" +
 		"  }\n" +
 		"  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);\n" +
 		"  else setTimeout(go, 100);\n" +

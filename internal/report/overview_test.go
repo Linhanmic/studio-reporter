@@ -241,6 +241,7 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportDismissEmptyMetricsEnableHint`,
 		`StudioReportCopyEmptyMetricsEnableURL`,
 		`StudioReportShortenEmptyMetricsEnableURL`,
+		`StudioReportDescribeEmptyMetricsEnableURLPreview`,
 		`StudioReportFormatEmptyMetricsEnableURL`,
 		`emptyMetricsKind`,
 		`StudioReportApplyEmptyMetricsKindFromQuery`,
