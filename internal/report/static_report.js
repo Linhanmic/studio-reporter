@@ -517,6 +517,7 @@
       if (btn.dataset.action === 'collapse-all') setDetailsOpen(false);
       if (btn.dataset.action === 'fail-steps-only') setFailStepsOnly(!failStepsOnly);
       if (btn.dataset.action === 'copy-fail-summary') copyFailSummary();
+      if (btn.dataset.action === 'copy-fail-summary-locator-example') copyFailSummaryLocatorExample();
       if (btn.dataset.action === 'copy-share-link') copyShareLink();
     });
   });
@@ -738,6 +739,17 @@ function writeHash(id) {
   function blockLabel(el) {
     var cell = el.querySelector(':scope > summary .name-cell, :scope > .leaf-summary .name-cell');
     return cell ? (cell.textContent || '').trim() : (el.id || '');
+  }
+
+  // Keep in sync with desktop/electron/fail-summary-open.js FAIL_SUMMARY_LOCATOR_EXAMPLE.
+  var FAIL_SUMMARY_LOCATOR_EXAMPLE = '  - 定位: `#spec:specs/auth/login.spec-scn-0`';
+
+  function copyFailSummaryLocatorExample() {
+    return copyText(FAIL_SUMMARY_LOCATOR_EXAMPLE + '\n').then(function () {
+      flashStatus('已复制定位示例（path-style focus，/ 为字面量）');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
   }
 
   function failSummaryDeepLink(focusId) {
@@ -1004,6 +1016,10 @@ function copyFailSummary() {
         copyFailSummary();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-fail-summary-locator-example') {
+        copyFailSummaryLocatorExample();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1099,4 +1115,6 @@ function copyFailSummary() {
 
   // Test / Desktop bridge: sync collect for clipboard smokes (path-style focus deep links).
   window.StudioReportCollectFailSummary = collectFailSummary;
+  window.StudioReportFailSummaryLocatorExample = FAIL_SUMMARY_LOCATOR_EXAMPLE;
+  window.StudioReportCopyFailSummaryLocatorExample = copyFailSummaryLocatorExample;
 })();

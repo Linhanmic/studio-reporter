@@ -160,6 +160,7 @@
 - [x] Desktop 剪贴板粘贴失败摘要后一键打开首个 path-style focus（`planOpenFromFailSummaryMarkdown` + 菜单/历史「粘贴摘要定位」；缺报告目录时弹窗选择）
 - [x] 历史失败运行右键「粘贴摘要定位到此运行」（剪贴板 focus 绑定所选 history 条目报告目录；`history-menu` `paste-focus`）
 - [x] 失败摘要定位失败时的可操作提示与空剪贴板引导（`empty-clipboard`/`no-focus` + 示例定位行；对话框可「复制示例到剪贴板」）
+- [x] 静态报告「复制定位示例」帮助入口（工具栏按钮；与 Desktop `FAIL_SUMMARY_LOCATOR_EXAMPLE` 同源；Go/Desktop 互检）
 
 ## 迭代日志
 
@@ -347,7 +348,8 @@
 | 2026-09-11 | 剪贴板粘贴摘要一键定位 | 菜单/历史工具栏读取剪贴板失败摘要，打开报告并定位首个 path-style focus；缺目录时选择 |
 | 2026-09-11 | 历史右键粘贴摘要定位到此运行 | 右键菜单 paste-focus：剪贴板 focus + 所选运行目录打开；history-menu 单测 |
 | 2026-09-11 | 粘贴摘要失败可操作引导 | 区分空剪贴板/无定位行；对话框展示 hint+示例并可复制示例定位行 |
+| 2026-09-12 | 静态报告复制定位示例 | 工具栏「复制定位示例」与 Desktop 空剪贴板示例同源；Go/Desktop 互检 |
 
 ## 下一任务（选定）
 
-**静态报告「复制失败摘要」按钮旁增加「复制定位示例」帮助入口**（与 Desktop 空剪贴板示例同源），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**Desktop 历史趋势 flaky 场景一键打开定位**（趋势面板 flaky 行接到 open 深链），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

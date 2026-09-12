@@ -186,6 +186,7 @@ Gauge (gRPC)
 | 2026-09-11 | 剪贴板粘贴摘要一键定位 | Desktop 菜单/历史「粘贴摘要定位」读取剪贴板失败摘要并打开首个 path-style focus |
 | 2026-09-11 | 历史右键粘贴摘要定位 | 右键「粘贴摘要定位到此运行」把剪贴板 focus 绑到该 history 条目报告目录 |
 | 2026-09-11 | 粘贴摘要失败可操作引导 | 空剪贴板/无定位行返回 hint+示例；Desktop 对话框可一键复制示例定位行 |
+| 2026-09-12 | 静态报告复制定位示例 | 工具栏「复制定位示例」与 Desktop `FAIL_SUMMARY_LOCATOR_EXAMPLE` 同源；互检单测防漂移 |
 | 2026-09-11 | digest 深链特殊 hub 路径编码抽检 | 深链 hub 必须经 query 编码；Go/JS/Desktop 往返覆盖空格与保留字符，避免 `?&#` 截断 |
 | 2026-09-11 | report-browser-smoke CI | PR CI 安装 Chrome 并显式跑 failSteps/manage-digest 浏览器冒烟；避免 go test 在无浏览器环境静默 Skip |
 | 2026-09-11 | manage/serve 旁路与深链联调抽检 | 对照「API 单测 ≠ 页面契约」：用真实 hub + HTTP serve 串起 POST 旁路、sidecar 深链、manage.html/JS 字符串契约与 Chrome 打开 hash；`make smoke-manage-digest` 作为可重复抽检入口 |

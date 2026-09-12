@@ -16,6 +16,7 @@ func writeFilterToolbar(b *bytes.Buffer, specs, scenarios Counts) {
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"collapse-all\">全部折叠</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"fail-steps-only\" aria-pressed=\"false\" title=\"隐藏通过/跳过的场景与步骤，只保留失败场景中的失败步骤并展开\">仅失败步骤</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"copy-fail-summary\" title=\"复制当前可见失败场景的摘要到剪贴板\">复制失败摘要</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"copy-fail-summary-locator-example\" title=\"复制一条 path-style 定位示例行（与 Desktop 空剪贴板引导同源，便于粘贴摘要定位联调）\">复制定位示例</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn\" data-action=\"copy-share-link\" title=\"复制当前过滤/定位的可分享链接到剪贴板\">复制可见范围链接</button>")
 	b.WriteString("<span class=\"status-msg\" role=\"status\" aria-live=\"polite\"></span>")
 	b.WriteString("</div></div>\n")

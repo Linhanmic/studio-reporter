@@ -45,6 +45,8 @@ func TestRenderReportHTMLStaticShape(t *testing.T) {
 		`expand-all`,
 		`fail-steps-only`,
 		`copy-fail-summary`,
+		`copy-fail-summary-locator-example`,
+		`复制定位示例`,
 		`copy-share-link`,
 		`search-input`,
 		`class="err">nope`,
