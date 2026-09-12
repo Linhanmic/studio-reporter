@@ -780,3 +780,16 @@ html, body {
 .nav-pane .nav-spec.filter-hidden { display: none !important; }
 
 .nav-pane .nav-scn.filter-hidden { display: none !important; }
+
+.overview-empty-state-metrics-meta-secondary {
+  flex: 1 1 100%;
+  color: var(--muted, #667);
+  font-size: 0.85em;
+  line-height: 1.35;
+}
+.overview-empty-state-metrics-meta-secondary[hidden] {
+  display: none !important;
+}
+.overview-empty-state-metrics-meta-more {
+  flex: 0 0 auto;
+}

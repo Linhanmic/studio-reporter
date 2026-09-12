@@ -50,6 +50,10 @@ func TestEmptyStateMetricsPanelToggle(t *testing.T) {
 		`StudioReportEmptyStateMetricsPanelEnabled`,
 		`StudioReportFormatEmptyStateMetricsJSON`,
 		`StudioReportFormatEmptyStateMetricsReportSummary`,
+		`meta+`,
+		`StudioReportToggleEmptyStateMetricsMetaMore`,
+		`overview-empty-state-metrics-meta-secondary`,
+		`toggle-empty-state-metrics-meta-more`,
 		`复制 meta`,
 		`StudioReportCopyEmptyStateMetricsReportSummary`,
 		`copy-empty-state-metrics-report-meta`,
@@ -96,14 +100,27 @@ func TestEmptyStateMetricsPanelToggle(t *testing.T) {
     var btn = panel.querySelector('[data-action="copy-empty-state-metrics-json"]');
     if (!btn) { mark('fail-no-export-btn'); return; }
     var summaryFn = window.StudioReportFormatEmptyStateMetricsReportSummary;
+    var primaryFn = window.StudioReportFormatEmptyStateMetricsReportSummaryPrimary;
+    var secondaryFn = window.StudioReportFormatEmptyStateMetricsReportSummarySecondary;
+    var toggleMore = window.StudioReportToggleEmptyStateMetricsMetaMore;
     var copyMeta = window.StudioReportCopyEmptyStateMetricsReportSummary;
     var summary = typeof summaryFn === 'function' ? String(summaryFn() || '') : '';
-    var summaryOk = summary.indexOf('metrics-panel') >= 0 && summary.indexOf('|') < 0 && summary.indexOf('demo-suite') >= 0 && summary.indexOf('dev-laptop') >= 0 && summary.indexOf('plugin 0.5.2') >= 0;
-    var textOk = /clear=1/.test(text) && text.indexOf('metrics-panel') >= 0 && text.indexOf('|') >= 0;
+    var primary = typeof primaryFn === 'function' ? String(primaryFn() || '') : '';
+    var secondary = typeof secondaryFn === 'function' ? String(secondaryFn() || '') : '';
+    var primaryOk = primary.indexOf('metrics-panel') >= 0 && primary.indexOf('dev-laptop') < 0 && primary.indexOf('plugin') < 0;
+    var secondaryOk = secondary.indexOf('demo-suite') >= 0 && secondary.indexOf('dev-laptop') >= 0 && secondary.indexOf('plugin 0.5.2') >= 0;
+    var summaryOk = summary.indexOf('metrics-panel') >= 0 && summary.indexOf('dev-laptop') >= 0 && summary.indexOf('|') < 0;
+    var textOk = /clear=1/.test(text) && text.indexOf('metrics-panel') >= 0 && text.indexOf('|') >= 0 && text.indexOf('dev-laptop') < 0;
     var titleOk = String(panel.title || '').indexOf('metrics-panel') >= 0;
     var metaBtn = panel.querySelector('[data-action="copy-empty-state-metrics-report-meta"]');
+    var moreBtn = panel.querySelector('[data-action="toggle-empty-state-metrics-meta-more"]');
+    var secondaryEl = document.getElementById('overview-empty-state-metrics-meta-secondary');
+    var collapsedOk = !!moreBtn && !!secondaryEl && secondaryEl.hasAttribute('hidden');
+    if (typeof toggleMore === 'function') toggleMore();
+    if (typeof sync === 'function') sync();
+    var expandedOk = !!secondaryEl && !secondaryEl.hasAttribute('hidden') && String(secondaryEl.textContent || '').indexOf('dev-laptop') >= 0;
     var btnOk = !!metaBtn && typeof copyMeta === 'function';
-    mark((textOk && summaryOk && titleOk && btnOk) ? ('ok:' + text) : ('fail-text:' + text + ';sum=' + summary + ';sumOk=' + summaryOk + ';titleOk=' + titleOk + ';btnOk=' + btnOk));
+    mark((textOk && primaryOk && secondaryOk && summaryOk && titleOk && btnOk && collapsedOk && expandedOk) ? ('ok:' + text) : ('fail-text:' + text + ';pri=' + primary + ';sec=' + secondary + ';sum=' + summary + ';c=' + collapsedOk + ';e=' + expandedOk + ';btnOk=' + btnOk));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);

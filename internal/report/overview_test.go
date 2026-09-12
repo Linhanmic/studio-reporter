@@ -308,6 +308,12 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportFormatEmptyStateMetricsReportSummary`,
 		`StudioReportCopyEmptyStateMetricsReportSummary`,
 		`formatEmptyStateMetricsReportSummary`,
+		`meta+`,
+		`formatEmptyStateMetricsReportSummarySecondary`,
+		`formatEmptyStateMetricsReportSummaryPrimary`,
+		`StudioReportToggleEmptyStateMetricsMetaMore`,
+		`overview-empty-state-metrics-meta-secondary`,
+		`toggle-empty-state-metrics-meta-more`,
 		`shortenEmptyStateMetricsProjectRoot`,
 		`项目根目录`,
 		`plugin `,
@@ -397,6 +403,9 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-kind-clear-collapsed`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-kind-clear-collapsed")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-secondary`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-meta-secondary")
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-actions`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-event-actions for copy-visible")

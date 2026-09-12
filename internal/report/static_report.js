@@ -206,7 +206,7 @@
     return parts.length ? parts[parts.length - 1] : s;
   }
 
-  function formatEmptyStateMetricsReportSummary() {
+  function formatEmptyStateMetricsReportSummaryPrimary() {
     var report = emptyStateMetricsReportMeta();
     var parts = [];
     if (report.projectName) parts.push(String(report.projectName));
@@ -217,12 +217,46 @@
       if (when.length >= 19) when = when.slice(0, 19).replace('T', ' ');
       parts.push(when);
     }
+    return parts.join(' · ');
+  }
+
+  function formatEmptyStateMetricsReportSummarySecondary() {
+    var report = emptyStateMetricsReportMeta();
+    var parts = [];
     var rootShort = shortenEmptyStateMetricsProjectRoot(report.projectRoot);
     if (rootShort) parts.push(rootShort);
     if (report.hostName) parts.push(String(report.hostName));
     if (report.pluginVersion) parts.push('plugin ' + String(report.pluginVersion));
     return parts.join(' · ');
   }
+
+  function formatEmptyStateMetricsReportSummary() {
+    var primary = formatEmptyStateMetricsReportSummaryPrimary();
+    var secondary = formatEmptyStateMetricsReportSummarySecondary();
+    if (!secondary) return primary;
+    return primary ? (primary + ' · ' + secondary) : secondary;
+  }
+
+  function emptyStateMetricsMetaMoreExpanded() {
+    try {
+      var ls = localStorage.getItem('studio-report-empty-metrics-meta-more');
+      return ls === '1' || ls === 'true' || ls === 'expanded';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setEmptyStateMetricsMetaMoreExpanded(on) {
+    try {
+      localStorage.setItem('studio-report-empty-metrics-meta-more', on ? '1' : '0');
+    } catch (e) {}
+    syncEmptyStateMetricsPanel();
+  }
+
+  function toggleEmptyStateMetricsMetaMore() {
+    setEmptyStateMetricsMetaMoreExpanded(!emptyStateMetricsMetaMoreExpanded());
+  }
+
 
   function copyEmptyStateMetricsReportSummary() {
     var text = formatEmptyStateMetricsReportSummary();
@@ -238,7 +272,7 @@
   }
 
   function formatEmptyStateMetricsPanel() {
-    var head = formatEmptyStateMetricsReportSummary();
+    var head = formatEmptyStateMetricsReportSummaryPrimary();
     var counts = '空态计数 · clear=' + (emptyStateMetrics.clear || 0) +
       ' esc=' + (emptyStateMetrics.escClear || 0) +
       ' failOnly=' + (emptyStateMetrics.restoreFailOnly || 0) +
@@ -1056,6 +1090,31 @@
     var panelText = formatEmptyStateMetricsPanel();
     if (textEl) textEl.textContent = panelText;
     else el.textContent = panelText;
+    var primary = formatEmptyStateMetricsReportSummaryPrimary();
+    var secondary = formatEmptyStateMetricsReportSummarySecondary();
+    var moreBtn = el.querySelector('[data-action="toggle-empty-state-metrics-meta-more"]');
+    var secondaryEl = document.getElementById('overview-empty-state-metrics-meta-secondary');
+    var expanded = emptyStateMetricsMetaMoreExpanded();
+    if (moreBtn) {
+      if (secondary) {
+        moreBtn.removeAttribute('hidden');
+        moreBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        moreBtn.textContent = expanded ? 'meta−' : 'meta+';
+        moreBtn.title = expanded ? '折叠次要报告 meta（根目录/主机/插件）' : '展开次要报告 meta（根目录/主机/插件）';
+      } else {
+        moreBtn.setAttribute('hidden', '');
+        moreBtn.setAttribute('aria-expanded', 'false');
+      }
+    }
+    if (secondaryEl) {
+      if (secondary && expanded) {
+        secondaryEl.textContent = secondary;
+        secondaryEl.removeAttribute('hidden');
+      } else {
+        secondaryEl.textContent = '';
+        secondaryEl.setAttribute('hidden', '');
+      }
+    }
     var head = formatEmptyStateMetricsReportSummary();
     el.title = '空态操作计数（本地 UX 抽检；?emptyMetrics=1 或 localStorage studio-report-empty-metrics=1 开启）' +
       (head ? ('；报告 ' + head) : '');
@@ -2455,6 +2514,10 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportSyncEmptyMetricsEnableURLButtons = syncEmptyMetricsEnableURLButtons;
   window.StudioReportSyncEmptyMetricsEnableHint = syncEmptyMetricsEnableHint;
   window.StudioReportFormatEmptyStateMetricsReportSummary = formatEmptyStateMetricsReportSummary;
+  window.StudioReportSetEmptyStateMetricsMetaMoreExpanded = setEmptyStateMetricsMetaMoreExpanded;
+  window.StudioReportToggleEmptyStateMetricsMetaMore = toggleEmptyStateMetricsMetaMore;
+  window.StudioReportFormatEmptyStateMetricsReportSummarySecondary = formatEmptyStateMetricsReportSummarySecondary;
+  window.StudioReportFormatEmptyStateMetricsReportSummaryPrimary = formatEmptyStateMetricsReportSummaryPrimary;
   window.StudioReportCopyEmptyStateMetricsReportSummary = copyEmptyStateMetricsReportSummary;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;

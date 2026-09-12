@@ -310,3 +310,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 复制报告 meta | copyEmptyStateMetricsReportSummary + 面板按钮 |
 | 2026-09-12 | 失败原因空态 metrics 附带项目根目录 | projectRoot 进 JSON/issue；面板摘要缩短路径 |
 | 2026-09-12 | 失败原因空态 metrics 主机/插件进 meta | 面板摘要与贴 issue 对齐 Overview KV |
+| 2026-09-12 | 失败原因空态 metrics meta 次要字段可折叠 | 主摘要精简；meta+ 展开根目录/主机/插件 |
