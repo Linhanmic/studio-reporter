@@ -1007,6 +1007,7 @@
       html += '</button>';
     });
     html += '<button type="button" role="menuitem" class="overview-empty-state-metrics-meta-preset-menu-item overview-empty-state-metrics-meta-preset-menu-edit" data-action="open-empty-state-metrics-meta-fields" title="打开字段编辑器">字段编辑器…</button>';
+    html += '<button type="button" role="menuitem" class="overview-empty-state-metrics-meta-preset-menu-item overview-empty-state-metrics-meta-preset-menu-download-lib" data-action="download-empty-state-metrics-meta-field-named-json" title="下载自定义命名预设库 JSON（文件名含项目与自定义套数）">下载库 JSON…</button>';
     menu.innerHTML = html;
     menu.removeAttribute('hidden');
     menu.setAttribute('aria-hidden', 'false');
@@ -3415,6 +3416,7 @@ function copyFailSummary() {
       }
       if (actionBtn.dataset.action === 'open-empty-state-metrics-meta-fields') {
         openEmptyStateMetricsMetaFieldsEditor();
+        try { closeEmptyStateMetricsMetaPresetMenu(); } catch (eClose) {}
         return;
       }
       if (actionBtn.dataset.action === 'cycle-empty-state-metrics-meta-field-named-preset') {
@@ -3460,6 +3462,7 @@ function copyFailSummary() {
       }
       if (actionBtn.dataset.action === 'download-empty-state-metrics-meta-field-named-json') {
         downloadEmptyStateMetricsMetaFieldNamedPresetsJSON();
+        try { closeEmptyStateMetricsMetaPresetMenu(); } catch (eClose) {}
         return;
       }
       if (actionBtn.dataset.action === 'import-empty-state-metrics-meta-field-named-json') {

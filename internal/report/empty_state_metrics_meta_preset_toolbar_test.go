@@ -189,7 +189,8 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
     var menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
     var menuOpenOk = !!menu && !menu.hasAttribute('hidden')
       && !!menu.querySelector('[data-action="apply-empty-state-metrics-meta-field-named"][data-named-preset="ci-slim"]')
-      && !!menu.querySelector('[data-action="open-empty-state-metrics-meta-fields"]');
+      && !!menu.querySelector('[data-action="open-empty-state-metrics-meta-fields"]')
+      && !!menu.querySelector('[data-action="download-empty-state-metrics-meta-field-named-json"]');
     var menuItem = menu && menu.querySelector('[data-action="apply-empty-state-metrics-meta-field-named"][data-named-preset="debug-full"]');
     if (menuItem) menuItem.click();
     syncChip();
@@ -242,17 +243,44 @@ func TestEmptyStateMetricsMetaPresetToolbarChip(t *testing.T) {
       && (slimBtn.getAttribute('aria-description') || '').indexOf('主') >= 0;
     closeMenu();
 
+    // Menu 「下载库 JSON…」 triggers library download and closes the menu.
+    openMenu(chip);
+    menu = document.getElementById('overview-empty-state-metrics-meta-preset-menu');
+    var dlLibBtn = menu && menu.querySelector('[data-action="download-empty-state-metrics-meta-field-named-json"]');
+    var buildLibName = window.StudioReportBuildEmptyStateMetricsMetaFieldNamedPresetsDownloadName;
+    var expectedMenuDlName = typeof buildLibName === 'function' ? buildLibName() : '';
+    var capturedMenuDlName = '';
+    var origCreateMenu = document.createElement.bind(document);
+    document.createElement = function (tag) {
+      var el = origCreateMenu(tag);
+      if (String(tag).toLowerCase() === 'a') {
+        el.click = function () { capturedMenuDlName = String(el.download || ''); };
+      }
+      return el;
+    };
+    try { if (dlLibBtn) dlLibBtn.click(); } finally { document.createElement = origCreateMenu; }
+    var statusMenuEl = document.querySelector('.status-msg');
+    var statusMenuText = statusMenuEl ? String(statusMenuEl.textContent || '') : '';
+    var menuDlOk = !!dlLibBtn
+      && typeof expectedMenuDlName === 'string' && expectedMenuDlName.indexOf('studio-report-empty-metrics-meta-field-named__') >= 0
+      && capturedMenuDlName === expectedMenuDlName
+      && statusMenuText.indexOf('已下载命名字段预设库 JSON：') >= 0
+      && statusMenuText.indexOf(expectedMenuDlName) >= 0
+      && (!document.getElementById('overview-empty-state-metrics-meta-preset-menu')
+        || document.getElementById('overview-empty-state-metrics-meta-preset-menu').hasAttribute('hidden'));
+
     var ok = defLabelOk && defHiddenOk && actionOk && cycle1Ok && cycle2Ok && cycleBackOk
       && shiftOpenOk && editorChipOk && afterEditorOk && resetOk && bridgeResetOk
       && menuOpenOk && menuApplyOk && reopenOk && closeOk && escOk
       && navStartOk && downOk && endOk && homeOk && enterOk
-      && summaryApiOk && summaryDomOk;
+      && summaryApiOk && summaryDomOk && menuDlOk;
     mark(ok ? 'ok' : ('fail:def=' + defLabelOk + ';dh=' + defHiddenOk + ';act=' + actionOk
       + ';c1=' + cycle1Ok + ';c2=' + cycle2Ok + ';cb=' + cycleBackOk + ';sh=' + shiftOpenOk
       + ';ec=' + editorChipOk + ';ae=' + afterEditorOk + ';rs=' + resetOk + ';br=' + bridgeResetOk
       + ';mo=' + menuOpenOk + ';ma=' + menuApplyOk + ';re=' + reopenOk + ';cl=' + closeOk + ';esc=' + escOk
       + ';ns=' + navStartOk + ';dn=' + downOk + ';en=' + endOk + ';hm=' + homeOk + ';ent=' + enterOk
-      + ';sa=' + summaryApiOk + ';sd=' + summaryDomOk
+      + ';sa=' + summaryApiOk + ';sd=' + summaryDomOk + ';mdl=' + menuDlOk
+      + ';cap=' + capturedMenuDlName + ';exp=' + expectedMenuDlName + ';status=' + statusMenuText
       + ';chip=' + (chip.textContent || '') + ';active=' + activeNamed()));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
