@@ -182,6 +182,7 @@
 - [x] 静态报告失败原因空态 metrics 导出（面板「复制 JSON」；`formatEmptyStateMetricsJSON`/`StudioReportFormatEmptyStateMetricsJSON`）
 - [x] 静态报告失败原因空态 metrics 下载兜底（「下载 JSON」+ 复制失败自动下载；`downloadEmptyStateMetricsJSON`/`StudioReportDownloadEmptyStateMetricsJSON`）
 - [x] 静态报告失败原因空态 metrics 面板关闭（「隐藏」写 window+localStorage=0；`hideEmptyStateMetricsPanel`/`setEmptyStateMetricsPanelVisible`）
+- [x] 静态报告失败原因空态 metrics 清零（面板「清零」重置计数/事件环；`resetEmptyStateMetrics`/`StudioReportResetEmptyStateMetrics`）
 
 ## 迭代日志
 
@@ -394,7 +395,8 @@
 | 2026-09-12 | 失败原因空态 metrics 导出 | 面板「复制 JSON」导出 counts/events（可贴 issue） |
 | 2026-09-12 | 失败原因空态 metrics 下载 | 「下载 JSON」+ 复制失败自动落盘 `.json` |
 | 2026-09-12 | 失败原因空态 metrics 隐藏 | 面板「隐藏」写 window+localStorage=0，无需改 URL |
+| 2026-09-12 | 失败原因空态 metrics 清零 | 面板「清零」重置计数与事件环，便于重新采样 |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 事件环可清空**（面板「清零」重置计数/事件，便于一轮 UX 抽检后重新采样），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 事件环导出含面板开关快照**（JSON 附带 panelEnabled / localStorage），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

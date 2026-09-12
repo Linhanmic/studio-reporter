@@ -280,3 +280,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 导出 | 面板「复制 JSON」输出 EmptyStateMetrics（kind/exportedAt/counts/events） |
 | 2026-09-12 | 失败原因空态 metrics 下载 | 「下载 JSON」与复制失败自动落盘；无剪贴板权限兜底 |
 | 2026-09-12 | 失败原因空态 metrics 隐藏 | 「隐藏」写 window+localStorage=0；可用 setter / ?emptyMetrics=1 再开 |
+| 2026-09-12 | 失败原因空态 metrics 清零 | 「清零」重置 EmptyStateMetrics 计数/事件环 |
