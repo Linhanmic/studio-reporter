@@ -307,3 +307,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 导出附带报告 meta | writeStudioReportMetaJSON + emptyStateMetricsReportMeta |
 | 2026-09-12 | 失败原因空态 metrics 下载文件名带 meta | buildEmptyStateMetricsDownloadName：project/kind/时间戳 |
 | 2026-09-12 | 失败原因空态 metrics 面板 meta 摘要 | formatEmptyStateMetricsReportSummary 写入面板文案与 title |
+| 2026-09-12 | 失败原因空态 metrics 复制报告 meta | copyEmptyStateMetricsReportSummary + 面板按钮 |

@@ -49,6 +49,9 @@ func TestEmptyStateMetricsPanelToggle(t *testing.T) {
 		`StudioReportEmptyStateMetricsPanelEnabled`,
 		`StudioReportFormatEmptyStateMetricsJSON`,
 		`StudioReportFormatEmptyStateMetricsReportSummary`,
+		`复制 meta`,
+		`StudioReportCopyEmptyStateMetricsReportSummary`,
+		`copy-empty-state-metrics-report-meta`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -92,11 +95,14 @@ func TestEmptyStateMetricsPanelToggle(t *testing.T) {
     var btn = panel.querySelector('[data-action="copy-empty-state-metrics-json"]');
     if (!btn) { mark('fail-no-export-btn'); return; }
     var summaryFn = window.StudioReportFormatEmptyStateMetricsReportSummary;
+    var copyMeta = window.StudioReportCopyEmptyStateMetricsReportSummary;
     var summary = typeof summaryFn === 'function' ? String(summaryFn() || '') : '';
     var summaryOk = summary.indexOf('metrics-panel') >= 0 && summary.indexOf('|') < 0;
     var textOk = /clear=1/.test(text) && text.indexOf('metrics-panel') >= 0 && text.indexOf('|') >= 0;
     var titleOk = String(panel.title || '').indexOf('metrics-panel') >= 0;
-    mark((textOk && summaryOk && titleOk) ? ('ok:' + text) : ('fail-text:' + text + ';sum=' + summary + ';sumOk=' + summaryOk + ';titleOk=' + titleOk));
+    var metaBtn = panel.querySelector('[data-action="copy-empty-state-metrics-report-meta"]');
+    var btnOk = !!metaBtn && typeof copyMeta === 'function';
+    mark((textOk && summaryOk && titleOk && btnOk) ? ('ok:' + text) : ('fail-text:' + text + ';sum=' + summary + ';sumOk=' + summaryOk + ';titleOk=' + titleOk + ';btnOk=' + btnOk));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);

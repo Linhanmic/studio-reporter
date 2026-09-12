@@ -209,6 +209,7 @@
 - [x] 静态报告失败原因空态 metrics 导出 JSON 附带报告 meta（`#studio-report-meta` → JSON/贴 issue 含 project/verdict/generatedAt）
 - [x] 静态报告失败原因空态 metrics 下载文件名含 project/kind/时间戳（`buildEmptyStateMetricsDownloadName`）
 - [x] 静态报告失败原因空态 metrics 面板标题显示报告 meta 摘要（项目 · 结论 · 生成时间；`formatEmptyStateMetricsReportSummary`）
+- [x] 静态报告失败原因空态 metrics 面板一键复制报告 meta 行（`copyEmptyStateMetricsReportSummary` / 「复制 meta」）
 
 ## 迭代日志
 
@@ -456,4 +457,4 @@
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 面板支持一键复制报告 meta 行**（从面板摘要复制项目/结论/生成时间，便于口头/聊天对齐），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 导出/贴 issue 时附带报告目录相对路径提示**（若 meta 含 projectRoot，便于本地打开同目录产物），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

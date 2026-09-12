@@ -211,6 +211,19 @@
     return parts.join(' · ');
   }
 
+  function copyEmptyStateMetricsReportSummary() {
+    var text = formatEmptyStateMetricsReportSummary();
+    if (!text) {
+      flashStatus('无报告 meta 可复制');
+      return Promise.reject(new Error('empty report meta'));
+    }
+    return copyText(text).then(function () {
+      flashStatus('已复制报告 meta：' + text);
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
   function formatEmptyStateMetricsPanel() {
     var head = formatEmptyStateMetricsReportSummary();
     var counts = '空态计数 · clear=' + (emptyStateMetrics.clear || 0) +
@@ -2190,7 +2203,11 @@ function copyFailSummary() {
         undoClearReportFilters();
         return;
       }
-      if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
+            if (actionBtn.dataset.action === 'copy-empty-state-metrics-report-meta') {
+        copyEmptyStateMetricsReportSummary();
+        return;
+      }
+if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
         copyEmptyStateMetricsJSON();
         return;
       }
@@ -2422,6 +2439,7 @@ function copyFailSummary() {
   window.StudioReportSyncEmptyMetricsEnableURLButtons = syncEmptyMetricsEnableURLButtons;
   window.StudioReportSyncEmptyMetricsEnableHint = syncEmptyMetricsEnableHint;
   window.StudioReportFormatEmptyStateMetricsReportSummary = formatEmptyStateMetricsReportSummary;
+  window.StudioReportCopyEmptyStateMetricsReportSummary = copyEmptyStateMetricsReportSummary;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;
   // Initial paint when enabled via query/localStorage before any action.
