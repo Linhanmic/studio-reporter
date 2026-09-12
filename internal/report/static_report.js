@@ -295,6 +295,56 @@
     });
   }
 
+  function formatEmptyStateMetricsIssueMarkdown() {
+    var enableURL = formatEmptyMetricsEnableURL();
+    var filter = describeFilterSnapshot(captureFilterSnapshot());
+    var json = formatEmptyStateMetricsJSON();
+    var lines = [
+      '### studio-reporter 空态 metrics',
+      '',
+      '- 开启链接: ' + (enableURL ? ('`' + enableURL + '`') : '_（无法生成）_'),
+      '- 当前过滤: ' + filter,
+      '',
+      '```json',
+      json,
+      '```',
+      ''
+    ];
+    return lines.join('\n');
+  }
+
+  function downloadEmptyStateMetricsIssueMarkdown() {
+    var text = formatEmptyStateMetricsIssueMarkdown();
+    var blob = new Blob([text], { type: 'text/markdown' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'studio-report-empty-state-metrics-issue.md';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () {
+      try { URL.revokeObjectURL(url); } catch (e) {}
+    }, 0);
+    flashStatus('已下载空态 metrics issue Markdown');
+    return text;
+  }
+
+  function copyEmptyStateMetricsIssueMarkdown() {
+    var text = formatEmptyStateMetricsIssueMarkdown();
+    return copyText(text).then(function () {
+      flashStatus('已复制空态 metrics issue 模板（链接 + 过滤 + JSON）');
+    }).catch(function () {
+      try {
+        downloadEmptyStateMetricsIssueMarkdown();
+        flashStatus('剪贴板不可用，已改为下载 issue Markdown');
+      } catch (e) {
+        flashStatus('复制失败，请检查剪贴板权限');
+      }
+    });
+  }
+
   function resetEmptyStateMetrics() {
     emptyStateMetrics.clear = 0;
     emptyStateMetrics.restoreFailOnly = 0;
@@ -1613,6 +1663,10 @@ function copyFailSummary() {
         copyEmptyStateMetricsJSON();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-empty-state-metrics-issue') {
+        copyEmptyStateMetricsIssueMarkdown();
+        return;
+      }
       if (actionBtn.dataset.action === 'download-empty-state-metrics-json') {
         downloadEmptyStateMetricsJSON();
         return;
@@ -1772,6 +1826,9 @@ function copyFailSummary() {
   window.StudioReportFormatEmptyStateMetricsJSON = formatEmptyStateMetricsJSON;
   window.StudioReportCopyEmptyStateMetricsJSON = copyEmptyStateMetricsJSON;
   window.StudioReportDownloadEmptyStateMetricsJSON = downloadEmptyStateMetricsJSON;
+  window.StudioReportFormatEmptyStateMetricsIssueMarkdown = formatEmptyStateMetricsIssueMarkdown;
+  window.StudioReportCopyEmptyStateMetricsIssueMarkdown = copyEmptyStateMetricsIssueMarkdown;
+  window.StudioReportDownloadEmptyStateMetricsIssueMarkdown = downloadEmptyStateMetricsIssueMarkdown;
   window.StudioReportEmptyStateMetricsPanelSnapshot = emptyStateMetricsPanelSnapshot;
   window.StudioReportResetEmptyStateMetrics = resetEmptyStateMetrics;
   window.StudioReportHideEmptyStateMetricsPanel = hideEmptyStateMetricsPanel;

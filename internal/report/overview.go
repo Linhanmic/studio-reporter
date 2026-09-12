@@ -259,6 +259,7 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 	b.WriteString("<div class=\"overview-empty-state-metrics\" id=\"overview-empty-state-metrics\" hidden aria-live=\"polite\" title=\"空态操作计数（本地 UX 抽检；?emptyMetrics=1 或 localStorage studio-report-empty-metrics=1 开启）\">")
 	b.WriteString("<span class=\"overview-empty-state-metrics-text\" id=\"overview-empty-state-metrics-text\"></span>")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-empty-state-metrics-json\" title=\"复制 EmptyStateMetrics JSON（含计数与事件环），便于粘贴到 issue；失败时自动下载文件\">复制 JSON</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-empty-state-metrics-issue\" title=\"复制可贴 issue 的 Markdown（开启链接 + 过滤摘要 + JSON）\">贴 issue</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"download-empty-state-metrics-json\" title=\"下载 EmptyStateMetrics JSON 文件（无剪贴板权限时的兜底）\">下载 JSON</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-empty-metrics-enable-url\" title=\"复制带 ?emptyMetrics=1 的可分享 URL，便于同事一键打开 metrics\">复制开启链接</button>")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"reset-empty-state-metrics\" title=\"清零空态计数与事件环，便于重新采样\">清零</button>")

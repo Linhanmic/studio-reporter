@@ -156,7 +156,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 #### 空态 metrics 与失败原因深链一起用
 
 1. 打开静态报告 Overview，在失败原因工具行点「开启」或「复制链接」（生成带 `?emptyMetrics=1` 的 URL，保留当前 `#…` 过滤 hash）。
-2. 把链接发给同事：对方打开后自动显示空态 metrics 面板；可「复制 JSON / 下载 JSON」贴 issue。
+2. 把链接发给同事：对方打开后自动显示空态 metrics 面板；可「复制 JSON / 贴 issue / 下载 JSON」；「贴 issue」含开启链接与过滤摘要。
 3. 需要定位具体失败时，用行内「复制深链」或工具栏「复制失败摘要」里的 path-style `#focus`（`/` 保持字面量）；metrics 开启参数在 query，focus 在 hash，二者互不覆盖。
 4. 本地抽检完可「隐藏」面板；再次需要时用紧凑「开启」或上次复制的开启链接。
 

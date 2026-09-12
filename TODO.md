@@ -189,6 +189,7 @@
 - [x] 静态报告失败原因空态 metrics 开启深链（工具行/面板「复制链接」；`formatEmptyMetricsEnableURL`/`StudioReportFormatEmptyMetricsEnableURL`）
 - [x] 静态报告失败原因空态 metrics 开启深链状态栏预览（复制后展示缩短 URL；`shortenEmptyMetricsEnableURL`）
 - [x] 静态报告失败原因空态 metrics 与 path-style focus 联调说明（QUICKSTART 小节：开启链接 + 失败原因深链）
+- [x] 静态报告失败原因空态 metrics「一键贴 issue」模板（开启链接 + 过滤摘要 + JSON；`formatEmptyStateMetricsIssueMarkdown`）
 
 ## 迭代日志
 
@@ -408,7 +409,8 @@
 | 2026-09-12 | 失败原因空态 metrics 开启深链 | 「复制链接」生成带 ?emptyMetrics=1 的可分享 URL（保留 hash） |
 | 2026-09-12 | 失败原因空态 metrics 开启深链预览 | 复制后状态栏展示缩短 URL 摘要 |
 | 2026-09-12 | 空态 metrics 与 focus 联调说明 | QUICKSTART 补开启链接 + 失败原因深链同用步骤 |
+| 2026-09-12 | 失败原因空态 metrics 贴 issue 模板 | 「贴 issue」复制 开启链接+过滤+JSON Markdown |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 面板「一键贴 issue」模板**（复制 JSON 时附带开启链接与当前过滤摘要的 Markdown 包装），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 面板计数默认折叠**（counts 一行、events 可展开，减少贴 issue 噪音），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
