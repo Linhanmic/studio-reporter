@@ -1757,6 +1757,8 @@
   function formatEmptyStateMetricsIssueShortMarkdown() {
     var enableURL = formatEmptyMetricsEnableURL();
     var report = emptyStateMetricsReportMeta();
+    var kindFilter = '';
+    try { kindFilter = emptyStateMetricsEventKindFilter() || ''; } catch (eKind) {}
     var presetId = '';
     var presetName = '默认';
     try {
@@ -1777,6 +1779,7 @@
       '- 项目: ' + (report.projectName ? ('`' + report.projectName + '`') : '_（未知）_'),
       '- 结果: ' + (report.verdict ? ('`' + report.verdict + '`') : '_（未知）_'),
       '- meta 字段预设: `' + presetName + '`' + (presetId && presetId !== 'default' ? (' (`' + presetId + '`)') : '') + (presetSummary ? (' — ' + presetSummary) : ''),
+      '- 事件 kind: ' + (kindFilter ? ('`' + kindFilter + '`') : '当前未过滤'),
       '- 开启链接: ' + (enableURL ? ('`' + enableURL + '`') : '_（无法生成）_'),
       ''
     ];

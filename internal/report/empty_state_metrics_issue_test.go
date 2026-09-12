@@ -120,15 +120,20 @@ func TestEmptyStateMetricsIssueMarkdown(t *testing.T) {
 		"    var shortOk = typeof shortMd === 'string'\n" +
 		"      && shortMd.indexOf('### studio-reporter 空态 metrics · 预设') >= 0\n" +
 		"      && shortMd.indexOf('meta 字段预设') >= 0\n" +
+		"      && shortMd.indexOf('事件 kind') >= 0\n" +
+		"      && shortMd.indexOf('当前未过滤') >= 0\n" +
 		"      && shortMd.indexOf('开启链接') >= 0\n" +
 		"      && shortMd.indexOf('```json') < 0;\n" +
 		"    if (typeof applyNamed === 'function') {\n" +
 		"      applyNamed('ci-slim');\n" +
+		"      setKind('escClear');\n" +
 		"      var shortPreset = formatShort();\n" +
 		"      shortOk = shortOk && typeof shortPreset === 'string'\n" +
 		"        && (shortPreset.indexOf('CI') >= 0 || shortPreset.indexOf('精简') >= 0)\n" +
 		"        && shortPreset.indexOf('ci-slim') >= 0\n" +
+		"        && shortPreset.indexOf('escClear') >= 0\n" +
 		"        && shortPreset.indexOf('```json') < 0;\n" +
+		"      setKind('');\n" +
 		"      applyNamed('default');\n" +
 		"    }\n" +
 		"    setKind('escClear');\n" +
