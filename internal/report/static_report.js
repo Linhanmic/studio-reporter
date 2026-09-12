@@ -266,6 +266,8 @@
     } catch (e) {}
     syncEmptyStateMetricsMetaFieldsEditor();
     syncEmptyStateMetricsPanel();
+    try { syncEmptyMetricsMetaPresetInLocation(getActiveEmptyStateMetricsMetaFieldNamedPresetId()); } catch (e2) {}
+    try { syncEmptyMetricsEnableURLButtons(); } catch (e3) {}
     return next;
   }
 
@@ -274,6 +276,8 @@
     setActiveEmptyStateMetricsMetaFieldNamedPresetId('default');
     syncEmptyStateMetricsMetaFieldsEditor();
     syncEmptyStateMetricsPanel();
+    try { syncEmptyMetricsMetaPresetInLocation('default'); } catch (e2) {}
+    try { syncEmptyMetricsEnableURLButtons(); } catch (e3) {}
     flashStatus('已恢复 meta 字段默认（主三项）');
     return getEmptyStateMetricsMetaFieldPrefs();
   }
@@ -433,8 +437,59 @@
       primary: preset.primary,
       secondary: preset.secondary
     });
+    try { syncEmptyMetricsMetaPresetInLocation(preset.id); } catch (e) {}
     flashStatus('已切换字段预设：' + preset.name);
     return { id: preset.id, name: preset.name, prefs: next };
+  }
+
+  function readEmptyMetricsMetaPresetFromQuery() {
+    try {
+      var q = String(location.search || '');
+      var m = q.match(/[?&](?:emptyMetricsMetaPreset|empty-metrics-meta-preset)=([^&#]*)/i);
+      if (!m) return '';
+      var raw = decodeURIComponent(String(m[1] || '').replace(/\+/g, ' ')).trim();
+      return raw || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function syncEmptyMetricsMetaPresetInLocation(id) {
+    try {
+      var href = String(location.href || '');
+      var hashIdx = href.indexOf('#');
+      var base = hashIdx >= 0 ? href.slice(0, hashIdx) : href;
+      var hash = hashIdx >= 0 ? href.slice(hashIdx) : '';
+      var qIdx = base.indexOf('?');
+      var path = qIdx >= 0 ? base.slice(0, qIdx) : base;
+      var params = new URLSearchParams(qIdx >= 0 ? base.slice(qIdx + 1) : '');
+      params.delete('empty-metrics-meta-preset');
+      var nextId = String(id || '').trim();
+      if (!nextId || nextId === 'default') {
+        if (!params.has('emptyMetricsMetaPreset') && !params.has('empty-metrics-meta-preset')) return false;
+        params.delete('emptyMetricsMetaPreset');
+      } else {
+        params.set('emptyMetricsMetaPreset', nextId);
+      }
+      var qs = params.toString();
+      history.replaceState(null, '', path + (qs ? ('?' + qs) : '') + hash);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function applyEmptyMetricsMetaPresetFromQuery() {
+    var id = readEmptyMetricsMetaPresetFromQuery();
+    if (!id) return getActiveEmptyStateMetricsMetaFieldNamedPresetId();
+    var preset = findEmptyStateMetricsMetaFieldNamedPreset(id);
+    if (!preset) {
+      flashStatus('URL 字段预设无效：' + id);
+      return getActiveEmptyStateMetricsMetaFieldNamedPresetId();
+    }
+    // Query wins over prior localStorage when sharing an enable deep link.
+    var applied = applyEmptyStateMetricsMetaFieldNamedPreset(preset.id);
+    return applied ? applied.id : getActiveEmptyStateMetricsMetaFieldNamedPresetId();
   }
 
   function saveEmptyStateMetricsMetaFieldNamedPreset(name) {
@@ -1524,10 +1579,15 @@
       params.delete('emptyMetricsKind');
       params.delete('empty-metrics-meta');
       params.delete('emptyMetricsMeta');
+      params.delete('empty-metrics-meta-preset');
+      params.delete('emptyMetricsMetaPreset');
       params.set('emptyMetrics', '1');
       var kind = emptyStateMetricsEventKindFilter();
       if (kind) params.set('emptyMetricsKind', kind);
       if (emptyStateMetricsMetaMoreExpanded()) params.set('emptyMetricsMeta', '1');
+      var presetId = '';
+      try { presetId = getActiveEmptyStateMetricsMetaFieldNamedPresetId(); } catch (ePreset) { presetId = ''; }
+      if (presetId && presetId !== 'default') params.set('emptyMetricsMetaPreset', presetId);
       var qs = params.toString();
       return path + (qs ? ('?' + qs) : '') + hash;
     } catch (e) {
@@ -1564,12 +1624,14 @@
     var path = qIdx >= 0 ? base.slice(0, qIdx) : base;
     var search = qIdx >= 0 ? base.slice(qIdx) : '';
     if (path.length > 36) path = path.slice(0, 20) + '…' + path.slice(-12);
-    // Keep emptyMetrics (+ optional kind) visible in the status preview.
+    // Keep emptyMetrics (+ optional kind/preset) visible in the status preview.
     if (search.length > 28) {
       var kindMatch = search.match(/[?&](?:emptyMetricsKind|empty-metrics-kind)=([^&#]*)/i);
       var kindPart = kindMatch ? ('&emptyMetricsKind=' + kindMatch[1]) : '';
+      var presetMatch = search.match(/[?&](?:emptyMetricsMetaPreset|empty-metrics-meta-preset)=([^&#]*)/i);
+      var presetPart = presetMatch ? ('&emptyMetricsMetaPreset=' + presetMatch[1]) : '';
       if (/[?&]emptyMetrics=1(?:&|$)/i.test(search)) {
-        search = '?emptyMetrics=1' + kindPart + (kindPart || search.length > 40 ? '…' : '');
+        search = '?emptyMetrics=1' + kindPart + presetPart + ((kindPart || presetPart || search.length > 40) ? '…' : '');
       } else {
         search = search.slice(0, 14) + '…' + search.slice(-10);
       }
@@ -1625,6 +1687,19 @@
       }
     } catch (e3) {}
     if (metaOn) out += ' · meta+';
+    var presetId = '';
+    try {
+      var pm = String(url || '').match(/[?&](?:emptyMetricsMetaPreset|empty-metrics-meta-preset)=([^&#]*)/i);
+      if (pm) presetId = decodeURIComponent(String(pm[1] || '').replace(/\+/g, ' ')).trim();
+    } catch (e4) {}
+    if (!presetId) {
+      try { presetId = getActiveEmptyStateMetricsMetaFieldNamedPresetId(); } catch (e5) { presetId = ''; }
+    }
+    if (presetId && presetId !== 'default') {
+      var preset = null;
+      try { preset = findEmptyStateMetricsMetaFieldNamedPreset(presetId); } catch (e6) {}
+      out += ' · preset=' + (preset && preset.name ? preset.name : presetId);
+    }
     return out;
   }
 
@@ -1661,6 +1736,7 @@
     try { localStorage.setItem('studio-report-empty-metrics-hint', 'dismissed'); } catch (e) {}
     syncEmptyMetricsEnableHint();
     applyEmptyMetricsKindFromQuery();
+    try { applyEmptyMetricsMetaPresetFromQuery(); } catch (ePreset) {}
     flashStatus('已开启空态 metrics 面板');
   }
 
@@ -3230,6 +3306,9 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportCopyEmptyStateMetricsMetaFieldNamedPresetsJSON = copyEmptyStateMetricsMetaFieldNamedPresetsJSON;
   window.StudioReportApplyEmptyStateMetricsMetaFieldNamedPresetsJSON = applyEmptyStateMetricsMetaFieldNamedPresetsJSON;
   window.StudioReportImportEmptyStateMetricsMetaFieldNamedPresetsFromPrompt = importEmptyStateMetricsMetaFieldNamedPresetsFromPrompt;
+  window.StudioReportReadEmptyMetricsMetaPresetFromQuery = readEmptyMetricsMetaPresetFromQuery;
+  window.StudioReportApplyEmptyMetricsMetaPresetFromQuery = applyEmptyMetricsMetaPresetFromQuery;
+  window.StudioReportSyncEmptyMetricsMetaPresetInLocation = syncEmptyMetricsMetaPresetInLocation;
 
   window.StudioReportFormatEmptyStateMetricsMetaFieldValue = formatEmptyStateMetricsMetaFieldValue;
   window.StudioReportSyncEmptyStateMetricsMetaFieldsEditor = syncEmptyStateMetricsMetaFieldsEditor;
@@ -3256,6 +3335,7 @@ try { syncEmptyStateMetricsPanel(); } catch (e) {}
   try { syncEmptyMetricsEnableHint(); } catch (e2) {}
   try { applyEmptyMetricsKindFromQuery(); } catch (e3) {}
   try { applyEmptyMetricsMetaMoreFromQuery(); } catch (eMeta) {}
+  try { applyEmptyMetricsMetaPresetFromQuery(); } catch (ePreset) {}
   try { syncEmptyMetricsEnableURLButtons(); } catch (e4) {}
   window.StudioReportReadEmptyMetricsKindFromQuery = readEmptyMetricsKindFromQuery;
   window.StudioReportApplyEmptyMetricsKindFromQuery = applyEmptyMetricsKindFromQuery;
