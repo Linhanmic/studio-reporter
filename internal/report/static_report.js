@@ -307,6 +307,39 @@
     return snapshotEmptyStateMetrics();
   }
 
+  function formatEmptyMetricsEnableURL() {
+    try {
+      var href = String(location.href || '');
+      var hashIdx = href.indexOf('#');
+      var base = hashIdx >= 0 ? href.slice(0, hashIdx) : href;
+      var hash = hashIdx >= 0 ? href.slice(hashIdx) : '';
+      var qIdx = base.indexOf('?');
+      var path = qIdx >= 0 ? base.slice(0, qIdx) : base;
+      var search = qIdx >= 0 ? base.slice(qIdx + 1) : '';
+      var params = new URLSearchParams(search);
+      params.delete('empty-metrics');
+      params.delete('emptyMetrics');
+      params.set('emptyMetrics', '1');
+      var qs = params.toString();
+      return path + (qs ? ('?' + qs) : '') + hash;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function copyEmptyMetricsEnableURL() {
+    var url = formatEmptyMetricsEnableURL();
+    if (!url) {
+      flashStatus('无法生成空态 metrics 开启链接');
+      return Promise.reject(new Error('empty enable url'));
+    }
+    return copyText(url).then(function () {
+      flashStatus('已复制空态 metrics 开启链接（?emptyMetrics=1）');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
   function emptyMetricsEnableHintDismissed() {
     try {
       var ls = localStorage.getItem('studio-report-empty-metrics-hint');
@@ -1581,6 +1614,10 @@ function copyFailSummary() {
         dismissEmptyMetricsEnableHint();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-empty-metrics-enable-url') {
+        copyEmptyMetricsEnableURL();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1722,6 +1759,8 @@ function copyFailSummary() {
   window.StudioReportSetEmptyStateMetricsPanelVisible = setEmptyStateMetricsPanelVisible;
   window.StudioReportShowEmptyStateMetricsPanel = showEmptyStateMetricsPanel;
   window.StudioReportDismissEmptyMetricsEnableHint = dismissEmptyMetricsEnableHint;
+  window.StudioReportFormatEmptyMetricsEnableURL = formatEmptyMetricsEnableURL;
+  window.StudioReportCopyEmptyMetricsEnableURL = copyEmptyMetricsEnableURL;
   window.StudioReportSyncEmptyMetricsEnableHint = syncEmptyMetricsEnableHint;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;
