@@ -176,6 +176,7 @@
 - [x] 静态报告失败原因空态「仅看失败」快捷恢复（清除搜索并切到 scenario=fail；`restoreFailOnlyView`/`StudioReportRestoreFailOnlyView`）
 - [x] 静态报告失败原因空态清除撤销（清除前快照；「撤销清除」恢复；`undoClearReportFilters`/`StudioReportUndoClearReportFilters`）
 - [x] 静态报告失败原因空态撤销快捷键（Ctrl/Cmd+Z 在可撤销时恢复；输入框内不抢原生撤销）
+- [x] 静态报告失败原因空态撤销状态摘要（撤销后状态栏展示已恢复过滤；`describeFilterSnapshot`）
 
 ## 迭代日志
 
@@ -382,7 +383,8 @@
 | 2026-09-12 | 失败原因空态「仅看失败」 | 空态「仅看失败」清除搜索并切到 scenario=fail，避免回到全量噪音 |
 | 2026-09-12 | 失败原因空态清除撤销 | 清除/仅看失败前快照过滤；「撤销清除」一键恢复 |
 | 2026-09-12 | 失败原因空态撤销快捷键 | Ctrl/Cmd+Z 撤销清除（输入中不抢原生撤销） |
+| 2026-09-12 | 失败原因空态撤销状态摘要 | 撤销后状态栏显示已恢复的过滤摘要（搜索/场景/仅失败步骤） |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态撤销提示强化**（撤销后状态栏简述已恢复的过滤摘要），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态操作埋点/可观测**（清除/仅看失败/撤销次数写入 debug 日志，便于 UX 评估），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

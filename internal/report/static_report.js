@@ -218,6 +218,17 @@
     flashStatus('已切换到仅失败视图（可撤销）');
   }
 
+  function describeFilterSnapshot(snap) {
+    if (!snap) return '无过滤';
+    var bits = [];
+    var q = String(snap.query || '').trim();
+    if (q) bits.push('搜索="' + q + '"');
+    if (snap.spec && snap.spec !== 'all') bits.push('规格书=' + snap.spec);
+    if (snap.scenario && snap.scenario !== 'all') bits.push('场景=' + snap.scenario);
+    if (snap.failStepsOnly) bits.push('仅失败步骤');
+    return bits.length ? bits.join(' · ') : '完整报告（无过滤）';
+  }
+
   function undoClearReportFilters() {
     if (!lastFilterSnapshot) {
       flashStatus('没有可撤销的过滤快照');
@@ -227,7 +238,7 @@
     lastFilterSnapshot = null;
     applyFilterSnapshot(snap);
     syncUndoClearFiltersButton();
-    flashStatus('已撤销清除，过滤已恢复');
+    flashStatus('已撤销清除，已恢复：' + describeFilterSnapshot(snap));
   }
 
   // First visible jump target for an Overview fail-reason row (filter / fail-steps aware).
@@ -1410,6 +1421,7 @@ function copyFailSummary() {
   window.StudioReportClearReportFilters = clearReportFilters;
   window.StudioReportRestoreFailOnlyView = restoreFailOnlyView;
   window.StudioReportUndoClearReportFilters = undoClearReportFilters;
+  window.StudioReportDescribeFilterSnapshot = describeFilterSnapshot;
   window.StudioReportFailReasonEmptyStateActive = failReasonEmptyStateActive;
   window.StudioReportFilterState = function () {
     return { query: state.query, spec: state.spec, scenario: state.scenario, failStepsOnly: !!failStepsOnly };
