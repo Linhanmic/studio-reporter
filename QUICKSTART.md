@@ -156,7 +156,7 @@ Gauge 跑起来后，把 stdout 里的 `studio-reporter websocket: ws://127.0.0.
 #### 空态 metrics 与失败原因深链一起用
 
 1. 打开静态报告 Overview，在失败原因工具行点「开启」或「复制链接」（生成带 `?emptyMetrics=1` 的 URL；若已选 kind chip 还会带 `emptyMetricsKind=…`；复制后状态栏预览会明示 `kind=`；保留当前 `#…` 过滤 hash）。
-2. 把链接发给同事：对方打开后自动显示空态 metrics 面板；可「复制 JSON / 贴 issue / 下载 JSON」；「贴 issue」含开启链接、过滤摘要与可见子集 JSON（尊重 kind chip）；事件环默认折叠，可点「事件(N)」展开；展开后可用 kind chip（全部/clear/esc/…）过滤，可「复制可见 / 可见 JSON」导出当前列表；「贴 issue」默认嵌入可见子集 JSON；也可点选单行复制；kind 过滤会记住（刷新后仍在）；可用「清除过滤」一键回到全部并去掉 URL 中的 emptyMetricsKind。
+2. 把链接发给同事：对方打开后自动显示空态 metrics 面板；可「复制 JSON / 贴 issue / 下载 JSON」；「贴 issue」含开启链接、过滤摘要与可见子集 JSON（尊重 kind chip）；事件环默认折叠，可点「事件(N)」展开；展开后可用 kind chip（全部/clear/esc/…）过滤，可「复制可见 / 可见 JSON」导出当前列表；「贴 issue」默认嵌入可见子集 JSON；也可点选单行复制；kind 过滤会记住（刷新后仍在）；可用「清除过滤」一键回到全部并去掉 URL 中的 emptyMetricsKind；若过滤后无事件会提示清除过滤 / 显示全部。
 3. 需要定位具体失败时，用行内「复制深链」或工具栏「复制失败摘要」里的 path-style `#focus`（`/` 保持字面量）；metrics 开启参数在 query，focus 在 hash，二者互不覆盖。
 4. 本地抽检完可「隐藏」面板；再次需要时用紧凑「开启」或上次复制的开启链接。
 

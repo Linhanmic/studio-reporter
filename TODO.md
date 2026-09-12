@@ -200,6 +200,7 @@
 - [x] 静态报告失败原因空态 metrics 开启链接携带 kind 过滤（`?emptyMetrics=1&emptyMetricsKind=…`；`formatEmptyMetricsEnableURL`/`applyEmptyMetricsKindFromQuery`）
 - [x] 静态报告失败原因空态 metrics 开启链接状态栏预览明示 kind（`describeEmptyMetricsEnableURLPreview`；复制后展示 `· kind=`）
 - [x] 静态报告失败原因空态 metrics 面板「清除 kind 过滤」快捷入口（chip 旁「清除过滤」；同步去掉 URL `emptyMetricsKind`；`clearEmptyStateMetricsEventKindFilter`）
+- [x] 静态报告失败原因空态 metrics 事件环空结果引导（kind 过滤后无事件时提供「清除过滤 / 显示全部」；`syncEmptyStateMetricsEvents`）
 
 ## 迭代日志
 
@@ -430,7 +431,8 @@
 | 2026-09-12 | 失败原因空态 metrics 开启链接携带 kind | emptyMetricsKind query；分享开启深链时一并带上 |
 | 2026-09-12 | 失败原因空态 metrics 开启链接预览 kind | 状态栏预览追加 · kind=… |
 | 2026-09-12 | 失败原因空态 metrics 清除 kind 过滤 | 「清除过滤」清 chip + URL emptyMetricsKind |
+| 2026-09-12 | 失败原因空态 metrics 空结果引导 | 过滤后无事件时提供清除过滤 / 显示全部 |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 事件环空结果引导**（kind 过滤后无事件时提示「清除过滤 / 显示全部」），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 面板折叠态显示当前 kind 摘要**（事件折叠时在「事件(N)」旁提示 active kind），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。

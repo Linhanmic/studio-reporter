@@ -326,7 +326,25 @@
     }
     listEl.removeAttribute('hidden');
     if (!n) {
-      listEl.innerHTML = '<div class="overview-empty-state-metrics-events-empty">暂无事件</div>';
+      var emptyHtml = '';
+      if (kindFilter) {
+        var emptyLabel = EMPTY_STATE_EVENT_KIND_LABELS[kindFilter] || kindFilter;
+        emptyHtml = '<div class="overview-empty-state-metrics-event-kinds" role="toolbar" aria-label="按事件类型过滤">' +
+          '<button type="button" class="overview-empty-state-metrics-event-kind overview-empty-state-metrics-event-kind-clear"' +
+          ' data-action="clear-empty-state-metrics-event-kind" title="清除 kind 过滤，并去掉 URL 中的 emptyMetricsKind">清除过滤</button>' +
+          '<button type="button" class="overview-empty-state-metrics-event-kind"' +
+          ' data-action="filter-empty-state-metrics-event-kind" data-kind="" title="显示全部事件">显示全部</button>' +
+          '</div>' +
+          '<div class="overview-empty-state-metrics-events-empty" role="status">' +
+          '当前 kind（' + escapeHTML(emptyLabel) + '）无事件。</div>';
+      } else {
+        emptyHtml = '<div class="overview-empty-state-metrics-events-empty">暂无事件</div>';
+      }
+      listEl.innerHTML = emptyHtml;
+      var emptyPanel = document.getElementById('overview-empty-state-metrics');
+      if (emptyPanel && !emptyPanel.hasAttribute('hidden')) {
+        syncEmptyStateMetricsPanelButtons(emptyPanel, true);
+      }
       return;
     }
     var kindCounts = {};
@@ -385,7 +403,18 @@
     }
     html += '</ol>';
     if (!shown) {
-      html += '<div class="overview-empty-state-metrics-events-empty">当前类型无事件</div>';
+      if (kindFilter) {
+        var kindLabel = EMPTY_STATE_EVENT_KIND_LABELS[kindFilter] || kindFilter;
+        html += '<div class="overview-empty-state-metrics-events-empty" role="status">' +
+          '当前 kind（' + escapeHTML(kindLabel) + '）无事件。' +
+          '<button type="button" class="overview-empty-state-metrics-event-kind overview-empty-state-metrics-event-kind-clear"' +
+          ' data-action="clear-empty-state-metrics-event-kind" title="清除 kind 过滤">清除过滤</button>' +
+          '<button type="button" class="overview-empty-state-metrics-event-kind"' +
+          ' data-action="filter-empty-state-metrics-event-kind" data-kind="" title="显示全部事件">显示全部</button>' +
+          '</div>';
+      } else {
+        html += '<div class="overview-empty-state-metrics-events-empty">暂无事件</div>';
+      }
     }
     listEl.innerHTML = html;
     // Newly rendered event buttons inherit panel keyboard policy.

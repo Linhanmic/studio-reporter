@@ -298,3 +298,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 开启链接携带 kind | formatEmptyMetricsEnableURL 附加 emptyMetricsKind |
 | 2026-09-12 | 失败原因空态 metrics 开启链接预览 kind | describeEmptyMetricsEnableURLPreview 追加 · kind= |
 | 2026-09-12 | 失败原因空态 metrics 清除 kind 过滤 | clearEmptyStateMetricsEventKindFilter 清 chip + URL |
+| 2026-09-12 | 失败原因空态 metrics 空结果引导 | 过滤后无事件时提供清除过滤 / 显示全部 |

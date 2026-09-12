@@ -582,6 +582,14 @@ html, body {
 .overview-empty-state-metrics-events-empty {
   color: #6a7a8a;
   font-style: italic;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+.overview-empty-state-metrics-events-empty .overview-empty-state-metrics-event-kind {
+  font-style: normal;
 }
 .overview-empty-state-metrics .action-btn {
   font-family: inherit;
