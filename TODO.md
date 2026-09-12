@@ -194,6 +194,7 @@
 - [x] 静态报告失败原因空态 metrics 事件环可复制选中行（展开后点选复制单行；`copyEmptyStateMetricsEventLine`/`StudioReportCopyEmptyStateMetricsEventLine`）
 - [x] 静态报告失败原因空态 metrics 事件环按 kind 过滤（展开后 chip 过滤 clear/esc/undo 等；`setEmptyStateMetricsEventKindFilter`/`StudioReportSetEmptyStateMetricsEventKindFilter`）
 - [x] 静态报告失败原因空态 metrics 事件环「复制可见」行（尊重 kind 过滤批量复制当前列表；`copyEmptyStateMetricsVisibleEventLines`/`StudioReportCopyEmptyStateMetricsVisibleEventLines`）
+- [x] 静态报告失败原因空态 metrics 事件环导出可见子集 JSON（仅含当前 kind 过滤后的 events；`formatEmptyStateMetricsVisibleJSON`/`StudioReportFormatEmptyStateMetricsVisibleJSON`）
 
 ## 迭代日志
 
@@ -418,7 +419,8 @@
 | 2026-09-12 | 失败原因空态 metrics 事件行复制 | 展开后点选单行复制；精简贴 issue |
 | 2026-09-12 | 失败原因空态 metrics 事件 kind 过滤 | 展开后 chip 过滤 clear/esc/undo 等 |
 | 2026-09-12 | 失败原因空态 metrics 复制可见事件 | 尊重 kind 过滤批量复制当前可见行 |
+| 2026-09-12 | 失败原因空态 metrics 可见子集 JSON | 导出/复制仅含当前过滤 events 的 JSON |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 事件环导出可见子集 JSON**（仅含当前 kind 过滤后的 events，便于贴 issue 精简载荷），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics「贴 issue」改用可见子集**（kind 过滤后 issue 模板默认嵌入可见 JSON，减少噪音），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
