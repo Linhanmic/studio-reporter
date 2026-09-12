@@ -599,6 +599,11 @@ html, body {
   outline: 2px solid #1f4668;
   outline-offset: 1px;
 }
+.overview-empty-state-metrics [data-action="toggle-empty-state-metrics-events"][data-kind-filter] {
+  border-color: #1f4668;
+  background: #e8eef6;
+  color: #12324c;
+}
 .overview-empty-state-metrics[aria-hidden="true"] .action-btn {
   pointer-events: none;
 }

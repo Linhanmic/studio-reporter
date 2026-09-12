@@ -312,11 +312,16 @@
     var expanded = emptyStateMetricsEventsExpanded();
     var kindFilter = emptyStateMetricsEventKindFilter();
     if (toggleBtn) {
-      toggleBtn.textContent = '事件(' + n + ')' + (expanded ? ' ▾' : ' ▸');
+      var kindLabel = kindFilter ? (EMPTY_STATE_EVENT_KIND_LABELS[kindFilter] || kindFilter) : '';
+      // Collapsed (and expanded) show active kind so filters stay visible when the ring is folded.
+      var kindPart = kindLabel ? (' · ' + kindLabel) : '';
+      toggleBtn.textContent = '事件(' + n + ')' + kindPart + (expanded ? ' ▾' : ' ▸');
       toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      if (kindFilter) toggleBtn.setAttribute('data-kind-filter', kindFilter);
+      else toggleBtn.removeAttribute('data-kind-filter');
       toggleBtn.title = expanded
-        ? '折叠事件环（减少噪音）'
-        : '展开事件环（默认折叠）';
+        ? ('折叠事件环' + (kindLabel ? ('（当前 kind=' + kindLabel + '）') : '（减少噪音）'))
+        : ('展开事件环' + (kindLabel ? ('（已过滤 kind=' + kindLabel + '）') : '（默认折叠）'));
     }
     if (!listEl) return;
     if (!expanded) {
