@@ -234,12 +234,35 @@
     return JSON.stringify(payload, null, 2);
   }
 
+  function downloadEmptyStateMetricsJSON() {
+    var text = formatEmptyStateMetricsJSON();
+    var blob = new Blob([text + '\n'], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'studio-report-empty-state-metrics.json';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () {
+      try { URL.revokeObjectURL(url); } catch (e) {}
+    }, 0);
+    flashStatus('已下载空态 metrics JSON');
+    return text;
+  }
+
   function copyEmptyStateMetricsJSON() {
     var text = formatEmptyStateMetricsJSON();
     return copyText(text + '\n').then(function () {
       flashStatus('已复制空态 metrics JSON（可贴到 issue）');
     }).catch(function () {
-      flashStatus('复制失败，请检查剪贴板权限');
+      try {
+        downloadEmptyStateMetricsJSON();
+        flashStatus('剪贴板不可用，已改为下载 JSON');
+      } catch (e) {
+        flashStatus('复制失败，请检查剪贴板权限');
+      }
     });
   }
 
@@ -1412,6 +1435,10 @@ function copyFailSummary() {
         copyEmptyStateMetricsJSON();
         return;
       }
+      if (actionBtn.dataset.action === 'download-empty-state-metrics-json') {
+        downloadEmptyStateMetricsJSON();
+        return;
+      }
     }
     var nav = ev.target.closest('[data-nav-target]');
     if (nav) {
@@ -1546,6 +1573,7 @@ function copyFailSummary() {
   window.StudioReportEmptyStateMetrics = snapshotEmptyStateMetrics;
   window.StudioReportFormatEmptyStateMetricsJSON = formatEmptyStateMetricsJSON;
   window.StudioReportCopyEmptyStateMetricsJSON = copyEmptyStateMetricsJSON;
+  window.StudioReportDownloadEmptyStateMetricsJSON = downloadEmptyStateMetricsJSON;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;
   // Initial paint when enabled via query/localStorage before any action.

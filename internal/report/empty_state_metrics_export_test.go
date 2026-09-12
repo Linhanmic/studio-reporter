@@ -41,11 +41,15 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
 	body := string(html)
 	for _, want := range []string{
 		`copy-empty-state-metrics-json`,
+		`download-empty-state-metrics-json`,
 		`StudioReportFormatEmptyStateMetricsJSON`,
 		`StudioReportCopyEmptyStateMetricsJSON`,
+		`StudioReportDownloadEmptyStateMetricsJSON`,
 		`overview-empty-state-metrics-text`,
 		`studio-report-empty-state-metrics`,
+		`studio-report-empty-state-metrics.json`,
 		`复制 JSON`,
+		`下载 JSON`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -71,10 +75,12 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
   function go() {
     var format = window.StudioReportFormatEmptyStateMetricsJSON;
     var copy = window.StudioReportCopyEmptyStateMetricsJSON;
+    var download = window.StudioReportDownloadEmptyStateMetricsJSON;
     var clear = window.StudioReportClearReportFilters;
     var sync = window.StudioReportSyncEmptyStateMetricsPanel;
     var btn = document.querySelector('[data-action="copy-empty-state-metrics-json"]');
-    if (typeof format !== 'function' || typeof copy !== 'function' || typeof clear !== 'function' || !btn) {
+    var dlBtn = document.querySelector('[data-action="download-empty-state-metrics-json"]');
+    if (typeof format !== 'function' || typeof copy !== 'function' || typeof download !== 'function' || typeof clear !== 'function' || !btn || !dlBtn) {
       mark('missing');
       return;
     }
@@ -89,7 +95,10 @@ func TestEmptyStateMetricsJSONExport(t *testing.T) {
       && parsed.counts && parsed.counts.clear >= 1 && parsed.counts.escClear >= 1
       && Array.isArray(parsed.events) && parsed.events.length >= 2
       && typeof parsed.exportedAt === 'string' && parsed.exportedAt.length > 0;
-    mark(ok ? ('ok:clear=' + parsed.counts.clear + ';esc=' + parsed.counts.escClear + ';n=' + parsed.events.length) : ('fail:' + raw.slice(0, 240)));
+    // downloadEmptyStateMetricsJSON returns the same payload text (side-effect: trigger <a download>).
+    var dlText = download();
+    var dlOk = typeof dlText === 'string' && dlText.indexOf('studio-report-empty-state-metrics') >= 0;
+    mark((ok && dlOk) ? ('ok:clear=' + parsed.counts.clear + ';esc=' + parsed.counts.escClear + ';n=' + parsed.events.length) : ('fail:' + raw.slice(0, 240)));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);
