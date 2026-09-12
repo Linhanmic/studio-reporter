@@ -485,6 +485,9 @@ html, body {
 }
 .overview-empty-state-metrics-text {
   flex: 1 1 auto;
+  min-width: 12rem;
+  line-height: 1.35;
+  flex: 1 1 auto;
   min-width: 12em;
 }
 .overview-empty-state-metrics-events {

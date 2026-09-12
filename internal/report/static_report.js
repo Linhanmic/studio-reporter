@@ -197,12 +197,28 @@
     return false;
   }
 
+  function formatEmptyStateMetricsReportSummary() {
+    var report = emptyStateMetricsReportMeta();
+    var parts = [];
+    if (report.projectName) parts.push(String(report.projectName));
+    if (report.verdict) parts.push(String(report.verdict));
+    var when = report.generatedAtISO || report.generatedAt || '';
+    if (when) {
+      when = String(when);
+      if (when.length >= 19) when = when.slice(0, 19).replace('T', ' ');
+      parts.push(when);
+    }
+    return parts.join(' · ');
+  }
+
   function formatEmptyStateMetricsPanel() {
-    return '空态计数 · clear=' + (emptyStateMetrics.clear || 0) +
+    var head = formatEmptyStateMetricsReportSummary();
+    var counts = '空态计数 · clear=' + (emptyStateMetrics.clear || 0) +
       ' esc=' + (emptyStateMetrics.escClear || 0) +
       ' failOnly=' + (emptyStateMetrics.restoreFailOnly || 0) +
       ' undo=' + (emptyStateMetrics.undo || 0) +
       ' ctrlZ=' + (emptyStateMetrics.ctrlZUndo || 0);
+    return head ? (head + ' | ' + counts) : counts;
   }
 
   function emptyStateMetricsEventsExpanded() {
@@ -1008,14 +1024,16 @@
       return;
     }
     var textEl = document.getElementById('overview-empty-state-metrics-text');
-    if (textEl) textEl.textContent = formatEmptyStateMetricsPanel();
-    else el.textContent = formatEmptyStateMetricsPanel();
+    var panelText = formatEmptyStateMetricsPanel();
+    if (textEl) textEl.textContent = panelText;
+    else el.textContent = panelText;
+    var head = formatEmptyStateMetricsReportSummary();
+    el.title = '空态操作计数（本地 UX 抽检；?emptyMetrics=1 或 localStorage studio-report-empty-metrics=1 开启）' +
+      (head ? ('；报告 ' + head) : '');
     el.removeAttribute('hidden');
     el.setAttribute('aria-hidden', 'false');
     el.setAttribute('role', 'group');
-    if (!el.getAttribute('aria-label')) {
-      el.setAttribute('aria-label', '空态操作 metrics');
-    }
+    el.setAttribute('aria-label', head ? ('空态操作 metrics（' + head + '）') : '空态操作 metrics');
     syncEmptyStateMetricsPanelButtons(el, true);
     syncEmptyStateMetricsEvents();
   }
@@ -2403,6 +2421,7 @@ function copyFailSummary() {
   window.StudioReportDescribeEmptyMetricsEnableKindSummary = describeEmptyMetricsEnableKindSummary;
   window.StudioReportSyncEmptyMetricsEnableURLButtons = syncEmptyMetricsEnableURLButtons;
   window.StudioReportSyncEmptyMetricsEnableHint = syncEmptyMetricsEnableHint;
+  window.StudioReportFormatEmptyStateMetricsReportSummary = formatEmptyStateMetricsReportSummary;
   window.StudioReportSyncEmptyStateMetricsPanel = syncEmptyStateMetricsPanel;
   window.StudioReportEmptyStateMetricsPanelEnabled = emptyStateMetricsPanelEnabled;
   // Initial paint when enabled via query/localStorage before any action.

@@ -48,6 +48,7 @@ func TestEmptyStateMetricsPanelToggle(t *testing.T) {
 		`StudioReportSyncEmptyStateMetricsPanel`,
 		`StudioReportEmptyStateMetricsPanelEnabled`,
 		`StudioReportFormatEmptyStateMetricsJSON`,
+		`StudioReportFormatEmptyStateMetricsReportSummary`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -90,7 +91,12 @@ func TestEmptyStateMetricsPanelToggle(t *testing.T) {
     var text = String((textEl && textEl.textContent) || panel.textContent || '');
     var btn = panel.querySelector('[data-action="copy-empty-state-metrics-json"]');
     if (!btn) { mark('fail-no-export-btn'); return; }
-    mark(/clear=1/.test(text) ? ('ok:' + text) : ('fail-text:' + text));
+    var summaryFn = window.StudioReportFormatEmptyStateMetricsReportSummary;
+    var summary = typeof summaryFn === 'function' ? String(summaryFn() || '') : '';
+    var summaryOk = summary.indexOf('metrics-panel') >= 0 && summary.indexOf('|') < 0;
+    var textOk = /clear=1/.test(text) && text.indexOf('metrics-panel') >= 0 && text.indexOf('|') >= 0;
+    var titleOk = String(panel.title || '').indexOf('metrics-panel') >= 0;
+    mark((textOk && summaryOk && titleOk) ? ('ok:' + text) : ('fail-text:' + text + ';sum=' + summary + ';sumOk=' + summaryOk + ';titleOk=' + titleOk));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);
