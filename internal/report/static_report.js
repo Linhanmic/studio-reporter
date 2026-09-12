@@ -574,12 +574,15 @@
   function formatEmptyStateMetricsIssueMarkdown() {
     var enableURL = formatEmptyMetricsEnableURL();
     var filter = describeFilterSnapshot(captureFilterSnapshot());
-    var json = formatEmptyStateMetricsJSON();
+    var kindFilter = emptyStateMetricsEventKindFilter();
+    // Prefer visible-subset JSON so kind chips shrink the issue payload by default.
+    var json = formatEmptyStateMetricsVisibleJSON();
     var lines = [
       '### studio-reporter 空态 metrics',
       '',
       '- 开启链接: ' + (enableURL ? ('`' + enableURL + '`') : '_（无法生成）_'),
       '- 当前过滤: ' + filter,
+      '- 事件 kind: ' + (kindFilter ? ('`' + kindFilter + '`（可见子集）') : '全部'),
       '',
       '```json',
       json,

@@ -148,7 +148,7 @@ When a suite finishes, the plugin writes a **static HTML report** to `reports/st
 
 The report includes:
 
-- **Overview** home page: project / host / OS / plugin / format / custom meta + counts + spec list + **fail-reason clusters** (group by primary error; per-row copy deep link / snippet + bulk 「复制全部摘要 / 复制全部深链」; empty-filter UX with clear / fail-only / undo + optional `?emptyMetrics=1` panel with 「复制 / 下载 / 清零 / 隐藏」 (+ panel snapshot in JSON; keyboard-accessible panel actions + tools-row enable hint + copy enable URL + paste-issue Markdown; collapsible event ring with per-line copy, kind chips, copy-visible, and visible-subset JSON) for issue paste; counts, filter badges, and fail clusters sync to visible tree when filtered / fail-steps-only)
+- **Overview** home page: project / host / OS / plugin / format / custom meta + counts + spec list + **fail-reason clusters** (group by primary error; per-row copy deep link / snippet + bulk 「复制全部摘要 / 复制全部深链」; empty-filter UX with clear / fail-only / undo + optional `?emptyMetrics=1` panel with 「复制 / 下载 / 清零 / 隐藏」 (+ panel snapshot in JSON; keyboard-accessible panel actions + tools-row enable hint + copy enable URL + paste-issue Markdown; collapsible event ring with per-line copy, kind chips, copy-visible, visible-subset JSON, and issue paste using the visible subset) for issue paste; counts, filter badges, and fail clusters sync to visible tree when filtered / fail-steps-only)
 - Left **navigation tree** (spec → scenario) with jump links; right content pane (CANoe-like)
 - Nested expandable result blocks (spec → scenario → concept → step)
 - Overall verdict, duration, environment, and success rate
