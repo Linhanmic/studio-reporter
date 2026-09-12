@@ -219,6 +219,8 @@
     }
     var rootShort = shortenEmptyStateMetricsProjectRoot(report.projectRoot);
     if (rootShort) parts.push(rootShort);
+    if (report.hostName) parts.push(String(report.hostName));
+    if (report.pluginVersion) parts.push('plugin ' + String(report.pluginVersion));
     return parts.join(' · ');
   }
 
@@ -786,6 +788,8 @@
       '- 结果: ' + (report.verdict ? ('`' + report.verdict + '`') : '_（未知）_'),
       '- 生成时间: ' + (report.generatedAtISO || report.generatedAt || '_（未知）_'),
       '- 项目根目录: ' + (report.projectRoot ? ('`' + report.projectRoot + '`') : '_（未知）_'),
+      '- 主机: ' + (report.hostName ? ('`' + report.hostName + '`') : '_（未知）_'),
+      '- 插件版本: ' + (report.pluginVersion ? ('`' + report.pluginVersion + '`') : '_（未知）_'),
       '- 开启链接: ' + (enableURL ? ('`' + enableURL + '`') : '_（无法生成）_'),
       '- 当前过滤: ' + filter,
       '- 事件 kind: ' + (kindFilter ? ('`' + kindFilter + '`（可见子集）') : '当前未过滤'),

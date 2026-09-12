@@ -211,6 +211,7 @@
 - [x] 静态报告失败原因空态 metrics 面板标题显示报告 meta 摘要（项目 · 结论 · 生成时间；`formatEmptyStateMetricsReportSummary`）
 - [x] 静态报告失败原因空态 metrics 面板一键复制报告 meta 行（`copyEmptyStateMetricsReportSummary` / 「复制 meta」）
 - [x] 静态报告失败原因空态 metrics 导出/贴 issue 附带项目根目录提示（`projectRoot`；面板摘要显示缩短路径）
+- [x] 静态报告失败原因空态 metrics 主机名/插件版本写入面板 meta 摘要与贴 issue（与 Overview KV 对齐）
 
 ## 迭代日志
 
@@ -456,6 +457,8 @@
 
 | 2026-09-12 | 失败原因空态 metrics 面板 meta 摘要 | 面板文案/title 显示项目·结论·生成时间 |
 
+| 2026-09-12 | 失败原因空态 metrics 主机/插件进 meta | 面板摘要与贴 issue 对齐 Overview KV |
+
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 主机名/插件版本写入面板 meta 摘要**（与 Overview KV 对齐，贴 issue 时少翻 Overview），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 面板 meta 支持折叠次要字段**（默认项目·结论·时间；展开显示根目录/主机/插件），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
