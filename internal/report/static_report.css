@@ -442,6 +442,29 @@ html, body {
 .overview-fail-reason-empty-hint[hidden] {
   display: none !important;
 }
+.overview-empty-metrics-enable-hint {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-left: 4px;
+  color: #5a6a7a;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.overview-empty-metrics-enable-hint[hidden] {
+  display: none !important;
+}
+.overview-empty-metrics-enable-hint-text code {
+  font-size: 10px;
+  padding: 0 3px;
+  background: #eef2f6;
+  border-radius: 2px;
+}
+.overview-empty-metrics-enable-hint.is-compact .overview-empty-metrics-enable-hint-text,
+.overview-empty-metrics-enable-hint.is-compact [data-action="dismiss-empty-metrics-enable-hint"] {
+  display: none !important;
+}
 .overview-empty-state-metrics {
   display: flex;
   align-items: center;

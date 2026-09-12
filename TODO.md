@@ -185,6 +185,7 @@
 - [x] 静态报告失败原因空态 metrics 清零（面板「清零」重置计数/事件环；`resetEmptyStateMetrics`/`StudioReportResetEmptyStateMetrics`）
 - [x] 静态报告失败原因空态 metrics 导出含面板开关快照（JSON `panel.enabled/windowFlag/query/localStorage`；`emptyStateMetricsPanelSnapshot`）
 - [x] 静态报告失败原因空态 metrics 面板键盘可达性（显示时入 Tab；隐藏时 tabindex=-1；`:focus-visible`；隐藏后焦点回退；`syncEmptyStateMetricsPanelButtons`）
+- [x] 静态报告失败原因空态 metrics 面板首次开启引导（工具行 hint + 「开启/知道了」；dismiss 后紧凑「开启」；`showEmptyStateMetricsPanel`/`dismissEmptyMetricsEnableHint`）
 
 ## 迭代日志
 
@@ -400,7 +401,8 @@
 | 2026-09-12 | 失败原因空态 metrics 清零 | 面板「清零」重置计数与事件环，便于重新采样 |
 | 2026-09-12 | 失败原因空态 metrics 导出面板快照 | JSON 附带 panel.enabled / windowFlag / query / localStorage |
 | 2026-09-12 | 失败原因空态 metrics 面板键盘可达性 | 显示入 Tab / 隐藏 tabindex=-1 / focus-visible / 隐藏后焦点回退 |
+| 2026-09-12 | 失败原因空态 metrics 首次开启引导 | 工具行 hint；开启/知道了；dismiss 后紧凑开启入口 |
 
 ## 下一任务（选定）
 
-**静态报告失败原因空态 metrics 面板首次开启引导**（工具行轻量 hint：如何用 `?emptyMetrics=1` / localStorage 打开），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
+**静态报告失败原因空态 metrics 开启深链**（工具行「复制开启链接」生成带 `?emptyMetrics=1` 的可分享 URL），或 **GaugeStudio 消费 `@studio-reporter/discover`**（缺仓外权限），或 **真实 GitHub Release feed 抽检**（需发测试 tag），或证书到位并接线后启用签名 job。
