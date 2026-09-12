@@ -253,10 +253,14 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportToggleEmptyStateMetricsEvents`,
 		`StudioReportCopyEmptyStateMetricsEventLine`,
 		`StudioReportFormatEmptyStateMetricsEventLine`,
+		`StudioReportSetEmptyStateMetricsEventKindFilter`,
+		`StudioReportEmptyStateMetricsEventKindFilter`,
 		`overview-empty-state-metrics-events`,
 		`toggle-empty-state-metrics-events`,
 		`copy-empty-state-metrics-event`,
+		`filter-empty-state-metrics-event-kind`,
 		`overview-empty-state-metrics-event-line`,
+		`overview-empty-state-metrics-event-kinds`,
 		`StudioReportFormatEmptyStateMetricsIssueMarkdown`,
 		`copy-empty-state-metrics-issue`,
 		`StudioReportDownloadEmptyStateMetricsJSON`,
@@ -344,6 +348,9 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-line`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-event-line copy affordance")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-kind`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-event-kind filter chips")
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics .action-btn:focus-visible`) {
 		t.Fatal("CSS missing metrics panel action-btn:focus-visible")

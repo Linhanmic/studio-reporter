@@ -241,6 +241,34 @@
     return (when ? (when + ' ') : '') + kind + (detail ? (' · ' + detail) : '');
   }
 
+  var EMPTY_STATE_EVENT_KIND_LABELS = {
+    clear: 'clear',
+    escClear: 'esc',
+    restoreFailOnly: 'failOnly',
+    undo: 'undo',
+    ctrlZUndo: 'ctrlZ'
+  };
+
+  function emptyStateMetricsEventKindFilter() {
+    try {
+      var v = localStorage.getItem('studio-report-empty-metrics-event-kind');
+      return v ? String(v) : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function setEmptyStateMetricsEventKindFilter(kind) {
+    var next = kind ? String(kind) : '';
+    if (next && !EMPTY_STATE_EVENT_KIND_LABELS[next]) next = '';
+    try {
+      if (next) localStorage.setItem('studio-report-empty-metrics-event-kind', next);
+      else localStorage.removeItem('studio-report-empty-metrics-event-kind');
+    } catch (e) {}
+    syncEmptyStateMetricsEvents();
+    return emptyStateMetricsEventKindFilter();
+  }
+
   function syncEmptyStateMetricsEvents() {
     var listEl = document.getElementById('overview-empty-state-metrics-events');
     var toggleBtn = document.querySelector(
@@ -248,6 +276,7 @@
     );
     var n = emptyStateEvents.length;
     var expanded = emptyStateMetricsEventsExpanded();
+    var kindFilter = emptyStateMetricsEventKindFilter();
     if (toggleBtn) {
       toggleBtn.textContent = '事件(' + n + ')' + (expanded ? ' ▾' : ' ▸');
       toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
@@ -266,10 +295,37 @@
       listEl.innerHTML = '<div class="overview-empty-state-metrics-events-empty">暂无事件</div>';
       return;
     }
-    var html = '<ol class="overview-empty-state-metrics-events-list">';
+    var kindCounts = {};
     var i;
     for (i = 0; i < emptyStateEvents.length; i++) {
-      var line = formatEmptyStateMetricsEventLine(emptyStateEvents[i]);
+      var k = emptyStateEvents[i] && emptyStateEvents[i].kind
+        ? String(emptyStateEvents[i].kind)
+        : '';
+      if (k) kindCounts[k] = (kindCounts[k] || 0) + 1;
+    }
+    var html = '<div class="overview-empty-state-metrics-event-kinds" role="toolbar" aria-label="按事件类型过滤">';
+    html += '<button type="button" class="overview-empty-state-metrics-event-kind' +
+      (!kindFilter ? ' is-active' : '') +
+      '" data-action="filter-empty-state-metrics-event-kind" data-kind="" title="显示全部事件">全部(' +
+      n + ')</button>';
+    Object.keys(EMPTY_STATE_EVENT_KIND_LABELS).forEach(function (kind) {
+      var count = kindCounts[kind] || 0;
+      if (!count) return;
+      var label = EMPTY_STATE_EVENT_KIND_LABELS[kind] || kind;
+      html += '<button type="button" class="overview-empty-state-metrics-event-kind' +
+        (kindFilter === kind ? ' is-active' : '') +
+        '" data-action="filter-empty-state-metrics-event-kind" data-kind="' + kind +
+        '" title="仅显示 ' + label + ' 事件">' + label + '(' + count + ')</button>';
+    });
+    html += '</div>';
+    var shown = 0;
+    html += '<ol class="overview-empty-state-metrics-events-list">';
+    for (i = 0; i < emptyStateEvents.length; i++) {
+      var entry = emptyStateEvents[i];
+      var entryKind = entry && entry.kind ? String(entry.kind) : '';
+      if (kindFilter && entryKind !== kindFilter) continue;
+      shown++;
+      var line = formatEmptyStateMetricsEventLine(entry);
       html += '<li><button type="button" class="overview-empty-state-metrics-event-line"' +
         ' data-action="copy-empty-state-metrics-event" data-event-index="' + i + '"' +
         ' title="复制本行事件（可贴 issue）">' +
@@ -277,6 +333,9 @@
         '</button></li>';
     }
     html += '</ol>';
+    if (!shown) {
+      html += '<div class="overview-empty-state-metrics-events-empty">当前类型无事件</div>';
+    }
     listEl.innerHTML = html;
     // Newly rendered event buttons inherit panel keyboard policy.
     var panel = document.getElementById('overview-empty-state-metrics');
@@ -1780,6 +1839,10 @@ function copyFailSummary() {
         copyEmptyStateMetricsEventLine(actionBtn.dataset.eventIndex);
         return;
       }
+      if (actionBtn.dataset.action === 'filter-empty-state-metrics-event-kind') {
+        setEmptyStateMetricsEventKindFilter(actionBtn.dataset.kind || '');
+        return;
+      }
       if (actionBtn.dataset.action === 'download-empty-state-metrics-json') {
         downloadEmptyStateMetricsJSON();
         return;
@@ -1948,6 +2011,8 @@ function copyFailSummary() {
   window.StudioReportSyncEmptyStateMetricsEvents = syncEmptyStateMetricsEvents;
   window.StudioReportFormatEmptyStateMetricsEventLine = formatEmptyStateMetricsEventLine;
   window.StudioReportCopyEmptyStateMetricsEventLine = copyEmptyStateMetricsEventLine;
+  window.StudioReportEmptyStateMetricsEventKindFilter = emptyStateMetricsEventKindFilter;
+  window.StudioReportSetEmptyStateMetricsEventKindFilter = setEmptyStateMetricsEventKindFilter;
   window.StudioReportEmptyStateMetricsPanelSnapshot = emptyStateMetricsPanelSnapshot;
   window.StudioReportResetEmptyStateMetrics = resetEmptyStateMetrics;
   window.StudioReportHideEmptyStateMetricsPanel = hideEmptyStateMetricsPanel;

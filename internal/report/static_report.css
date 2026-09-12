@@ -502,6 +502,37 @@ html, body {
 .overview-empty-state-metrics-events[hidden] {
   display: none !important;
 }
+.overview-empty-state-metrics-event-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 0 0 4px;
+}
+.overview-empty-state-metrics-event-kind {
+  margin: 0;
+  padding: 0 5px;
+  border: 1px solid #b8c6d4;
+  border-radius: 2px;
+  background: #f7fafc;
+  color: #3a4a5a;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.overview-empty-state-metrics-event-kind:hover {
+  background: #e8eef4;
+}
+.overview-empty-state-metrics-event-kind.is-active {
+  border-color: #1f4668;
+  background: #dce7f2;
+  color: #12324c;
+  font-weight: 600;
+}
+.overview-empty-state-metrics-event-kind:focus-visible {
+  outline: 2px solid #1f4668;
+  outline-offset: 1px;
+}
 .overview-empty-state-metrics-events-list {
   margin: 0;
   padding-left: 1.2em;
