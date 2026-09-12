@@ -76,6 +76,9 @@ func TestRenderReportHTMLOverviewNavShots(t *testing.T) {
 		`fail-reason-table`,
 		`copy-empty-state-metrics-report-meta`,
 		`复制 meta`,
+		`字段`,
+		`overview-empty-state-metrics-meta-fields`,
+		`toggle-empty-state-metrics-meta-fields`,
 		`data-stat-kind="specs"`,
 		`data-count-kind="scenarios"`,
 		`overview-count-row`,
@@ -410,6 +413,9 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-secondary`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-meta-secondary")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-meta-fields-row`) {
+		t.Fatal("CSS missing overview-empty-state-metrics-meta-fields-row")
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-event-actions`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-event-actions for copy-visible")

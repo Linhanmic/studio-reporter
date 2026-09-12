@@ -793,3 +793,38 @@ html, body {
 .overview-empty-state-metrics-meta-more {
   flex: 0 0 auto;
 }
+
+.overview-empty-state-metrics-meta-fields {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border, #d0d7de);
+  background: var(--surface-2, rgba(0,0,0,0.03));
+  font-size: 0.85em;
+}
+.overview-empty-state-metrics-meta-fields[hidden] {
+  display: none !important;
+}
+.overview-empty-state-metrics-meta-fields-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+.overview-empty-state-metrics-meta-fields-label {
+  min-width: 5.5rem;
+  font-weight: 600;
+}
+.overview-empty-state-metrics-meta-fields-row select {
+  font: inherit;
+  min-width: 4.5rem;
+}
+.overview-empty-state-metrics-meta-fields-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
