@@ -318,21 +318,55 @@
   }
 
   function hideEmptyStateMetricsPanel() {
+    var panel = document.getElementById('overview-empty-state-metrics');
+    var active = null;
+    try { active = document.activeElement; } catch (e) {}
     setEmptyStateMetricsPanelVisible(false);
     flashStatus('已隐藏空态 metrics 面板（localStorage=0）');
+    // Keep keyboard focus out of the now-hidden strip.
+    if (panel && active && panel.contains(active)) {
+      var fallback = document.querySelector(
+        '.overview-fail-reason-tools [data-action]:not([hidden]):not([disabled])'
+      ) || document.getElementById('report-status') || document.body;
+      try {
+        if (fallback && typeof fallback.focus === 'function') fallback.focus();
+      } catch (e2) {}
+    }
+  }
+
+  function syncEmptyStateMetricsPanelButtons(panel, enabled) {
+    if (!panel) return;
+    panel.querySelectorAll('[data-action]').forEach(function (btn) {
+      if (enabled) {
+        btn.removeAttribute('tabindex');
+        btn.removeAttribute('aria-hidden');
+      } else {
+        btn.setAttribute('tabindex', '-1');
+        btn.setAttribute('aria-hidden', 'true');
+      }
+    });
   }
 
   function syncEmptyStateMetricsPanel() {
     var el = document.getElementById('overview-empty-state-metrics');
     if (!el) return;
-    if (!emptyStateMetricsPanelEnabled()) {
+    var enabled = emptyStateMetricsPanelEnabled();
+    if (!enabled) {
       el.setAttribute('hidden', '');
+      el.setAttribute('aria-hidden', 'true');
+      syncEmptyStateMetricsPanelButtons(el, false);
       return;
     }
     var textEl = document.getElementById('overview-empty-state-metrics-text');
     if (textEl) textEl.textContent = formatEmptyStateMetricsPanel();
     else el.textContent = formatEmptyStateMetricsPanel();
     el.removeAttribute('hidden');
+    el.setAttribute('aria-hidden', 'false');
+    el.setAttribute('role', 'group');
+    if (!el.getAttribute('aria-label')) {
+      el.setAttribute('aria-label', '空态操作 metrics');
+    }
+    syncEmptyStateMetricsPanelButtons(el, true);
   }
 
   function captureFilterSnapshot() {

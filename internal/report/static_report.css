@@ -468,6 +468,13 @@ html, body {
   font-family: inherit;
   flex: 0 0 auto;
 }
+.overview-empty-state-metrics .action-btn:focus-visible {
+  outline: 2px solid #1f4668;
+  outline-offset: 1px;
+}
+.overview-empty-state-metrics[aria-hidden="true"] .action-btn {
+  pointer-events: none;
+}
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

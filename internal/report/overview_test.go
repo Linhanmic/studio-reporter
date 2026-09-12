@@ -238,6 +238,7 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 		`StudioReportEmptyStateMetrics`,
 		`StudioReportFormatEmptyStateMetricsJSON`,
 		`StudioReportEmptyStateMetricsPanelSnapshot`,
+		`syncEmptyStateMetricsPanelButtons`,
 		`StudioReportCopyEmptyStateMetricsJSON`,
 		`StudioReportDownloadEmptyStateMetricsJSON`,
 		`StudioReportResetEmptyStateMetrics`,
@@ -315,6 +316,9 @@ func TestStaticReportCSSPrintRespectsFailSteps(t *testing.T) {
 	}
 	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics-text`) {
 		t.Fatal("CSS missing overview-empty-state-metrics-text for JSON export panel")
+	}
+	if !strings.Contains(staticReportCSS, `.overview-empty-state-metrics .action-btn:focus-visible`) {
+		t.Fatal("CSS missing metrics panel action-btn:focus-visible")
 	}
 	if !strings.Contains(staticReportCSS, `.fail-reason-empty-row`) {
 		t.Fatal("CSS missing fail-reason-empty-row for filtered empty table placeholder")

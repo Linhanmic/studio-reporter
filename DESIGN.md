@@ -282,3 +282,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics 隐藏 | 「隐藏」写 window+localStorage=0；可用 setter / ?emptyMetrics=1 再开 |
 | 2026-09-12 | 失败原因空态 metrics 清零 | 「清零」重置 EmptyStateMetrics 计数/事件环 |
 | 2026-09-12 | 失败原因空态 metrics 导出面板快照 | JSON `panel` 含 enabled/windowFlag/query/localStorage |
+| 2026-09-12 | 失败原因空态 metrics 键盘可达 | 显示入 Tab；隐藏 tabindex=-1；focus-visible；隐藏后焦点回退 |
