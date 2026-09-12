@@ -277,6 +277,71 @@
     return getEmptyStateMetricsMetaFieldPrefs();
   }
 
+  function formatEmptyStateMetricsMetaFieldPrefsJSON() {
+    var prefs = getEmptyStateMetricsMetaFieldPrefs();
+    return JSON.stringify({
+      kind: 'studio-report-empty-metrics-meta-fields',
+      version: 1,
+      primary: prefs.primary.slice(),
+      secondary: prefs.secondary.slice()
+    }, null, 2);
+  }
+
+  function copyEmptyStateMetricsMetaFieldPrefsJSON() {
+    var text = formatEmptyStateMetricsMetaFieldPrefsJSON();
+    return copyText(text).then(function () {
+      flashStatus('已复制 meta 字段预设 JSON');
+    }).catch(function () {
+      flashStatus('复制失败，请检查剪贴板权限');
+    });
+  }
+
+  function downloadEmptyStateMetricsMetaFieldPrefsJSON() {
+    var text = formatEmptyStateMetricsMetaFieldPrefsJSON();
+    var blob = new Blob([text + '\n'], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'studio-report-empty-metrics-meta-fields.json';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 0);
+    flashStatus('已下载 meta 字段预设 JSON');
+    return text;
+  }
+
+  function applyEmptyStateMetricsMetaFieldPrefsJSON(raw) {
+    var parsed = null;
+    try {
+      parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch (e) {
+      flashStatus('meta 字段预设 JSON 解析失败');
+      return null;
+    }
+    if (!parsed || typeof parsed !== 'object') {
+      flashStatus('meta 字段预设无效');
+      return null;
+    }
+    // Accept bare {primary,secondary} or wrapped kind payload.
+    var payload = parsed;
+    if (parsed.prefs && typeof parsed.prefs === 'object') payload = parsed.prefs;
+    var next = setEmptyStateMetricsMetaFieldPrefs({
+      primary: payload.primary,
+      secondary: payload.secondary
+    });
+    flashStatus('已导入 meta 字段预设（主 ' + next.primary.length + ' / 次 ' + next.secondary.length + '）');
+    return next;
+  }
+
+  function importEmptyStateMetricsMetaFieldPrefsFromPrompt() {
+    var sample = formatEmptyStateMetricsMetaFieldPrefsJSON();
+    var raw = window.prompt('粘贴 meta 字段预设 JSON（primary/secondary）', sample);
+    if (raw == null) return null;
+    return applyEmptyStateMetricsMetaFieldPrefsJSON(raw);
+  }
+
   function emptyStateMetricsMetaFieldsEditorOpen() {
     try {
       var ls = localStorage.getItem('studio-report-empty-metrics-meta-fields-open');
@@ -405,6 +470,9 @@
       html += '</div>';
     });
     html += '<div class="overview-empty-state-metrics-meta-fields-actions">';
+    html += '<button type="button" class="action-btn action-btn-tiny" data-action="copy-empty-state-metrics-meta-fields-json" title="复制当前 meta 字段预设 JSON（便于团队共享）">复制预设</button>';
+    html += '<button type="button" class="action-btn action-btn-tiny" data-action="download-empty-state-metrics-meta-fields-json" title="下载 meta 字段预设 JSON 文件">下载预设</button>';
+    html += '<button type="button" class="action-btn action-btn-tiny" data-action="import-empty-state-metrics-meta-fields-json" title="粘贴/导入 meta 字段预设 JSON">导入预设</button>';
     html += '<button type="button" class="action-btn action-btn-tiny" data-action="reset-empty-state-metrics-meta-fields" title="恢复默认主三项（项目·结论·时间）">恢复默认</button>';
     html += '</div>';
     el.innerHTML = html;
@@ -2542,6 +2610,18 @@ function copyFailSummary() {
         toggleEmptyStateMetricsMetaFieldsEditor();
         return;
       }
+      if (actionBtn.dataset.action === 'copy-empty-state-metrics-meta-fields-json') {
+        copyEmptyStateMetricsMetaFieldPrefsJSON();
+        return;
+      }
+      if (actionBtn.dataset.action === 'download-empty-state-metrics-meta-fields-json') {
+        downloadEmptyStateMetricsMetaFieldPrefsJSON();
+        return;
+      }
+      if (actionBtn.dataset.action === 'import-empty-state-metrics-meta-fields-json') {
+        importEmptyStateMetricsMetaFieldPrefsFromPrompt();
+        return;
+      }
       if (actionBtn.dataset.action === 'reset-empty-state-metrics-meta-fields') {
         resetEmptyStateMetricsMetaFieldPrefs();
         return;
@@ -2792,6 +2872,12 @@ if (actionBtn.dataset.action === 'copy-empty-state-metrics-json') {
   window.StudioReportSetEmptyStateMetricsMetaFieldGroup = setEmptyStateMetricsMetaFieldGroup;
   window.StudioReportMoveEmptyStateMetricsMetaField = moveEmptyStateMetricsMetaField;
   window.StudioReportToggleEmptyStateMetricsMetaFieldsEditor = toggleEmptyStateMetricsMetaFieldsEditor;
+  window.StudioReportFormatEmptyStateMetricsMetaFieldPrefsJSON = formatEmptyStateMetricsMetaFieldPrefsJSON;
+  window.StudioReportCopyEmptyStateMetricsMetaFieldPrefsJSON = copyEmptyStateMetricsMetaFieldPrefsJSON;
+  window.StudioReportDownloadEmptyStateMetricsMetaFieldPrefsJSON = downloadEmptyStateMetricsMetaFieldPrefsJSON;
+  window.StudioReportApplyEmptyStateMetricsMetaFieldPrefsJSON = applyEmptyStateMetricsMetaFieldPrefsJSON;
+  window.StudioReportImportEmptyStateMetricsMetaFieldPrefsFromPrompt = importEmptyStateMetricsMetaFieldPrefsFromPrompt;
+
   window.StudioReportFormatEmptyStateMetricsMetaFieldValue = formatEmptyStateMetricsMetaFieldValue;
   window.StudioReportSyncEmptyStateMetricsMetaFieldsEditor = syncEmptyStateMetricsMetaFieldsEditor;
 

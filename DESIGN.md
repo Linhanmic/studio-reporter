@@ -313,3 +313,4 @@ scripts/check-assets.sh   # CI：漂移则失败
 | 2026-09-12 | 失败原因空态 metrics meta 次要字段可折叠 | 主摘要精简；meta+ 展开根目录/主机/插件 |
 | 2026-09-12 | 失败原因空态 metrics meta+ 可分享 URL | emptyMetricsMeta query；开启链接/预览携带 |
 | 2026-09-12 | 失败原因空态 metrics meta 字段显隐/顺序 | get/setEmptyStateMetricsMetaFieldPrefs；主/次/隐 + 同组排序 |
+| 2026-09-12 | 失败原因空态 metrics 字段预设导入导出 | format/applyEmptyStateMetricsMetaFieldPrefsJSON |

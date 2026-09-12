@@ -58,6 +58,11 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
 		`StudioReportMoveEmptyStateMetricsMetaField`,
 		`studio-report-empty-metrics-meta-fields`,
 		`字段`,
+		`导入预设`,
+		`复制预设`,
+		`studio-report-empty-metrics-meta-fields.json`,
+		`StudioReportApplyEmptyStateMetricsMetaFieldPrefsJSON`,
+		`StudioReportFormatEmptyStateMetricsMetaFieldPrefsJSON`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("report missing %q", want)
@@ -133,7 +138,29 @@ func TestEmptyStateMetricsMetaFieldPrefs(t *testing.T) {
     if (btn) btn.click();
     var openOk = editor && !editor.hasAttribute('hidden') && editor.querySelectorAll('[data-meta-field]').length >= 6;
 
-    mark((defOk && defTextOk && customOk && customTextOk && movedOk && resetOk && uiOk && openOk) ? 'ok' : ('fail:def=' + defOk + ';dt=' + defTextOk + ';c=' + customOk + ';ct=' + customTextOk + ';m=' + movedOk + ';r=' + resetOk + ';ui=' + uiOk + ';open=' + openOk + ';p0=' + p0 + ';s0=' + s0 + ';p1=' + p1 + ';s1=' + s1));
+    var formatPrefs = window.StudioReportFormatEmptyStateMetricsMetaFieldPrefsJSON;
+    var applyPrefs = window.StudioReportApplyEmptyStateMetricsMetaFieldPrefsJSON;
+    var prefsIOOk = false;
+    if (typeof formatPrefs === 'function' && typeof applyPrefs === 'function') {
+      set({ primary: ['hostName'], secondary: ['projectName', 'duration'] });
+      var exported = formatPrefs();
+      var parsed = null;
+      try { parsed = JSON.parse(exported); } catch (e6) {}
+      var exportOk = parsed && parsed.kind === 'studio-report-empty-metrics-meta-fields' && parsed.version === 1
+        && Array.isArray(parsed.primary) && parsed.primary.join(',') === 'hostName'
+        && Array.isArray(parsed.secondary) && parsed.secondary.join(',') === 'projectName,duration';
+      reset();
+      var applied = applyPrefs(exported);
+      var afterImport = get();
+      var importOk = !!applied && afterImport.primary.join(',') === 'hostName' && afterImport.secondary.join(',') === 'projectName,duration';
+      var pImp = String(primary() || '');
+      var sImp = String(secondary() || '');
+      var importTextOk = pImp.indexOf('ci-host') >= 0 && sImp.indexOf('meta-fields') >= 0;
+      prefsIOOk = exportOk && importOk && importTextOk;
+      reset();
+    }
+
+    mark((defOk && defTextOk && customOk && customTextOk && movedOk && resetOk && uiOk && openOk && prefsIOOk) ? 'ok' : ('fail:def=' + defOk + ';dt=' + defTextOk + ';c=' + customOk + ';ct=' + customTextOk + ';m=' + movedOk + ';r=' + resetOk + ';ui=' + uiOk + ';open=' + openOk + ';io=' + prefsIOOk + ';p0=' + p0 + ';s0=' + s0 + ';p1=' + p1 + ';s1=' + s1));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
   else setTimeout(go, 100);
