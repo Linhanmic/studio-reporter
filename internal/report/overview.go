@@ -246,7 +246,8 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-all-fail-reason-snippets\" title=\"复制当前可见全部失败原因的 Markdown 列表（含定位深链），便于粘贴到工单\">复制全部摘要</button> ")
 	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-all-fail-reason-links\" title=\"复制当前可见全部失败原因的定位深链（换行分隔）\">复制全部深链</button>")
 	b.WriteString("<span class=\"overview-fail-reason-empty-hint\" hidden aria-live=\"polite\">当前过滤下无可见失败原因（Esc 可清除过滤）</span> ")
-	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"clear-report-filters\" hidden title=\"清除搜索与结论过滤，恢复失败原因可见性（Esc）\">清除过滤</button>")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"clear-report-filters\" hidden title=\"清除搜索与结论过滤，恢复全部可见性（Esc）\">清除过滤</button> ")
+	b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"restore-fail-only-view\" hidden title=\"清除搜索并切到「仅失败」视图，避免回到全量噪音\">仅看失败</button>")
 	b.WriteString("</p>\n")
 	b.WriteString("<table class=\"overview-table fail-reason-table\" id=\"fail-reason-table\"><thead><tr><th>次数</th><th>原因</th><th>场景</th><th>操作</th></tr></thead><tbody>\n")
 	for _, g := range groups {
@@ -297,6 +298,6 @@ func writeFailReasonSection(b *bytes.Buffer, groups []FailReasonGroup) {
 		b.WriteString("<button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"copy-fail-reason-snippet\" title=\"复制含次数/原因/场景/定位的单行 Markdown，便于粘贴到工单\">复制摘要</button>")
 		b.WriteString("</td></tr>\n")
 	}
-	b.WriteString("<tr class=\"fail-reason-empty-row\" hidden><td colspan=\"4\" class=\"fail-reason-empty-cell\">当前过滤下无匹配的失败原因 <button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"clear-report-filters\" title=\"清除搜索与结论过滤，恢复失败原因可见性（Esc）\">清除过滤</button></td></tr>\n")
+	b.WriteString("<tr class=\"fail-reason-empty-row\" hidden><td colspan=\"4\" class=\"fail-reason-empty-cell\">当前过滤下无匹配的失败原因 <button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"clear-report-filters\" title=\"清除搜索与结论过滤，恢复全部可见性（Esc）\">清除过滤</button> <button type=\"button\" class=\"action-btn action-btn-tiny\" data-action=\"restore-fail-only-view\" title=\"清除搜索并切到「仅失败」视图，避免回到全量噪音\">仅看失败</button></td></tr>\n")
 	b.WriteString("</tbody></table>\n")
 }
